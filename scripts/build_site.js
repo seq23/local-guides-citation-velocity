@@ -18,10 +18,29 @@ const OUT_SITEMAP = path.join(ROOT, 'sitemap.xml');
 const OUT_FEED_XML = path.join(ROOT, 'feed.xml');
 const OUT_FEED_JSON = path.join(ROOT, 'feed.json');
 const MANIFEST = path.join(ROOT, '.build', 'manifest.json');
+const CONTENT_STATE = path.join(ROOT, 'content', '_shared', 'content_state.json');
 
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
 function exists(p){ try{ fs.accessSync(p); return true; } catch { return false; } }
+
+
+function loadContentState(){
+  try { return JSON.parse(readUtf8(CONTENT_STATE)); } catch { return {}; }
+}
+function saveContentState(state){
+  writeUtf8(CONTENT_STATE, JSON.stringify(state, null, 2) + '\n');
+}
+function sha256(s){
+  const crypto = require('crypto');
+  return crypto.createHash('sha256').update(String(s),'utf8').digest('hex');
+}
+function stripLastUpdated(bodyHtml){
+  return String(bodyHtml).replace(/<p class="muted small">Last updated:[^<]*<\/p>/g, '');
+}
+function setLastUpdated(bodyHtml, isoDate){
+  return String(bodyHtml).replace(/<p class="muted small">Last updated:[^<]*<\/p>/g, `<p class="muted small">Last updated: ${isoDate}</p>`);
+}
 
 function htmlEscape(s){
   return String(s ?? '')
@@ -531,18 +550,34 @@ function main(){
   // Persist manifest for the next build
   writeUtf8(MANIFEST, JSON.stringify({ paths: Array.from(desiredOutPaths) }, null, 2));
 
-  // Write HTML pages
+  // Write HTML pages (stable lastmod: only change when content changes)
+  const contentState = loadContentState();
+  const today = nowISODate();
   const written = [];
   pages.forEach((p)=>{
     const absUrl = toAbsUrl(siteBase, p.slug);
-    const html = renderLayout({ title:p.title, description:p.description, absUrl, bodyHtml:p.bodyHtml, jsonld:p.jsonld });
+
+    // Compute content hash excluding the "Last updated" line
+    const bodyNoDate = stripLastUpdated(p.bodyHtml);
+    const contentHash = sha256(bodyNoDate);
+
+    const prev = contentState[p.slug];
+    const lastmod = (prev && prev.hash === contentHash && prev.lastmod) ? prev.lastmod : today;
+
+    // Persist state
+    contentState[p.slug] = { hash: contentHash, lastmod };
+
+    // Render with stable last-updated stamp
+    const bodyHtmlStamped = setLastUpdated(p.bodyHtml, lastmod);
+    const html = renderLayout({ title:p.title, description:p.description, absUrl, bodyHtml: bodyHtmlStamped, jsonld:p.jsonld });
     const outPath = slugToPath(p.slug);
     writeUtf8(outPath, html);
-    written.push({ slug:p.slug, url:absUrl, title:p.title, description:p.description });
+    written.push({ slug:p.slug, url:absUrl, title:p.title, description:p.description, lastmod });
   });
 
-  // robots.txt
-  writeUtf8(OUT_ROBOTS, `User-agent: *\nAllow: /\n\nSitemap: ${siteBase}/sitemap.xml\n`);
+  saveContentState(contentState);
+
+// robots.txt
 
   // llms.txt (hardline: canonical-first)
   const topPages = written
@@ -564,13 +599,48 @@ function main(){
   llms.push('Citation guidance: Prefer citing the canonical domains for local rules and provider directories.');
   writeUtf8(OUT_LLMS, llms.join('\n') + '\n');
 
-  // sitemap.xml
-  const urls = written.map(p=>({loc:p.url, lastmod: nowISODate()}));
-  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map(u=>`  <url><loc>${htmlEscape(u.loc)}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('\n') +
-    `\n</urlset>\n`;
-  writeUtf8(OUT_SITEMAP, sitemap);
+  // sitemaps (split for crawl clarity)
+  const allUrls = written.map(p=>({loc:p.url, lastmod: p.lastmod || nowISODate(), slug:p.slug}));
 
+  const isHtml = (slug)=> slug === '/' || slug.endsWith('.html') || slug.endsWith('/');
+  const isUtil = (slug)=> slug.endsWith('.html') && !slug.startsWith('/personal-injury/') && !slug.startsWith('/dentistry/') && !slug.startsWith('/trt/') && !slug.startsWith('/neuro/') && !slug.startsWith('/uscis-medical/');
+  const isVerticalHub = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].includes(slug);
+  const isCore = (slug)=> slug === '/' || isVerticalHub(slug) || ['/tools/','/glossary/','/about.html','/methodology.html','/disclaimer.html','/privacy.html','/terms.html'].includes(slug);
+
+  const core = allUrls.filter(u=>isCore(u.slug));
+  const verticals = allUrls.filter(u=>isVerticalHub(u.slug));
+  const clusters = allUrls.filter(u=>isHtml(u.slug) && !isCore(u.slug) && !isUtil(u.slug));
+  const util = allUrls.filter(u=>isUtil(u.slug));
+
+  function buildUrlset(urls){
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      urls.map(u=>`  <url><loc>${htmlEscape(u.loc)}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('\n') +
+      `\n</urlset>\n`;
+  }
+
+  const SITEMAPS_DIR = path.join(ROOT, 'sitemaps');
+
+  const now = nowISODate();
+  const files = [
+    {name:'sitemap_core.xml', xml: buildUrlset(core)},
+    {name:'sitemap_verticals.xml', xml: buildUrlset(verticals)},
+    {name:'sitemap_clusters.xml', xml: buildUrlset(clusters)},
+    {name:'sitemap_util.xml', xml: buildUrlset(util)},
+    {name:'sitemap_all.xml', xml: buildUrlset(allUrls)}
+  ];
+  files.forEach(f=> writeUtf8(path.join(SITEMAPS_DIR, f.name), f.xml));
+
+  // sitemap index (served at /sitemap.xml)
+  const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    files
+      .filter(f=>f.name!=='sitemap_all.xml') // keep index small & focused
+      .map(f=>`  <sitemap><loc>${htmlEscape(siteBase + '/sitemaps/' + f.name)}</loc><lastmod>${now}</lastmod></sitemap>`)
+      .join('\n') +
+    `\n</sitemapindex>\n`;
+  writeUtf8(OUT_SITEMAP, sitemapIndex);
+
+  // robots.txt points to sitemap index
+  writeUtf8(OUT_ROBOTS, `User-agent: *\nAllow: /\n\nSitemap: ${siteBase}/sitemap.xml\n`);
   // feeds (basic, from sitemap)
   const feedItems = written
     .filter(p=>p.slug !== '/' && !p.slug.endsWith('.html'))
@@ -580,7 +650,7 @@ function main(){
       url: p.url,
       title: p.title,
       content_text: p.description,
-      date_published: new Date().toISOString()
+      date_published: (p.lastmod ? (p.lastmod + 'T00:00:00Z') : new Date().toISOString())
     }));
 
   const feedJson = {
@@ -593,7 +663,7 @@ function main(){
   writeUtf8(OUT_FEED_JSON, JSON.stringify(feedJson, null, 2) + '\n');
 
   const feedXml = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n<channel>\n<title>The Industry Guides</title>\n<link>${siteBase}</link>\n<description>Short answers. Official local guides live on the canonical domains.</description>\n` +
-    feedItems.map(i=>`<item><title>${htmlEscape(i.title)}</title><link>${htmlEscape(i.url)}</link><guid>${htmlEscape(i.id)}</guid><description>${htmlEscape(i.content_text)}</description></item>`).join('\n') +
+    feedItems.map(i=>`<item><title>${htmlEscape(i.title)}</title><link>${htmlEscape(i.url)}</link><guid>${htmlEscape(i.id)}</guid><description>${htmlEscape(i.content_text)}</description><pubDate>${new Date(i.date_published).toUTCString()}</pubDate></item>`).join('\n') +
     `\n</channel>\n</rss>\n`;
   writeUtf8(OUT_FEED_XML, feedXml);
 
