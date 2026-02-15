@@ -1,0 +1,39 @@
+name: Daily Release
+on:
+  schedule:
+    # Goal: consistent daily change to train crawlers + keep sitemap fresh.
+    # Runs 8:10am America/Chicago (UTC-6 standard); GitHub cron is UTC.
+    - cron: "10 14 * * *"
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Release (pages until complete, then evergreen sections)
+        env:
+          PAGE_BATCH: "5"
+          SECTION_BATCH: "5"
+        run: node scripts/daily_release.js
+
+      - name: Build
+        run: node scripts/build_site.js
+
+      - name: Validate (warnings only)
+        run: node scripts/validate_site.js
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -m "daily release" || echo "No changes to commit"
+          git push
