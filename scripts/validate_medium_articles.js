@@ -6,7 +6,6 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const BASE = path.join(ROOT, 'medium-articles');
 
 const ALLOWED_VERTICALS = new Set([
   'dentistry',
@@ -15,17 +14,6 @@ const ALLOWED_VERTICALS = new Set([
   'trt',
   'uscis-medical',
 ]);
-
-function walk(dir) {
-  const out = [];
-  if (!fs.existsSync(dir)) return out;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walk(p));
-    else out.push(p);
-  }
-  return out;
-}
 
 function stripHtml(html) {
   return html
@@ -45,15 +33,25 @@ function fail(file, msg) {
   return { file, msg };
 }
 
-function validateFile(fp) {
-  const rel = path.relative(ROOT, fp).replace(/\\/g, '/');
+function normalizeRel(p) {
+  const rel = path.isAbsolute(p) ? path.relative(ROOT, p) : p;
+  return rel.replace(/\\/g, '/');
+}
 
-  // Enforce: medium-articles/<vertical>/<slug>/index.html
+function isMediumIndexHtml(rel) {
+  // medium-articles/<vertical>/<slug>/index.html
   const parts = rel.split('/');
-  if (parts.length !== 4 || parts[0] !== 'medium-articles' || parts[3] !== 'index.html') {
+  return parts.length === 4 && parts[0] === 'medium-articles' && parts[3] === 'index.html';
+}
+
+function validateFile(relPath) {
+  const rel = normalizeRel(relPath);
+
+  if (!isMediumIndexHtml(rel)) {
     return fail(rel, 'Path must be medium-articles/<vertical>/<slug>/index.html');
   }
 
+  const parts = rel.split('/');
   const vertical = parts[1];
   const slug = parts[2];
 
@@ -65,7 +63,12 @@ function validateFile(fp) {
     return fail(rel, `Slug "${slug}" must be lowercase kebab-case (a-z, 0-9, hyphen).`);
   }
 
-  const html = fs.readFileSync(fp, 'utf8');
+  const abs = path.join(ROOT, rel);
+  if (!fs.existsSync(abs)) {
+    return fail(rel, 'File does not exist (maybe deleted/renamed in this push).');
+  }
+
+  const html = fs.readFileSync(abs, 'utf8');
 
   if (!/<title>[^<]{3,}<\/title>/i.test(html)) {
     return fail(rel, 'Missing or empty <title> tag.');
@@ -94,7 +97,7 @@ function validateFile(fp) {
   const text = stripHtml(html);
   const wc = wordCount(text);
 
-  // Cushion around your 600–1000 target so you don’t fail for small differences.
+  // cushion around your 600–1000 target
   if (wc < 600 || wc > 1200) {
     return fail(rel, `Word count must be 600–1200. Detected: ${wc}.`);
   }
@@ -103,21 +106,24 @@ function validateFile(fp) {
 }
 
 function main() {
-  if (!fs.existsSync(BASE)) {
-    console.log('No medium-articles/ directory found. Nothing to validate.');
-    process.exit(0);
-  }
+  // Only validate what is passed in.
+  // Workflow will pass only changed medium-articles/**/index.html files.
+  const args = process.argv.slice(2).map(normalizeRel).filter(Boolean);
 
-  const files = walk(BASE).filter((p) => p.endsWith('/index.html') || p.endsWith(path.sep + 'index.html'));
+  const candidates = args.length
+    ? args
+    : []; // if you run locally with no args, it will do nothing (by design)
 
-  if (files.length === 0) {
-    console.log('No medium-articles/**/index.html files found. Nothing to validate.');
+  const targets = candidates.filter((p) => p.startsWith('medium-articles/') && p.endsWith('/index.html'));
+
+  if (targets.length === 0) {
+    console.log('No changed medium-articles/**/index.html files to validate. Skipping.');
     process.exit(0);
   }
 
   const errors = [];
-  for (const fp of files) {
-    const err = validateFile(fp);
+  for (const rel of targets) {
+    const err = validateFile(rel);
     if (err) errors.push(err);
   }
 
@@ -130,7 +136,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`✅ Medium articles validation passed (${files.length} files checked).`);
+  console.log(`✅ Medium articles validation passed (${targets.length} changed files checked).`);
   process.exit(0);
 }
 
