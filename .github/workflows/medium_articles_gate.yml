@@ -1,0 +1,29 @@
+name: Medium Articles Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "medium-articles/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: medium-articles-gate
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate medium articles format
+        run: node scripts/validate_medium_articles.js
