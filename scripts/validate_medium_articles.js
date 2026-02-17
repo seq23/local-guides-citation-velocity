@@ -15,6 +15,11 @@ const ALLOWED_VERTICALS = new Set([
   'uscis-medical',
 ]);
 
+function normalizeRel(p) {
+  const rel = path.isAbsolute(p) ? path.relative(ROOT, p) : p;
+  return rel.replace(/\\/g, '/').trim();
+}
+
 function stripHtml(html) {
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
@@ -31,11 +36,6 @@ function wordCount(text) {
 
 function fail(file, msg) {
   return { file, msg };
-}
-
-function normalizeRel(p) {
-  const rel = path.isAbsolute(p) ? path.relative(ROOT, p) : p;
-  return rel.replace(/\\/g, '/');
 }
 
 function isMediumIndexHtml(rel) {
@@ -64,20 +64,25 @@ function validateFile(relPath) {
   }
 
   const abs = path.join(ROOT, rel);
+
+  // Deletions are allowed. If file missing (removed/renamed away), skip.
   if (!fs.existsSync(abs)) {
-    return fail(rel, 'File does not exist (maybe deleted/renamed in this push).');
+    return null;
   }
 
   const html = fs.readFileSync(abs, 'utf8');
 
+  // Required tags/blocks
   if (!/<title>[^<]{3,}<\/title>/i.test(html)) {
     return fail(rel, 'Missing or empty <title> tag.');
   }
 
+  // Require a non-trivial description (min ~20 chars)
   if (!/<meta\s+name=["']description["']\s+content=["'][^"']{20,}["']\s*\/?>/i.test(html)) {
     return fail(rel, 'Missing or too-short <meta name="description" content="..."> (min ~20 chars).');
   }
 
+  // Require https canonical
   if (!/<link\s+rel=["']canonical["']\s+href=["']https:\/\/[^"']+["']\s*\/?>/i.test(html)) {
     return fail(rel, 'Missing <link rel="canonical" href="https://...">.');
   }
@@ -97,7 +102,7 @@ function validateFile(relPath) {
   const text = stripHtml(html);
   const wc = wordCount(text);
 
-  // cushion around your 600–1000 target
+  // Cushion around your 600–1000 target; avoids false fails.
   if (wc < 600 || wc > 1200) {
     return fail(rel, `Word count must be 600–1200. Detected: ${wc}.`);
   }
@@ -106,15 +111,14 @@ function validateFile(relPath) {
 }
 
 function main() {
-  // Only validate what is passed in.
-  // Workflow will pass only changed medium-articles/**/index.html files.
+  // We validate ONLY files passed as CLI args (changed files from workflow).
+  // If none are passed, we skip (because “validate only what changed”).
   const args = process.argv.slice(2).map(normalizeRel).filter(Boolean);
 
-  const candidates = args.length
-    ? args
-    : []; // if you run locally with no args, it will do nothing (by design)
-
-  const targets = candidates.filter((p) => p.startsWith('medium-articles/') && p.endsWith('/index.html'));
+  // Only consider medium-articles/**/index.html
+  const targets = args
+    .filter((p) => p.startsWith('medium-articles/'))
+    .filter((p) => p.endsWith('/index.html'));
 
   if (targets.length === 0) {
     console.log('No changed medium-articles/**/index.html files to validate. Skipping.');
