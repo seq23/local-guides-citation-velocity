@@ -17,40 +17,52 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (full history for diff)
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Collect changed medium-articles index.html files
+      - name: Collect changed medium-articles index.html files via GitHub API
         id: changed
-        shell: bash
-        run: |
-          set -euo pipefail
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
 
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.sha }}"
+            // Push event gives us before/after. Compare is more reliable than local git diff.
+            const before = context.payload.before;
+            const after = context.sha;
 
-          echo "Diffing: $BEFORE..$AFTER"
+            // If before is missing/zeroed (rare), we can’t compare; in that case, skip validation.
+            // This avoids false failures on weird events.
+            if (!before || /^0+$/.test(before)) {
+              core.warning(`No valid "before" SHA available (before="${before}"). Skipping changed-files validation.`);
+              core.setOutput('files', '');
+              return;
+            }
 
-          # Get changed files; filter to medium-articles/**/index.html
-          CHANGED="$(git diff --name-only "$BEFORE" "$AFTER" | tr -d '\r' || true)"
-          echo "Changed files (raw):"
-          echo "$CHANGED"
+            const compare = await github.rest.repos.compareCommits({
+              owner,
+              repo,
+              base: before,
+              head: after
+            });
 
-          FILTERED="$(echo "$CHANGED" | grep -E '^medium-articles/.+/index\.html$' || true)"
+            const files = (compare.data.files || [])
+              // Only validate added/modified/renamed; allow removals without failing
+              .filter(f => ['added', 'modified', 'renamed'].includes(f.status))
+              // GitHub returns renamed files with "filename" = new name
+              .map(f => f.filename)
+              // Only medium-articles/**/index.html
+              .filter(name => /^medium-articles\/.+\/index\.html$/.test(name));
 
-          echo "Changed medium-articles index.html files:"
-          echo "$FILTERED"
-
-          # Output as a single space-separated line for the next step
-          FILTERED_ONE_LINE="$(echo "$FILTERED" | tr '\n' ' ' | xargs || true)"
-          echo "files=$FILTERED_ONE_LINE" >> "$GITHUB_OUTPUT"
+            // Output space-separated list for the node script
+            core.setOutput('files', files.join(' '));
+            core.info(`Changed medium index.html files: ${files.length ? files.join(', ') : '(none)'}`);
 
       - name: Validate only changed medium articles
         if: ${{ steps.changed.outputs.files != '' }}
@@ -58,4 +70,4 @@ jobs:
 
       - name: No changed index.html to validate
         if: ${{ steps.changed.outputs.files == '' }}
-        run: echo "No medium-articles/**/index.html changed in this push."
+        run: echo "No added/modified/renamed medium-articles/**/index.html files in this push (or compare unavailable)."
