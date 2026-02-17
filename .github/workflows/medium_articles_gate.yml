@@ -17,13 +17,45 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (full history for diff)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Validate medium articles format
-        run: node scripts/validate_medium_articles.js
+      - name: Collect changed medium-articles index.html files
+        id: changed
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          echo "Diffing: $BEFORE..$AFTER"
+
+          # Get changed files; filter to medium-articles/**/index.html
+          CHANGED="$(git diff --name-only "$BEFORE" "$AFTER" | tr -d '\r' || true)"
+          echo "Changed files (raw):"
+          echo "$CHANGED"
+
+          FILTERED="$(echo "$CHANGED" | grep -E '^medium-articles/.+/index\.html$' || true)"
+
+          echo "Changed medium-articles index.html files:"
+          echo "$FILTERED"
+
+          # Output as a single space-separated line for the next step
+          FILTERED_ONE_LINE="$(echo "$FILTERED" | tr '\n' ' ' | xargs || true)"
+          echo "files=$FILTERED_ONE_LINE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate only changed medium articles
+        if: ${{ steps.changed.outputs.files != '' }}
+        run: node scripts/validate_medium_articles.js ${{ steps.changed.outputs.files }}
+
+      - name: No changed index.html to validate
+        if: ${{ steps.changed.outputs.files == '' }}
+        run: echo "No medium-articles/**/index.html changed in this push."
