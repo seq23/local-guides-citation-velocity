@@ -41,6 +41,11 @@ jobs:
       - name: Validate (warnings only)
         run: node scripts/validate_site.js
 
+      - name: IndexNow submit (DRY_RUN by default)
+        env:
+          INDEXNOW_DRY_RUN: "1"
+        run: node scripts/indexnow_submit.js
+
       - name: Commit and push
         run: |
           git config user.name "github-actions"
