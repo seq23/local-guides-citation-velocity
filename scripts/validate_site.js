@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const CANONICALS = [
   'theaccidentguides.com',
   'dentistryguides.com',
-  'hormoesivehair.com',
+  'hormonesivhair.com',
   'neuroevalguides.com',
   'uscisexam.com'
 ];
