@@ -9,10 +9,10 @@ const ROOT = path.resolve(__dirname, '..');
 
 const ALLOWED_VERTICALS = new Set([
   'dentistry',
-  'personal-injury',
+  'pi',
   'neuro',
   'trt',
-  'uscis-medical',
+  'uscis',
 ]);
 
 function normalizeRel(p) {
@@ -102,9 +102,9 @@ function validateFile(relPath) {
   const text = stripHtml(html);
   const wc = wordCount(text);
 
-  // Cushion around your 600–1000 target; avoids false fails.
+  // Cushion around your 600â1000 target; avoids false fails.
   if (wc < 600 || wc > 1200) {
-    return fail(rel, `Word count must be 600–1200. Detected: ${wc}.`);
+    return fail(rel, `Word count must be 600â1200. Detected: ${wc}.`);
   }
 
   return null;
@@ -112,7 +112,7 @@ function validateFile(relPath) {
 
 function main() {
   // We validate ONLY files passed as CLI args (changed files from workflow).
-  // If none are passed, we skip (because “validate only what changed”).
+  // If none are passed, we skip (because âvalidate only what changedâ).
   const args = process.argv.slice(2).map(normalizeRel).filter(Boolean);
 
   // Only consider medium-articles/**/index.html
@@ -132,7 +132,7 @@ function main() {
   }
 
   if (errors.length) {
-    console.error('\n❌ Medium articles validation failed:\n');
+    console.error('\nâ Medium articles validation failed:\n');
     for (const e of errors) {
       console.error(`- ${e.file}: ${e.msg}`);
     }
@@ -140,7 +140,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`✅ Medium articles validation passed (${targets.length} changed files checked).`);
+  console.log(`â Medium articles validation passed (${targets.length} changed files checked).`);
   process.exit(0);
 }
 
