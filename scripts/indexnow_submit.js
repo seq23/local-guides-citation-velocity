@@ -14,6 +14,7 @@
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
+const { execSync } = require("child_process");
 
 const HOST = process.env.INDEXNOW_HOST || "theindustryguides.com";
 const KEY_PATH = process.env.INDEXNOW_KEY_PATH || path.join(process.cwd(), "indexnow.txt");
@@ -21,6 +22,7 @@ const SITEMAP_ALL = process.env.INDEXNOW_SITEMAP || path.join(process.cwd(), "si
 const MEDIUM_DIR = process.env.INDEXNOW_MEDIUM_DIR || path.join(process.cwd(), "medium-articles");
 const DRY_RUN = /^(1|true|yes|y|on)$/i.test(String(process.env.INDEXNOW_DRY_RUN || process.env.INDEXNOW_DRY || ""));
 const ENDPOINT = process.env.INDEXNOW_ENDPOINT || "https://www.bing.com/indexnow";
+const MODE = String(process.env.INDEXNOW_MODE || "full").toLowerCase();
 
 function readText(p) {
   return fs.readFileSync(p, "utf8");
@@ -62,6 +64,39 @@ function parseSitemapLocs(xml) {
     if (u) urls.push(u);
   }
   return urls;
+}
+
+
+function urlsFromChangedFiles(files) {
+  // Convert changed repo file paths into public URLs.
+  // Rules:
+  // - */index.html -> trailing-slash URL
+  // - *.html -> keep filename
+  // - sitemap*.xml, feed.xml, feed.json -> include as-is
+  const out = [];
+  for (const fp of files) {
+    const f = String(fp || "").trim().replace(/\\/g, "/");
+    if (!f) continue;
+    if (f.startsWith(".git/")) continue;
+
+    // Only routable artifacts
+    const isHtml = f.endsWith(".html");
+    const isSitemap = /^(sitemap\.xml|sitemaps\/.+\.xml)$/i.test(f);
+    const isFeed = /^(feed\.xml|feed\.json)$/i.test(f);
+    const isRobots = f == "robots.txt";
+            const isText = f.endsWith(".txt"); // includes indexnow + key file
+    // (We'll filter host/path later)
+
+    if (!(isHtml || isSitemap || isFeed || isRobots || isText)) continue;
+
+    if (f.endsWith("/index.html")) {
+      const urlPath = "/" + f.replace(/\/index\.html$/i, "/");
+      out.push(`https://${HOST}${urlPath}`);
+    } else if (isHtml || isSitemap || isFeed || isRobots || isText) {
+      out.push(`https://${HOST}/` + f.replace(/^\/+/, ""));
+    }
+  }
+  return out;
 }
 
 function mediumUrlsFromFs(mediumRoot) {
@@ -132,6 +167,25 @@ function postJson(url, body) {
     }
 
     urls.push(...mediumUrlsFromFs(MEDIUM_DIR));
+
+    // Delta mode: submit only changed, staged files from this workflow run.
+    // Requires workflow step: `git add -A` before running this script.
+    if (MODE === "delta") {
+      try {
+        const changed = String(execSync("git diff --cached --name-only --diff-filter=AM", { encoding: "utf8" }) || "")
+          .split("\n").map(x => x.trim()).filter(Boolean);
+
+        const deltaUrls = urlsFromChangedFiles(changed);
+        urls = uniq(deltaUrls).filter(u => u.startsWith(`https://${HOST}/`));
+
+        console.log(`[IndexNow] MODE=delta staged_files=${changed.length} urls=${urls.length}`);
+      } catch (e) {
+        console.log("[IndexNow] MODE=delta NOTE: unable to read staged diff; falling back to full collection (warn-only)");
+      }
+    } else {
+
+        }
+
     urls = uniq(urls).filter(u => u.startsWith(`https://${HOST}/`));
 
     if (urls.length === 0) {

@@ -40,10 +40,13 @@ jobs:
 
       - name: Validate (warnings only)
         run: node scripts/validate_site.js
+      - name: Stage changes (for delta IndexNow)
+        run: git add -A
 
-      - name: IndexNow submit
+      - name: IndexNow submit (delta)
+        env:
+          INDEXNOW_MODE: "delta"
         run: node scripts/indexnow_submit.js
-
       - name: Commit and push
         run: |
           git config user.name "github-actions"
