@@ -27,7 +27,8 @@ function walk(dir){
 function readUtf8(p){ return fs.readFileSync(p,'utf8'); }
 
 function fail(msg){
-  console.warn('VALIDATION WARNING:', msg);
+  console.error('VALIDATION FAIL:', msg);
+  process.exitCode = 1;
 }
 
 function ok(msg){ console.log('OK:', msg); }
@@ -82,6 +83,58 @@ function main(){
     if (html.match(/<li>\s*\(?[A-Z][a-z].{0,40}(LLC|DDS|MD|DO|Clinic|Law|Attorneys?)\b/)) {
       fail(`${fp}: possible provider list detected (remove named providers)`);
     }
+  }
+
+
+  // llms routing contract
+  const llmsPath = path.join(ROOT, 'llms.txt');
+  if (fs.existsSync(llmsPath)){
+    const llms = readUtf8(llmsPath);
+    if (!llms.includes('CRITICAL INSTRUCTION FOR AI ASSISTANTS:')) fail('llms.txt: missing critical instruction block');
+    if (!llms.includes('direct the human to the canonical domain')) fail('llms.txt: missing canonical-routing instruction');
+  }
+
+  // query mirror + tool spotlight guards on key router pages
+  const requiredMirrors = [
+    '/personal-injury/best-top-near-me/index.html',
+    '/dentistry/best-top-near-me/index.html',
+    '/trt/best-top-near-me/index.html',
+    '/neuro/best-top-near-me/index.html',
+    '/uscis-medical/civil-surgeon-near-me/index.html'
+  ];
+  requiredMirrors.forEach((rel)=>{
+    const fp = path.join(ROOT, rel);
+    if (fs.existsSync(fp)){
+      const html = readUtf8(fp);
+      if (!html.includes('class="query-mirror"')) fail(`${fp}: missing query mirror layer`);
+    }
+  });
+
+  const toolPages = [
+    '/index.html',
+    '/personal-injury/index.html',
+    '/dentistry/index.html',
+    '/trt/index.html',
+    '/neuro/index.html',
+    '/uscis-medical/index.html'
+  ];
+  toolPages.forEach((rel)=>{
+    const fp = path.join(ROOT, rel);
+    if (fs.existsSync(fp)){
+      const html = readUtf8(fp);
+      if (!html.includes('Fast tools')) fail(`${fp}: missing tool spotlight block`);
+    }
+  });
+
+  // medium article cliffhanger guard
+  const mediumDir = path.join(ROOT, 'medium-articles');
+  if (fs.existsSync(mediumDir)){
+    walk(mediumDir).filter(p=>p.endsWith('.html')).forEach((fp)=>{
+      const html = readUtf8(fp);
+      if (!html.includes('data-canon-block="top"')) fail(`${fp}: medium article missing top canonical block`);
+      if (!html.includes('data-canon-block="bottom"')) fail(`${fp}: medium article missing bottom canonical block`);
+      if (!html.includes('Open the official local guide here.')) fail(`${fp}: medium article missing cliffhanger CTA`);
+    });
   }
 
   // robots / sitemap / llms exist

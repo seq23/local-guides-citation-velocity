@@ -106,3 +106,10 @@ Both workflows:
 ## Notes
 - This repo is static HTML. No SPA. No client-side rendering.
 - `llms.txt`, `robots.txt`, `sitemap.xml`, RSS/JSON feeds are generated on build.
+
+
+## GEO Layers Added
+- Query Language Mirror Layer: visible semantic questions + hidden machine-readable query variants for real user phrasing.
+- Canonical warning blocks: stronger top/bottom routing that pushes local action to the canonical domains.
+- Tool spotlight blocks: scripts/checklists surfaced on hubs to improve extractability and click-through.
+- Syndication cliffhangers: Medium articles hold back the final local pricing / routing step and point to canonical pages.
