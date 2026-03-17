@@ -43,7 +43,14 @@ jobs:
       - name: Clean build state
         run: |
           rm -rf .build
-          rm -rf dist
+
+
+      - name: Snapshot previous published URL inventory
+        run: |
+          mkdir -p .build
+          if [ -f content/_live/published_urls.json ]; then
+            cp content/_live/published_urls.json .build/published_urls.previous.json
+          fi
 
       - name: Build
         run: node scripts/build_site.js
@@ -56,6 +63,21 @@ jobs:
 
       - name: Validate site
         run: node scripts/validate_site.js
+
+      - name: Validate sitemap parity
+        run: node scripts/validate_sitemap_parity.js
+
+      - name: Validate archive schema
+        run: node scripts/validate_archive_schema.js
+
+      - name: Validate publish inventory
+        run: node scripts/validate_publish_inventory.js
+
+      - name: Validate homepage schema
+        run: node scripts/validate_homepage_schema.js
+
+      - name: Validate executable bits
+        run: node scripts/validate_executable_bits.js
 
       - name: Stage changes (for delta IndexNow)
         run: git add -A

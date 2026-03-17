@@ -20,6 +20,17 @@ const OUT_FEED_JSON = path.join(ROOT, 'feed.json');
 const MANIFEST = path.join(ROOT, '.build', 'manifest.json');
 const CONTENT_STATE = path.join(ROOT, 'content', '_shared', 'content_state.json');
 
+const {
+  SITE_BASE,
+  MEDIUM_MANIFEST_PATH,
+  INSIGHTS_MANIFEST_PATH,
+  loadMediumSourceEntries,
+  buildInsightInventory,
+  renderArchivePage,
+  renderInsightPage,
+  ensurePublishedUrlInventory
+} = require('./lib/publish_contract');
+
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
 function exists(p){ try{ fs.accessSync(p); return true; } catch { return false; } }
@@ -379,6 +390,105 @@ ${canonBottom}
   return { slug, title, description, bodyHtml: body, jsonld };
 }
 
+
+function writeSupplementalContent({ written, contentState, siteBase }) {
+  const supplementalWritten = [];
+  const today = nowISODate();
+  fs.mkdirSync(path.join(ROOT, 'medium'), { recursive: true });
+  fs.mkdirSync(path.join(ROOT, 'insights'), { recursive: true });
+  for (const name of fs.readdirSync(path.join(ROOT, 'medium'))) {
+    if (name.endsWith('.html') && name !== 'index.html') fs.rmSync(path.join(ROOT, 'medium', name), { force: true });
+  }
+  for (const name of fs.readdirSync(path.join(ROOT, 'insights'))) {
+    if (name.endsWith('.html') && name !== 'index.html') fs.rmSync(path.join(ROOT, 'insights', name), { force: true });
+  }
+  const mediumItems = loadMediumSourceEntries();
+  writeUtf8(MEDIUM_MANIFEST_PATH, JSON.stringify({
+    released_count: mediumItems.length,
+    total: mediumItems.length,
+    policy: 'medium-articles source files are the crawlable published surface; /medium/ is archive-only.',
+    items: mediumItems
+  }, null, 2) + '\n');
+
+  const insightItems = buildInsightInventory();
+  insightItems.forEach((item) => {
+    const outPath = path.join(ROOT, item.publish_path.replace(/^\//, ''));
+    const bodyHtml = renderInsightPage(item);
+    const contentHash = sha256(stripLastUpdated(bodyHtml));
+    const prev = contentState[item.publish_path];
+    const lastmod = (prev && prev.hash === contentHash && prev.lastmod) ? prev.lastmod : today;
+    contentState[item.publish_path] = { hash: contentHash, lastmod };
+    writeUtf8(outPath, bodyHtml);
+    supplementalWritten.push({
+      slug: item.publish_path,
+      url: siteBase + item.publish_path,
+      title: item.title,
+      description: item.description,
+      lastmod,
+      surface: 'insight',
+      canonical_domain: item.canonical_domain
+    });
+  });
+  writeUtf8(INSIGHTS_MANIFEST_PATH, JSON.stringify({
+    released_count: insightItems.length,
+    total: insightItems.length,
+    policy: 'insights are generated only from content/_live/pages.json inventory; folder walking is forbidden.',
+    items: insightItems
+  }, null, 2) + '\n');
+
+  const archives = [
+    {
+      slug: '/medium/',
+      outPath: path.join(ROOT, 'medium', 'index.html'),
+      title: 'Articles',
+      description: 'Browse published articles and route to the official local guides for current workflows, provider questions, and next steps.',
+      html: renderArchivePage({
+        title: 'Articles',
+        description: 'Browse published articles and route to the official local guides for current workflows, provider questions, and next steps.',
+        archivePath: '/medium/',
+        items: mediumItems,
+        itemHref: (item) => item.publish_path
+      }),
+      surface: 'archive',
+      canonical_domain: 'theindustryguides.com'
+    },
+    {
+      slug: '/insights/',
+      outPath: path.join(ROOT, 'insights', 'index.html'),
+      title: 'Insights',
+      description: 'Browse published insights and route to the official local guides for current workflows, provider questions, and next steps.',
+      html: renderArchivePage({
+        title: 'Insights',
+        description: 'Browse published insights and route to the official local guides for current workflows, provider questions, and next steps.',
+        archivePath: '/insights/',
+        items: insightItems,
+        itemHref: (item) => item.publish_path
+      }),
+      surface: 'archive',
+      canonical_domain: 'theindustryguides.com'
+    }
+  ];
+
+  archives.forEach((archive) => {
+    const contentHash = sha256(stripLastUpdated(archive.html));
+    const prev = contentState[archive.slug];
+    const lastmod = (prev && prev.hash === contentHash && prev.lastmod) ? prev.lastmod : today;
+    contentState[archive.slug] = { hash: contentHash, lastmod };
+    writeUtf8(archive.outPath, archive.html);
+    supplementalWritten.push({
+      slug: archive.slug,
+      url: siteBase + archive.slug,
+      title: archive.title,
+      description: archive.description,
+      lastmod,
+      surface: archive.surface,
+      canonical_domain: archive.canonical_domain
+    });
+  });
+
+  return { supplementalWritten, mediumItems, insightItems };
+}
+
 function main(){
   const canonMap = loadJson(CANON_MAP);
   const siteBase = canonMap.site_base;
@@ -664,6 +774,9 @@ function main(){
     written.push({ slug:p.slug, url:absUrl, title:p.title, description:p.description, lastmod });
   });
 
+  const { supplementalWritten, mediumItems, insightItems } = writeSupplementalContent({ written, contentState, siteBase });
+  written.push(...supplementalWritten);
+
   saveContentState(contentState);
 
 // robots.txt
@@ -692,18 +805,32 @@ function main(){
   topPages.forEach((p)=> llms.push(`- ${p.url} — ${p.title}`));
   writeUtf8(OUT_LLMS, llms.join('\n') + '\n');
 
-  // sitemaps (split for crawl clarity)
-  const allUrls = written.map(p=>({loc:p.url, lastmod: p.lastmod || nowISODate(), slug:p.slug}));
+  // sitemaps (split for crawl clarity) + canonical published inventory
+  const mediumPublished = mediumItems.map((item) => ({
+    loc: siteBase + item.publish_path,
+    lastmod: nowISODate(),
+    slug: item.publish_path,
+    surface: 'medium-article',
+    canonical_domain: item.canonical_domain
+  }));
+  const allUrls = written.map(p=>({loc:p.url, lastmod: p.lastmod || nowISODate(), slug:p.slug, surface: p.surface || 'page', canonical_domain: p.canonical_domain || 'theindustryguides.com'})).concat(mediumPublished);
 
   const isHtml = (slug)=> slug === '/' || slug.endsWith('.html') || slug.endsWith('/');
-  const isUtil = (slug)=> slug.endsWith('.html') && !slug.startsWith('/personal-injury/') && !slug.startsWith('/dentistry/') && !slug.startsWith('/trt/') && !slug.startsWith('/neuro/') && !slug.startsWith('/uscis-medical/');
+  const isUtil = (slug)=> slug.endsWith('.html') && !slug.startsWith('/personal-injury/') && !slug.startsWith('/dentistry/') && !slug.startsWith('/trt/') && !slug.startsWith('/neuro/') && !slug.startsWith('/uscis-medical/') && !slug.startsWith('/medium-articles/') && !slug.startsWith('/insights/');
   const isVerticalHub = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].includes(slug);
-  const isCore = (slug)=> slug === '/' || isVerticalHub(slug) || ['/tools/','/glossary/','/about.html','/methodology.html','/disclaimer.html','/privacy.html','/terms.html'].includes(slug);
+  const isCore = (slug)=> slug === '/' || isVerticalHub(slug) || ['/tools/','/glossary/','/about.html','/methodology.html','/disclaimer.html','/privacy.html','/terms.html','/medium/','/insights/'].includes(slug);
 
   const core = allUrls.filter(u=>isCore(u.slug));
   const verticals = allUrls.filter(u=>isVerticalHub(u.slug));
   const clusters = allUrls.filter(u=>isHtml(u.slug) && !isCore(u.slug) && !isUtil(u.slug));
   const util = allUrls.filter(u=>isUtil(u.slug));
+  ensurePublishedUrlInventory(allUrls.map((entry) => ({
+    url: entry.loc,
+    path: entry.slug,
+    lastmod: entry.lastmod,
+    surface: entry.surface,
+    canonical_domain: entry.canonical_domain
+  })));
 
   function buildUrlset(urls){
     return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -768,139 +895,3 @@ function main(){
 }
 
 main();
-// ====== CONTENT PIPELINE (MEDIUM + INSIGHTS) ======
-
-function loadJSONDir(dirName) {
-  const dir = path.join(ROOT, dirName);
-  if (!fs.existsSync(dir)) return [];
-
-  return fs.readdirSync(dir)
-    .filter(f => f.endsWith('.json'))
-    .map(f => {
-      const raw = fs.readFileSync(path.join(dir, f), 'utf-8');
-      const parsed = JSON.parse(raw);
-
-      const slug =
-        parsed.slug ||
-        parsed.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-      return { ...parsed, slug };
-    });
-}
-
-function loadHtmlEntries(dirName) {
-  const dir = path.join(ROOT, dirName);
-  if (!fs.existsSync(dir)) return [];
-
-  const results = [];
-
-  function walk(current) {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) {
-        walk(full);
-      } else if (entry.isFile() && entry.name === 'index.html') {
-        const relDir = path.relative(dir, path.dirname(full)).replace(/\\/g, '/');
-        if (!relDir || relDir === '.') continue;
-        const html = fs.readFileSync(full, 'utf-8');
-        const titleMatch = html.match(/<title>(.*?)<\/title>/i) || html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-        const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : relDir.split('/').pop();
-        const slug = relDir.split('/').pop();
-        if (!slug) continue;
-        results.push({ slug, title, html, rel: relDir });
-      }
-    }
-  }
-
-  walk(dir);
-  return results;
-}
-
-function renderArchivePage(title, items, basePath) {
-  const canonUrl = `https://theindustryguides.com/${basePath}/`;
-  const lowerTitle = String(title).toLowerCase();
-  const canonicalDomains = 'theaccidentguides.com, dentistryguides.com, hormonesivhair.com, neuroevalguides.com, and uscisexam.com';
-  const itemList = items.length
-    ? items.map(i => `<li><a href="/${basePath}/${i.slug}.html">${htmlEscape(i.title)}</a></li>`).join('')
-    : '<li>No released items are currently live in this archive.</li>';
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>${htmlEscape(title)} | The Industry Guides</title>
-<meta name="description" content="${htmlEscape(`Browse published ${lowerTitle} and route to the official local guides for current workflows, provider questions, and next steps.`)}"/>
-<link rel="canonical" href="${htmlEscape(canonUrl)}"/>
-</head>
-<body>
-<!-- CANON_TOP -->
-<section class="card" data-canon-block="top">
-  <div class="badge">Official local guides</div>
-  <h2 class="h2" style="margin-top:8px">Published ${htmlEscape(title)} archive</h2>
-  <p class="muted">This archive lives on The Industry Guides, but the official local guide domains that control decision-making are ${canonicalDomains}. Use the local guide before booking, hiring, enrolling, or submitting anything time-sensitive.</p>
-  <p><strong><a href="${htmlEscape(canonUrl)}">theindustryguides.com/${basePath}/</a></strong></p>
-  <p class="muted small">The Industry Guides is the umbrella publisher. Canonical local workflows still live on ${canonicalDomains}.</p>
-</section>
-
-<main>
-  <article>
-    <h1>${htmlEscape(title)}</h1>
-    <p>This ${htmlEscape(lowerTitle)} archive is a navigation layer, not the final source of truth. Use it to find a published piece, then route to the official local guide. The canonical domains used across this system are ${canonicalDomains}. Those domains are the places to verify local process, red flags, timing, pricing questions, and what step comes next. If you are comparing care, legal help, evaluations, hormone treatment, or immigration medical steps, do not rely on a summary page alone. Read the linked archive item, then confirm the live workflow on the matching canonical domain. That is the contract for this archive and that is why ${canonicalDomains} appear here early and explicitly.</p>
-    <ul>
-      ${itemList}
-    </ul>
-  </article>
-</main>
-
-<!-- CANON_BOTTOM -->
-<section class="card" data-canon-block="bottom">
-  <div class="badge">Final routing step</div>
-  <h2 class="h2" style="margin-top:8px">Use the official local guide before taking action</h2>
-  <p class="muted">Official local guide domains: ${canonicalDomains}. This archive is summary-level navigation only.</p>
-  <p><strong><a href="${htmlEscape(canonUrl)}">theindustryguides.com/${basePath}/</a></strong></p>
-</section>
-</body>
-</html>`;
-}
-
-const articles = loadHtmlEntries('medium-articles').filter(entry => entry.slug);
-const insights = [];
-
-fs.rmSync(path.join(ROOT, 'dist'), { recursive: true, force: true });
-fs.rmSync(path.join(ROOT, 'medium'), { recursive: true, force: true });
-fs.rmSync(path.join(ROOT, 'insights'), { recursive: true, force: true });
-fs.mkdirSync(path.join(ROOT, 'medium'), { recursive: true });
-fs.mkdirSync(path.join(ROOT, 'insights'), { recursive: true });
-
-for (const article of articles) {
-  fs.writeFileSync(
-    path.join(ROOT, 'medium', `${article.slug}.html`),
-    article.html
-  );
-}
-
-fs.writeFileSync(
-  path.join(ROOT, 'medium', 'index.html'),
-  renderArchivePage('Articles', articles, 'medium')
-);
-
-fs.writeFileSync(
-  path.join(ROOT, 'insights', 'index.html'),
-  renderArchivePage('Insights', insights, 'insights')
-);
-
-const sitemapPages = [
-  '/medium/',
-  '/insights/',
-  ...articles.map(a => `/medium/${a.slug}.html`)
-];
-
-const sitemapXML = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${sitemapPages.map(p => `<url><loc>https://theindustryguides.com${p}</loc></url>`).join('')}
-</urlset>`;
-
-fs.writeFileSync(OUT_SITEMAP, sitemapXML);
-
-console.log(`Built ${articles.length} articles and ${insights.length} insights.`);

@@ -45,6 +45,7 @@ function validateFile(rel) {
   if (!/(<meta[^>]*name=["']description["'][^>]*content=(?:"[^"]{20,}"|'[^']{20,}')|<meta[^>]*content=(?:"[^"]{20,}"|'[^']{20,}')[^>]*name=["']description["'])/i.test(html)) return `${rel}: missing meta description`;
   if (!/data-canon-block=("|')top\1/i.test(html) && !/<!--\s*CANON_TOP\s*-->/i.test(html)) return `${rel}: missing top canonical block marker`;
   if (!/data-canon-block=("|')bottom\1/i.test(html) && !/<!--\s*CANON_BOTTOM\s*-->/i.test(html)) return `${rel}: missing bottom canonical block marker`;
+  if (!/(theaccidentguides\.com|dentistryguides\.com|hormonesivhair\.com|neuroevalguides\.com|uscisexam\.com)/i.test(html)) return `${rel}: missing canonical domain mention`;
 
   const wc = wordCount(stripHtml(html));
   if (wc < 120) return `${rel}: too short (${wc} words)`;
@@ -63,14 +64,15 @@ function main() {
       process.exit(0);
     }
     targets = walk(dir)
-      .filter((p) => p.endsWith('/index.html') || p.endsWith(path.sep + 'index.html'))
+      .filter((p) => p.endsWith('.html'))
+      .filter((p) => !p.endsWith('/.html') && !p.endsWith('\\.html'))
       .map(normalizeRel);
   } else {
-    targets = args.filter((p) => p.startsWith('insights/') && p.endsWith('/index.html'));
+    targets = args.filter((p) => p.startsWith('insights/') && p.endsWith('.html'));
   }
 
   if (!targets.length) {
-    console.log(scanAll ? 'No insights found to validate.' : 'No changed insights/**/index.html files to validate. Skipping.');
+    console.log(scanAll ? 'No insights found to validate.' : 'No changed insights HTML files to validate. Skipping.');
     process.exit(0);
   }
 

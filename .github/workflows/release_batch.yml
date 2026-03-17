@@ -35,19 +35,12 @@ jobs:
       - name: Clean build state
         run: |
           rm -rf .build
-          rm -rf dist
 
       - name: Build
         run: node scripts/build_site.js
 
-      - name: Validate all medium articles
-        run: node scripts/validate_medium_articles.js --all
-
-      - name: Validate all insights
-        run: node scripts/validate_insights.js --all
-
-      - name: Validate site
-        run: node scripts/validate_site.js
+      - name: Validate full published surface
+        run: npm run validate:all
 
       - name: Commit and push
         run: |

@@ -55,8 +55,13 @@ function countCanonMentions(html){
 }
 
 function firstNWords(s, n){
-  const words = s.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().split(' ');
-  return words.slice(0,n).join(' ');
+  const cleaned = s
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,' ')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi,' ')
+    .replace(/<[^>]+>/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+  return cleaned.split(' ').slice(0,n).join(' ');
 }
 
 function main(){
