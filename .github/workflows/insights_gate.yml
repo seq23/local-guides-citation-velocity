@@ -1,0 +1,31 @@
+
+name: Insights Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "insights/**"
+      - "scripts/validate_insights.js"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: insights-gate
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate all insights
+        run: node scripts/validate_insights.js --all

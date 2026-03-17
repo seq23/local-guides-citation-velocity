@@ -36,6 +36,8 @@ jobs:
         env:
           PAGE_BATCH: "5"
           SECTION_BATCH: "5"
+          MEDIUM_BATCH: "1"
+          INSIGHT_BATCH: "1"
         run: node scripts/daily_release.js
 
       - name: Clean build state
@@ -48,6 +50,9 @@ jobs:
 
       - name: Validate all medium articles
         run: node scripts/validate_medium_articles.js --all
+
+      - name: Validate all insights
+        run: node scripts/validate_insights.js --all
 
       - name: Validate site
         run: node scripts/validate_site.js

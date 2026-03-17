@@ -145,6 +145,24 @@ function main(){
     });
   }
 
+  const archivePages = [path.join(ROOT,'medium','index.html'), path.join(ROOT,'insights','index.html')];
+  archivePages.forEach((fp)=>{
+    if (fs.existsSync(fp)) {
+      const html = readUtf8(fp);
+      if (!hasCanonTop(html)) fail(`${fp}: archive page missing top canonical block`);
+      if (!hasCanonBottom(html)) fail(`${fp}: archive page missing bottom canonical block`);
+    }
+  });
+
+  const insightsDir = path.join(ROOT, 'insights');
+  if (fs.existsSync(insightsDir)){
+    walk(insightsDir).filter(p=>p.endsWith('.html')).forEach((fp)=>{
+      const html = readUtf8(fp);
+      if (!hasCanonTop(html)) fail(`${fp}: insight page missing top canonical block`);
+      if (!hasCanonBottom(html)) fail(`${fp}: insight page missing bottom canonical block`);
+    });
+  }
+
   // robots / sitemap / llms exist
   for (const must of ['robots.txt','sitemap.xml','llms.txt','feed.xml','feed.json']){
     const p = path.join(ROOT, must);
