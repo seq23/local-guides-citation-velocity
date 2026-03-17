@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "medium-articles/**"
+      - "scripts/validate_medium_articles.js"
 
 permissions:
   contents: read
@@ -14,6 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # MAY 2026 MAINTENANCE: Before June 2, 2026, follow README_MAY_2026_GITHUB_ACTIONS_NODE24.md
   validate:
     runs-on: ubuntu-latest
     steps:
@@ -25,49 +27,5 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Collect changed medium-articles index.html files via GitHub API
-        id: changed
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            // Push event gives us before/after. Compare is more reliable than local git diff.
-            const before = context.payload.before;
-            const after = context.sha;
-
-            // If before is missing/zeroed (rare), we can’t compare; in that case, skip validation.
-            // This avoids false failures on weird events.
-            if (!before || /^0+$/.test(before)) {
-              core.warning(`No valid "before" SHA available (before="${before}"). Skipping changed-files validation.`);
-              core.setOutput('files', '');
-              return;
-            }
-
-            const compare = await github.rest.repos.compareCommits({
-              owner,
-              repo,
-              base: before,
-              head: after
-            });
-
-            const files = (compare.data.files || [])
-              // Only validate added/modified/renamed; allow removals without failing
-              .filter(f => ['added', 'modified', 'renamed'].includes(f.status))
-              // GitHub returns renamed files with "filename" = new name
-              .map(f => f.filename)
-              // Only medium-articles/**/index.html
-              .filter(name => /^medium-articles\/.+\/index\.html$/.test(name));
-
-            // Output space-separated list for the node script
-            core.setOutput('files', files.join(' '));
-            core.info(`Changed medium index.html files: ${files.length ? files.join(', ') : '(none)'}`);
-
-      - name: Validate only changed medium articles
-        if: ${{ steps.changed.outputs.files != '' }}
-        run: node scripts/validate_medium_articles.js ${{ steps.changed.outputs.files }}
-
-      - name: No changed index.html to validate
-        if: ${{ steps.changed.outputs.files == '' }}
-        run: echo "No added/modified/renamed medium-articles/**/index.html files in this push (or compare unavailable)."
+      - name: Validate all medium articles
+        run: node scripts/validate_medium_articles.js --all

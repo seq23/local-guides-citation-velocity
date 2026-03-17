@@ -77,13 +77,13 @@ function validateFile(relPath) {
     return fail(rel, 'Missing or empty <title> tag.');
   }
 
-  // Require a non-trivial description (min ~20 chars)
-  if (!/<meta\s+name=["']description["']\s+content=(?:"[^"]{20,}"|'[^']{20,}')\s*\/?>/i.test(html)) {
+  // Require a non-trivial description (min ~20 chars), regardless of attribute order
+  if (!/(<meta[^>]*name=["']description["'][^>]*content=(?:"[^"]{20,}"|'[^']{20,}')|<meta[^>]*content=(?:"[^"]{20,}"|'[^']{20,}')\s+[^>]*name=["']description["'])/i.test(html)) {
     return fail(rel, 'Missing or too-short <meta name="description" content="..."> (min ~20 chars).');
   }
 
-  // Require https canonical
-  if (!/<link\s+rel=["']canonical["']\s+href=["']https:\/\/[^"']+["']\s*\/?>/i.test(html)) {
+  // Require https canonical, regardless of attribute order
+  if (!/(<link[^>]*rel=["']canonical["'][^>]*href=["']https:\/\/[^"']+["']|<link[^>]*href=["']https:\/\/[^"']+["'][^>]*rel=["']canonical["'])/i.test(html)) {
     return fail(rel, 'Missing <link rel="canonical" href="https://...">.');
   }
 
@@ -91,8 +91,25 @@ function validateFile(relPath) {
     return fail(rel, 'Missing <h1>...</h1>.');
   }
 
-  if (!/Originally published at/i.test(html)) {
-    return fail(rel, 'Missing "Originally published at {canonical_url}" line.');
+  if (!/Originally published (at|on)/i.test(html)) {
+    return fail(rel, 'Missing original publication attribution line.');
+  }
+
+  if (!html.includes('data-canon-block="top"')) {
+    return fail(rel, 'Missing top canonical block marker.');
+  }
+
+  if (!html.includes('data-canon-block="bottom"')) {
+    return fail(rel, 'Missing bottom canonical block marker.');
+  }
+
+  const early = stripHtml(html).split(/\s+/).slice(0, 200).join(' ');
+  if (!/theaccidentguides\.com|dentistryguides\.com|hormonesivhair\.com|neuroevalguides\.com|uscisexam\.com/i.test(early)) {
+    return fail(rel, 'Canonical domain not found in first 200 words.');
+  }
+
+  if (!html.includes('Open the official local guide here.')) {
+    return fail(rel, 'Missing cliffhanger CTA.');
   }
 
   if (!/<h2\b|<h3\b/i.test(html)) {
@@ -104,24 +121,42 @@ function validateFile(relPath) {
 
   // Cushion around your 600ÃÂ¢ÃÂÃÂ1000 target; avoids false fails.
   if (wc < 600 || wc > 1200) {
-    return fail(rel, `Word count must be 600ÃÂ¢ÃÂÃÂ1200. Detected: ${wc}.`);
+    return fail(rel, `Word count must be 600-1200. Detected: ${wc}.`);
   }
 
   return null;
 }
 
 function main() {
-  // We validate ONLY files passed as CLI args (changed files from workflow).
-  // If none are passed, we skip (because ÃÂ¢ÃÂÃÂvalidate only what changedÃÂ¢ÃÂÃÂ).
   const args = process.argv.slice(2).map(normalizeRel).filter(Boolean);
+  const scanAll = args.includes('--all');
 
-  // Only consider medium-articles/**/index.html
-  const targets = args
-    .filter((p) => p.startsWith('medium-articles/'))
-    .filter((p) => p.endsWith('/index.html'));
+  let targets = [];
+
+  if (scanAll) {
+    function walk(dir) {
+      for (const name of fs.readdirSync(dir)) {
+        const abs = path.join(dir, name);
+        const stat = fs.statSync(abs);
+        if (stat.isDirectory()) walk(abs);
+        else if (stat.isFile()) {
+          const rel = normalizeRel(abs);
+          if (rel.startsWith('medium-articles/') && rel.endsWith('/index.html')) targets.push(rel);
+        }
+      }
+    }
+    walk(path.join(ROOT, 'medium-articles'));
+  } else {
+    // Validate only changed medium articles when file paths are provided.
+    targets = args
+      .filter((p) => p.startsWith('medium-articles/'))
+      .filter((p) => p.endsWith('/index.html'));
+  }
+
+  targets = Array.from(new Set(targets)).sort();
 
   if (targets.length === 0) {
-    console.log('No changed medium-articles/**/index.html files to validate. Skipping.');
+    console.log(scanAll ? 'No medium articles found to validate.' : 'No changed medium-articles/**/index.html files to validate. Skipping.');
     process.exit(0);
   }
 
@@ -137,10 +172,10 @@ function main() {
       console.error(`- ${e.file}: ${e.msg}`);
     }
     console.error('\nFix the issues and push again.\n');
-    process.exit(0);
+    process.exit(1);
   }
 
-  console.log(`ÃÂ¢ÃÂÃÂ Medium articles validation passed (${targets.length} changed files checked).`);
+  console.log(scanAll ? `Medium articles validation passed (${targets.length} files checked).` : `Medium articles validation passed (${targets.length} changed files checked).`);
   process.exit(0);
 }
 

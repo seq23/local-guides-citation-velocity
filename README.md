@@ -30,6 +30,9 @@ Every page must:
 - `assets/` — CSS + minimal accordion JS
 - `_headers` / `_redirects` — Cloudflare Pages enhancements
 
+## Scheduled Maintenance Reminder
+Before June 2, 2026, do the GitHub Actions Node 24 maintenance pass documented in `README_MAY_2026_GITHUB_ACTIONS_NODE24.md`.
+
 ## Build Commands
 Requires Node 20+.
 

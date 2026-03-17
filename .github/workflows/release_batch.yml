@@ -15,6 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # MAY 2026 MAINTENANCE: Before June 2, 2026, follow README_MAY_2026_GITHUB_ACTIONS_NODE24.md
   release:
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +33,10 @@ jobs:
       - name: Build
         run: node scripts/build_site.js
 
-      - name: Validate (warnings only)
+      - name: Validate all medium articles
+        run: node scripts/validate_medium_articles.js --all
+
+      - name: Validate site
         run: node scripts/validate_site.js
 
       - name: Commit and push
