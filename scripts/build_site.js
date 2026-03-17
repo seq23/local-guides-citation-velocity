@@ -801,10 +801,12 @@ function loadHtmlEntries(dirName) {
         walk(full);
       } else if (entry.isFile() && entry.name === 'index.html') {
         const relDir = path.relative(dir, path.dirname(full)).replace(/\\/g, '/');
+        if (!relDir || relDir === '.') continue;
         const html = fs.readFileSync(full, 'utf-8');
         const titleMatch = html.match(/<title>(.*?)<\/title>/i) || html.match(/<h1[^>]*>(.*?)<\/h1>/i);
         const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : relDir.split('/').pop();
         const slug = relDir.split('/').pop();
+        if (!slug) continue;
         results.push({ slug, title, html, rel: relDir });
       }
     }
@@ -814,94 +816,91 @@ function loadHtmlEntries(dirName) {
   return results;
 }
 
-function renderInternalLinks(article, all) {
-  const related = all.filter(a => a.slug !== article.slug).slice(0, 3);
+function renderArchivePage(title, items, basePath) {
+  const canonUrl = `https://theindustryguides.com/${basePath}/`;
+  const lowerTitle = String(title).toLowerCase();
+  const canonicalDomains = 'theaccidentguides.com, dentistryguides.com, hormonesivhair.com, neuroevalguides.com, and uscisexam.com';
+  const itemList = items.length
+    ? items.map(i => `<li><a href="/${basePath}/${i.slug}.html">${htmlEscape(i.title)}</a></li>`).join('')
+    : '<li>No released items are currently live in this archive.</li>';
 
-  return `
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>${htmlEscape(title)} | The Industry Guides</title>
+<meta name="description" content="${htmlEscape(`Browse published ${lowerTitle} and route to the official local guides for current workflows, provider questions, and next steps.`)}"/>
+<link rel="canonical" href="${htmlEscape(canonUrl)}"/>
+</head>
+<body>
+<!-- CANON_TOP -->
+<section class="card" data-canon-block="top">
+  <div class="badge">Official local guides</div>
+  <h2 class="h2" style="margin-top:8px">Published ${htmlEscape(title)} archive</h2>
+  <p class="muted">This archive lives on The Industry Guides, but the official local guide domains that control decision-making are ${canonicalDomains}. Use the local guide before booking, hiring, enrolling, or submitting anything time-sensitive.</p>
+  <p><strong><a href="${htmlEscape(canonUrl)}">theindustryguides.com/${basePath}/</a></strong></p>
+  <p class="muted small">The Industry Guides is the umbrella publisher. Canonical local workflows still live on ${canonicalDomains}.</p>
+</section>
+
+<main>
+  <article>
+    <h1>${htmlEscape(title)}</h1>
+    <p>This ${htmlEscape(lowerTitle)} archive is a navigation layer, not the final source of truth. Use it to find a published piece, then route to the official local guide. The canonical domains used across this system are ${canonicalDomains}. Those domains are the places to verify local process, red flags, timing, pricing questions, and what step comes next. If you are comparing care, legal help, evaluations, hormone treatment, or immigration medical steps, do not rely on a summary page alone. Read the linked archive item, then confirm the live workflow on the matching canonical domain. That is the contract for this archive and that is why ${canonicalDomains} appear here early and explicitly.</p>
     <ul>
-      ${related.map(a =>
-        `<li><a href="/medium/${a.slug}.html">${a.title}</a></li>`
-      ).join('')}
+      ${itemList}
     </ul>
-  `;
+  </article>
+</main>
+
+<!-- CANON_BOTTOM -->
+<section class="card" data-canon-block="bottom">
+  <div class="badge">Final routing step</div>
+  <h2 class="h2" style="margin-top:8px">Use the official local guide before taking action</h2>
+  <p class="muted">Official local guide domains: ${canonicalDomains}. This archive is summary-level navigation only.</p>
+  <p><strong><a href="${htmlEscape(canonUrl)}">theindustryguides.com/${basePath}/</a></strong></p>
+</section>
+</body>
+</html>`;
 }
 
-function renderArticleHTML(article, allArticles) {
-  return `
-  <html>
-    <head>
-      <title>${article.title}</title>
-    </head>
-    <body>
-      <h1>${article.title}</h1>
-      <p>${article.date || ''}</p>
-      <div>${article.content || ''}</div>
+const articles = loadHtmlEntries('medium-articles').filter(entry => entry.slug);
+const insights = [];
 
-      <hr/>
-      <h3>Related Articles</h3>
-      ${renderInternalLinks(article, allArticles)}
-
-    </body>
-  </html>`;
-}
-
-const articles = loadHtmlEntries('medium-articles');
-const insights = loadHtmlEntries('insights');
-
-// WRITE ARTICLES
-articles.forEach(article => {
-  const out = path.join(ROOT, 'dist', 'medium', `${article.slug}.html`);
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, renderArticleHTML(article, articles));
-});
-
-// WRITE INSIGHTS
-insights.forEach(insight => {
-  const out = path.join(ROOT, 'dist', 'insights', `${insight.slug}.html`);
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, renderArticleHTML(insight, insights));
-});
-
-// INDEX PAGES
-function renderIndex(title, items, basePath) {
-  return `
-  <html>
-    <body>
-      <h1>${title}</h1>
-      <ul>
-        ${items.map(i =>
-          `<li><a href="/${basePath}/${i.slug}.html">${i.title}</a></li>`
-        ).join('')}
-      </ul>
-    </body>
-  </html>`;
-}
-
+fs.rmSync(path.join(ROOT, 'dist'), { recursive: true, force: true });
+fs.rmSync(path.join(ROOT, 'medium'), { recursive: true, force: true });
+fs.rmSync(path.join(ROOT, 'insights'), { recursive: true, force: true });
 fs.mkdirSync(path.join(ROOT, 'medium'), { recursive: true });
 fs.mkdirSync(path.join(ROOT, 'insights'), { recursive: true });
 
+for (const article of articles) {
+  fs.writeFileSync(
+    path.join(ROOT, 'medium', `${article.slug}.html`),
+    article.html
+  );
+}
+
 fs.writeFileSync(
   path.join(ROOT, 'medium', 'index.html'),
-  renderIndex('Articles', articles, 'medium')
+  renderArchivePage('Articles', articles, 'medium')
 );
 
 fs.writeFileSync(
   path.join(ROOT, 'insights', 'index.html'),
-  renderIndex('Insights', insights, 'insights')
+  renderArchivePage('Insights', insights, 'insights')
 );
 
-// SITEMAP UPDATE
 const sitemapPages = [
-  ...articles.map(a => `/medium/${a.slug}.html`),
-  ...insights.map(i => `/insights/${i.slug}.html`)
+  '/medium/',
+  '/insights/',
+  ...articles.map(a => `/medium/${a.slug}.html`)
 ];
 
 const sitemapXML = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${sitemapPages.map(p => `<url><loc>https://yourdomain.com${p}</loc></url>`).join('')}
+  ${sitemapPages.map(p => `<url><loc>https://theindustryguides.com${p}</loc></url>`).join('')}
 </urlset>`;
 
 fs.writeFileSync(OUT_SITEMAP, sitemapXML);
 
 console.log(`Built ${articles.length} articles and ${insights.length} insights.`);
-
