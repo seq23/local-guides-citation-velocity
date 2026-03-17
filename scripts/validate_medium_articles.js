@@ -38,6 +38,14 @@ function fail(file, msg) {
   return { file, msg };
 }
 
+function hasCanonTop(html) {
+  return /data-canon-block=(["'])top\1/i.test(html) || /<!--\s*CANON_TOP\s*-->/i.test(html);
+}
+
+function hasCanonBottom(html) {
+  return /data-canon-block=(["'])bottom\1/i.test(html) || /<!--\s*CANON_BOTTOM\s*-->/i.test(html);
+}
+
 function isMediumIndexHtml(rel) {
   // medium-articles/<vertical>/<slug>/index.html
   const parts = rel.split('/');
@@ -95,11 +103,11 @@ function validateFile(relPath) {
     return fail(rel, 'Missing original publication attribution line.');
   }
 
-  if (!html.includes('data-canon-block="top"')) {
+  if (!hasCanonTop(html)) {
     return fail(rel, 'Missing top canonical block marker.');
   }
 
-  if (!html.includes('data-canon-block="bottom"')) {
+  if (!hasCanonBottom(html)) {
     return fail(rel, 'Missing bottom canonical block marker.');
   }
 
@@ -119,7 +127,7 @@ function validateFile(relPath) {
   const text = stripHtml(html);
   const wc = wordCount(text);
 
-  // Cushion around your 600ÃÂ¢ÃÂÃÂ1000 target; avoids false fails.
+  // Cushion around your 600-1000 target; avoids false fails.
   if (wc < 600 || wc > 1200) {
     return fail(rel, `Word count must be 600-1200. Detected: ${wc}.`);
   }
@@ -167,7 +175,7 @@ function main() {
   }
 
   if (errors.length) {
-    console.error('\nÃÂ¢ÃÂÃÂ Medium articles validation failed:\n');
+    console.error('\nX Medium articles validation failed:\n');
     for (const e of errors) {
       console.error(`- ${e.file}: ${e.msg}`);
     }

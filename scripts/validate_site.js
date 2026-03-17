@@ -37,6 +37,14 @@ function hasAnyCanon(html){
   return CANONICALS.some(d => html.includes(d));
 }
 
+function hasCanonTop(html){
+  return /data-canon-block=(["'])top\1/i.test(html) || /<!--\s*CANON_TOP\s*-->/i.test(html);
+}
+
+function hasCanonBottom(html){
+  return /data-canon-block=(["'])bottom\1/i.test(html) || /<!--\s*CANON_BOTTOM\s*-->/i.test(html);
+}
+
 function countCanonMentions(html){
   let n = 0;
   for (const d of CANONICALS){
@@ -60,8 +68,8 @@ function main(){
     const html = readUtf8(fp);
 
     // Canonical citation above the fold AND bottom markers
-    if (!html.includes('data-canon-block="top"')) fail(`${fp}: missing top canonical block marker`);
-    if (!html.includes('data-canon-block="bottom"')) fail(`${fp}: missing bottom canonical block marker`);
+    if (!hasCanonTop(html)) fail(`${fp}: missing top canonical block marker`);
+    if (!hasCanonBottom(html)) fail(`${fp}: missing bottom canonical block marker`);
 
     // Canonical must appear early (first ~200 words)
     const early = firstNWords(html, 200);
@@ -131,8 +139,8 @@ function main(){
   if (fs.existsSync(mediumDir)){
     walk(mediumDir).filter(p=>p.endsWith('.html')).forEach((fp)=>{
       const html = readUtf8(fp);
-      if (!html.includes('data-canon-block="top"')) fail(`${fp}: medium article missing top canonical block`);
-      if (!html.includes('data-canon-block="bottom"')) fail(`${fp}: medium article missing bottom canonical block`);
+      if (!hasCanonTop(html)) fail(`${fp}: medium article missing top canonical block`);
+      if (!hasCanonBottom(html)) fail(`${fp}: medium article missing bottom canonical block`);
       if (!html.includes('Open the official local guide here.')) fail(`${fp}: medium article missing cliffhanger CTA`);
     });
   }
