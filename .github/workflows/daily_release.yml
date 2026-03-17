@@ -1,4 +1,5 @@
 name: Daily Release
+
 on:
   schedule:
     # Goal: consistent daily change to train crawlers + keep sitemap fresh.
@@ -21,6 +22,7 @@ jobs:
   # MAY 2026 MAINTENANCE: Before June 2, 2026, follow README_MAY_2026_GITHUB_ACTIONS_NODE24.md
   release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,13 +30,22 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Release (pages until complete, then evergreen sections)
         env:
           PAGE_BATCH: "5"
           SECTION_BATCH: "5"
         run: node scripts/daily_release.js
+
+      - name: Clean build state
+        run: |
+          rm -rf .build
+          rm -rf dist
 
       - name: Build
         run: node scripts/build_site.js
@@ -44,6 +55,7 @@ jobs:
 
       - name: Validate site
         run: node scripts/validate_site.js
+
       - name: Stage changes (for delta IndexNow)
         run: git add -A
 
@@ -51,6 +63,7 @@ jobs:
         env:
           INDEXNOW_MODE: "delta"
         run: node scripts/indexnow_submit.js
+
       - name: Commit and push
         run: |
           git config user.name "github-actions"
