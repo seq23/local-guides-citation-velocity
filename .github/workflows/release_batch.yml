@@ -1,4 +1,5 @@
 name: Release Batch
+
 on:
   workflow_dispatch:
     inputs:
@@ -18,6 +19,7 @@ jobs:
   # MAY 2026 MAINTENANCE: Before June 2, 2026, follow README_MAY_2026_GITHUB_ACTIONS_NODE24.md
   release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,10 +27,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Release batch
         run: node scripts/release_batch.js "${{ inputs.batch_size }}"
+
+      - name: Clean build state
+        run: |
+          rm -rf .build
+          rm -rf dist
 
       - name: Build
         run: node scripts/build_site.js
