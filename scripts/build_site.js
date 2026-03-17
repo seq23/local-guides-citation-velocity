@@ -788,6 +788,32 @@ function loadJSONDir(dirName) {
     });
 }
 
+function loadHtmlEntries(dirName) {
+  const dir = path.join(ROOT, dirName);
+  if (!fs.existsSync(dir)) return [];
+
+  const results = [];
+
+  function walk(current) {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && entry.name === 'index.html') {
+        const relDir = path.relative(dir, path.dirname(full)).replace(/\\/g, '/');
+        const html = fs.readFileSync(full, 'utf-8');
+        const titleMatch = html.match(/<title>(.*?)<\/title>/i) || html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+        const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : relDir.split('/').pop();
+        const slug = relDir.split('/').pop();
+        results.push({ slug, title, html, rel: relDir });
+      }
+    }
+  }
+
+  walk(dir);
+  return results;
+}
+
 function renderInternalLinks(article, all) {
   const related = all.filter(a => a.slug !== article.slug).slice(0, 3);
 
@@ -819,8 +845,8 @@ function renderArticleHTML(article, allArticles) {
   </html>`;
 }
 
-const articles = loadJSONDir('medium_articles');
-const insights = loadJSONDir('insights');
+const articles = loadHtmlEntries('medium-articles');
+const insights = loadHtmlEntries('insights');
 
 // WRITE ARTICLES
 articles.forEach(article => {
@@ -851,13 +877,16 @@ function renderIndex(title, items, basePath) {
   </html>`;
 }
 
+fs.mkdirSync(path.join(ROOT, 'medium'), { recursive: true });
+fs.mkdirSync(path.join(ROOT, 'insights'), { recursive: true });
+
 fs.writeFileSync(
-  path.join(ROOT, 'dist', 'medium', 'index.html'),
+  path.join(ROOT, 'medium', 'index.html'),
   renderIndex('Articles', articles, 'medium')
 );
 
 fs.writeFileSync(
-  path.join(ROOT, 'dist', 'insights', 'index.html'),
+  path.join(ROOT, 'insights', 'index.html'),
   renderIndex('Insights', insights, 'insights')
 );
 
