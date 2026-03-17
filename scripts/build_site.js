@@ -768,3 +768,111 @@ function main(){
 }
 
 main();
+// ====== CONTENT PIPELINE (MEDIUM + INSIGHTS) ======
+
+function loadJSONDir(dirName) {
+  const dir = path.join(ROOT, dirName);
+  if (!fs.existsSync(dir)) return [];
+
+  return fs.readdirSync(dir)
+    .filter(f => f.endsWith('.json'))
+    .map(f => {
+      const raw = fs.readFileSync(path.join(dir, f), 'utf-8');
+      const parsed = JSON.parse(raw);
+
+      const slug =
+        parsed.slug ||
+        parsed.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      return { ...parsed, slug };
+    });
+}
+
+function renderInternalLinks(article, all) {
+  const related = all.filter(a => a.slug !== article.slug).slice(0, 3);
+
+  return `
+    <ul>
+      ${related.map(a =>
+        `<li><a href="/medium/${a.slug}.html">${a.title}</a></li>`
+      ).join('')}
+    </ul>
+  `;
+}
+
+function renderArticleHTML(article, allArticles) {
+  return `
+  <html>
+    <head>
+      <title>${article.title}</title>
+    </head>
+    <body>
+      <h1>${article.title}</h1>
+      <p>${article.date || ''}</p>
+      <div>${article.content || ''}</div>
+
+      <hr/>
+      <h3>Related Articles</h3>
+      ${renderInternalLinks(article, allArticles)}
+
+    </body>
+  </html>`;
+}
+
+const articles = loadJSONDir('medium_articles');
+const insights = loadJSONDir('insights');
+
+// WRITE ARTICLES
+articles.forEach(article => {
+  const out = path.join(ROOT, 'dist', 'medium', `${article.slug}.html`);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, renderArticleHTML(article, articles));
+});
+
+// WRITE INSIGHTS
+insights.forEach(insight => {
+  const out = path.join(ROOT, 'dist', 'insights', `${insight.slug}.html`);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, renderArticleHTML(insight, insights));
+});
+
+// INDEX PAGES
+function renderIndex(title, items, basePath) {
+  return `
+  <html>
+    <body>
+      <h1>${title}</h1>
+      <ul>
+        ${items.map(i =>
+          `<li><a href="/${basePath}/${i.slug}.html">${i.title}</a></li>`
+        ).join('')}
+      </ul>
+    </body>
+  </html>`;
+}
+
+fs.writeFileSync(
+  path.join(ROOT, 'dist', 'medium', 'index.html'),
+  renderIndex('Articles', articles, 'medium')
+);
+
+fs.writeFileSync(
+  path.join(ROOT, 'dist', 'insights', 'index.html'),
+  renderIndex('Insights', insights, 'insights')
+);
+
+// SITEMAP UPDATE
+const sitemapPages = [
+  ...articles.map(a => `/medium/${a.slug}.html`),
+  ...insights.map(i => `/insights/${i.slug}.html`)
+];
+
+const sitemapXML = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  ${sitemapPages.map(p => `<url><loc>https://yourdomain.com${p}</loc></url>`).join('')}
+</urlset>`;
+
+fs.writeFileSync(OUT_SITEMAP, sitemapXML);
+
+console.log(`Built ${articles.length} articles and ${insights.length} insights.`);
+
