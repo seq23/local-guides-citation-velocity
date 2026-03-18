@@ -26,6 +26,9 @@ function countIndexPages(dirName){
 }
 
 function main(){
+  console.log('Compiling staged Reddit query clusters before release...');
+  require('./compile_reddit_queries.js');
+
   const pageBatch = Number(process.env.PAGE_BATCH || 5);
   const sectionBatch = Number(process.env.SECTION_BATCH || 5);
   const articleBatch = Number(process.env.MEDIUM_BATCH || 1);

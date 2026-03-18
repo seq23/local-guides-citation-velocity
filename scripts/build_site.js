@@ -201,6 +201,24 @@ function canonBlockBottom(canonHome, canonLabel){
   </section>`;
 }
 
+
+function canonBlockMid(canonHome, canonLabel, clusterTitle='this topic'){
+  const bare = canonHome.replace(/^https?:\/\//,'').replace(/\/$/,'');
+  return `
+  <section class="card canon-route-strip" data-canon-block="mid">
+    <div class="badge warning-badge">Leave this summary site</div>
+    <h2 class="h2" style="margin-top:8px">If you are actually comparing options, go to the canonical guide now</h2>
+    <p class="muted">This page exists to get you oriented on ${htmlEscape(clusterTitle)} quickly. The official ${htmlEscape(canonLabel)} guide is where local directories, pricing context, location-specific workflow, and decision-critical next steps live.</p>
+    <div class="route-grid">
+      <a class="route-primary" href="${canonHome}">
+        <span class="route-kicker">Best next click</span>
+        <strong>Open ${htmlEscape(bare)}</strong>
+        <span>Use the official local guide instead of browsing more summaries here.</span>
+      </a>
+    </div>
+  </section>`;
+}
+
 function buildTOC(sections){
   const filtered = (sections || []).filter((s)=> getVisibleQuestion(s) !== 'Section');
   if (!filtered.length) return '';
@@ -253,6 +271,14 @@ function renderAccordion(sections){
   return `<div class=\"accordion\">${items}</div>`;
 }
 
+
+
+function renderRelatedLinks(links){
+  const items = Array.isArray(links) ? links.filter((item)=> item && item.slug && item.label) : [];
+  if (!items.length) return '';
+  const body = items.slice(0,4).map((item)=>`<li><a href="${item.slug}">${htmlEscape(item.label)}</a></li>`).join('');
+  return `<section class="card"><div class="badge">Related questions</div><h2 class="h2" style="margin-top:8px">Keep going</h2><ul>${body}</ul></section>`;
+}
 
 function buildVerticalSlugMap(){
   return {
@@ -576,6 +602,10 @@ function main(){
     const toc = buildTOC(p.sections);
     const acc = renderAccordion(p.sections || []);
     const toolSpotlight = toolsPageForHub ? renderToolSpotlight(toolsPageForHub.sections || [], 'Fast scripts for comparing options before you click away') : ''; 
+    const relatedLinks = renderRelatedLinks(p.related_links || []);
+    const isQueryCompilerPage = Boolean(p.query_compiler_generated);
+    const midCanon = isQueryCompilerPage ? canonBlockMid(canon.home, canon.label, p.title) : '';
+    const postQueryUtility = isQueryCompilerPage ? '' : toolSpotlight;
 
     const body = `
       ${topCanon}
@@ -584,7 +614,9 @@ function main(){
         <div class="col-12">${toc}</div>
       </div>
       <section class="card"><div class="badge">Quick answers</div>${acc}</section>
-      ${toolSpotlight}
+      ${midCanon}
+      ${relatedLinks}
+      ${postQueryUtility}
       ${canonBlockBottom(canon.home, canon.label)}
       <hr class="hr" />
       <p class="muted small">Last updated: ${nowISODate()}</p>

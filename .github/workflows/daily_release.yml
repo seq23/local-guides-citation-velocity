@@ -32,6 +32,9 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Compile staged Reddit query clusters
+        run: node scripts/compile_reddit_queries.js
+
       - name: Release (pages until complete, then evergreen sections)
         env:
           PAGE_BATCH: "5"

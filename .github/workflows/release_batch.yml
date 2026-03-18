@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Compile staged Reddit query clusters
+        run: node scripts/compile_reddit_queries.js
+
       - name: Release batch
         run: node scripts/release_batch.js "${{ inputs.batch_size }}"
 
