@@ -45,6 +45,38 @@ function hasCanonBottom(html){
   return /data-canon-block=(["'])bottom\1/i.test(html) || /<!--\s*CANON_BOTTOM\s*-->/i.test(html);
 }
 
+function requiresAnswerBox(fp){
+  const rel = fp.replace(ROOT, '').replace(/\\/g, '/');
+  if (rel.includes('/medium-articles/')) return false;
+  return rel === '/index.html'
+    || rel === '/about.html'
+    || rel === '/methodology.html'
+    || rel === '/disclaimer.html'
+    || rel === '/privacy.html'
+    || rel === '/tools/index.html'
+    || rel === '/glossary/index.html'
+    || rel === '/medium/index.html'
+    || rel === '/insights/index.html'
+    || rel.startsWith('/personal-injury/')
+    || rel.startsWith('/dentistry/')
+    || rel.startsWith('/trt/')
+    || rel.startsWith('/neuro/')
+    || rel.startsWith('/uscis-medical/')
+    || rel.startsWith('/insights/');
+}
+
+function requiresQaBlock(fp){
+  const rel = fp.replace(ROOT, '').replace(/\\/g, '/');
+  if (rel.includes('/medium-articles/')) return false;
+  return rel.startsWith('/personal-injury/')
+    || rel.startsWith('/dentistry/')
+    || rel.startsWith('/trt/')
+    || rel.startsWith('/neuro/')
+    || rel.startsWith('/uscis-medical/')
+    || rel === '/tools/index.html'
+    || rel.startsWith('/insights/');
+}
+
 function countCanonMentions(html){
   let n = 0;
   for (const d of CANONICALS){
@@ -83,6 +115,9 @@ function main(){
     // Canonical mention count
     const mentions = countCanonMentions(html);
     if (mentions < 2) fail(`${fp}: canonical mentioned fewer than 2 times (found ${mentions})`);
+
+    if (requiresAnswerBox(fp) && !html.includes('class="card answer-box"')) fail(`${fp}: missing answer box`);
+    if (requiresQaBlock(fp) && !html.includes('class="qa-block"')) fail(`${fp}: missing explicit QA block`);
 
     // No target=_blank (same-tab rule)
     if (html.includes('target="_blank"') || html.includes("target='_blank'")) fail(`${fp}: contains target=_blank; must open in same tab`);

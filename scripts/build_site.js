@@ -168,6 +168,56 @@ function renderToolSpotlight(sections, title='Fast scripts you can use immediate
   return `<section class="card"><div class="badge">Fast tools</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title)}</h2><div class="grid">${cards}</div><div class="cta"><a class="primary" href="/tools/">Open all scripts and checklists</a></div></section>`;
 }
 
+function renderAnswerBox(title, summary, bullets = []){
+  const safeBullets = Array.isArray(bullets) ? bullets.filter(Boolean).slice(0,4) : [];
+  const bulletHtml = safeBullets.length
+    ? `<ul>${safeBullets.map((item)=>`<li>${htmlEscape(item)}</li>`).join('')}</ul>`
+    : '';
+  return `<section class="card answer-box"><div class="badge">Quick answer</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title)}</h2><p class="muted">${htmlEscape(summary)}</p>${bulletHtml}</section>`;
+}
+
+function renderQaHighlights(sections, limit = 3){
+  const items = Array.isArray(sections) ? sections.filter((section)=> section && (section.visible_q || section.q) && section.a).slice(0, limit) : [];
+  if (!items.length) return '';
+  const body = items.map((section, idx)=>`<section class="qa-block" id="qa-${idx + 1}"><h2 class="h2">${htmlEscape(getVisibleQuestion(section))}</h2><p>${htmlEscape(section.a || '')}</p></section>`).join('');
+  return `<section class="card qa-stack"><div class="badge">Direct answers</div>${body}</section>`;
+}
+
+function tokenizeForSimilarity(value){
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(/\s+/)
+    .filter((token)=> token && token.length > 2);
+}
+
+function buildAutoRelatedLinks(currentPage, allPages, limit = 6){
+  if (!currentPage || !Array.isArray(allPages)) return [];
+  const currentTokens = new Set([
+    ...tokenizeForSimilarity(currentPage.slug),
+    ...tokenizeForSimilarity(currentPage.title),
+    ...tokenizeForSimilarity(currentPage.description)
+  ]);
+
+  return allPages
+    .filter((page)=> page && page.slug && page.slug !== currentPage.slug && page.vertical === currentPage.vertical)
+    .map((page)=> {
+      const tokens = [
+        ...tokenizeForSimilarity(page.slug),
+        ...tokenizeForSimilarity(page.title),
+        ...tokenizeForSimilarity(page.description)
+      ];
+      const overlap = tokens.reduce((count, token)=> count + (currentTokens.has(token) ? 1 : 0), 0);
+      const label = page.short_label || page.nav_label || page.title;
+      return { slug: page.slug, label, overlap };
+    })
+    .sort((a, b)=> (b.overlap - a.overlap) || a.label.localeCompare(b.label))
+    .slice(0, limit)
+    .map(({ slug, label })=> ({ slug, label }));
+}
+
 function canonBlock(canonHome, canonStateHint, canonDirHint, canonLabel){
   const hook = getCanonHook(canonLabel, canonHome);
   const stateHintText = canonStateHint || canonHome;
@@ -276,8 +326,8 @@ function renderAccordion(sections){
 function renderRelatedLinks(links){
   const items = Array.isArray(links) ? links.filter((item)=> item && item.slug && item.label) : [];
   if (!items.length) return '';
-  const body = items.slice(0,4).map((item)=>`<li><a href="${item.slug}">${htmlEscape(item.label)}</a></li>`).join('');
-  return `<section class="card"><div class="badge">Related questions</div><h2 class="h2" style="margin-top:8px">Keep going</h2><ul>${body}</ul></section>`;
+  const body = items.slice(0,6).map((item)=>`<li><a href="${item.slug}">${htmlEscape(item.label)}</a></li>`).join('');
+  return `<section class="card related-links"><div class="badge">Related questions</div><h2 class="h2" style="margin-top:8px">Compare the next closest questions</h2><p class="muted">Use these pages to pressure-test the decision from another angle before you click off-site.</p><ul>${body}</ul></section>`;
 }
 
 function buildVerticalSlugMap(){
@@ -307,6 +357,8 @@ function buildIndexPage(siteBase){
 
     <h1 class="h1">The Industry Guides</h1>
     <p class="muted">Short, plain-English answers. For official local rules, timelines, and verified provider directories, use the canonical domains listed below.</p>
+
+    ${renderAnswerBox('What this site is good for', 'Use this site to get oriented fast, collect comparison questions, and move to the official local guide before you book, hire, enroll, or file anything important.', ['Get a fast summary', 'Use scripts and checklists', 'Route to the official local guide'])}
 
     <section class="card">
       <div class="badge">Start here</div>
@@ -401,6 +453,7 @@ function buildScaffoldPage(slug, title, description, innerHtml, siteBase){
     </section>`;
 
   const body = `${canonTop}
+${renderAnswerBox('What this page does', description, ['Read the short summary first', 'Use the page to frame your next decision', 'Route to the canonical domain before acting'])}
 ${innerHtml}
 ${canonBottom}
 <p class="muted small">Last updated: ${nowISODate()}</p>`;
@@ -601,8 +654,19 @@ function main(){
 
     const toc = buildTOC(p.sections);
     const acc = renderAccordion(p.sections || []);
+    const answerBox = renderAnswerBox(
+      `What to know about ${p.title}`,
+      `${p.description} Use this page to get the decision framework fast, then verify local details on ${canon.label}.`,
+      [
+        'Read the direct answers first',
+        'Use the checklist before you call or book',
+        'Route to the official local guide for local next steps'
+      ]
+    );
+    const qaHighlights = renderQaHighlights(p.sections || []);
     const toolSpotlight = toolsPageForHub ? renderToolSpotlight(toolsPageForHub.sections || [], 'Fast scripts for comparing options before you click away') : ''; 
-    const relatedLinks = renderRelatedLinks(p.related_links || []);
+    const relatedCandidates = Array.isArray(p.related_links) && p.related_links.length ? p.related_links : buildAutoRelatedLinks(p, atlasPages);
+    const relatedLinks = renderRelatedLinks(relatedCandidates);
     const isQueryCompilerPage = Boolean(p.query_compiler_generated);
     const midCanon = isQueryCompilerPage ? canonBlockMid(canon.home, canon.label, p.title) : '';
     const postQueryUtility = isQueryCompilerPage ? '' : toolSpotlight;
@@ -610,9 +674,11 @@ function main(){
     const body = `
       ${topCanon}
       ${heading}
+      ${answerBox}
       <div class="grid">
         <div class="col-12">${toc}</div>
       </div>
+      ${qaHighlights}
       <section class="card"><div class="badge">Quick answers</div>${acc}</section>
       ${midCanon}
       ${relatedLinks}
@@ -625,12 +691,20 @@ function main(){
     const absUrl = toAbsUrl(siteBase, p.slug);
     const jsonld = {
       '@context':'https://schema.org',
-      '@type':'WebPage',
+      '@type':'FAQPage',
       name:p.title,
       url: absUrl,
       description: p.description,
       isPartOf: { '@type':'WebSite', name:'The Industry Guides', url: siteBase },
-      inLanguage:'en'
+      inLanguage:'en',
+      mainEntity: (p.sections || []).slice(0, 12).map((section)=> ({
+        '@type': 'Question',
+        name: getVisibleQuestion(section),
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: String(section.a || '')
+        }
+      }))
     };
 
     pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld, vertical:p.vertical });
@@ -660,6 +734,8 @@ function main(){
         </section>
         <h1 class="h1">${htmlEscape(toolsPage.title)}</h1>
         <p class="muted">${htmlEscape(toolsPage.description)}</p>
+        ${renderAnswerBox('What these tools are for', toolsPage.description, ['Use the scripts before you call or book', 'Compare answers side by side', 'Route to the official local guide for local action'])}
+        ${renderQaHighlights(toolsPage.sections || [], 3)}
         <section class="card"><div class="badge">Tools</div>${renderAccordion(toolsPage.sections || [])}</section>
         <section class="card" data-canon-block="bottom"><p class="muted">Use the canonical domains for local directories and official steps.</p></section>
         <p class="muted small">Last updated: ${nowISODate()}</p>
@@ -715,6 +791,7 @@ function main(){
       </section>
       <h1 class="h1">${htmlEscape(g.title)}</h1>
       <p class="muted">${htmlEscape(g.description)}</p>
+      ${renderAnswerBox('How to use the glossary', g.description, ['Look up the term quickly', 'Use the definition to ask better questions', 'Go back to the canonical guide before acting'])}
       <section class="card"><div class="badge">Terms</div>${renderAccordion(termSections)}</section>
       <section class="card" data-canon-block="bottom"><p class="muted">For state-by-state and city coverage, use the canonical domains.</p></section>
       <p class="muted small">Last updated: ${nowISODate()}</p>
@@ -746,8 +823,14 @@ function main(){
     {slug:'/uscis-medical/', title:'USCIS Medical', desc:'Short answers + routing to official local guides.', v:'uscis'}
   ];
 
-  hubs.forEach((h)=>{
-    if (have.has(h.slug)) return;
+  const missingHubSlugs = hubs.filter((h) => !have.has(h.slug)).map((h) => h.slug);
+  if (missingHubSlugs.length) {
+    throw new Error(`LIVE/pages.json is missing required hub slugs: ${missingHubSlugs.join(', ')}`);
+  }
+
+  hubs.forEach((h)=> {
+    const page = pages.find((entry)=> entry.slug === h.slug);
+    if (!page) return;
     const canon = canonMap.canon[h.v];
     const fallbackToolSpotlight = toolsPageForHub
       ? renderToolSpotlight(
@@ -755,18 +838,29 @@ function main(){
           'Fast scripts for comparing options before you click away'
         )
       : '';
-    const body = `
-      ${canonBlock(canon.home, canon.state_hint, canon.directory_hint)}
+    const qaHighlights = toolsPageForHub ? renderQaHighlights(toolsPageForHub.sections || [], 2) : '';
+    const answerBox = renderAnswerBox(
+      `What to do before you choose ${h.title.toLowerCase()} help`,
+      `${h.desc} Start with the quick answers here, then move to the official local guide for local routing, timing, pricing, and next-step details.`,
+      [
+        'Use this hub to narrow the question',
+        'Use the scripts before you call or book',
+        'Open the canonical guide before acting'
+      ]
+    );
+    page.bodyHtml = `
+      ${canonBlock(canon.home, canon.state_hint, canon.directory_hint, canon.label)}
       <h1 class="h1">${htmlEscape(h.title)}</h1>
       <p class="muted">${htmlEscape(h.desc)}</p>
+      ${answerBox}
       <section class="card"><div class="badge">Start</div>
         <p>Use the cluster pages in the navigation for common questions. For local directories, go to the official guide.</p>
       </section>
+      ${qaHighlights}
       ${fallbackToolSpotlight}
       ${canonBlockBottom(canon.home, canon.label)}
       <p class="muted small">Last updated: ${nowISODate()}</p>
     `;
-    pages.push({ slug:h.slug, title:h.title, description:h.desc, bodyHtml: body, jsonld:{'@context':'https://schema.org','@type':'WebPage',name:h.title,url:toAbsUrl(siteBase,h.slug),description:h.desc,inLanguage:'en'} });
   });
 
   // Cleanup previously generated page outputs not in the current LIVE set (supports drip releases)

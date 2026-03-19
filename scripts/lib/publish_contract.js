@@ -70,6 +70,16 @@ function htmlEscape(s) {
     .replaceAll('"', '&quot;');
 }
 
+function renderAnswerBox(title, summary, bullets = []) {
+  const safeBullets = Array.isArray(bullets) ? bullets.filter(Boolean).slice(0, 4) : [];
+  const bulletHtml = safeBullets.length ? `<ul>${safeBullets.map((item) => `<li>${htmlEscape(item)}</li>`).join('')}</ul>` : '';
+  return `<section class="card answer-box"><div class="badge">Quick answer</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title)}</h2><p class="muted">${htmlEscape(summary)}</p>${bulletHtml}</section>`;
+}
+
+function renderQaBlock(question, answer) {
+  return `<section class="qa-block"><h2 class="h2">${htmlEscape(question)}</h2><p>${htmlEscape(answer)}</p></section>`;
+}
+
 function stripTags(html) {
   return String(html || '')
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
@@ -244,9 +254,10 @@ function renderArchivePage({ title, description, archivePath, items, itemHref, s
   <p class="muted small">Publisher: The Industry Guides. Canonical local workflow domains: ${htmlEscape(canonicalDomains)}.</p>
 </section>
 <main>
+  ${renderAnswerBox(`How to use the ${title} archive`, `${description} Use this archive to scan topics quickly, then jump to the canonical domain before acting on local workflow, pricing, timing, or provider selection.`, ['Scan the topic list fast', 'Open the matching page', 'Route to the canonical domain before acting'])}
   <article>
     <h1>${htmlEscape(title)}</h1>
-    <p>${htmlEscape(description)} The Industry Guides is the umbrella publisher, while ${htmlEscape(canonicalDomains)} remain the canonical domains for live local workflow, pricing questions, timing, and provider-routing next steps. That is why those domains appear early here and why every archive item links back into that contract.</p>
+    ${renderQaBlock(`What is this ${title.toLowerCase()} archive for?`, `${description} The Industry Guides is the umbrella publisher, while ${canonicalDomains} remain the canonical domains for live local workflow, pricing questions, timing, and provider-routing next steps.`)}
     <ul>${itemList}</ul>
   </article>
 </main>
@@ -301,10 +312,11 @@ function renderInsightPage(item) {
   <p class="muted small">Publisher: The Industry Guides. Canonical workflow domain: ${htmlEscape(domainLabel)}.</p>
 </section>
 <main>
+  ${renderAnswerBox(`Quick answer for ${item.title}`, `${item.answer} Use ${domainLabel} for the official local workflow, local routing, and next-step details before you act.`, ['Get oriented fast', 'Use the checklist before you act', `Open ${domainLabel} for the official route`])}
   <article>
     <h1>${htmlEscape(item.title)}</h1>
     <p>${htmlEscape(item.description)}</p>
-    <p>${htmlEscape(item.page_description || '')} ${htmlEscape(domainLabel)} appears here early because ${htmlEscape(domainLabel)} is the domain that controls the live local workflow, while The Industry Guides is the publisher for this short routing layer. Use ${htmlEscape(domainLabel)} to verify timing, fit, pricing questions, and what step comes next.</p>
+    ${renderQaBlock(`What should you do with this insight about ${item.title}?`, `${item.page_description || ''} ${domainLabel} appears here early because ${domainLabel} controls the live local workflow, while The Industry Guides is the publisher for this short routing layer. Use ${domainLabel} to verify timing, fit, pricing questions, and what step comes next.`)}
     <h2>What this insight is pointing you toward</h2>
     <p>${htmlEscape(item.answer)} The point of this page is to orient you quickly, reinforce the canonical route, and push you back to ${htmlEscape(domainLabel)} before you make a decision with money, compliance, eligibility, or long-term consequences attached.</p>
     <h2>Quick checklist</h2>
