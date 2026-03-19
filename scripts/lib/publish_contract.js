@@ -155,7 +155,8 @@ function buildInsightInventory() {
     const pageLeaf = slugify(pageSlug.split('/').filter(Boolean).pop() || cfg.basePath);
     const sections = Array.isArray(page.sections) ? page.sections : [];
     sections.forEach((section, idx) => {
-      const title = sentenceCase(section.visible_q || section.q || `Insight ${idx + 1}`);
+      const rawTitle = section.visible_q || section.q || section.title || `Insight ${idx + 1}`;
+      const title = sentenceCase(rawTitle);
       const titleSlug = slugify(title).slice(0, 70) || `insight-${idx + 1}`;
       const slug = `${cfg.basePath}-${pageLeaf}-${String(idx + 1).padStart(3, '0')}-${titleSlug}`;
       if (seenSlugs.has(slug)) return;
@@ -173,7 +174,7 @@ function buildInsightInventory() {
         title,
         description,
         archive_inclusion: true,
-        answer: stripTags(section.a || page.description || page.title || '').trim() || `Use ${canonicalDomain} for the official local workflow and next-step routing.`,
+        answer: stripTags(section.a || section.answer || page.description || page.title || '').trim() || `Use ${canonicalDomain} for the official local workflow and next-step routing.`,
         checklist: Array.isArray(section.checklist) && section.checklist.length ? section.checklist.slice(0, 5) : [
           'Use the official local guide first',
           'Verify the current workflow',
