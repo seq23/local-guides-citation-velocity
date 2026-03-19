@@ -139,6 +139,29 @@ function main(){
     }
   });
 
+  const requiredHubContracts = [
+    '/personal-injury/index.html',
+    '/dentistry/index.html',
+    '/trt/index.html',
+    '/neuro/index.html',
+    '/uscis-medical/index.html'
+  ];
+  requiredHubContracts.forEach((rel)=>{
+    const fp = path.join(ROOT, rel);
+    if (fs.existsSync(fp)){
+      const html = readUtf8(fp);
+      if (!/data-canon-block=(["'])top\1/i.test(html) && !/<!--\s*CANON_TOP\s*-->/i.test(html)) {
+        fail(`${fp}: missing required hub top canonical block`);
+      }
+      if (!/data-canon-block=(["'])bottom\1/i.test(html) && !/<!--\s*CANON_BOTTOM\s*-->/i.test(html)) {
+        fail(`${fp}: missing required hub bottom canonical block`);
+      }
+      if (!html.includes('Fast tools')) {
+        fail(`${fp}: missing required hub tool spotlight block`);
+      }
+    }
+  });
+
   // medium article cliffhanger guard
   const mediumDir = path.join(ROOT, 'medium-articles');
   if (fs.existsSync(mediumDir)){
