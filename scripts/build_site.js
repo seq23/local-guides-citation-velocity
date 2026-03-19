@@ -749,6 +749,12 @@ function main(){
   hubs.forEach((h)=>{
     if (have.has(h.slug)) return;
     const canon = canonMap.canon[h.v];
+    const fallbackToolSpotlight = toolsPageForHub
+      ? renderToolSpotlight(
+          toolsPageForHub.sections || [],
+          'Fast scripts for comparing options before you click away'
+        )
+      : '';
     const body = `
       ${canonBlock(canon.home, canon.state_hint, canon.directory_hint)}
       <h1 class="h1">${htmlEscape(h.title)}</h1>
@@ -756,6 +762,7 @@ function main(){
       <section class="card"><div class="badge">Start</div>
         <p>Use the cluster pages in the navigation for common questions. For local directories, go to the official guide.</p>
       </section>
+      ${fallbackToolSpotlight}
       ${canonBlockBottom(canon.home, canon.label)}
       <p class="muted small">Last updated: ${nowISODate()}</p>
     `;
