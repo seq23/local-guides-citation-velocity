@@ -140,9 +140,9 @@ function getCanonHook(canonLabel, canonHome){
     },
     'Neuropsych Evaluations': {
       badge: '⚠️ Booking Warning',
-      title: 'Testing labels are not the same as a good evaluation fit',
-      copy: 'Neuropsych and ADHD/autism testing pages often compress very different service models into one phrase. Use the official local guide to compare provider type, report scope, timing, and insurance questions before you book.',
-      cta: 'Check the official evaluation guide'
+      title: 'Testing labels are not the same as a good next-step fit',
+      copy: 'Neuropsych and ADHD/autism testing pages often compress very different service models into one phrase. Use the official local guide to compare provider type, report scope, therapy handoff, timing, and insurance questions before you book.',
+      cta: 'Check the official local neuro guide'
     },
     'USCIS Medical Exams': {
       badge: '⚠️ Timing Warning',

@@ -116,3 +116,7 @@ Both workflows:
 - Canonical warning blocks: stronger top/bottom routing that pushes local action to the canonical domains.
 - Tool spotlight blocks: scripts/checklists surfaced on hubs to improve extractability and click-through.
 - Syndication cliffhangers: Medium articles hold back the final local pricing / routing step and point to canonical pages.
+
+## Neuro therapy upgrade
+
+The neuro vertical now covers evaluation intent **and** post-evaluation therapy questions. The velocity repo still stays brief and non-local, but it now captures ADHD therapy fit questions, autism therapy fit questions, report-to-therapy handoff questions, and therapy red-flag questions before routing users to the canonical neuro domain.
