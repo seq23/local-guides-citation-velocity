@@ -34,6 +34,16 @@ function findInputFiles() {
 function questionAnswer(verticalKey, clusterKey, q) {
   const verticalLabel = VERTICAL_CONFIG[verticalKey].label;
   const domain = VERTICAL_CONFIG[verticalKey].domain.replace(/^https?:\/\//, '');
+  const lowerQ = String(q || '').toLowerCase();
+  if (verticalKey === 'trt' && clusterKey.startsWith('peptide-')) {
+    let opener = 'Start with the plain-language version of the decision: what is the clinic actually offering, what does it cost, and what happens after the first consult?';
+    if (/(best|top)/.test(lowerQ)) opener = 'When people say best or top, the useful move is not trusting hype. It is checking who runs the program, what is included, and whether the clinic explains the basics in normal language.';
+    else if (/cost|expensive|insurance|monthly/.test(lowerQ)) opener = 'Peptide pricing can look simple at first and then grow once consults, meds, follow-up, or add-ons are layered in.';
+    else if (/safe|legal|danger|risk|legit/.test(lowerQ)) opener = 'This is the slow-down category. Look for clear program basics, honest limits, and a clinic that explains risks without acting weird about simple questions.';
+    else if (/what are|what is peptide therapy|why are|what do peptides do/.test(lowerQ)) opener = 'Most people are not asking for a science lecture. They want to know what clinics mean when they talk about peptide programs and whether the category is worth looking into at all.';
+    else if (/vs trt|vs iv|should i do trt or peptides/.test(lowerQ)) opener = 'These programs get compared because they are often sold by overlapping clinics, but the real question is what goal you are solving, what monitoring happens, and what the monthly path looks like.';
+    return `${opener} This page gives a short consumer answer first, then routes you to ${domain} for the official local TRT, IV, and hair workflow, pricing context, and next-step clinic comparison.`;
+  }
   const clusterHints = {
     'process-timeline': 'timing, the next procedural step, and what usually creates delay',
     'insurance-fault': 'fault rules, insurer communication, and what not to say too early',
@@ -50,6 +60,10 @@ function questionAnswer(verticalKey, clusterKey, q) {
     'fertility-pct': 'whether family-planning goals were discussed before treatment choices are locked in',
     'clinic-selection': 'whether the program explains monitoring, pricing, and response to side effects clearly',
     'medication-costs': 'what the base price includes and which add-ons quietly raise the total',
+    'peptide-clinic-selection': 'how clinics frame peptide programs, what a real consult should look like, and how to compare local options without guessing',
+    'peptide-cost-safety': 'what peptide programs usually cost, what safety questions matter, and where hype should make you slow down',
+    'peptide-types-uses': 'what peptide programs are, why people look into them, and how clinics usually describe different categories without making them all sound the same',
+    'peptide-red-flags': 'sales pressure, weak monitoring, vague pricing, and the warning signs that a peptide clinic may be a bad fit',
     'adhd-testing': 'what the evaluation includes, who is a fit, and what happens after testing is complete',
     'autism-evaluation': 'the scope of the evaluation, the history that helps, and when a specialist fit matters most',
     'insurance-school-docs': 'what insurers, schools, and employers often need documented in writing',
@@ -70,6 +84,9 @@ function questionAnswer(verticalKey, clusterKey, q) {
 
 function clusterLead(verticalKey, clusterKey) {
   const verticalLabel = VERTICAL_CONFIG[verticalKey].label;
+  if (verticalKey === 'trt' && clusterKey.startsWith('peptide-')) {
+    return `${verticalLabel} quick answers for ${clusterKey.replace(/-/g, ' ')}. These are short, plain-English routing answers built from real consumer phrasing about peptide clinics, costs, safety, and what to do next before you use the canonical local guide.`;
+  }
   return `${verticalLabel} quick answers for ${clusterKey.replace(/-/g, ' ')}. These are short routing answers built from repeated consumer-style questions and grouped so you can scan the pattern fast before using the canonical local guide.`;
 }
 

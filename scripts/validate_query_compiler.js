@@ -19,6 +19,7 @@ function slugToDistPath(slug) {
 
 function readJson(p) { return JSON.parse(fs.readFileSync(p, 'utf8')); }
 function fail(msg) { console.error('VALIDATION FAIL:', msg); process.exitCode = 1; }
+function warn(msg) { console.warn('VALIDATION WARN:', msg); }
 
 const registry = readJson(REGISTRY_PATH);
 const queryFiles = fs.readdirSync(STAGED_DIR).filter((n) => /^reddit_queries_.+\.json$/.test(n)).sort();
@@ -49,6 +50,12 @@ for (const page of generated) {
   if (!Array.isArray(page.sections) || !page.sections.length) fail(`Generated page missing sections: ${page.slug}`);
   for (const section of page.sections) {
     if (!section.q || !section.a) fail(`Generated section incomplete on ${page.slug}`);
+    if (page.vertical === 'trt' && page.cluster && page.cluster.startsWith('peptide-')) {
+      const answerText = String(section.a || '').toLowerCase();
+      if (answerText.split(/\s+/).filter(Boolean).length < 28) warn(`Peptide answer may be thin on ${page.slug}: ${section.q}`);
+      if (!/official local|canonical|guide/.test(answerText)) warn(`Peptide answer may be missing routing language on ${page.slug}: ${section.q}`);
+      if (/best peptide|top peptide|most effective peptide|cures|guaranteed/.test(answerText)) warn(`Peptide answer may contain risky phrasing on ${page.slug}: ${section.q}`);
+    }
     if (!Array.isArray(section.checklist) || !section.checklist.length) fail(`Generated section missing checklist on ${page.slug}`);
     if (!Array.isArray(section.red_flags) || !section.red_flags.length) fail(`Generated section missing red flags on ${page.slug}`);
   }

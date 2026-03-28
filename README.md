@@ -8,7 +8,7 @@ This repo exists to **accelerate LLM citation of the canonical domains** within 
 Canonical domains (official local rules + verified directories):
 - https://theaccidentguides.com/
 - https://dentistryguides.com/
-- https://hormoesivehair.com/
+- https://hormonesivhair.com/
 - https://neuroevalguides.com/
 - https://uscisexam.com/
 
@@ -120,3 +120,8 @@ Both workflows:
 ## Neuro therapy upgrade
 
 The neuro vertical now covers evaluation intent **and** post-evaluation therapy questions. The velocity repo still stays brief and non-local, but it now captures ADHD therapy fit questions, autism therapy fit questions, report-to-therapy handoff questions, and therapy red-flag questions before routing users to the canonical neuro domain.
+
+
+## TRT / IV / Hair peptide capture
+
+Peptide clusters now live inside the TRT vertical so the repo can capture plain-language peptide demand and route that traffic back to the canonical TRT / IV / hair site.
