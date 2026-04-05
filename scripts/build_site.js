@@ -18,6 +18,9 @@ const OUT_SITEMAP = path.join(ROOT, 'sitemap.xml');
 const OUT_FEED_XML = path.join(ROOT, 'feed.xml');
 const OUT_FEED_JSON = path.join(ROOT, 'feed.json');
 const MANIFEST = path.join(ROOT, '.build', 'manifest.json');
+const FANOUT_MANIFEST = path.join(ROOT, '.build', 'fanout_manifest.json');
+const FANOUT_MISSING = path.join(ROOT, '.build', 'fanout_missing.json');
+const FANOUT_DUPLICATES = path.join(ROOT, '.build', 'fanout_duplicates.json');
 const CONTENT_STATE = path.join(ROOT, 'content', '_shared', 'content_state.json');
 
 const {
@@ -30,6 +33,7 @@ const {
   renderInsightPage,
   ensurePublishedUrlInventory
 } = require('./lib/publish_contract');
+const { buildFanoutData, injectFanoutIntoHtml, inferPageFamily } = require('./lib/fanout');
 
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
@@ -427,7 +431,7 @@ function buildIndexPage(siteBase){
     inLanguage: 'en'
   };
 
-  return { slug:'/', title:'The Industry Guides', description:'Short answers. Official local guides live on the canonical domains.', bodyHtml: body, jsonld };
+  return { slug:'/', title:'The Industry Guides', description:'Short answers. Official local guides live on the canonical domains.', bodyHtml: body, jsonld, fanoutMeta: { slug:'/', title:'The Industry Guides', description:'Short answers. Official local guides live on the canonical domains.', vertical:'generic', surface:'home' } };
 }
 
 
@@ -466,7 +470,7 @@ ${canonBottom}
     description,
     inLanguage:'en'
   };
-  return { slug, title, description, bodyHtml: body, jsonld };
+  return { slug, title, description, bodyHtml: body, jsonld, fanoutMeta: { slug, title, description, vertical:'generic', surface:'utility' } };
 }
 
 
@@ -566,6 +570,61 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
   });
 
   return { supplementalWritten, mediumItems, insightItems };
+}
+
+
+function exportFanoutArtifacts(entries){
+  const manifest = [];
+  const missing = [];
+  const duplicateMap = new Map();
+  const perVertical = new Map();
+
+  (entries || []).forEach((entry)=> {
+    const fanout = entry && entry.fanout ? entry.fanout : null;
+    if (!fanout) {
+      missing.push({ slug: entry.slug, reason: 'missing fanout object' });
+      return;
+    }
+    manifest.push({
+      slug: entry.slug,
+      title: entry.title,
+      vertical: fanout.vertical,
+      page_family: fanout.page_family,
+      variant_count: fanout.variant_count,
+      variants: fanout.variants,
+      links: fanout.links
+    });
+    if (!fanout.variant_count) missing.push({ slug: entry.slug, reason: 'no variants generated' });
+    (fanout.variants || []).forEach((variant)=> {
+      const key = `${fanout.vertical}::${String(variant).toLowerCase()}`;
+      const items = duplicateMap.get(key) || [];
+      items.push(entry.slug);
+      duplicateMap.set(key, items);
+    });
+    const verticalKey = fanout.vertical || 'generic';
+    const bucket = perVertical.get(verticalKey) || [];
+    bucket.push({ slug: entry.slug, title: entry.title, page_family: fanout.page_family, variants: fanout.variants, links: fanout.links });
+    perVertical.set(verticalKey, bucket);
+  });
+
+  const duplicates = [];
+  duplicateMap.forEach((slugs, key)=> {
+    if (slugs.length < 2) return;
+    const [vertical, variant] = key.split('::');
+    duplicates.push({ vertical, variant, slugs });
+  });
+
+  writeUtf8(FANOUT_MANIFEST, JSON.stringify(manifest, null, 2) + '\n');
+  writeUtf8(FANOUT_MISSING, JSON.stringify(missing, null, 2) + '\n');
+  writeUtf8(FANOUT_DUPLICATES, JSON.stringify(duplicates, null, 2) + '\n');
+
+  const releasesDir = path.join(ROOT, 'releases');
+  fs.mkdirSync(releasesDir, { recursive: true });
+  perVertical.forEach((items, vertical)=> {
+    writeUtf8(path.join(releasesDir, `fanout_query_clusters.${vertical}.json`), JSON.stringify(items, null, 2) + '\n');
+  });
+
+  console.log(`Fan-out manifest written for ${manifest.length} pages.`);
 }
 
 function main(){
@@ -707,7 +766,7 @@ function main(){
       }))
     };
 
-    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld, vertical:p.vertical });
+    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld, vertical:p.vertical, related_links: relatedCandidates, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:p.sections || [], related_links: relatedCandidates, canonical_url: canon.home } });
 
     // Also create a redirecting vertical slug page if needed
     // If /dentistry/ etc not present as vertical_atlas, we still want it.
@@ -746,6 +805,7 @@ function main(){
         title: toolsPage.title,
         description: toolsPage.description,
         bodyHtml: body,
+        fanoutMeta: { slug: toolsPage.slug, title: toolsPage.title, description: toolsPage.description, sections: toolsPage.sections || [], vertical: 'generic', surface: 'tools' },
         jsonld: {
           '@context':'https://schema.org',
           '@type':'WebPage',
@@ -802,6 +862,7 @@ function main(){
       title: g.title,
       description: g.description,
       bodyHtml: body,
+      fanoutMeta: { slug: g.slug, title: g.title, description: g.description, sections: termSections, vertical: 'generic', surface: 'glossary' },
       jsonld: {
         '@context':'https://schema.org',
         '@type':'WebPage',
@@ -831,6 +892,7 @@ function main(){
   hubs.forEach((h)=> {
     const page = pages.find((entry)=> entry.slug === h.slug);
     if (!page) return;
+    page.fanoutMeta = Object.assign({}, page.fanoutMeta || {}, { slug: page.slug, title: page.title || h.title, description: page.description || h.desc, vertical: h.v, surface: 'vertical-home', canonical_url: canonMap.canon[h.v].home });
     const canon = canonMap.canon[h.v];
     const fallbackToolSpotlight = toolsPageForHub
       ? renderToolSpotlight(
@@ -909,6 +971,35 @@ function main(){
 
   const { supplementalWritten, mediumItems, insightItems } = writeSupplementalContent({ written, contentState, siteBase });
   written.push(...supplementalWritten);
+
+  const fanoutSources = new Map();
+  pages.forEach((page)=> {
+    fanoutSources.set(page.slug, Object.assign({ slug: page.slug, title: page.title, description: page.description, vertical: page.vertical || 'generic' }, page.fanoutMeta || {}));
+  });
+  mediumItems.forEach((item)=> {
+    fanoutSources.set(item.publish_path, { slug: item.publish_path, title: item.title, description: item.description, vertical: item.source_vertical === 'pi' ? 'personal_injury' : item.source_vertical, canonical_url: item.canonical_url, surface: 'medium-article' });
+  });
+  insightItems.forEach((item)=> {
+    fanoutSources.set(item.publish_path, { slug: item.publish_path, title: item.title, description: item.description, vertical: item.vertical, query_variants: [item.title], canonical_url: item.canonical_target_url, surface: 'insight' });
+  });
+  fanoutSources.set('/medium/', { slug: '/medium/', title: 'Medium Articles Archive', description: 'Archive of medium article pages that route to the official local guides.', vertical: 'generic', surface: 'medium-archive' });
+  fanoutSources.set('/insights/', { slug: '/insights/', title: 'Insights Archive', description: 'Archive of short insight pages that route to the official local guides.', vertical: 'generic', surface: 'insight-archive' });
+
+  const fanoutEntries = [];
+  const patchWithFanout = (entry) => {
+    const meta = fanoutSources.get(entry.slug) || { slug: entry.slug, title: entry.title, description: entry.description, vertical: 'generic', surface: entry.surface };
+    const fanout = buildFanoutData(meta);
+    const outPath = slugToPath(entry.slug);
+    if (exists(outPath)) {
+      const html = readUtf8(outPath);
+      const patched = injectFanoutIntoHtml(html, fanout);
+      writeUtf8(outPath, patched);
+    }
+    fanoutEntries.push({ slug: entry.slug, title: entry.title, fanout });
+  };
+  written.forEach(patchWithFanout);
+  mediumItems.forEach((item)=> patchWithFanout({ slug: item.publish_path, title: item.title, description: item.description, surface: 'medium-article' }));
+  exportFanoutArtifacts(fanoutEntries);
 
   saveContentState(contentState);
 
