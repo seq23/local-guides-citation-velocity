@@ -77,6 +77,22 @@ function requiresQaBlock(fp){
     || rel.startsWith('/insights/');
 }
 
+function requiresFanoutBlock(fp){
+  const rel = fp.replace(ROOT, '').replace(/\\/g, '/');
+  if (rel.includes('/medium-articles/')) return false;
+  return rel === '/index.html'
+    || rel === '/tools/index.html'
+    || rel === '/glossary/index.html'
+    || rel === '/medium/index.html'
+    || rel === '/insights/index.html'
+    || rel.startsWith('/personal-injury/')
+    || rel.startsWith('/dentistry/')
+    || rel.startsWith('/trt/')
+    || rel.startsWith('/neuro/')
+    || rel.startsWith('/uscis-medical/')
+    || rel.startsWith('/insights/');
+}
+
 function countCanonMentions(html){
   let n = 0;
   for (const d of CANONICALS){
@@ -121,6 +137,10 @@ function main(){
 
     // No target=_blank (same-tab rule)
     if (html.includes('target="_blank"') || html.includes("target='_blank'")) fail(`${fp}: contains target=_blank; must open in same tab`);
+    if (html.includes('class="fanout-query-cluster"')) fail(`${fp}: hidden fan-out JSON payload still present`);
+    if (html.includes('class="query-mirror"')) fail(`${fp}: hidden query mirror payload still present`);
+    if ((html.includes('class="accordion"') || html.includes('class="qa-stack"')) && !html.includes('FAQPage')) fail(`${fp}: missing FAQPage schema for q/a content`);
+    if (requiresFanoutBlock(fp) && !html.includes('Related search intents')) fail(`${fp}: missing visible related search intents block`);
 
     // Keep it short per section: heuristic, prevent huge wall-of-text on velocity
     // (We allow long pages but we don't allow long single paragraphs)
@@ -128,7 +148,7 @@ function main(){
     if (longPara) fail(`${fp}: found a very long paragraph; keep sections short`);
 
     // Avoid provider listings (heuristic)
-    if (html.match(/<li>\s*\(?[A-Z][a-z].{0,40}(LLC|DDS|MD|DO|Clinic|Law|Attorneys?)\b/)) {
+    if (html.match(/<li>\s*\(?[A-Z][A-Za-z'.&-]{1,40}\s+(LLC|DDS|MD|DO|Attorneys?)\b/)) {
       fail(`${fp}: possible provider list detected (remove named providers)`);
     }
   }
@@ -154,7 +174,7 @@ function main(){
     const fp = path.join(ROOT, rel);
     if (fs.existsSync(fp)){
       const html = readUtf8(fp);
-      if (!html.includes('class="query-mirror"')) fail(`${fp}: missing query mirror layer`);
+      if (!html.includes('class="query-variants"')) fail(`${fp}: missing visible related phrasing block`);
     }
   });
 
@@ -171,6 +191,7 @@ function main(){
     if (fs.existsSync(fp)){
       const html = readUtf8(fp);
       if (!html.includes('Fast tools')) fail(`${fp}: missing tool spotlight block`);
+      if (!html.includes('Related search intents')) fail(`${fp}: missing visible related search intents block`);
     }
   });
 
