@@ -25,12 +25,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
+          cache: npm
 
       - name: Compile staged Reddit query clusters
         run: node scripts/compile_reddit_queries.js
@@ -58,29 +59,8 @@ jobs:
       - name: Build
         run: node scripts/build_site.js
 
-      - name: Validate all medium articles
-        run: node scripts/validate_medium_articles.js --all
-
-      - name: Validate all insights
-        run: node scripts/validate_insights.js --all
-
-      - name: Validate site
-        run: node scripts/validate_site.js
-
-      - name: Validate sitemap parity
-        run: node scripts/validate_sitemap_parity.js
-
-      - name: Validate archive schema
-        run: node scripts/validate_archive_schema.js
-
-      - name: Validate publish inventory
-        run: node scripts/validate_publish_inventory.js
-
-      - name: Validate homepage schema
-        run: node scripts/validate_homepage_schema.js
-
-      - name: Validate executable bits
-        run: node scripts/validate_executable_bits.js
+      - name: Validate full release surface
+        run: npm run validate:all
 
       - name: Stage changes (for delta IndexNow)
         run: git add -A

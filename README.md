@@ -130,6 +130,10 @@ Peptide clusters now live inside the TRT vertical so the repo can capture plain-
 ## Option B distribution layer
 This repo uses a light distribution layer to accelerate discovery for the canonical domains without adding a `sitemap-fresh.xml`.
 
+### Config files
+- `distribution.config.json`
+- `distribution.config.example.json`
+
 ### Generated on build
 - `.build/indexnow-priority.txt`
 - `.build/indexnow-batch.txt`
@@ -137,10 +141,22 @@ This repo uses a light distribution layer to accelerate discovery for the canoni
 - `.build/distribution-readme.txt`
 
 ### Scripts
+- `distribution_scripts/bootstrap_distribution.sh`
 - `distribution_scripts/gsc_submit_sitemaps.py`
 - `distribution_scripts/gsc_inspect_urls.py`
 - `distribution_scripts/indexnow_submit.sh`
 - `distribution_scripts/deploy_distribution.sh`
+
+### Permanent IndexNow key lifecycle
+- The committed key in `distribution.config.json` is the stable default.
+- The committed repo-root key file must stay in every future baseline ZIP.
+- `npm run distribution:bootstrap` preserves the committed key and returns `BOOTSTRAP_NOOP` unless rotation is explicitly requested.
+- Explicit rotation only: `INDEXNOW_ROTATE=1 npm run distribution:bootstrap` or `bash distribution_scripts/bootstrap_distribution.sh --rotate`.
+
+### Owner-safe flow
+1. `npm run distribution:bootstrap`
+2. `npm run distribution:prepare`
+3. `npm run distribution:deploy`
 
 ### Operating rule
 After each deploy, submit `sitemap.xml`, push the priority and batch URL files through IndexNow, inspect the priority set, and manually request indexing for only the 5–10 highest-value URLs.

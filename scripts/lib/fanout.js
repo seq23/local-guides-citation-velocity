@@ -274,60 +274,55 @@ function buildFanoutData(meta){
   };
 }
 
-function renderFanoutScript(data){
-  const payload = htmlEscape(JSON.stringify(data));
-  return `<script type="application/json" class="fanout-query-cluster">${payload}</script>`;
-}
-
 function renderFanoutBlock(data){
   const bucketHtml = (data.buckets || []).map((bucket)=> {
-    const items = (bucket.variants || []).slice(0, 4).map((variant)=> `<li>${htmlEscape(displayVariant(variant))}</li>`).join('');
+    const items = (bucket.variants || []).slice(0, 4).map((variant)=> `<li>${htmlEscape(variant)}</li>`).join('');
     return `<div class="fanout-col"><h3>${htmlEscape(bucket.label)}</h3><ul>${items}</ul></div>`;
   }).join('');
   const linkHtml = (data.links || []).map((link)=> `<a href="${link.href}" data-fanout-intent="${htmlEscape(link.intent || '')}">${htmlEscape(link.label)}</a>`).join('');
-  const payload = htmlEscape(JSON.stringify(data));
-  if (data.page_family === 'medium-article') {
-    return renderFanoutScript(data);
-  }
   return `
 <section class="card fanout-block" data-fanout-block="true" data-fanout-family="${htmlEscape(data.page_family || '')}" data-fanout-vertical="${htmlEscape(data.vertical || '')}">
-  <div class="badge">Search map</div>
-  <h2 class="h2" style="margin-top:8px">Common ways people search this</h2>
-  <p class="muted">This page is built to answer nearby search phrasing, then route you toward the official local guide when the decision becomes local, priced, or urgent.</p>
-  <div class="fanout-grid">${bucketHtml}</div>
+  <div class="badge">Related search intents</div>
+  <h2 class="h2" style="margin-top:8px">Questions and phrasings this page answers</h2>
+  <p class="muted">These are the nearby questions people ask before the decision becomes local, priced, or urgent enough for the official guide.</p>
+  <nav class="fanout-grid" aria-label="Related search intents">${bucketHtml}</nav>
   ${linkHtml ? `<div class="fanout-links">${linkHtml}</div>` : ''}
-  <script type="application/json" class="fanout-query-cluster">${payload}</script>
 </section>`;
 }
 
 function injectFanoutIntoHtml(html, data){
-  if (!html || !data || !data.variant_count) return html;
-  if (data.page_family === 'medium-article') {
-    const scriptOnly = renderFanoutBlock(data);
-    const stripped = String(html).replace(/<section class="card fanout-block"[\s\S]*?<\/section>/, scriptOnly);
-    if (stripped.includes('class="fanout-query-cluster"')) return stripped;
-    if (stripped.includes('<h1')) return stripped.replace(/(<h1[^>]*>[\s\S]*?<\/h1>)/, '$1\n' + scriptOnly);
-    return scriptOnly + '\n' + stripped;
-  }
-  if (String(html).includes('data-fanout-block="true"')) return html;
+  if (!html) return html;
+  let cleaned = String(html)
+    .replace(/<section class="card fanout-block"[\s\S]*?<\/section>/g, '')
+    .replace(/<div class="badge">Related search intents<\/div>/g, '')
+    .replace(/<h2 class="h2" style="margin-top:8px">Questions and phrasings this page answers<\/h2>/g, '')
+    .replace(/<p class="muted">These are the nearby questions people ask before the decision becomes local, priced, or urgent enough for the official guide.<\/p>/g, '')
+    .replace(/<nav class="fanout-grid" aria-label="Related search intents">/g, '')
+    .replace(/<div class="fanout-col">[\s\S]*?<\/div>/g, '')
+    .replace(/<section class="fanout-col">[\s\S]*?<\/section>/g, '')
+    .replace(/<div class="fanout-links">[\s\S]*?<\/div>/g, '')
+    .replace(/<\/nav>/g, '')
+    .replace(/<script type="application\/json" class="fanout-query-cluster">[\s\S]*?<\/script>/g, '')
+    .replace(/<script type="application\/json" class="query-mirror">[\s\S]*?<\/script>/g, '');
+  if (!data || !data.variant_count || data.page_family === 'medium-article') return cleaned;
   const block = renderFanoutBlock(data);
-  if (String(html).includes('class="card answer-box"')) {
-    return String(html).replace(/(<section class="card answer-box"[\s\S]*?<\/section>)/, '$1\n' + block);
+  if (cleaned.includes('class="card answer-box"')) {
+    return cleaned.replace(/(<section class="card answer-box"[\s\S]*?<\/section>)/, '$1\n' + block);
   }
-  if (String(html).includes('<h1')) {
-    return String(html).replace(/(<h1[^>]*>[\s\S]*?<\/h1>\s*(?:<p class="muted">[\s\S]*?<\/p>)?)/, '$1\n' + block);
+  if (cleaned.includes('<h1')) {
+    return cleaned.replace(/(<h1[^>]*>[\s\S]*?<\/h1>\s*(?:<p class="muted">[\s\S]*?<\/p>)?)/, '$1\n' + block);
   }
-  if (String(html).includes('data-canon-block="bottom"')) {
-    return String(html).replace(/(<section class="card" data-canon-block="bottom">)/, block + '\n$1');
+  if (cleaned.includes('data-canon-block="bottom"')) {
+    return cleaned.replace(/(<section class="card" data-canon-block="bottom">)/, block + '\n$1');
   }
-  return block + '\n' + html;
+  return block + '\n' + cleaned;
 }
+
 
 module.exports = {
   buildFanoutData,
   injectFanoutIntoHtml,
   renderFanoutBlock,
-  renderFanoutScript,
   inferPageFamily,
   guessVerticalFromSlug,
   uniqueStrings,

@@ -78,3 +78,23 @@ node scripts/validate_executable_bits.js
 2. Restore executable bits if needed with `./scripts/repair_executable_bits.sh`.
 3. Re-run `node scripts/build_site.js`.
 4. Re-run all validators in the required local sequence.
+
+
+## Distribution bootstrap and deploy
+- Stable committed IndexNow key is the default; bootstrap does not rotate unless explicitly requested.
+- Keep the committed key file in every future baseline ZIP.
+
+### Commands
+1. `npm run distribution:bootstrap`
+2. `npm run distribution:prepare`
+3. `npm run distribution:deploy`
+
+### Rotation only when explicitly requested
+- `INDEXNOW_ROTATE=1 npm run distribution:bootstrap`
+- or `bash distribution_scripts/bootstrap_distribution.sh --rotate`
+
+### Distribution validation contract
+- `distribution.config.json` must exist.
+- `distribution.config.json` must contain a non-empty committed `indexnow.key` and `indexnow.key_file`.
+- The committed key file and `indexnow.txt` must both match the configured key.
+- GSC automation must skip cleanly when credentials are not configured.

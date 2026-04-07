@@ -49,13 +49,11 @@ const htmlFiles = walk(ROOT).filter((fp)=> fp.endsWith('.html') && !fp.includes(
 htmlFiles.forEach((fp)=> {
   const rel = fp.replace(ROOT, '').replace(/\\/g, '/');
   const html = fs.readFileSync(fp, 'utf8');
-  if (rel.startsWith('/medium-articles/')) {
-    if (!html.includes('class="fanout-query-cluster"')) warnings.push(`${rel}: missing fan-out JSON payload`);
-    return;
-  }
   if (!requiredFanout(rel)) return;
   if (!html.includes('data-fanout-block="true"')) warnings.push(`${rel}: missing visible fan-out block`);
-  if (!html.includes('class="fanout-query-cluster"')) warnings.push(`${rel}: missing fan-out JSON payload`);
+  if (!html.includes('Related search intents')) warnings.push(`${rel}: missing semantic related search intents heading`);
+  if (!html.includes('<nav class="fanout-grid"')) warnings.push(`${rel}: missing semantic fan-out nav block`);
+  if (html.includes('class="fanout-query-cluster"')) warnings.push(`${rel}: hidden fan-out JSON payload still present`);
 });
 
 if (exists(FANOUT_MISSING)) {
