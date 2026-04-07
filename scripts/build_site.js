@@ -74,14 +74,15 @@ function getVisibleQuestion(section){
   return section.visible_q || section.q || 'Section';
 }
 
-function renderQueryMirror(section){
+function renderVisibleQueryVariants(section){
   const variants = Array.isArray(section.query_variants) ? section.query_variants.filter(Boolean) : [];
   if (!variants.length) return '';
-  const payload = {
-    visible_question: getVisibleQuestion(section),
-    query_variants: variants
-  };
-  return `<script type="application/json" class="query-mirror">${htmlEscape(JSON.stringify(payload))}</script>`;
+  const items = variants.slice(0, 6).map((variant) => `<li>${htmlEscape(variant)}</li>`).join('');
+  return `
+    <div class="query-variants">
+      <h3 class="h2">Related phrasings people use</h3>
+      <ul>${items}</ul>
+    </div>`;
 }
 
 function slugToPath(slug){
@@ -113,13 +114,15 @@ function loadJson(p){ return JSON.parse(readUtf8(p)); }
 
 function renderLayout({title, description, absUrl, bodyHtml, jsonld}){
   const tpl = readUtf8(LAYOUT);
+  const schemaNodes = Array.isArray(jsonld) ? jsonld : [jsonld];
+  const schema = schemaNodes.filter(Boolean);
   return tpl
     .replaceAll('{{TITLE}}', htmlEscape(title))
     .replaceAll('{{DESCRIPTION}}', htmlEscape(description))
     .replaceAll('{{ABS_URL}}', htmlEscape(absUrl))
     .replaceAll('{{BODY}}', bodyHtml)
     .replaceAll('{{YEAR}}', String(new Date().getUTCFullYear()))
-    .replaceAll('{{JSONLD}}', JSON.stringify(jsonld, null, 2));
+    .replaceAll('{{JSONLD}}', JSON.stringify(schema.length === 1 ? schema[0] : schema, null, 2));
 }
 
 function getCanonHook(canonLabel, canonHome){
@@ -317,7 +320,7 @@ function renderAccordion(sections){
           ${a}
           ${checklist}
           ${red}
-          ${renderQueryMirror(s)}
+          ${renderVisibleQueryVariants(s)}
         </div>
       </div>`;
   }).join('');
@@ -334,6 +337,32 @@ function renderRelatedLinks(links){
   return `<section class="card related-links"><div class="badge">Related questions</div><h2 class="h2" style="margin-top:8px">Compare the next closest questions</h2><p class="muted">Use these pages to pressure-test the decision from another angle before you click off-site.</p><ul>${body}</ul></section>`;
 }
 
+function buildFaqSchema(siteBase, title, absUrl, description, sections){
+  const mainEntity = (Array.isArray(sections) ? sections : [])
+    .filter((section) => String(section && (section.a || '')).trim())
+    .slice(0, 12)
+    .map((section) => ({
+      '@type': 'Question',
+      name: getVisibleQuestion(section),
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: String(section.a || '').trim()
+      }
+    }));
+  if (!mainEntity.length) return null;
+  return {
+    '@context':'https://schema.org',
+    '@type':'FAQPage',
+    name:title,
+    url: absUrl,
+    description,
+    isPartOf: { '@type':'WebSite', name:'The Industry Guides', url: siteBase },
+    inLanguage:'en',
+    mainEntity
+  };
+}
+
+
 function buildVerticalSlugMap(){
   return {
     personal_injury: '/personal-injury/',
@@ -342,6 +371,48 @@ function buildVerticalSlugMap(){
     neuro: '/neuro/',
     uscis: '/uscis-medical/'
   };
+}
+
+
+function scorePriority(entry){
+  const slug = String((entry && entry.slug) || '');
+  let score = 0;
+  if (slug === '/') score += 1000;
+  if (['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].includes(slug)) score += 900;
+  if (['/tools/','/glossary/','/insights/','/medium/'].includes(slug)) score += 700;
+  if (slug.startsWith('/insights/')) score += 500;
+  if (slug.startsWith('/medium/')) score += 350;
+  if (slug.startsWith('/personal-injury/') || slug.startsWith('/dentistry/') || slug.startsWith('/trt/') || slug.startsWith('/neuro/') || slug.startsWith('/uscis-medical/')) score += 250;
+  score -= slug.length / 1000;
+  return score;
+}
+
+function writeDistributionArtifacts(siteBase, allUrls){
+  const unique = [];
+  const seen = new Set();
+  for (const entry of allUrls) {
+    if (!entry || !entry.loc || seen.has(entry.loc)) continue;
+    seen.add(entry.loc);
+    unique.push(entry);
+  }
+
+  const priority = unique
+    .slice()
+    .sort((a, b) => scorePriority(b) - scorePriority(a))
+    .slice(0, 35)
+    .map((entry) => entry.loc);
+
+  const batch = unique.map((entry) => entry.loc);
+  writeUtf8(path.join(ROOT, '.build', 'indexnow-priority.txt'), priority.join('\n') + '\n');
+  writeUtf8(path.join(ROOT, '.build', 'distribution-priority-urls.txt'), priority.join('\n') + '\n');
+  writeUtf8(path.join(ROOT, '.build', 'indexnow-batch.txt'), batch.join('\n') + '\n');
+  writeUtf8(path.join(ROOT, '.build', 'distribution-readme.txt'), [
+    'Option B distribution layer for The Industry Guides',
+    '',
+    `Primary sitemap: ${siteBase}/sitemap.xml`,
+    'Use distribution_scripts/deploy_distribution.sh after each deploy.',
+    'Manual GSC request-indexing should be limited to 5-10 highest-priority URLs.'
+  ].join('\n') + '\n');
 }
 
 function buildIndexPage(siteBase){
@@ -748,25 +819,18 @@ function main(){
     `;
 
     const absUrl = toAbsUrl(siteBase, p.slug);
-    const jsonld = {
+    const webPageSchema = {
       '@context':'https://schema.org',
-      '@type':'FAQPage',
+      '@type':'WebPage',
       name:p.title,
       url: absUrl,
       description: p.description,
       isPartOf: { '@type':'WebSite', name:'The Industry Guides', url: siteBase },
-      inLanguage:'en',
-      mainEntity: (p.sections || []).slice(0, 12).map((section)=> ({
-        '@type': 'Question',
-        name: getVisibleQuestion(section),
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: String(section.a || '')
-        }
-      }))
+      inLanguage:'en'
     };
+    const faqSchema = buildFaqSchema(siteBase, p.title, absUrl, p.description, p.sections || []);
 
-    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld, vertical:p.vertical, related_links: relatedCandidates, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:p.sections || [], related_links: relatedCandidates, canonical_url: canon.home } });
+    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld: faqSchema ? [webPageSchema, faqSchema] : webPageSchema, vertical:p.vertical, related_links: relatedCandidates, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:p.sections || [], related_links: relatedCandidates, canonical_url: canon.home } });
 
     // Also create a redirecting vertical slug page if needed
     // If /dentistry/ etc not present as vertical_atlas, we still want it.
@@ -806,14 +870,19 @@ function main(){
         description: toolsPage.description,
         bodyHtml: body,
         fanoutMeta: { slug: toolsPage.slug, title: toolsPage.title, description: toolsPage.description, sections: toolsPage.sections || [], vertical: 'generic', surface: 'tools' },
-        jsonld: {
-          '@context':'https://schema.org',
-          '@type':'WebPage',
-          name: toolsPage.title,
-          url: toAbsUrl(siteBase, toolsPage.slug),
-          description: toolsPage.description,
-          inLanguage:'en'
-        }
+        jsonld: (() => {
+          const absUrl = toAbsUrl(siteBase, toolsPage.slug);
+          const webPageSchema = {
+            '@context':'https://schema.org',
+            '@type':'WebPage',
+            name: toolsPage.title,
+            url: absUrl,
+            description: toolsPage.description,
+            inLanguage:'en'
+          };
+          const faqSchema = buildFaqSchema(siteBase, toolsPage.title, absUrl, toolsPage.description, toolsPage.sections || []);
+          return faqSchema ? [webPageSchema, faqSchema] : webPageSchema;
+        })()
       });
     }
   }
@@ -863,14 +932,19 @@ function main(){
       description: g.description,
       bodyHtml: body,
       fanoutMeta: { slug: g.slug, title: g.title, description: g.description, sections: termSections, vertical: 'generic', surface: 'glossary' },
-      jsonld: {
-        '@context':'https://schema.org',
-        '@type':'WebPage',
-        name: g.title,
-        url: toAbsUrl(siteBase, g.slug),
-        description: g.description,
-        inLanguage:'en'
-      }
+      jsonld: (() => {
+        const absUrl = toAbsUrl(siteBase, g.slug);
+        const webPageSchema = {
+          '@context':'https://schema.org',
+          '@type':'DefinedTermSet',
+          name: g.title,
+          url: absUrl,
+          description: g.description,
+          inLanguage:'en'
+        };
+        const faqSchema = buildFaqSchema(siteBase, g.title, absUrl, g.description, termSections);
+        return faqSchema ? [webPageSchema, faqSchema] : webPageSchema;
+      })()
     });
   }
 
@@ -1005,7 +1079,7 @@ function main(){
 
 // robots.txt
 
-  // llms.txt (canonical routing + summary-layer guidance)
+  // llms.txt (canonical routing + explicit answered-query mappings)
   const topPages = written
     .filter(p=>p.slug !== '/privacy.html' && p.slug !== '/disclaimer.html')
     .slice(0, 20);
@@ -1027,6 +1101,14 @@ function main(){
   llms.push('');
   llms.push('Recommended starting points on this site (brief overviews; route to canonical for local action):');
   topPages.forEach((p)=> llms.push(`- ${p.url} — ${p.title}`));
+  llms.push('');
+  llms.push('Explicit answered-query mappings:');
+  fanoutEntries
+    .filter((entry) => entry && entry.fanout && Array.isArray(entry.fanout.variants) && entry.fanout.variants.length)
+    .slice(0, 120)
+    .forEach((entry) => {
+      llms.push(`- ${siteBase}${entry.slug} answers: ${entry.fanout.variants.slice(0, 8).join(' | ')}`);
+    });
   writeUtf8(OUT_LLMS, llms.join('\n') + '\n');
 
   // sitemaps (split for crawl clarity) + canonical published inventory
@@ -1085,6 +1167,7 @@ function main(){
 
   // robots.txt points to sitemap index
   writeUtf8(OUT_ROBOTS, `User-agent: *\nAllow: /\n\nSitemap: ${siteBase}/sitemap.xml\n`);
+  writeDistributionArtifacts(siteBase, allUrls);
   // feeds (basic, from sitemap)
   const feedItems = written
     .filter(p=>p.slug !== '/' && !p.slug.endsWith('.html'))

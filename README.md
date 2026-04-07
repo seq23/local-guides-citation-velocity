@@ -125,3 +125,22 @@ The neuro vertical now covers evaluation intent **and** post-evaluation therapy 
 ## TRT / IV / Hair peptide capture
 
 Peptide clusters now live inside the TRT vertical so the repo can capture plain-language peptide demand and route that traffic back to the canonical TRT / IV / hair site.
+
+
+## Option B distribution layer
+This repo uses a light distribution layer to accelerate discovery for the canonical domains without adding a `sitemap-fresh.xml`.
+
+### Generated on build
+- `.build/indexnow-priority.txt`
+- `.build/indexnow-batch.txt`
+- `.build/distribution-priority-urls.txt`
+- `.build/distribution-readme.txt`
+
+### Scripts
+- `distribution_scripts/gsc_submit_sitemaps.py`
+- `distribution_scripts/gsc_inspect_urls.py`
+- `distribution_scripts/indexnow_submit.sh`
+- `distribution_scripts/deploy_distribution.sh`
+
+### Operating rule
+After each deploy, submit `sitemap.xml`, push the priority and batch URL files through IndexNow, inspect the priority set, and manually request indexing for only the 5–10 highest-value URLs.
