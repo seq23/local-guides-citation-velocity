@@ -29,12 +29,25 @@ function displayVariant(value){
   return text.charAt(0).toLowerCase() + text.slice(1);
 }
 
+function isLowValueVariant(value){
+  const text = String(value || '').trim().toLowerCase();
+  if (!text) return true;
+  return [
+    'best fit',
+    'best fit is',
+    'worth it',
+    'how to compare',
+    'questions to ask'
+  ].includes(text);
+}
+
 function uniqueStrings(values, limit){
   const seen = new Set();
   const out = [];
   for (const value of values || []){
     const clean = String(value || '').replace(/\s+/g, ' ').trim();
     if (!clean) continue;
+    if (isLowValueVariant(clean)) continue;
     const key = clean.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -179,7 +192,7 @@ function buildIntentBuckets(meta){
   const base = collectSeedQueries(meta);
   const noun = terms.noun;
   const sectionTopic = firstSectionQuestion(meta);
-  const compareBase = family === 'detail' && sectionTopic ? sectionTopic : noun;
+  const compareBase = noun;
 
   const direct = uniqueStrings([
     base[0],
@@ -193,10 +206,10 @@ function buildIntentBuckets(meta){
     family === 'utility' ? topic : ''
   ], 4);
   const compare = uniqueStrings([
-    'how to compare ' + compareBase,
-    compareBase + ' questions to ask',
-    compareBase + ' best fit',
-    'is ' + compareBase + ' worth it'
+    'how to compare ' + compareBase + ' options',
+    'what to verify before choosing ' + compareBase,
+    'how to shortlist ' + compareBase + ' options',
+    'what to ask before booking ' + compareBase
   ], 4);
   const pricing = uniqueStrings([
     noun + ' cost',
@@ -283,8 +296,8 @@ function renderFanoutBlock(data){
   return `
 <section class="card fanout-block" data-fanout-block="true" data-fanout-family="${htmlEscape(data.page_family || '')}" data-fanout-vertical="${htmlEscape(data.vertical || '')}">
   <div class="badge">Related search intents</div>
-  <h2 class="h2" style="margin-top:8px">Questions and phrasings this page answers</h2>
-  <p class="muted">These are the nearby questions people ask before the decision becomes local, priced, or urgent enough for the official guide.</p>
+  <h2 class="h2" style="margin-top:8px">Related decision paths people also use</h2>
+  <p class="muted">These are nearby ways people describe the same decision before they move into local comparison, pricing, or urgent next-step mode.</p>
   <nav class="fanout-grid" aria-label="Related search intents">${bucketHtml}</nav>
   ${linkHtml ? `<div class="fanout-links">${linkHtml}</div>` : ''}
 </section>`;
@@ -295,8 +308,8 @@ function injectFanoutIntoHtml(html, data){
   let cleaned = String(html)
     .replace(/<section class="card fanout-block"[\s\S]*?<\/section>/g, '')
     .replace(/<div class="badge">Related search intents<\/div>/g, '')
-    .replace(/<h2 class="h2" style="margin-top:8px">Questions and phrasings this page answers<\/h2>/g, '')
-    .replace(/<p class="muted">These are the nearby questions people ask before the decision becomes local, priced, or urgent enough for the official guide.<\/p>/g, '')
+    .replace(/<h2 class="h2" style="margin-top:8px">Related decision paths people also use<\/h2>/g, '')
+    .replace(/<p class="muted">These are nearby ways people describe the same decision before they move into local comparison, pricing, or urgent next-step mode.<\/p>/g, '')
     .replace(/<nav class="fanout-grid" aria-label="Related search intents">/g, '')
     .replace(/<div class="fanout-col">[\s\S]*?<\/div>/g, '')
     .replace(/<section class="fanout-col">[\s\S]*?<\/section>/g, '')

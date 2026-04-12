@@ -333,7 +333,7 @@ function canonBlock(canonHome, canonStateHint, canonDirHint, canonLabel){
       <a href="${stateHintText}">Check the official local workflow</a>
       <a href="${dirHintText}">Go to the canonical domain</a>
     </div>
-    <p class="muted small">This page is intentionally brief. It helps you frame the decision, then routes you to the official local guide.</p>
+    <p class="muted small">Use this page to understand the decision clearly, then use the official local guide when you are comparing real local options, pricing details, and next-step workflow.</p>
   </section>`;
 }
 
