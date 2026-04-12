@@ -4,13 +4,13 @@
   "type": "commonjs",
   "scripts": {
     "build": "node scripts/build_site.js",
-    "validate": "node scripts/validate_site.js",
+    "validate": "node scripts/validate_site.js && node scripts/validate_answer_shape.js",
     "release:batch": "node scripts/release_batch.js 10",
     "release:batch20": "node scripts/release_batch.js 20",
     "validate:medium": "node scripts/validate_medium_articles.js --all",
     "validate:insights": "node scripts/validate_insights.js --all",
-    "validate:site": "node scripts/validate_live_hubs.js && node scripts/validate_site.js",
-    "validate:all": "node scripts/validate_query_compiler.js && node scripts/validate_medium_articles.js --all && node scripts/validate_insights.js --all && node scripts/validate_live_hubs.js && node scripts/validate_site.js && node scripts/validate_sitemap_parity.js && node scripts/validate_archive_schema.js && node scripts/validate_publish_inventory.js && node scripts/validate_homepage_schema.js && node scripts/validate_executable_bits.js && node scripts/validate_fanout_warning.js && node scripts/validate_distribution_inputs.js && node scripts/validate_distribution_contract.js",
+    "validate:site": "node scripts/validate_live_hubs.js && node scripts/validate_site.js && node scripts/validate_answer_shape.js",
+    "validate:all": "node scripts/validate_query_compiler.js && node scripts/validate_medium_articles.js --all && node scripts/validate_insights.js --all && node scripts/validate_live_hubs.js && node scripts/validate_site.js && node scripts/validate_answer_shape.js && node scripts/validate_sitemap_parity.js && node scripts/validate_archive_schema.js && node scripts/validate_publish_inventory.js && node scripts/validate_homepage_schema.js && node scripts/validate_executable_bits.js && node scripts/validate_fanout_warning.js && node scripts/validate_distribution_inputs.js && node scripts/validate_distribution_contract.js",
     "validate:sitemap": "node scripts/validate_sitemap_parity.js",
     "validate:archive": "node scripts/validate_archive_schema.js",
     "validate:publish": "node scripts/validate_publish_inventory.js",
@@ -24,7 +24,8 @@
     "validate:distribution": "node scripts/validate_distribution_inputs.js",
     "distribution:bootstrap": "bash distribution_scripts/bootstrap_distribution.sh",
     "distribution:prepare": "node scripts/build_site.js && npm run validate:distribution && node scripts/validate_distribution_contract.js",
-    "distribution:deploy": "bash distribution_scripts/deploy_distribution.sh"
+    "distribution:deploy": "bash distribution_scripts/deploy_distribution.sh",
+    "validate:shape": "node scripts/validate_answer_shape.js"
   },
   "engines": {
     "node": ">=20 <=24"

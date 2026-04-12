@@ -34,6 +34,7 @@ const {
   ensurePublishedUrlInventory
 } = require('./lib/publish_contract');
 const { buildFanoutData, injectFanoutIntoHtml, inferPageFamily } = require('./lib/fanout');
+const { getPageShapeConfig } = require('./lib/page_shape_config');
 
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
@@ -183,6 +184,97 @@ function renderAnswerBox(title, summary, bullets = []){
   return `<section class="card answer-box"><div class="badge">Quick answer</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title)}</h2><p class="muted">${htmlEscape(summary)}</p>${bulletHtml}</section>`;
 }
 
+
+function uniq(items){
+  return Array.from(new Set((items || []).filter(Boolean)));
+}
+
+function normalizeForCompare(value){
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function dedupeSectionsByVisibleQuestion(sections){
+  const seen = new Set();
+  const out = [];
+  for (const section of Array.isArray(sections) ? sections : []) {
+    const key = normalizeForCompare(getVisibleQuestion(section));
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(section);
+  }
+  return out;
+}
+
+function mergeSectionSignals(sections){
+  const allQueryVariants = uniq((sections || []).flatMap((section) => {
+    const vars = Array.isArray(section.query_variants) ? section.query_variants : [];
+    return [getVisibleQuestion(section), section.q, ...vars].filter(Boolean);
+  }));
+  const checklists = uniq((sections || []).flatMap((section) => Array.isArray(section.checklist) ? section.checklist : []));
+  const redFlags = uniq((sections || []).flatMap((section) => Array.isArray(section.red_flags) ? section.red_flags : []));
+  return { allQueryVariants, checklists, redFlags };
+}
+
+function renderDecisionChecklist(title, intro, items){
+  const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+  if (!safeItems.length) return '';
+  return `<section class="card decision-checklist"><div class="badge">Decision checklist</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title || 'How to compare the right options')}</h2><p class="muted">${htmlEscape(intro || '')}</p><ol>${safeItems.map((item) => `<li>${htmlEscape(item)}</li>`).join('')}</ol></section>`;
+}
+
+function renderFrameworkBox(title, bullets){
+  const safeBullets = Array.isArray(bullets) ? bullets.filter(Boolean) : [];
+  if (!safeBullets.length) return '';
+  return `<section class="card framework-box"><div class="badge">Decision framework</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title || 'What usually drives the decision')}</h2><ul>${safeBullets.map((item) => `<li>${htmlEscape(item)}</li>`).join('')}</ul></section>`;
+}
+
+function assignCanonicalModules(rawSections, pageShape){
+  if (!pageShape || !Array.isArray(pageShape.modules)) return dedupeSectionsByVisibleQuestion(rawSections || []);
+  const sections = Array.isArray(rawSections) ? rawSections : [];
+  const normalizedSections = sections.map((section) => ({
+    section,
+    haystack: normalizeForCompare([getVisibleQuestion(section), section.q, ...(Array.isArray(section.query_variants) ? section.query_variants : [])].join(' | '))
+  }));
+  const used = new Set();
+  const modules = [];
+  for (const module of pageShape.modules) {
+    const matched = normalizedSections
+      .filter(({ haystack }, idx) => !used.has(idx) && (module.match || []).some((needle) => haystack.includes(normalizeForCompare(needle))))
+      .map((entry, idx) => ({...entry, idx: normalizedSections.indexOf(entry)}));
+    if (!matched.length) continue;
+    matched.forEach(({ idx }) => used.add(idx));
+    const sourceSections = matched.map(({ section }) => section);
+    const merged = mergeSectionSignals(sourceSections);
+    modules.push({
+      visible_q: module.title,
+      q: module.title,
+      a: module.summary,
+      checklist: uniq([...(module.checklist || []), ...merged.checklists]).slice(0, 7),
+      red_flags: uniq([...(module.red_flags || []), ...merged.redFlags]).slice(0, 6),
+      query_variants: merged.allQueryVariants.slice(0, 10),
+      source_count: sourceSections.length
+    });
+  }
+  const leftovers = normalizedSections.filter((_, idx) => !used.has(idx)).map(({ section }) => section);
+  if (leftovers.length) {
+    const merged = mergeSectionSignals(leftovers);
+    modules.push({
+      visible_q: 'Additional practical questions to verify before you decide',
+      q: 'Additional practical questions to verify before you decide',
+      a: 'Use any leftover questions as pressure tests. If a provider or clinic cannot answer these clearly, the fit is probably weaker than it looks on the surface.',
+      checklist: merged.checklists.slice(0, 6),
+      red_flags: merged.redFlags.slice(0, 5),
+      query_variants: merged.allQueryVariants.slice(0, 10),
+      source_count: leftovers.length
+    });
+  }
+  return dedupeSectionsByVisibleQuestion(modules);
+}
+
 function renderQaHighlights(sections, limit = 3){
   const items = Array.isArray(sections) ? sections.filter((section)=> section && (section.visible_q || section.q) && section.a).slice(0, limit) : [];
   if (!items.length) return '';
@@ -277,7 +369,7 @@ function canonBlockMid(canonHome, canonLabel, clusterTitle='this topic'){
 }
 
 function buildTOC(sections){
-  const filtered = (sections || []).filter((s)=> getVisibleQuestion(s) !== 'Section');
+  const filtered = dedupeSectionsByVisibleQuestion((sections || []).filter((s)=> getVisibleQuestion(s) !== 'Section'));
   if (!filtered.length) return '';
   const links = filtered.map((s, idx) => {
     const id = makeId(`${getVisibleQuestion(s)}-${idx+1}`);
@@ -298,7 +390,7 @@ function makeId(raw){
 }
 
 function renderAccordion(sections){
-  const filtered = (sections || []).filter((s)=> getVisibleQuestion(s) !== 'Section');
+  const filtered = dedupeSectionsByVisibleQuestion((sections || []).filter((s)=> getVisibleQuestion(s) !== 'Section'));
   const items = filtered.map((s, idx) => {
     const id = makeId(`${getVisibleQuestion(s)}-${idx+1}`);
     const checklist = (s.checklist && s.checklist.length)
@@ -338,7 +430,7 @@ function renderRelatedLinks(links){
 }
 
 function buildFaqSchema(siteBase, title, absUrl, description, sections){
-  const mainEntity = (Array.isArray(sections) ? sections : [])
+  const mainEntity = dedupeSectionsByVisibleQuestion(Array.isArray(sections) ? sections : [])
     .filter((section) => String(section && (section.a || '')).trim())
     .slice(0, 12)
     .map((section) => ({
@@ -779,21 +871,27 @@ function main(){
     if (!canon) throw new Error(`Unknown vertical: ${p.vertical} for ${p.slug}`);
 
     const topCanon = canonBlock(canon.home, canon.state_hint, canon.directory_hint, canon.label);
+    const pageShape = getPageShapeConfig(p.slug);
+    const shapedSections = pageShape ? assignCanonicalModules(p.sections || [], pageShape) : (p.sections || []);
 
     const heading = `<h1 class="h1">${htmlEscape(p.title)}</h1><p class="muted">${htmlEscape(p.description)}</p>`;
 
-    const toc = buildTOC(p.sections);
-    const acc = renderAccordion(p.sections || []);
-    const answerBox = renderAnswerBox(
-      `What to know about ${p.title}`,
-      `${p.description} Use this page to get the decision framework fast, then verify local details on ${canon.label}.`,
-      [
-        'Read the direct answers first',
-        'Use the checklist before you call or book',
-        'Route to the official local guide for local next steps'
-      ]
-    );
-    const qaHighlights = renderQaHighlights(p.sections || []);
+    const toc = buildTOC(shapedSections);
+    const acc = renderAccordion(shapedSections || []);
+    const answerBox = pageShape
+      ? renderAnswerBox(pageShape.shortTitle || 'Quick answer', pageShape.shortSummary || p.description, [])
+      : renderAnswerBox(
+          `What to know about ${p.title}`,
+          `${p.description} Use this page to get the decision framework fast, then verify local details on ${canon.label}.`,
+          [
+            'Read the direct answers first',
+            'Use the checklist before you call or book',
+            'Route to the official local guide for local next steps'
+          ]
+        );
+    const decisionChecklist = pageShape ? renderDecisionChecklist(pageShape.checklistTitle, pageShape.checklistIntro, pageShape.checklistItems) : '';
+    const frameworkBox = pageShape ? renderFrameworkBox(pageShape.frameworkTitle, pageShape.frameworkBullets) : '';
+    const qaHighlights = renderQaHighlights(shapedSections || []);
     const toolSpotlight = toolsPageForHub ? renderToolSpotlight(toolsPageForHub.sections || [], 'Fast scripts for comparing options before you click away') : ''; 
     const relatedCandidates = Array.isArray(p.related_links) && p.related_links.length ? p.related_links : buildAutoRelatedLinks(p, atlasPages);
     const relatedLinks = renderRelatedLinks(relatedCandidates);
@@ -805,6 +903,8 @@ function main(){
       ${topCanon}
       ${heading}
       ${answerBox}
+      ${decisionChecklist}
+      ${frameworkBox}
       <div class="grid">
         <div class="col-12">${toc}</div>
       </div>
@@ -828,9 +928,9 @@ function main(){
       isPartOf: { '@type':'WebSite', name:'The Industry Guides', url: siteBase },
       inLanguage:'en'
     };
-    const faqSchema = buildFaqSchema(siteBase, p.title, absUrl, p.description, p.sections || []);
+    const faqSchema = buildFaqSchema(siteBase, p.title, absUrl, p.description, shapedSections || []);
 
-    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld: faqSchema ? [webPageSchema, faqSchema] : webPageSchema, vertical:p.vertical, related_links: relatedCandidates, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:p.sections || [], related_links: relatedCandidates, canonical_url: canon.home } });
+    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld: faqSchema ? [webPageSchema, faqSchema] : webPageSchema, vertical:p.vertical, related_links: relatedCandidates, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:shapedSections || [], related_links: relatedCandidates, canonical_url: canon.home } });
 
     // Also create a redirecting vertical slug page if needed
     // If /dentistry/ etc not present as vertical_atlas, we still want it.
