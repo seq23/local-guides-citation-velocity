@@ -128,13 +128,14 @@ function compile() {
       q: item.query,
       visible_q: titleCase(item.normalized_query),
       query_variants: [item.query],
-      a: questionAnswer(verticalKey, clusterKey, item.query),
+      a: item.answer || questionAnswer(verticalKey, clusterKey, item.query),
       checklist: item.checklist || [],
       red_flags: item.red_flags || [],
       intent_type: item.intent_type,
       source_type: item.source_type,
       source_bucket: item.source_bucket,
-      normalized_query: item.normalized_query
+      normalized_query: item.normalized_query,
+      canonical_target_url: item.notes || cfg.domain
     }));
     compiledPages.push({
       slug,
@@ -144,7 +145,7 @@ function compile() {
       compiler_source: 'reddit_queries',
       query_compiler_generated: true,
       cluster: clusterKey,
-      canonical_target_url: cfg.domain,
+      canonical_target_url: (clusterItems.find((item) => item.notes) || {}).notes || cfg.domain,
       related_links: [],
       sections
     });
