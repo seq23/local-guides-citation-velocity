@@ -232,6 +232,21 @@ function renderFrameworkBox(title, bullets){
   return `<section class="card framework-box"><div class="badge">Decision framework</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title || 'What usually drives the decision')}</h2><ul>${safeBullets.map((item) => `<li>${htmlEscape(item)}</li>`).join('')}</ul></section>`;
 }
 
+function renderComparisonTable(title, headers, rows, badge='Comparison table'){
+  const safeRows = Array.isArray(rows) ? rows.filter((row) => Array.isArray(row) && row.length) : [];
+  if (!safeRows.length) return '';
+  const safeHeaders = Array.isArray(headers) ? headers.filter(Boolean) : [];
+  const headerHtml = safeHeaders.length ? `<thead><tr>${safeHeaders.map((h)=>`<th>${htmlEscape(h)}</th>`).join('')}</tr></thead>` : '';
+  const bodyHtml = `<tbody>${safeRows.map((row)=>`<tr>${row.map((cell)=>`<td>${htmlEscape(cell)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  return `<section class="card comparison-table"><div class="badge">${htmlEscape(badge)}</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title || 'Quick comparison')}</h2><div class="table-wrap"><table>${headerHtml}${bodyHtml}</table></div></section>`;
+}
+
+function renderDirectAnswer(title, bullets){
+  const safeBullets = Array.isArray(bullets) ? bullets.filter(Boolean) : [];
+  if (!safeBullets.length) return '';
+  return `<section class="card answer-box"><div class="badge">Direct answer</div><h2 class="h2" style="margin-top:8px">${htmlEscape(title || 'Short answer')}</h2><ul>${safeBullets.map((item)=>`<li>${htmlEscape(item)}</li>`).join('')}</ul></section>`;
+}
+
 function assignCanonicalModules(rawSections, pageShape){
   if (!pageShape || !Array.isArray(pageShape.modules)) return dedupeSectionsByVisibleQuestion(rawSections || []);
   const sections = Array.isArray(rawSections) ? rawSections : [];
@@ -890,6 +905,9 @@ function main(){
           ]
         );
     const decisionChecklist = pageShape ? renderDecisionChecklist(pageShape.checklistTitle, pageShape.checklistIntro, pageShape.checklistItems) : '';
+    const directAnswer = pageShape ? renderDirectAnswer(pageShape.directAnswerTitle, pageShape.directAnswerBullets) : '';
+    const comparisonTable = pageShape ? renderComparisonTable(pageShape.comparisonTableTitle, pageShape.comparisonTableHeaders, pageShape.comparisonTableRows, 'Comparison table') : '';
+    const costTable = pageShape ? renderComparisonTable(pageShape.costTableTitle || pageShape.comparisonTableTitle, pageShape.costTableHeaders || pageShape.comparisonTableHeaders, pageShape.costTableRows || pageShape.comparisonTableRows, 'Cost table') : '';
     const frameworkBox = pageShape ? renderFrameworkBox(pageShape.frameworkTitle, pageShape.frameworkBullets) : '';
     const qaHighlights = renderQaHighlights(shapedSections || []);
     const toolSpotlight = toolsPageForHub ? renderToolSpotlight(toolsPageForHub.sections || [], 'Fast scripts for comparing options before you click away') : ''; 
@@ -903,7 +921,10 @@ function main(){
       ${topCanon}
       ${heading}
       ${answerBox}
+      ${directAnswer}
       ${decisionChecklist}
+      ${comparisonTable}
+      ${costTable}
       ${frameworkBox}
       <div class="grid">
         <div class="col-12">${toc}</div>

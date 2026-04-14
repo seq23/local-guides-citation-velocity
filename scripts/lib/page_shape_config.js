@@ -1,7 +1,7 @@
 'use strict';
 
-function makeConfig(shortTitle, shortSummary, checklistTitle, checklistIntro, checklistItems, frameworkTitle, frameworkBullets, modules){
-  return { shortTitle, shortSummary, checklistTitle, checklistIntro, checklistItems, frameworkTitle, frameworkBullets, modules };
+function makeConfig(shortTitle, shortSummary, checklistTitle, checklistIntro, checklistItems, frameworkTitle, frameworkBullets, modules, extras = {}){
+  return { shortTitle, shortSummary, checklistTitle, checklistIntro, checklistItems, frameworkTitle, frameworkBullets, modules, ...extras };
 }
 
 function m(title, match, summary, checklist = [], red_flags = []){
@@ -78,7 +78,7 @@ const CONFIG = {
     'Quick answer',
     'People usually choose a dentist by confirming provider type, treatment-plan clarity, written pricing, and whether the office feels trustworthy under pressure. “Top rated” matters less than fit, explanation quality, and whether the next step is clear.',
     'How to choose a dentist without guessing',
-    'Use a shortlist, compare the same questions at each office, and do not confuse marketing polish with a good clinical fit.',
+    'Use a shortlist, compare the same questions at each office, and do not confuse marketing polish with a good clinical fit. Start with provider type, written treatment plans, pricing clarity, and whether the office explains alternatives clearly.',
     ['Confirm whether you need a general dentist or a specialist', 'Ask for a written treatment plan and estimate', 'Compare how clearly options and alternatives are explained', 'Check how urgent care, follow-up, or sedation are handled', 'Do not choose on reviews alone'],
     'What usually drives a good dental choice',
     ['The right provider type matters first.', 'A written treatment plan beats a vague verbal pitch.', 'Pricing and trust issues usually show up early if you ask directly.'],
@@ -87,7 +87,8 @@ const CONFIG = {
       m('Use treatment-plan clarity to compare offices', ['compare local dental offices','what makes a dentist good','compare dentists','private practice','chain dental office'], 'A strong office can explain options, alternatives, and why one plan is being recommended. Good comparison usually sounds like a treatment conversation, not a sales script.', ['Ask what alternatives exist', 'Ask what happens if you wait', 'Ask for the plan in writing'], ['No written treatment plan', 'Heavy pressure to say yes immediately']),
       m('Price, insurance, and financing should be understandable before booking', ['coverage','fee structure','self-pay','pricing'], 'You do not need every exact number on the first call, but you should understand whether the office gives written estimates, how insurance is handled, and whether financing changes the total.', ['Ask for a written estimate', 'Ask whether they are in network or only submit claims', 'Ask whether financing adds fees or conditions'], ['They refuse to discuss estimates', 'The office is vague about insurance and financing']),
       m('Urgent, same-day, or anxiety-sensitive care needs a different comparison lens', ['urgent','same-day','sedation','anxiety','tooth pain','broken tooth','gum symptoms'], 'Emergency care, sedation, and anxiety-friendly dentistry should be evaluated differently from routine cleanings. Availability matters, but so do safety, communication, and whether follow-up is clear.', ['Ask what can be handled same day', 'Ask who manages sedation decisions', 'Ask what aftercare or follow-up looks like'], ['They promise urgent help without triage questions', 'They cannot explain sedation or aftercare clearly']),
-      m('Read reviews and ratings as context, not proof', ['top rated','reviews'], 'Reviews can help when they reveal communication quality, follow-up, and consistency across visits. Ratings alone are not enough to choose a provider.', ['Look for detail about communication and outcomes', 'Compare whether complaints repeat the same theme', 'Use reviews to build questions, not make the whole decision'], ['Only generic praise with no specifics', 'The office leans on ratings and avoids direct questions'])
+      m('Read reviews and ratings as context, not proof', ['top rated','reviews'], 'Reviews can help when they reveal communication quality, follow-up, and consistency across visits. Ratings alone are not enough to choose a provider.', ['Look for detail about communication and outcomes', 'Compare whether complaints repeat the same theme', 'Use reviews to build questions, not make the whole decision'], ['Only generic praise with no specifics', 'The office leans on ratings and avoids direct questions']),
+      m('Use location as a fit factor, not the whole decision', ['chicago','dallas','local','trusted dentist'], 'Location matters when it changes convenience, follow-up, and provider availability, but the safer move is to compare local options using the same trust and treatment-plan checklist.', ['Compare two or three local offices using the same checklist', 'Use location to narrow, not to decide by itself'], ['You choose purely on map location or ranking position'])
     ]
   ),
   '/dentistry/anxiety-trust/': makeConfig(
@@ -149,6 +150,132 @@ const CONFIG = {
       m('Compare referrals based on expertise, not convenience', ['compare'], 'A referral is useful when it improves the fit between the problem and the provider. Convenience matters, but it should not replace expertise when the treatment is more complex.', ['Ask how often the referred specialist handles your issue', 'Ask what changes if you stay in-house', 'Ask whether a second opinion would be reasonable'], ['You are steered only by office convenience or speed']),
       m('Pricing, records, and follow-up should still be clear', ['cost','records','follow-up'], 'Specialty care can add steps, records, and costs. Clarify how images, treatment notes, and follow-up are handled so the referral does not create confusion.', ['Ask who sends records and when', 'Ask who explains pricing and insurance', 'Ask who handles aftercare questions'], ['No one owns the handoff between offices'])
     ]
+  ),
+
+  '/dentistry/choosing-a-dentist/': makeConfig(
+    'Quick answer',
+    'Most people choose the right dentist by checking provider type, treatment-plan clarity, written pricing, office trust signals, and whether the next step is explained clearly. A good choice usually comes from comparing a shortlist with the same checklist instead of choosing on reviews alone.',
+    'How to choose the right dentist without guessing',
+    'Start with the checklist. Compare two or three offices using the same questions before you let ratings or convenience decide the whole choice.',
+    ['Confirm whether you need a general dentist or a specialist', 'Ask for a written treatment plan and estimate', 'Compare how clearly options and alternatives are explained', 'Check how urgent care, follow-up, or sedation are handled', 'Do not choose on reviews alone', 'Compare two or three offices using the same questions'],
+    'What usually drives a good dental choice',
+    ['The right provider type matters first.', 'A written treatment plan beats a polished sales pitch.', 'Trust usually shows up in explanation quality and pricing clarity.'],
+    [
+      m('Start with provider type and scope of care', ['general dentist','specialist','provider type','right dentist'], 'The first filter is whether you need routine care, cosmetic work, urgent treatment, or a specialist. A good office should be able to explain scope before pushing treatment.', ['Ask whether your issue belongs with a general dentist or a specialist', 'Ask what services are handled in-house versus referred out'], ['They recommend treatment before clarifying provider fit']),
+      m('Use a written treatment plan and estimate to compare offices', ['written treatment plan','estimate','cost','pricing'], 'A written plan makes it easier to compare options, timing, and likely total cost. Verbal pricing and vague treatment language make comparison harder.', ['Ask for the plan and estimate in writing', 'Ask what could still change after exam or imaging'], ['They avoid written estimates', 'They cannot explain what changes price']),
+      m('Use trust signals, not just ratings', ['reviews','trusted','good dentist'], 'Reviews are useful when they help you build questions, but they should not replace clarity on options, follow-up, and communication.', ['Ask how updates, questions, and follow-up work', 'Use reviews as context, not final proof'], ['They lean on ratings instead of specifics'])
+    ]
+  ),
+  '/dentistry/dental-bridge-vs-implant/': makeConfig(
+    'Quick answer',
+    'A bridge and an implant replace a missing tooth in different ways. The most useful comparison is support method, effect on nearby teeth and bone, total cost, longevity, and candidacy.',
+    'Bridge vs implant: what actually changes',
+    'Start with the table. Most people make a better decision when they compare support, procedure, cost, and long-term maintenance side by side.',
+    ['Compare how each option is supported', 'Compare impact on neighboring teeth', 'Compare bone preservation and long-term maintenance', 'Compare timeline and healing requirements', 'Compare candidacy, not just price'],
+    'What usually drives the decision',
+    ['The best fit depends on structure, not slogans.', 'Price alone does not tell you the better long-term option.', 'Candidacy and maintenance usually matter as much as procedure type.'],
+    [
+      m('Compare support method and impact on nearby teeth', ['difference between','one missing tooth','support method','nearby teeth'], 'A bridge usually relies on neighboring teeth. An implant is supported differently and changes the conversation around bone and long-term replacement.', ['Ask how each option is supported', 'Ask what happens to nearby teeth and bone'], ['The office explains only cost and skips support differences']),
+      m('Compare timeline, surgery, and maintenance', ['better than a bridge long term','better long term','maintenance','longevity'], 'Bridges and implants can differ a lot in staging, healing, and maintenance. A useful consult should explain the real sequence, not just the final result.', ['Ask how many visits are expected', 'Ask what maintenance is required long term'], ['They make the timeline sound identical for every case']),
+      m('Use candidacy and total plan cost, not just teaser pricing', ['cheaper long term','cheaper','cost','candidate','fit'], 'The right comparison is who is actually a candidate and what the total plan includes, not the lowest headline number.', ['Ask what is included in the quoted total', 'Ask what could change after imaging or specialist review'], ['You get a teaser price with no candidacy explanation'])
+    ],
+    {
+      comparisonTableTitle: 'Bridge vs implant comparison table',
+      comparisonTableHeaders: ['Factor', 'Dental Bridge', 'Dental Implant'],
+      comparisonTableRows: [
+        ['Structure', 'Uses neighboring teeth for support', 'Uses an implant fixture in bone for support'],
+        ['Procedure', 'Usually faster and less surgical', 'Usually more surgical and staged'],
+        ['Cost', 'Often lower upfront', 'Often higher upfront'],
+        ['Longevity', 'Depends on supporting teeth and maintenance', 'Depends on bone, implant health, and restoration maintenance'],
+        ['Bone Preservation', 'Does not replace the root in bone', 'Helps preserve bone better when successful'],
+        ['Best Fit', 'May suit some missing-tooth cases when adjacent teeth already need work', 'May suit patients who want a stand-alone tooth replacement and have enough support']
+      ]
+    }
+  ),
+  '/dentistry/clear-aligners/': makeConfig(
+    'Quick answer',
+    'Clear aligners can be very effective for some cases, but they are not the same as traditional braces for every tooth-movement problem. The useful comparison is case complexity, compliance, treatment control, visibility, and total treatment time.',
+    'How to compare clear aligners and braces',
+    'Use the comparison table first. The better question is not which option sounds better, but which option matches your case and your compliance reality.',
+    ['Compare case complexity and tooth movement goals', 'Compare wear-time compliance requirements', 'Compare precision and control for complex movement', 'Compare visibility and comfort tradeoffs', 'Compare expected treatment time and refinements'],
+    'What usually changes the fit',
+    ['Case complexity matters more than marketing.', 'Wear-time compliance can change the real result.', 'The better option is the one that matches the movement needed.'],
+    [
+      m('Start with case complexity and movement goals', ['effective','traditional braces','complex cases','movement goals'], 'The first comparison is whether the case is simple, moderate, or more complex. Good treatment planning explains movement limits before talking about aesthetics.', ['Ask whether your case is simple or complex', 'Ask which movements are easier or harder with aligners'], ['They promise the same result regardless of case complexity']),
+      m('Compliance and treatment control can change the result', ['worth it','wear time','compliance','control'], 'Aligners depend more on consistent wear. Braces remove that decision but come with different comfort and visibility tradeoffs.', ['Ask what daily wear is really required', 'Ask what happens if you do not hit wear goals'], ['Compliance is treated like a small detail']),
+      m('Compare treatment time, refinements, and follow-up', ['faster','time','refinements','follow up'], 'The practical comparison is treatment time, how refinements are handled, and what happens if teeth do not track as expected.', ['Ask whether refinements are common', 'Ask how long the full process usually takes'], ['They imply all cases finish on the same timeline'])
+    ],
+    {
+      comparisonTableTitle: 'Clear aligners vs braces',
+      comparisonTableHeaders: ['Factor', 'Clear Aligners', 'Traditional Braces'],
+      comparisonTableRows: [
+        ['Visibility', 'Less visible', 'More visible'],
+        ['Compliance', 'Requires consistent wear time', 'Works without patient removal decisions'],
+        ['Complex Cases', 'May be less ideal for some complex movements', 'Often gives more control in complex cases'],
+        ['Comfort', 'Often preferred for appearance and removable trays', 'Can feel more fixed and noticeable'],
+        ['Treatment Control', 'Depends heavily on case selection and wear compliance', 'Often stronger for complex movement control']
+      ]
+    }
+  ),
+  '/dentistry/dental-red-flags/': makeConfig(
+    'Quick answer',
+    'Dental red flags usually show up as pressure, vague pricing, poor explanation, and treatment recommendations that do not feel clearly tied to your exam findings. A trustworthy office should explain what is urgent, what can wait, and why.',
+    'Dental red flags to watch for',
+    'Use the red-flag checklist first. Trust problems usually show up early in the consult, not only after treatment starts.',
+    ['Pressure to approve treatment immediately', 'No written treatment plan or estimate', 'Vague answers about alternatives', 'Recommendations that are not tied to findings or images', 'No clear explanation of follow-up or maintenance', 'Sedation or add-ons discussed before diagnosis is clear', 'You cannot get straight answers about insurance or billing', 'The office leans on fear instead of explanation'],
+    'What usually signals a bad fit',
+    ['Pressure and vague pricing are stronger signals than polished branding.', 'A good office can separate urgent work from optional work.', 'If the explanation is weak before treatment, it usually gets worse later.'],
+    [
+      m('Watch for pressure and fear-based selling', ['red flags','scam','pressure','sales'], 'A dental office should be able to explain urgency without using fear as the main tool. Pressure to approve treatment immediately is usually a trust problem, not a speed problem.', ['Ask what is urgent versus optional', 'Ask whether the decision can wait for a second opinion'], ['They act like you must say yes immediately']),
+      m('Written treatment plans and estimate clarity matter', ['second opinion','crown','written treatment plan','estimate','billing'], 'If the office cannot produce a clear plan or estimate, it becomes much harder to compare options or protect yourself from confusion later.', ['Ask for the treatment plan in writing', 'Ask what the estimate includes and excludes'], ['They avoid written documents']),
+      m('Recommendations should match findings and real options', ['upselling','alternatives','images','findings'], 'A good office should connect the recommendation to what they found, what alternatives exist, and why those alternatives are weaker or stronger in your case.', ['Ask what they found and how they know', 'Ask what alternatives they considered'], ['They recommend treatment without tying it to findings'])
+    ]
+  ),
+  '/dentistry/cost-financing/': makeConfig(
+    'Quick answer',
+    'Dental implant pricing depends on whether you are pricing a single implant, extra procedures like grafting, or a larger full-arch plan. Financing may exist, but the useful comparison is total treatment cost, what is included, and what can still change after imaging or specialist review.',
+    'How to compare implant cost and financing',
+    'Use the cost table first. Compare the full treatment total, not just the teaser number or the monthly payment.',
+    ['Separate single-implant pricing from full-arch pricing', 'Ask whether imaging, grafting, abutment, and crown are included', 'Ask what could change after exam or scan review', 'Compare financing terms against the full treatment total', 'Get the estimate in writing before committing'],
+    'What usually changes the implant total',
+    ['Procedure scope matters more than teaser pricing.', 'Included items change the real comparison.', 'Financing only helps after the full treatment total is clear.'],
+    [
+      m('Separate single-implant pricing from full-arch pricing', ['single implant','full arch','dallas texas'], 'Single-implant and full-arch treatment are different pricing universes. A trustworthy office should separate them clearly instead of using one headline number for both.', ['Ask whether the quote is single-tooth or full-arch', 'Ask what part of the plan the number actually covers'], ['They compare unlike treatments as if they were the same']),
+      m('Ask what is included before comparing financing', ['financing options','monthly payment','financing'], 'Imaging, grafting, abutment, crown, and follow-up can materially change the total. Financing is only comparable after the included items are clear.', ['Ask whether imaging, grafting, and the final restoration are included', 'Ask what could still change after scan review'], ['The office talks monthly payment before treatment scope']),
+      m('Use written estimates to compare safely', ['what is included in a dental implant quote','included in a dental implant quote','written estimate','pricing'], 'A written estimate makes it much easier to compare offices and protects you from bait pricing. The right comparison is the full plan total and the remaining unknowns.', ['Ask for the estimate in writing', 'Ask which parts are provisional'], ['Only verbal pricing is offered'])
+    ],
+    {
+      costTableTitle: 'Implant cost and financing table',
+      costTableHeaders: ['Category', 'What to compare'],
+      costTableRows: [
+        ['Single implant', 'Varies by office, imaging, restoration, and whether grafting is needed'],
+        ['Bone graft or extra procedures', 'Often priced separately and can change the total materially'],
+        ['Full-arch implant plan', 'A different price universe from a single implant and should not be compared directly'],
+        ['Financing', 'Useful only after the full treatment total and included items are clear']
+      ]
+    }
+  ),
+  '/dentistry/root-canal-treatment/': makeConfig(
+    'Quick answer',
+    'Most modern root canals are described as manageable rather than extreme, especially once the tooth is numb. The key questions are pain during the procedure, soreness after the procedure, how many visits are needed, and whether the tooth needs follow-up restoration.',
+    'What to compare before a root canal',
+    'Use the direct answer block first, then compare timeline, visit count, and what happens after the procedure.',
+    ['Ask what the procedure feels like during treatment', 'Ask how long the visit usually lasts', 'Ask whether one or more visits are expected', 'Ask what pain or soreness is normal afterward', 'Ask what follow-up restoration is needed'],
+    'What usually changes the experience',
+    ['Pain during the procedure and soreness after the procedure are not the same question.', 'Visit count depends on tooth complexity and treatment planning.', 'A good office should explain what comes after the root canal, not just the procedure itself.'],
+    [
+      m('Separate pain during treatment from soreness after treatment', ['hurt more than a filling','pain during treatment','painful'], 'Most people are asking two different questions at once: what the procedure feels like during treatment and what recovery feels like afterward. A good office should answer both directly.', ['Ask what is normal during the procedure', 'Ask what soreness is normal afterward'], ['They avoid specific recovery guidance']),
+      m('Timeline and visit count should be clear', ['how long','appointment take','duration','one visit','multiple visits'], 'Root canal timing depends on the tooth and case complexity. The office should be able to explain whether they expect one visit or more and what changes that plan.', ['Ask how long the visit usually lasts', 'Ask whether more than one visit is likely'], ['No one can explain why the timeline varies']),
+      m('Ask what happens after the root canal', ['recovery like','do i need a crown after a root canal','crown','follow up','restoration'], 'The practical next step often includes restoration and follow-up. A trustworthy office should explain what protects the tooth after treatment and when that happens.', ['Ask whether a crown or other restoration is expected', 'Ask what the next appointment usually covers'], ['They treat follow-up like an afterthought'])
+    ],
+    {
+      directAnswerTitle: 'Root canal short answer',
+      directAnswerBullets: [
+        'Most root canals are described as manageable once the tooth is numb.',
+        'The visit length depends on the tooth and complexity, but many cases are completed in one visit.',
+        'Post-procedure soreness is usually a different question from pain during the procedure itself.'
+      ]
+    }
   ),
   '/trt/best-top-near-me/': makeConfig(
     'Quick answer',
