@@ -1,6 +1,8 @@
 name: Release Batch
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       batch_size:
@@ -34,7 +36,9 @@ jobs:
         run: node scripts/compile_reddit_queries.js
 
       - name: Release batch
-        run: node scripts/release_batch.js "${{ inputs.batch_size }}"
+        env:
+          BATCH_SIZE: ${{ github.event.inputs.batch_size || '5' }}
+        run: node scripts/release_batch.js "$BATCH_SIZE"
 
       - name: Clean build state
         run: |
@@ -51,6 +55,6 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add -A
-          git commit -m "release batch (${{ inputs.batch_size }}) $(date -u +%F)" || echo "No changes to commit"
+          git commit -m "release batch ($BATCH_SIZE) $(date -u +%F)" || echo "No changes to commit"
           git pull --rebase || true
           git push
