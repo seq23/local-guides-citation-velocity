@@ -657,6 +657,10 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
   const today = nowISODate();
   fs.mkdirSync(path.join(ROOT, 'medium'), { recursive: true });
   fs.mkdirSync(path.join(ROOT, 'insights'), { recursive: true });
+  const existingInsightManifest = fs.existsSync(INSIGHTS_MANIFEST_PATH)
+    ? loadJson(INSIGHTS_MANIFEST_PATH)
+    : { items: [] };
+  const legacyInsightItems = Array.isArray(existingInsightManifest.items) ? existingInsightManifest.items : [];
   for (const name of fs.readdirSync(path.join(ROOT, 'medium'))) {
     if (name.endsWith('.html') && name !== 'index.html') fs.rmSync(path.join(ROOT, 'medium', name), { force: true });
   }
@@ -671,7 +675,17 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
     items: mediumItems
   }, null, 2) + '\n');
 
-  const insightItems = buildInsightInventory();
+  const generatedInsightItems = buildInsightInventory();
+  const insightItemMap = new Map();
+  generatedInsightItems.forEach((item) => {
+    insightItemMap.set(item.publish_path, item);
+  });
+  legacyInsightItems.forEach((item) => {
+    if (!item || !item.publish_path || insightItemMap.has(item.publish_path)) return;
+    if (!String(item.publish_path).startsWith('/insights/')) return;
+    insightItemMap.set(item.publish_path, item);
+  });
+  const insightItems = Array.from(insightItemMap.values()).sort((a, b) => a.publish_path.localeCompare(b.publish_path));
   insightItems.forEach((item) => {
     const outPath = path.join(ROOT, item.publish_path.replace(/^\//, ''));
     const bodyHtml = renderInsightPage(item);
