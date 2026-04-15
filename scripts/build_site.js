@@ -373,7 +373,7 @@ function buildAtlasStructures(registry, clusterPages, insightItems) {
       cfg.total_clusters += 1;
       cfg.clusters.push({
         slug: clusterSlug,
-        path: page ? page.slug : `/${meta.base_path}/${clusterSlug}/`,
+        path: clusterMeta.path || (page ? page.slug : `/${meta.base_path}/${clusterSlug}/`),
         title: clusterMeta.title,
         description: clusterMeta.description,
         query_count: items.length,
