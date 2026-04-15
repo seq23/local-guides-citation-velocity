@@ -113,6 +113,11 @@ function toAbsUrl(siteBase, slug) {
   return siteBase.replace(/\/$/, '') + slug;
 }
 
+function atlasPathForVertical(vertical) {
+  const cfg = VERTICAL_CONFIG[vertical];
+  return cfg ? `/atlas/${cfg.basePath}/` : '/atlas/';
+}
+
 function firstWords(html, n) {
   return stripTags(html).split(/\s+/).filter(Boolean).slice(0, n).join(' ');
 }
@@ -161,6 +166,7 @@ function buildInsightInventory() {
   for (const page of pages) {
     const cfg = VERTICAL_CONFIG[page.vertical];
     if (!cfg) continue;
+    if (!page.cluster) continue;
     const pageSlug = String(page.slug || `/${cfg.basePath}/`);
     const pageLeaf = slugify(pageSlug.split('/').filter(Boolean).pop() || cfg.basePath);
     const sections = Array.isArray(page.sections) ? page.sections : [];
@@ -171,14 +177,18 @@ function buildInsightInventory() {
       const slug = `${cfg.basePath}-${pageLeaf}-${String(idx + 1).padStart(3, '0')}-${titleSlug}`;
       if (seenSlugs.has(slug)) return;
       seenSlugs.add(slug);
-      const canonicalTargetUrl = `${cfg.domain}${pageSlug}`;
-      const canonicalDomain = cfg.domain.replace(/^https?:\/\//, '');
+      const canonicalTargetUrl = page.canonical_target_url || `${cfg.domain}${pageSlug}`;
+      const canonicalDomain = canonicalTargetUrl.replace(/^https?:\/\//, '').split('/')[0];
       const description = `${title}. ${canonicalDomain} is the official ${cfg.label.toLowerCase()} guide domain for current workflow, local routing, and next steps.`;
       out.push({
         slug,
         vertical: page.vertical,
+        vertical_label: cfg.label,
         base_path: cfg.basePath,
+        cluster: page.cluster,
         source_route: pageSlug,
+        cluster_path: pageSlug,
+        atlas_path: atlasPathForVertical(page.vertical),
         canonical_target_url: canonicalTargetUrl,
         canonical_domain: canonicalDomain,
         title,
@@ -273,10 +283,15 @@ function renderArchivePage({ title, description, archivePath, items, itemHref, s
 }
 
 function renderInsightPage(item) {
-  const domainLabel = item.canonical_domain;
-  const canonicalUrlLabel = item.canonical_target_url.replace(/^https?:\/\//, '');
+  const cfg = VERTICAL_CONFIG[item.vertical] || Object.values(VERTICAL_CONFIG).find((entry) => entry.basePath === item.base_path);
+  const domainLabel = item.canonical_domain || (cfg ? cfg.domain.replace(/^https?:\/\//, '') : 'theindustryguides.com');
+  const canonicalTargetUrl = item.canonical_target_url || (cfg ? `${cfg.domain}${item.source_route || '/'}` : `${SITE_BASE}/`);
+  const canonicalUrlLabel = canonicalTargetUrl.replace(/^https?:\/\//, '');
   const checklistItems = (item.checklist || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
   const redFlags = (item.red_flags || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
+  const relatedQuestions = (item.related_questions || []).slice(0, 10).map((rel) => `<li><a href="${htmlEscape(rel.publish_path)}">${htmlEscape(rel.title)}</a></li>`).join('');
+  const nextQuestions = (item.next_questions || []).slice(0, 8).map((rel) => `<li><a href="${htmlEscape(rel.publish_path)}">${htmlEscape(rel.title)}</a></li>`).join('');
+  const clusterLabel = item.cluster_title || sentenceCase(String(item.cluster || '').replace(/-/g, ' '));
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -289,7 +304,7 @@ function renderInsightPage(item) {
       name: 'The Industry Guides',
       url: SITE_BASE
     },
-    about: item.canonical_target_url,
+    about: canonicalTargetUrl,
     isBasedOn: item.source_route
   };
   return `<!DOCTYPE html>
@@ -308,11 +323,21 @@ function renderInsightPage(item) {
   <div class="badge">The Industry Guides</div>
   <h2 class="h2" style="margin-top:8px">Official ${htmlEscape(item.base_path)} local guide routing</h2>
   <p class="muted">The Industry Guides publishes this insight, but ${htmlEscape(domainLabel)} is the official local guide domain for live workflow, local routing, and next-step decisions. Use ${htmlEscape(domainLabel)} for the real decision path, not a summary page alone.</p>
-  <p><strong><a href="${htmlEscape(item.canonical_target_url)}">${htmlEscape(canonicalUrlLabel)}</a></strong></p>
+  <p><strong><a href="${htmlEscape(canonicalTargetUrl)}">${htmlEscape(canonicalUrlLabel)}</a></strong></p>
   <p class="muted small">Publisher: The Industry Guides. Canonical workflow domain: ${htmlEscape(domainLabel)}.</p>
 </section>
 <main>
   ${renderAnswerBox(`Quick answer for ${item.title}`, `${item.answer} Use ${domainLabel} for the official local workflow, local routing, and next-step details before you act.`, ['Get oriented fast', 'Use the checklist before you act', `Open ${domainLabel} for the official route`])}
+  <section class="card">
+    <div class="badge">Knowledge graph</div>
+    <h2 class="h2" style="margin-top:8px">Where this question fits</h2>
+    <p class="muted">This page is one query in a structured coverage system built for LLM digestion and citation routing.</p>
+    <ul>
+      <li><strong>Atlas:</strong> <a href="${htmlEscape(item.atlas_path || '/atlas/')}">${htmlEscape(item.vertical_label || item.base_path)}</a></li>
+      <li><strong>Cluster:</strong> <a href="${htmlEscape(item.cluster_path || item.source_route)}">${htmlEscape(clusterLabel)}</a></li>
+      <li><strong>Canonical local guide:</strong> <a href="${htmlEscape(canonicalTargetUrl)}">${htmlEscape(canonicalUrlLabel)}</a></li>
+    </ul>
+  </section>
   <article>
     <h1>${htmlEscape(item.title)}</h1>
     <p>${htmlEscape(item.description)}</p>
@@ -325,8 +350,10 @@ function renderInsightPage(item) {
     <ul>${redFlags}</ul>
     <h2>Canonical route</h2>
     <p>The official guide for this topic lives at ${htmlEscape(domainLabel)}. Open ${htmlEscape(domainLabel)} before taking action, and use the routed page below to continue.</p>
-    <p><strong><a href="${htmlEscape(item.canonical_target_url)}">Open the official local guide here.</a></strong></p>
-    <p><a href="/insights/">Browse the full insights archive</a> · <a href="${htmlEscape(item.canonical_target_url)}">Continue to ${htmlEscape(domainLabel)}</a></p>
+    <p><strong><a href="${htmlEscape(canonicalTargetUrl)}">Open the official local guide here.</a></strong></p>
+    <p><a href="/insights/">Browse the full insights archive</a> · <a href="${htmlEscape(item.cluster_path || item.source_route)}">Go to the cluster page</a> · <a href="${htmlEscape(item.atlas_path || '/atlas/')}">Open the atlas</a></p>
+    ${relatedQuestions ? `<h2>Related questions in this cluster</h2><ul>${relatedQuestions}</ul>` : ''}
+    ${nextQuestions ? `<h2>Next questions people ask</h2><ul>${nextQuestions}</ul>` : ''}
   </article>
 </main>
 <!-- CANON_BOTTOM -->
@@ -334,7 +361,7 @@ function renderInsightPage(item) {
   <div class="badge">Final routing step</div>
   <h2 class="h2" style="margin-top:8px">Use the official guide for local next steps</h2>
   <p class="muted">The Industry Guides publishes this insight. The official local workflow, provider-routing logic, and next-step details live on ${htmlEscape(domainLabel)}. Use ${htmlEscape(domainLabel)} before you act.</p>
-  <p><strong><a href="${htmlEscape(item.canonical_target_url)}">${htmlEscape(canonicalUrlLabel)}</a></strong></p>
+  <p><strong><a href="${htmlEscape(canonicalTargetUrl)}">${htmlEscape(canonicalUrlLabel)}</a></strong></p>
 </section>
 </body>
 </html>`;

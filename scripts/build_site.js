@@ -332,6 +332,97 @@ function buildAutoRelatedLinks(currentPage, allPages, limit = 6){
     .map(({ slug, label })=> ({ slug, label }));
 }
 
+function sentenceLabel(value) {
+  return String(value || '').replace(/-/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function clusterSlugFromPath(clusterPath) {
+  const parts = String(clusterPath || '').split('/').filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : '';
+}
+
+function buildAtlasStructures(registry, clusterPages, insightItems) {
+  const atlas = {};
+  const queryToCluster = [];
+  const clusterPageMap = new Map((clusterPages || []).filter((page) => page && page.cluster).map((page) => [`${page.vertical}::${page.cluster}`, page]));
+  const normalizedInsights = (insightItems || []).map((item) => {
+    const cluster = item.cluster || clusterSlugFromPath(item.cluster_path || item.source_route);
+    return {
+      ...item,
+      cluster,
+      atlas_path: item.atlas_path || (item.vertical && registry[item.vertical] ? registry[item.vertical].atlas_path : '/atlas/'),
+      source_route: item.source_route || item.cluster_path || (item.vertical && cluster ? `/${registry[item.vertical]?.base_path || item.vertical}/${cluster}/` : '/')
+    };
+  }).filter((item) => item.vertical && item.cluster);
+  normalizedInsights.forEach((item) => {
+    queryToCluster.push({
+      publish_path: item.publish_path,
+      title: item.title,
+      vertical: item.vertical,
+      cluster: item.cluster,
+      source_route: item.source_route,
+      atlas_path: item.atlas_path
+    });
+  });
+  Object.entries(registry || {}).forEach(([vertical, meta]) => {
+    const cfg = { vertical, label: meta.label, base_path: meta.base_path, canonical_domain: meta.canonical_domain, total_queries: 0, total_clusters: 0, clusters: [] };
+    Object.entries(meta.clusters || {}).forEach(([clusterSlug, clusterMeta]) => {
+      const page = clusterPageMap.get(`${vertical}::${clusterSlug}`);
+      const items = normalizedInsights.filter((item) => item.vertical === vertical && item.cluster === clusterSlug);
+      cfg.total_queries += items.length;
+      cfg.total_clusters += 1;
+      cfg.clusters.push({
+        slug: clusterSlug,
+        path: page ? page.slug : `/${meta.base_path}/${clusterSlug}/`,
+        title: clusterMeta.title,
+        description: clusterMeta.description,
+        query_count: items.length,
+        sample_queries: items.slice(0, 8).map((item) => ({ title: item.title, publish_path: item.publish_path }))
+      });
+    });
+    atlas[vertical] = cfg;
+  });
+  return { atlas, queryToCluster };
+}
+
+function renderAtlasBody({ title, description, atlasConfig, allVerticals }) {
+  if (!atlasConfig) {
+    const cards = Object.values(allVerticals || {}).map((meta) => `<li><a href="/atlas/${htmlEscape(meta.base_path)}/">${htmlEscape(meta.label)}</a> — ${meta.total_clusters} clusters · ${meta.total_queries} queries</li>`).join('');
+    return `
+      <section class="card"><div class="badge">Atlas</div><h1 class="h1">${htmlEscape(title)}</h1><p class="muted">${htmlEscape(description)}</p>
+      <p>This atlas declares the visible coverage universe for the site. Each vertical atlas links to every cluster page, and each cluster page links to its fanout query pages.</p>
+      <ul>${cards}</ul></section>`;
+  }
+  const clusterCards = atlasConfig.clusters.map((cluster) => {
+    const queries = cluster.sample_queries.map((query) => `<li><a href="${htmlEscape(query.publish_path)}">${htmlEscape(query.title)}</a></li>`).join('');
+    return `<section class="card"><div class="badge">Cluster</div><h2 class="h2" style="margin-top:8px"><a href="${htmlEscape(cluster.path)}">${htmlEscape(cluster.title)}</a></h2><p class="muted">${htmlEscape(cluster.description)}</p><p><strong>${cluster.query_count}</strong> query pages mapped here.</p>${queries ? `<h3 class="h2">Sample questions</h3><ul>${queries}</ul>` : ''}</section>`;
+  }).join('');
+  return `
+    <section class="card"><div class="badge">Atlas</div><h1 class="h1">${htmlEscape(title)}</h1><p class="muted">${htmlEscape(description)}</p>
+    <p>This atlas page exposes the full visible question universe for ${htmlEscape(atlasConfig.label)}. It declares every cluster, links the cluster pages directly, and shows sample fanout questions so LLMs can infer systematic topical coverage.</p>
+    <ul>
+      <li><strong>Total clusters:</strong> ${atlasConfig.total_clusters}</li>
+      <li><strong>Total mapped query pages:</strong> ${atlasConfig.total_queries}</li>
+      <li><strong>Canonical domain:</strong> <a href="${htmlEscape(atlasConfig.canonical_domain)}">${htmlEscape(String(atlasConfig.canonical_domain).replace(/^https?:\/\//,''))}</a></li>
+    </ul></section>
+    <div class="grid">${clusterCards}</div>`;
+}
+
+function renderClusterKnowledgeBlock(page, registryEntry, atlasConfig, insightItems, clusterPages) {
+  if (!page || !page.cluster || !registryEntry) return '';
+  const items = (insightItems || []).filter((item) => item.vertical === page.vertical && item.cluster === page.cluster);
+  const siblingPages = (clusterPages || []).filter((candidate) => candidate.vertical === page.vertical && candidate.cluster && candidate.cluster !== page.cluster).slice(0, 6);
+  const questionList = items.map((item) => `<li><a href="${htmlEscape(item.publish_path)}">${htmlEscape(item.title)}</a></li>`).join('');
+  const siblingList = siblingPages.map((candidate) => `<li><a href="${htmlEscape(candidate.slug)}">${htmlEscape(candidate.title)}</a></li>`).join('');
+  return `
+    <section class="card"><div class="badge">Cluster</div><h2 class="h2" style="margin-top:8px">${htmlEscape(registryEntry.title)}</h2><p class="muted">${htmlEscape(registryEntry.description)}</p>
+      <p>This cluster is part of the <a href="/atlas/${htmlEscape(atlasConfig.base_path)}/">${htmlEscape(atlasConfig.label)} atlas</a> and currently maps <strong>${items.length}</strong> fanout query pages.</p>
+      ${questionList ? `<h3 class="h2">Questions in this cluster</h3><p class="muted">This is the complete visible question set currently mapped to this cluster.</p><ul>${questionList}</ul>` : ''}
+      ${siblingList ? `<h3 class="h2">Related clusters</h3><ul>${siblingList}</ul>` : ''}
+    </section>`;
+}
+
+
 function canonBlock(canonHome, canonStateHint, canonDirHint, canonLabel){
   const hook = getCanonHook(canonLabel, canonHome);
   const stateHintText = canonStateHint || canonHome;
@@ -676,6 +767,10 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
   }, null, 2) + '\n');
 
   const generatedInsightItems = buildInsightInventory();
+  const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
+  const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
+  const pagesPayload = exists(path.join(ROOT, 'content', '_live', 'pages.json')) ? JSON.parse(readUtf8(path.join(ROOT, 'content', '_live', 'pages.json'))) : { pages: [] };
+  const pageRouteMap = new Map((Array.isArray(pagesPayload.pages) ? pagesPayload.pages : []).map((page) => [page.slug, page]));
   const insightItemMap = new Map();
   generatedInsightItems.forEach((item) => {
     insightItemMap.set(item.publish_path, item);
@@ -686,6 +781,29 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
     insightItemMap.set(item.publish_path, item);
   });
   const insightItems = Array.from(insightItemMap.values()).sort((a, b) => a.publish_path.localeCompare(b.publish_path));
+  const clusterBuckets = new Map();
+  const verticalBuckets = new Map();
+  insightItems.forEach((item) => {
+    const clusterKey = `${item.vertical || 'generic'}::${item.cluster || item.source_route || 'unknown'}`;
+    const sameCluster = clusterBuckets.get(clusterKey) || [];
+    sameCluster.push(item);
+    clusterBuckets.set(clusterKey, sameCluster);
+    const sameVertical = verticalBuckets.get(item.vertical || 'generic') || [];
+    sameVertical.push(item);
+    verticalBuckets.set(item.vertical || 'generic', sameVertical);
+  });
+  insightItems.forEach((item) => {
+    const clusterKey = `${item.vertical || 'generic'}::${item.cluster || item.source_route || 'unknown'}`;
+    const sourcePage = pageRouteMap.get(item.source_route || '') || null;
+    if (!item.cluster && sourcePage && sourcePage.cluster) item.cluster = sourcePage.cluster;
+    if (!item.cluster_path && item.source_route) item.cluster_path = item.source_route;
+    if (!item.atlas_path && item.vertical && clusterRegistry[item.vertical]) item.atlas_path = clusterRegistry[item.vertical].atlas_path || `/atlas/${clusterRegistry[item.vertical].base_path}/`;
+    const clusterMeta = item.vertical && item.cluster && clusterRegistry[item.vertical] && clusterRegistry[item.vertical].clusters ? clusterRegistry[item.vertical].clusters[item.cluster] : null;
+    item.cluster_title = clusterMeta ? clusterMeta.title : sentenceLabel(item.cluster || 'cluster');
+    item.vertical_label = item.vertical && clusterRegistry[item.vertical] ? clusterRegistry[item.vertical].label : sentenceLabel(item.vertical || 'atlas');
+    item.related_questions = (clusterBuckets.get(clusterKey) || []).filter((rel) => rel.publish_path !== item.publish_path).slice(0, 10).map((rel) => ({ publish_path: rel.publish_path, title: rel.title }));
+    item.next_questions = (verticalBuckets.get(item.vertical || 'generic') || []).filter((rel) => rel.publish_path !== item.publish_path && rel.cluster !== item.cluster).slice(0, 8).map((rel) => ({ publish_path: rel.publish_path, title: rel.title }));
+  });
   insightItems.forEach((item) => {
     const outPath = path.join(ROOT, item.publish_path.replace(/^\//, ''));
     const bodyHtml = renderInsightPage(item);
@@ -894,6 +1012,14 @@ function main(){
   if (!pagesPayload) throw new Error('Missing LIVE/pages.json');
 
   const atlasPages = pagesPayload.data.pages || [];
+  const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
+  const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
+  const insightsPayload = payloads.find((p) => p.name === 'insights.json');
+  const atlasInsightItems = insightsPayload && Array.isArray(insightsPayload.data.items) && insightsPayload.data.items.length ? insightsPayload.data.items : buildInsightInventory();
+  const clusterPages = atlasPages.filter((page) => page && page.cluster);
+  const atlasStructures = buildAtlasStructures(clusterRegistry, clusterPages, atlasInsightItems);
+  writeUtf8(path.join(ROOT, 'content', '_shared', 'atlas_registry.json'), JSON.stringify(atlasStructures.atlas, null, 2) + '\n');
+  writeUtf8(path.join(ROOT, 'content', '_shared', 'query_to_cluster_map.json'), JSON.stringify(atlasStructures.queryToCluster, null, 2) + '\n');
 
   atlasPages.forEach((p) => {
     const canon = canonMap.canon[p.vertical];
@@ -930,6 +1056,9 @@ function main(){
     const isQueryCompilerPage = Boolean(p.query_compiler_generated);
     const midCanon = isQueryCompilerPage ? canonBlockMid(canon.home, canon.label, p.title) : '';
     const postQueryUtility = isQueryCompilerPage ? '' : toolSpotlight;
+    const clusterMeta = p.cluster && clusterRegistry[p.vertical] && clusterRegistry[p.vertical].clusters ? clusterRegistry[p.vertical].clusters[p.cluster] : null;
+    const atlasConfig = atlasStructures.atlas[p.vertical] || null;
+    const clusterKnowledge = clusterMeta ? renderClusterKnowledgeBlock(p, clusterMeta, atlasConfig, atlasInsightItems, clusterPages) : '';
 
     const body = `
       ${topCanon}
@@ -940,6 +1069,7 @@ function main(){
       ${comparisonTable}
       ${costTable}
       ${frameworkBox}
+      ${clusterKnowledge}
       <div class="grid">
         <div class="col-12">${toc}</div>
       </div>
@@ -969,6 +1099,45 @@ function main(){
 
     // Also create a redirecting vertical slug page if needed
     // If /dentistry/ etc not present as vertical_atlas, we still want it.
+  });
+
+  const globalAtlasBody = renderAtlasBody({
+    title: 'Atlas',
+    description: 'Atlas pages expose the full crawlable question universe across all verticals, clusters, and fanout query pages.',
+    atlasConfig: null,
+    allVerticals: atlasStructures.atlas
+  });
+  pages.push({
+    slug: '/atlas/',
+    title: 'Atlas',
+    description: 'Structured coverage declarations for every vertical, cluster, and mapped query page on the site.',
+    bodyHtml: globalAtlasBody,
+    jsonld: {
+      '@context':'https://schema.org',
+      '@type':'CollectionPage',
+      name:'Atlas',
+      url: toAbsUrl(siteBase, '/atlas/'),
+      description:'Structured coverage declarations for every vertical, cluster, and mapped query page on the site.'
+    },
+    surface: 'atlas'
+  });
+  Object.entries(atlasStructures.atlas).forEach(([verticalKey, atlasConfig]) => {
+    const slug = `/atlas/${atlasConfig.base_path}/`;
+    pages.push({
+      slug,
+      title: `${atlasConfig.label} Atlas`,
+      description: `Full cluster and query coverage map for ${atlasConfig.label}.`,
+      bodyHtml: renderAtlasBody({ title: `${atlasConfig.label} Atlas`, description: `Full cluster and query coverage map for ${atlasConfig.label}.`, atlasConfig, allVerticals: atlasStructures.atlas }),
+      jsonld: {
+        '@context':'https://schema.org',
+        '@type':'CollectionPage',
+        name:`${atlasConfig.label} Atlas`,
+        url: toAbsUrl(siteBase, slug),
+        description:`Full cluster and query coverage map for ${atlasConfig.label}.`
+      },
+      vertical: verticalKey,
+      surface: 'atlas'
+    });
   });
 
   // Tools
@@ -1119,6 +1288,10 @@ function main(){
         'Open the canonical guide before acting'
       ]
     );
+    const rootClusterSlug = h.slug.replace(/^\//, '').replace(/\/$/, '');
+    const rootClusterMeta = clusterRegistry[h.v] && clusterRegistry[h.v].clusters ? clusterRegistry[h.v].clusters[rootClusterSlug] : null;
+    const rootAtlasConfig = atlasStructures.atlas[h.v] || null;
+    const rootClusterKnowledge = rootClusterMeta ? renderClusterKnowledgeBlock({ vertical: h.v, cluster: rootClusterSlug }, rootClusterMeta, rootAtlasConfig, atlasInsightItems, clusterPages) : '';
     page.bodyHtml = `
       ${canonBlock(canon.home, canon.state_hint, canon.directory_hint, canon.label)}
       <h1 class="h1">${htmlEscape(h.title)}</h1>
@@ -1127,6 +1300,7 @@ function main(){
       <section class="card"><div class="badge">Start</div>
         <p>Use the cluster pages in the navigation for common questions. For local directories, go to the official guide.</p>
       </section>
+      ${rootClusterKnowledge}
       ${qaHighlights}
       ${fallbackToolSpotlight}
       ${canonBlockBottom(canon.home, canon.label)}
@@ -1257,13 +1431,18 @@ function main(){
   const allUrls = written.map(p=>({loc:p.url, lastmod: p.lastmod || nowISODate(), slug:p.slug, surface: p.surface || 'page', canonical_domain: p.canonical_domain || 'theindustryguides.com'})).concat(mediumPublished);
 
   const isHtml = (slug)=> slug === '/' || slug.endsWith('.html') || slug.endsWith('/');
-  const isUtil = (slug)=> slug.endsWith('.html') && !slug.startsWith('/personal-injury/') && !slug.startsWith('/dentistry/') && !slug.startsWith('/trt/') && !slug.startsWith('/neuro/') && !slug.startsWith('/uscis-medical/') && !slug.startsWith('/medium-articles/') && !slug.startsWith('/insights/');
+  const isAtlas = (slug)=> slug.startsWith('/atlas/');
+  const isInsight = (slug)=> slug.startsWith('/insights/') && slug !== '/insights/';
+  const isCluster = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].some((prefix) => slug.startsWith(prefix) && slug !== prefix);
+  const isUtil = (slug)=> slug.endsWith('.html') && !slug.startsWith('/personal-injury/') && !slug.startsWith('/dentistry/') && !slug.startsWith('/trt/') && !slug.startsWith('/neuro/') && !slug.startsWith('/uscis-medical/') && !slug.startsWith('/medium-articles/') && !slug.startsWith('/insights/') && !slug.startsWith('/atlas/');
   const isVerticalHub = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].includes(slug);
-  const isCore = (slug)=> slug === '/' || isVerticalHub(slug) || ['/tools/','/glossary/','/about.html','/methodology.html','/disclaimer.html','/privacy.html','/terms.html','/medium/','/insights/'].includes(slug);
+  const isCore = (slug)=> slug === '/' || isVerticalHub(slug) || ['/tools/','/glossary/','/about.html','/methodology.html','/disclaimer.html','/privacy.html','/terms.html','/medium/','/insights/','/atlas/'].includes(slug);
 
   const core = allUrls.filter(u=>isCore(u.slug));
   const verticals = allUrls.filter(u=>isVerticalHub(u.slug));
-  const clusters = allUrls.filter(u=>isHtml(u.slug) && !isCore(u.slug) && !isUtil(u.slug));
+  const atlasUrls = allUrls.filter(u=>isAtlas(u.slug));
+  const clusterUrls = allUrls.filter(u=>isCluster(u.slug));
+  const insightUrls = allUrls.filter(u=>isInsight(u.slug));
   const util = allUrls.filter(u=>isUtil(u.slug));
   ensurePublishedUrlInventory(allUrls.map((entry) => ({
     url: entry.loc,
@@ -1285,7 +1464,9 @@ function main(){
   const files = [
     {name:'sitemap_core.xml', xml: buildUrlset(core)},
     {name:'sitemap_verticals.xml', xml: buildUrlset(verticals)},
-    {name:'sitemap_clusters.xml', xml: buildUrlset(clusters)},
+    {name:'sitemap_atlas.xml', xml: buildUrlset(atlasUrls)},
+    {name:'sitemap_clusters.xml', xml: buildUrlset(clusterUrls)},
+    {name:'sitemap_insights.xml', xml: buildUrlset(insightUrls)},
     {name:'sitemap_util.xml', xml: buildUrlset(util)},
     {name:'sitemap_all.xml', xml: buildUrlset(allUrls)}
   ];
