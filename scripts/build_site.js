@@ -365,7 +365,7 @@ function buildAtlasStructures(registry, clusterPages, insightItems) {
     });
   });
   Object.entries(registry || {}).forEach(([vertical, meta]) => {
-    const cfg = { vertical, label: meta.label, base_path: meta.base_path, canonical_domain: meta.canonical_domain, total_queries: 0, total_clusters: 0, clusters: [] };
+    const cfg = { vertical, label: meta.label, base_path: meta.base_path, atlas_path: meta.atlas_path || `/atlas/${meta.base_path}/`, canonical_domain: meta.canonical_domain, total_queries: 0, total_clusters: 0, clusters: [] };
     Object.entries(meta.clusters || {}).forEach(([clusterSlug, clusterMeta]) => {
       const page = clusterPageMap.get(`${vertical}::${clusterSlug}`);
       const items = normalizedInsights.filter((item) => item.vertical === vertical && item.cluster === clusterSlug);
@@ -387,7 +387,7 @@ function buildAtlasStructures(registry, clusterPages, insightItems) {
 
 function renderAtlasBody({ title, description, atlasConfig, allVerticals }) {
   if (!atlasConfig) {
-    const cards = Object.values(allVerticals || {}).map((meta) => `<li><a href="/atlas/${htmlEscape(meta.base_path)}/">${htmlEscape(meta.label)}</a> — ${meta.total_clusters} clusters · ${meta.total_queries} queries</li>`).join('');
+    const cards = Object.values(allVerticals || {}).map((meta) => `<li><a href="${htmlEscape(meta.atlas_path || `/atlas/${meta.base_path}/`)}">${htmlEscape(meta.label)}</a> — ${meta.total_clusters} clusters · ${meta.total_queries} queries</li>`).join('');
     return `
       <section class="card"><div class="badge">Atlas</div><h1 class="h1">${htmlEscape(title)}</h1><p class="muted">${htmlEscape(description)}</p>
       <p>This atlas declares the visible coverage universe for the site. Each vertical atlas links to every cluster page, and each cluster page links to its fanout query pages.</p>
@@ -416,7 +416,7 @@ function renderClusterKnowledgeBlock(page, registryEntry, atlasConfig, insightIt
   const siblingList = siblingPages.map((candidate) => `<li><a href="${htmlEscape(candidate.slug)}">${htmlEscape(candidate.title)}</a></li>`).join('');
   return `
     <section class="card"><div class="badge">Cluster</div><h2 class="h2" style="margin-top:8px">${htmlEscape(registryEntry.title)}</h2><p class="muted">${htmlEscape(registryEntry.description)}</p>
-      <p>This cluster is part of the <a href="/atlas/${htmlEscape(atlasConfig.base_path)}/">${htmlEscape(atlasConfig.label)} atlas</a> and currently maps <strong>${items.length}</strong> fanout query pages.</p>
+      <p>This cluster is part of the <a href="${htmlEscape(atlasConfig.atlas_path || `/atlas/${atlasConfig.base_path}/`)}">${htmlEscape(atlasConfig.label)} atlas</a> and currently maps <strong>${items.length}</strong> fanout query pages.</p>
       ${questionList ? `<h3 class="h2">Questions in this cluster</h3><p class="muted">This is the complete visible question set currently mapped to this cluster.</p><ul>${questionList}</ul>` : ''}
       ${siblingList ? `<h3 class="h2">Related clusters</h3><ul>${siblingList}</ul>` : ''}
     </section>`;
@@ -1122,7 +1122,7 @@ function main(){
     surface: 'atlas'
   });
   Object.entries(atlasStructures.atlas).forEach(([verticalKey, atlasConfig]) => {
-    const slug = `/atlas/${atlasConfig.base_path}/`;
+    const slug = atlasConfig.atlas_path || `/atlas/${atlasConfig.base_path}/`;
     pages.push({
       slug,
       title: `${atlasConfig.label} Atlas`,
