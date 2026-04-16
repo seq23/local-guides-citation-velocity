@@ -356,6 +356,24 @@ function normalizePageClusters(pages, registry) {
   });
 }
 
+function buildMergedInsightItems() {
+  const generatedInsightItems = buildInsightInventory();
+  const existingInsightManifest = fs.existsSync(INSIGHTS_MANIFEST_PATH)
+    ? loadJson(INSIGHTS_MANIFEST_PATH)
+    : { items: [] };
+  const legacyInsightItems = Array.isArray(existingInsightManifest.items) ? existingInsightManifest.items : [];
+  const insightItemMap = new Map();
+  generatedInsightItems.forEach((item) => {
+    insightItemMap.set(item.publish_path, item);
+  });
+  legacyInsightItems.forEach((item) => {
+    if (!item || !item.publish_path || insightItemMap.has(item.publish_path)) return;
+    if (!String(item.publish_path).startsWith('/insights/')) return;
+    insightItemMap.set(item.publish_path, item);
+  });
+  return Array.from(insightItemMap.values()).sort((a, b) => a.publish_path.localeCompare(b.publish_path));
+}
+
 function buildAtlasStructures(registry, clusterPages, insightItems) {
   const atlas = {};
   const queryToCluster = [];
@@ -763,10 +781,6 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
   const today = nowISODate();
   fs.mkdirSync(path.join(ROOT, 'medium'), { recursive: true });
   fs.mkdirSync(path.join(ROOT, 'insights'), { recursive: true });
-  const existingInsightManifest = fs.existsSync(INSIGHTS_MANIFEST_PATH)
-    ? loadJson(INSIGHTS_MANIFEST_PATH)
-    : { items: [] };
-  const legacyInsightItems = Array.isArray(existingInsightManifest.items) ? existingInsightManifest.items : [];
   for (const name of fs.readdirSync(path.join(ROOT, 'medium'))) {
     if (name.endsWith('.html') && name !== 'index.html') fs.rmSync(path.join(ROOT, 'medium', name), { force: true });
   }
@@ -781,22 +795,12 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
     items: mediumItems
   }, null, 2) + '\n');
 
-  const generatedInsightItems = buildInsightInventory();
+  const insightItems = buildMergedInsightItems();
   const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
   const pagesPayload = exists(path.join(ROOT, 'content', '_live', 'pages.json')) ? JSON.parse(readUtf8(path.join(ROOT, 'content', '_live', 'pages.json'))) : { pages: [] };
   pagesPayload.pages = normalizePageClusters(Array.isArray(pagesPayload.pages) ? pagesPayload.pages : [], clusterRegistry);
   const pageRouteMap = new Map(pagesPayload.pages.map((page) => [page.slug, page]));
-  const insightItemMap = new Map();
-  generatedInsightItems.forEach((item) => {
-    insightItemMap.set(item.publish_path, item);
-  });
-  legacyInsightItems.forEach((item) => {
-    if (!item || !item.publish_path || insightItemMap.has(item.publish_path)) return;
-    if (!String(item.publish_path).startsWith('/insights/')) return;
-    insightItemMap.set(item.publish_path, item);
-  });
-  const insightItems = Array.from(insightItemMap.values()).sort((a, b) => a.publish_path.localeCompare(b.publish_path));
   const clusterBuckets = new Map();
   const verticalBuckets = new Map();
   insightItems.forEach((item) => {
@@ -1031,8 +1035,7 @@ function main(){
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
   const atlasPages = normalizePageClusters(pagesPayload.data.pages || [], clusterRegistry);
   pagesPayload.data.pages = atlasPages;
-  const insightsPayload = payloads.find((p) => p.name === 'insights.json');
-  const atlasInsightItems = insightsPayload && Array.isArray(insightsPayload.data.items) && insightsPayload.data.items.length ? insightsPayload.data.items : buildInsightInventory();
+  const atlasInsightItems = buildMergedInsightItems();
   const clusterPages = atlasPages.filter((page) => page && page.cluster);
   const atlasStructures = buildAtlasStructures(clusterRegistry, clusterPages, atlasInsightItems);
   writeUtf8(path.join(ROOT, 'content', '_shared', 'atlas_registry.json'), JSON.stringify(atlasStructures.atlas, null, 2) + '\n');
