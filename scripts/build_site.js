@@ -341,6 +341,21 @@ function clusterSlugFromPath(clusterPath) {
   return parts.length ? parts[parts.length - 1] : '';
 }
 
+function normalizePageClusters(pages, registry) {
+  const pathToCluster = new Map();
+  Object.values(registry || {}).forEach((meta) => {
+    Object.entries(meta.clusters || {}).forEach(([clusterSlug, clusterMeta]) => {
+      if (clusterMeta && clusterMeta.path) pathToCluster.set(clusterMeta.path, clusterSlug);
+    });
+  });
+  return (pages || []).map((page) => {
+    if (!page || !page.slug) return page;
+    const inferredCluster = pathToCluster.get(page.slug) || null;
+    if (!inferredCluster || page.cluster === inferredCluster) return page;
+    return { ...page, cluster: inferredCluster };
+  });
+}
+
 function buildAtlasStructures(registry, clusterPages, insightItems) {
   const atlas = {};
   const queryToCluster = [];
@@ -770,7 +785,8 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
   const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
   const pagesPayload = exists(path.join(ROOT, 'content', '_live', 'pages.json')) ? JSON.parse(readUtf8(path.join(ROOT, 'content', '_live', 'pages.json'))) : { pages: [] };
-  const pageRouteMap = new Map((Array.isArray(pagesPayload.pages) ? pagesPayload.pages : []).map((page) => [page.slug, page]));
+  pagesPayload.pages = normalizePageClusters(Array.isArray(pagesPayload.pages) ? pagesPayload.pages : [], clusterRegistry);
+  const pageRouteMap = new Map(pagesPayload.pages.map((page) => [page.slug, page]));
   const insightItemMap = new Map();
   generatedInsightItems.forEach((item) => {
     insightItemMap.set(item.publish_path, item);
@@ -1011,9 +1027,10 @@ function main(){
   const pagesPayload = payloads.find(p=>p.name === 'pages.json');
   if (!pagesPayload) throw new Error('Missing LIVE/pages.json');
 
-  const atlasPages = pagesPayload.data.pages || [];
   const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
+  const atlasPages = normalizePageClusters(pagesPayload.data.pages || [], clusterRegistry);
+  pagesPayload.data.pages = atlasPages;
   const insightsPayload = payloads.find((p) => p.name === 'insights.json');
   const atlasInsightItems = insightsPayload && Array.isArray(insightsPayload.data.items) && insightsPayload.data.items.length ? insightsPayload.data.items : buildInsightInventory();
   const clusterPages = atlasPages.filter((page) => page && page.cluster);

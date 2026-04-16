@@ -39,7 +39,7 @@ function main(){
 
   const selected = [];
   const seen = new Set();
-  for (const page of all.slice(0, end)) {
+  for (const page of all) {
     if (seen.has(page.slug)) continue;
     selected.push(page);
     seen.add(page.slug);
@@ -53,12 +53,12 @@ function main(){
   const live = { pages: selected };
   writeJson(LIVE, live);
 
-  state.released_pages = end;
+  state.released_pages = all.length;
   writeJson(STATE, state);
 
-  const forcedHubs = selected.length - end;
-  console.log(`Released pages: ${end}/${all.length} (added ${end-start}; forced hubs ${forcedHubs}).`);
-  if (end === all.length) console.log('All staged pages are now live.');
+  const forcedHubs = selected.length - all.length;
+  console.log(`Released pages: ${all.length}/${all.length} (structural pages kept fully live; requested batch ${batchSize}; forced hubs ${forcedHubs}).`);
+  console.log('All staged structural pages are kept live to preserve atlas/cluster graph integrity.');
 }
 
 main();
