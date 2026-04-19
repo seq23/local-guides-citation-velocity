@@ -1,0 +1,43 @@
+name: Deploy Distribution
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
+
+      - name: Recreate GSC service account file
+        run: |
+          printf '%s' '${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}' > gsc-service-account.json
+
+      - name: Ensure scripts are executable
+        run: |
+          chmod +x distribution_scripts/indexnow_submit.sh
+          chmod +x distribution_scripts/deploy_distribution.sh
+          chmod +x distribution_scripts/gsc_submit_sitemaps.py
+          chmod +x distribution_scripts/gsc_inspect_urls.py
+
+      - name: Run distribution deploy
+        env:
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+        run: |
+          ./distribution_scripts/deploy_distribution.sh \
+            --creds gsc-service-account.json \
+            --gsc-site "$GSC_SITE_URL"
