@@ -13,6 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -33,6 +38,10 @@ jobs:
           chmod +x distribution_scripts/deploy_distribution.sh
           chmod +x distribution_scripts/gsc_submit_sitemaps.py
           chmod +x distribution_scripts/gsc_inspect_urls.py
+
+      - name: Generate distribution artifacts
+        run: |
+          npm run validate:all
 
       - name: Run distribution deploy
         env:
