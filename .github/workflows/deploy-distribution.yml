@@ -23,6 +23,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install Node dependencies
+        run: npm ci
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -39,9 +42,10 @@ jobs:
           chmod +x distribution_scripts/gsc_submit_sitemaps.py
           chmod +x distribution_scripts/gsc_inspect_urls.py
 
-      - name: Generate distribution artifacts
+      - name: Generate site and IndexNow artifacts
         run: |
-          npm run validate:all
+          node scripts/build_site.js
+          ls -l .build/indexnow-priority.txt .build/indexnow-batch.txt
 
       - name: Run distribution deploy
         env:
