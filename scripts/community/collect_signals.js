@@ -3,11 +3,13 @@ const fs = require('fs');
 const path = require('path');
 
 const WEEKDAY_REDDIT = {
-  1: 'reddit_personal_injury',
-  2: 'reddit_dentistry',
-  3: 'reddit_trt_hair_iv',
-  4: 'reddit_neuro_eval',
-  5: 'reddit_uscis_medical'
+  0: ['reddit_pi_legaladvice', 'reddit_dentistry_askdentists', 'reddit_trt_trt', 'reddit_neuro_autism_parenting', 'reddit_uscis_uscis'],
+  1: ['reddit_pi_legaladvice', 'reddit_pi_insurance', 'reddit_pi_ask_lawyers'],
+  2: ['reddit_dentistry_askdentists', 'reddit_dentistry_dentistry', 'reddit_dentistry_invisalign'],
+  3: ['reddit_trt_trt', 'reddit_trt_testosterone', 'reddit_hair_tressless', 'reddit_hair_hairtransplants'],
+  4: ['reddit_neuro_autism_parenting', 'reddit_neuro_specialneedschildren', 'reddit_neuro_adhd_parenting', 'reddit_neuro_autisticadults'],
+  5: ['reddit_uscis_uscis', 'reddit_uscis_immigration', 'reddit_uscis_greencard'],
+  6: ['reddit_pi_legaladvice', 'reddit_dentistry_askdentists', 'reddit_neuro_autism_parenting', 'reddit_uscis_uscis']
 };
 
 function loadAdapter(source) {
@@ -41,15 +43,18 @@ function manualImports() {
 }
 
 function identity(signal) { return `${signal.source_key || ''}|${signal.source_url || ''}|${signal.raw_title || ''}`.toLowerCase(); }
-function redditSourceForToday(date = new Date()) { return WEEKDAY_REDDIT[date.getUTCDay()] || null; }
+function redditSourcesForToday(date = new Date()) { return WEEKDAY_REDDIT[date.getUTCDay()] || []; }
+function redditSourceForToday(date = new Date()) { return redditSourcesForToday(date)[0] || null; }
 function selectSources(sources) {
   const active = (sources || []).filter(allowedSource);
   const forced = process.env.REDDIT_SOURCE_KEY || '';
-  const todayReddit = forced || redditSourceForToday();
+  const forcedSet = forced ? new Set(forced.split(',').map((s) => s.trim()).filter(Boolean)) : null;
+  const todayRedditSet = new Set(redditSourcesForToday());
   return active.filter((source) => {
     if (source.platform !== 'reddit') return true;
     if (process.env.REDDIT_ROTATION_DISABLED === '1') return true;
-    return source.source_key === todayReddit;
+    if (forcedSet) return forcedSet.has(source.source_key);
+    return todayRedditSet.has(source.source_key);
   }).slice(0, Number(process.env.SIGNAL_SOURCE_LIMIT || 0) || undefined);
 }
 function summarizeFetchEvents(sourceKey) {
@@ -128,4 +133,4 @@ async function run() {
   console.log(`Collected ${collected.length} candidate signals; fresh ${freshCount}; Reddit contributed ${redditFreshCount}; raw store now has ${merged.length}.`);
 }
 if (require.main === module) run().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); });
-module.exports = { run, selectSources, redditSourceForToday };
+module.exports = { run, selectSources, redditSourceForToday, redditSourcesForToday };
