@@ -20,6 +20,14 @@ function titleCase(text) {
   return String(text || '').replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
+function canonicalTargetUrl(raw, cfg) {
+  const value = String(raw || '').trim();
+  if (!value) return cfg.domain;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith('/')) return `${cfg.domain.replace(/\/$/, '')}${value}`;
+  return value;
+}
+
 function getVerticalSourceKey(key) {
   return key === 'personal_injury' ? 'pi' : key;
 }
@@ -141,7 +149,7 @@ function compile() {
       source_type: item.source_type,
       source_bucket: item.source_bucket,
       normalized_query: item.normalized_query,
-      canonical_target_url: item.notes || cfg.domain
+      canonical_target_url: canonicalTargetUrl(item.notes, cfg)
     }));
     compiledPages.push({
       slug,
@@ -151,7 +159,7 @@ function compile() {
       compiler_source: 'reddit_queries',
       query_compiler_generated: true,
       cluster: clusterKey,
-      canonical_target_url: (clusterItems.find((item) => item.notes) || {}).notes || cfg.domain,
+      canonical_target_url: canonicalTargetUrl((clusterItems.find((item) => item.notes) || {}).notes, cfg),
       related_links: [],
       sections
     });
