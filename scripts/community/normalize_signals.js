@@ -40,6 +40,21 @@ function clusterFromText(text) {
   return 'state-specific';
 }
 
+function verticalFromSignal(signal, sourceByKey) {
+  const source = sourceByKey.get(signal.source_key) || {};
+  const key = String(signal.source_key || '').toLowerCase();
+  const text = `${signal.raw_signal_phrase || ''} ${signal.raw_title || ''} ${signal.short_excerpt || ''}`.toLowerCase();
+
+  if (source.vertical) return source.vertical;
+  if (key.includes('dentistry') || /dentist|dental|tooth|teeth|root canal|implant|invisalign|aligner/.test(text)) return 'dentistry';
+  if (key.includes('trt') || key.includes('hair') || /trt|testosterone|hormone|hair loss|hair transplant|iv therapy|prp/.test(text)) return 'trt';
+  if (key.includes('neuro') || /autism|adhd|neuropsych|developmental|aba therapy|speech therapy|occupational therapy|evaluation|assessment/.test(text)) return 'neuro';
+  if (key.includes('uscis') || /uscis|i-693|civil surgeon|green card|immigration medical|vaccination/.test(text)) return 'uscis';
+  if (key.includes('pi') || /personal injury|car accident|truck accident|injury|injured|hospital|medical bills|insurance claim|settlement after accident|injury lawyer|accident lawyer|truck accident lawyer|car accident lawyer|pain and suffering/.test(text)) return 'pi';
+
+  return 'general';
+}
+
 function sourceWeight(signal, sourceByKey) {
   const source = sourceByKey.get(signal.source_key) || {};
   return Number(source.weight || 0.5);
@@ -60,7 +75,7 @@ function dedupeKeyFor(rawPhrase, intent) {
   return `dedupe_${intent}_${compact.slice(0, 80) || hash(rawPhrase, 12)}`;
 }
 
-function normalizeOne(signal, idx) {
+function normalizeOne(signal, idx, sourceByKey) {
   const originalRaw = stripPII(signal.raw_signal_phrase || signal.raw_title || signal.title || '').replace(/\s+/g, ' ').trim();
   const cleanedRaw = cleanSyntheticSignal(originalRaw);
   const textForIntent = cleanedRaw || originalRaw;
@@ -68,6 +83,7 @@ function normalizeOne(signal, idx) {
   const preservedQuery = preservedQueryFromTitle(textForIntent);
   const normalizedQuery = normalizedQueryFromTitle(textForIntent, intent);
   const baitPhrase = llmBaitPhrase(textForIntent);
+  const vertical = verticalFromSignal(signal, sourceByKey);
   const cluster = signal.cluster || clusterFromText(`${textForIntent} ${normalizedQuery} ${baitPhrase}`);
 
   return {
@@ -77,6 +93,8 @@ function normalizeOne(signal, idx) {
     preserved_query: preservedQuery,
     normalized_query: normalizedQuery,
     llm_bait_phrase: baitPhrase,
+    vertical,
+    target_vertical: vertical,
     intent_type: intent,
     cluster,
     emotional_frame: classifyEmotionalFrame(textForIntent),
@@ -98,7 +116,7 @@ function run() {
 
   raw.forEach((signal, idx) => {
     if (!signal.signal_id || !(signal.raw_signal_phrase || signal.raw_title)) return;
-    const item = normalizeOne(signal, idx);
+    const item = normalizeOne(signal, idx, sourceByKey);
     const key = item.dedupe_group_id;
 
     if (byQuery.has(key)) {
@@ -137,6 +155,7 @@ module.exports = {
   run,
   classifyIntent,
   clusterFromText,
+  verticalFromSignal,
   computeSignalScore,
   classifyEmotionalFrame
 };

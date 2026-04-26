@@ -42,6 +42,17 @@ function manualImports() {
   });
 }
 
+
+function isHighIntent(text) {
+  const v = String(text || '').toLowerCase();
+
+  return (
+    /(cost|price|how much|near me|best|recommend|doctor|clinic|lawyer|dentist|provider|evaluation|assessment|appointment)/.test(v)
+    || /(should i|do i need|worth it|which one|vs)/.test(v)
+    || /(what to ask|questions to ask|what happens next)/.test(v)
+  );
+}
+
 function identity(signal) { return `${signal.source_key || ''}|${signal.source_url || ''}|${signal.raw_title || ''}`.toLowerCase(); }
 function redditSourcesForToday(date = new Date()) { return WEEKDAY_REDDIT[date.getUTCDay()] || []; }
 function redditSourceForToday(date = new Date()) { return redditSourcesForToday(date)[0] || null; }
@@ -119,6 +130,8 @@ async function run() {
   const merged = [...existing];
   let freshCount = 0;
   for (const signal of collected) {
+    const text = `${signal.raw_title || ''} ${signal.short_excerpt || ''}`;
+    if (!isHighIntent(text)) continue;
     if (!signal || !signal.signal_id || seenIds.has(signal.signal_id) || seenIdentity.has(identity(signal))) continue;
     seenIds.add(signal.signal_id); seenIdentity.add(identity(signal)); merged.push(signal); freshCount += 1;
   }

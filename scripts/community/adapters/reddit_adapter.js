@@ -3,8 +3,8 @@ const { buildRawSignal, fetchJson, fetchText, slugify, recordFetchEvent, userAge
 const REDDIT_CONFIG = {
   delay_base_ms: 8000,
   jitter_ms: 7000,
-  max_posts: 5,
-  max_terms: 2,
+  max_posts: 12,
+  max_terms: 6,
   timeout_ms: 18000
 };
 
@@ -32,11 +32,18 @@ function compactQuery(term) { return String(term || '').replace(/\s+/g, '+').rep
 function postUrl(permalink) { if (!permalink) return ''; return /^https?:\/\//i.test(permalink) ? permalink : `https://www.reddit.com${permalink}`; }
 function htmlDecode(value) { return String(value || '').replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>'); }
 function textBetween(entry, tag) { const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'); const match = entry.match(re); return match ? htmlDecode(match[1]).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : ''; }
+function extractBestQuestion(title, body = '') {
+  const text = `${title || ''} ${body || ''}`.replace(/\s+/g, ' ').trim();
+  const matches = text.match(/([^.?!]*\b(cost|price|how much|should i|do i need|which|best|recommend|worth it|vs|near me|doctor|clinic|lawyer|dentist|provider|evaluation|assessment|appointment|what to ask|questions to ask)[^.?!]*[?]?)/gi);
+  if (matches && matches.length) return matches[0].trim();
+  return String(title || '').trim();
+}
+
 function parseRedditRss(source, xml, offset = 0) {
   const entries = String(xml || '').split(/<entry[\s>]/i).slice(1).map((chunk) => '<entry>' + chunk);
-  return entries.map((entry, idx) => { const title = textBetween(entry, 'title'); const linkMatch = entry.match(/<link[^>]+href="([^"]+)"/i); const href = linkMatch ? htmlDecode(linkMatch[1]) : ''; const updated = textBetween(entry, 'updated'); const content = textBetween(entry, 'content') || title; if (!title || !href) return null; return buildRawSignal(source, { title, source_url: href, short_excerpt: content, score: 0, comment_count: 0, captured_at: updated ? updated.slice(0, 10) : undefined, retrieval_mode: 'reddit_rss' }, offset + idx); }).filter(Boolean);
+  return entries.map((entry, idx) => { const title = textBetween(entry, 'title'); const linkMatch = entry.match(/<link[^>]+href="([^"]+)"/i); const href = linkMatch ? htmlDecode(linkMatch[1]) : ''; const updated = textBetween(entry, 'updated'); const content = textBetween(entry, 'content') || title; if (!title || !href) return null; return buildRawSignal(source, { title: extractBestQuestion(title, content), source_url: href, short_excerpt: content, score: 0, comment_count: 0, captured_at: updated ? updated.slice(0, 10) : undefined, retrieval_mode: 'reddit_rss' }, offset + idx); }).filter(Boolean);
 }
-function postToSignal(source, post, idx, mode = 'reddit_json') { const data = post && post.data ? post.data : post; if (!data || data.stickied) return null; const title = data.title || ''; const permalink = data.permalink || data.url || ''; if (!title || !permalink) return null; return buildRawSignal(source, { title, source_url: postUrl(permalink), short_excerpt: data.selftext || data.title || '', score: data.score || 0, comment_count: data.num_comments || 0, captured_at: data.created_utc ? new Date(data.created_utc * 1000).toISOString().slice(0, 10) : undefined, retrieval_mode: mode }, idx); }
+function postToSignal(source, post, idx, mode = 'reddit_json') { const data = post && post.data ? post.data : post; if (!data || data.stickied) return null; const title = data.title || ''; const permalink = data.permalink || data.url || ''; if (!title || !permalink) return null; return buildRawSignal(source, { title: extractBestQuestion(title, data.selftext || ''), source_url: postUrl(permalink), short_excerpt: data.selftext || data.title || '', score: data.score || 0, comment_count: data.num_comments || 0, captured_at: data.created_utc ? new Date(data.created_utc * 1000).toISOString().slice(0, 10) : undefined, retrieval_mode: mode }, idx); }
 async function redditOAuthToken() {
   const id = process.env.REDDIT_CLIENT_ID; const secret = process.env.REDDIT_CLIENT_SECRET; const refresh = process.env.REDDIT_REFRESH_TOKEN;
   if (!id || !secret || !refresh) return null;
