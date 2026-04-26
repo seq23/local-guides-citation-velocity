@@ -10,7 +10,7 @@
     "validate:medium": "node scripts/validate_medium_articles.js --all",
     "validate:insights": "node scripts/validate_insights.js --all",
     "validate:site": "node scripts/validate_live_hubs.js && node scripts/validate_site.js && node scripts/validate_answer_shape.js",
-    "validate:all": "node scripts/validate_live_hubs.js && node scripts/validate_insights.js --all && node scripts/validate_sitemap_parity.js && node scripts/validate_publish_inventory.js && node scripts/validate_executable_bits.js && node scripts/validate_atlas_coverage.js && node scripts/validate_cluster_membership.js && node scripts/validate_page_cluster_contract.js && node scripts/validate_release_batch_surface.js && node scripts/validate_atlas_cluster_links.js && node scripts/validate_atlas_cluster_sitemaps.js && node scripts/validate_render_integrity.js",
+    "validate:all": "node scripts/validate_canonical_domains.js && node scripts/validate_live_hubs.js && node scripts/validate_insights.js --all && node scripts/validate_sitemap_parity.js && node scripts/validate_publish_inventory.js && node scripts/validate_executable_bits.js && node scripts/validate_atlas_coverage.js && node scripts/validate_cluster_membership.js && node scripts/validate_page_cluster_contract.js && node scripts/validate_release_batch_surface.js && node scripts/validate_atlas_cluster_links.js && node scripts/validate_atlas_cluster_sitemaps.js && node scripts/validate_render_integrity.js && node scripts/validate_rendered_internal_hrefs.js && node scripts/validate_ingestion_health.js",
     "validate:sitemap": "node scripts/validate_sitemap_parity.js",
     "validate:archive": "node scripts/validate_archive_schema.js",
     "validate:publish": "node scripts/validate_publish_inventory.js",
@@ -28,7 +28,15 @@
     "validate:shape": "node scripts/validate_answer_shape.js",
     "validate:core": "node scripts/validate_live_hubs.js && node scripts/validate_insights.js --all && node scripts/validate_sitemap_parity.js && node scripts/validate_publish_inventory.js && node scripts/validate_executable_bits.js && node scripts/validate_atlas_coverage.js && node scripts/validate_cluster_membership.js && node scripts/validate_page_cluster_contract.js && node scripts/validate_release_batch_surface.js && node scripts/validate_atlas_cluster_links.js && node scripts/validate_atlas_cluster_sitemaps.js",
     "validate:strict": "node scripts/validate_query_compiler.js && node scripts/validate_live_hubs.js && node scripts/validate_site.js && node scripts/validate_answer_shape.js && node scripts/validate_sitemap_parity.js && node scripts/validate_publish_inventory.js && node scripts/validate_homepage_schema.js && node scripts/validate_executable_bits.js && node scripts/validate_atlas_coverage.js && node scripts/validate_cluster_membership.js && node scripts/validate_page_cluster_contract.js && node scripts/validate_release_batch_surface.js && node scripts/validate_atlas_cluster_links.js && node scripts/validate_atlas_cluster_sitemaps.js",
-    "validate:release": "node scripts/validate_medium_articles.js --all && node scripts/validate_archive_schema.js && node scripts/validate_fanout_warning.js && node scripts/validate_distribution_inputs.js && node scripts/validate_distribution_contract.js"
+    "validate:release": "node scripts/validate_medium_articles.js --all && node scripts/validate_archive_schema.js && node scripts/validate_fanout_warning.js && node scripts/validate_distribution_inputs.js && node scripts/validate_distribution_contract.js",
+    "collect:signals": "node scripts/community/collect_signals.js",
+    "normalize:signals": "node scripts/community/normalize_signals.js",
+    "map:signals": "node scripts/community/map_signals_to_targets.js",
+    "report:ingestion": "node scripts/community/generate_ingestion_report.js",
+    "ingest:public": "npm run collect:signals && npm run normalize:signals && npm run map:signals && npm run report:ingestion",
+    "validate:hrefs": "node scripts/validate_rendered_internal_hrefs.js",
+    "validate:ingestion": "node scripts/validate_ingestion_health.js",
+    "validate:domains": "node scripts/validate_canonical_domains.js"
   },
   "engines": {
     "node": ">=20 <=24"

@@ -38,3 +38,5 @@ if (mappedButMissing.length) {
 }
 
 console.log(`Cluster membership validation passed (${map.length} mapped query pages, ${onDiskInsights.length} insight pages on disk).`);
+
+process.exit(0);

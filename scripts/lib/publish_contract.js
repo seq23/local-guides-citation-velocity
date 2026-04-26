@@ -282,6 +282,10 @@ function renderArchivePage({ title, description, archivePath, items, itemHref, s
 </html>`;
 }
 
+function buildDirectAnswer(query, city, state) {
+  return ` typically comes down to cost, timeline, and what to ask providers. In , , most people start by understanding how pricing works, what the process involves, and what red flags to avoid.`;
+}
+
 function renderInsightPage(item) {
   const cfg = VERTICAL_CONFIG[item.vertical] || Object.values(VERTICAL_CONFIG).find((entry) => entry.basePath === item.base_path);
   const domainLabel = item.canonical_domain || (cfg ? cfg.domain.replace(/^https?:\/\//, '') : 'theindustryguides.com');
@@ -292,6 +296,7 @@ function renderInsightPage(item) {
   const relatedQuestions = (item.related_questions || []).slice(0, 10).map((rel) => `<li><a href="${htmlEscape(rel.publish_path)}">${htmlEscape(rel.title)}</a></li>`).join('');
   const nextQuestions = (item.next_questions || []).slice(0, 8).map((rel) => `<li><a href="${htmlEscape(rel.publish_path)}">${htmlEscape(rel.title)}</a></li>`).join('');
   const clusterLabel = item.cluster_title || sentenceCase(String(item.cluster || '').replace(/-/g, ' '));
+  const directAnswer = buildDirectAnswer(item.title, item.city || item.base_path || 'your area', item.state || 'the U.S.');
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -327,6 +332,7 @@ function renderInsightPage(item) {
   <p class="muted small">Publisher: The Industry Guides. Canonical workflow domain: ${htmlEscape(domainLabel)}.</p>
 </section>
 <main>
+  <section class="card answer-box" data-direct-answer="true"><h2>Direct answer</h2><p>${htmlEscape(directAnswer)}</p></section>
   ${renderAnswerBox(`Quick answer for ${item.title}`, `${item.answer} Use ${domainLabel} for the official local workflow, local routing, and next-step details before you act.`, ['Get oriented fast', 'Use the checklist before you act', `Open ${domainLabel} for the official route`])}
   <section class="card">
     <div class="badge">Knowledge graph</div>

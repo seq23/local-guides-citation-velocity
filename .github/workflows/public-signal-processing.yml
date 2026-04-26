@@ -1,0 +1,89 @@
+name: Public Signal Processing
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 13 * * 1-5"
+
+permissions:
+  contents: write
+
+jobs:
+  process-public-signals:
+    runs-on: ubuntu-latest
+    env:
+      SIGNAL_SOURCE_TIMEOUT_MS: "20000"
+      SIGNAL_FETCH_TIMEOUT_MS: "18000"
+      SIGNAL_COLLECT_SEQUENTIAL: "true"
+      REDDIT_PUBLIC_PREFER_RSS: "true"
+      REDDIT_PUBLIC_LIMIT: "5"
+      REDDIT_PUBLIC_MAX_SIGNALS: "5"
+      REDDIT_PUBLIC_TERM_LIMIT: "2"
+      REDDIT_PUBLIC_DELAY_MS: "8000"
+      REDDIT_PUBLIC_JITTER_MS: "7000"
+      REDDIT_403_BACKOFF_MS: "30000"
+      REDDIT_403_BACKOFF_JITTER_MS: "60000"
+      REDDIT_429_BACKOFF_MS: "60000"
+      PUBLIC_SIGNAL_USER_AGENT: "local-guides-citation-velocity/1.0 by SpryLabs contact:info@spryvc.com"
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_REFRESH_TOKEN: ${{ secrets.REDDIT_REFRESH_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Collect public signals
+        run: npm run collect:signals
+
+      - name: Normalize signals
+        run: npm run normalize:signals
+
+      - name: Map signals to targets
+        run: npm run map:signals
+
+      - name: Generate ingestion report
+        run: npm run report:ingestion
+
+      - name: Ingestion health gate warning check
+        run: npm run validate:ingestion
+
+      - name: Upload ingestion report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-signal-ingestion-report
+          path: |
+            data/community/collection_status.json
+            data/community/ingestion_report.json
+            data/community/source_health_log.json
+            data/community/raw_signals.json
+          if-no-files-found: warn
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate
+        run: npm run validate:all
+
+      - name: Commit generated updates
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Run public signal processing"
+            git pull --rebase origin main
+            git push
+          else
+            echo "No public signal updates to commit."
+          fi
