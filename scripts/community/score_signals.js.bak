@@ -27,15 +27,6 @@ const DAILY_LIMITS = {
   'uscis-medical': 10
 };
 
-const ALLOWED_VERTICALS = new Set([
-  'pi',
-  'dentistry',
-  'trt',
-  'neuro',
-  'uscis',
-  'uscis-medical'
-]);
-
 function textOf(signal) {
   return `${signal.normalized_query || ''} ${signal.raw_title || ''} ${signal.short_excerpt || ''}`.toLowerCase();
 }
@@ -191,11 +182,7 @@ function applyDailyLimits(rows) {
 
 function main() {
   const signals = readJson(INPUT, []);
-  const filtered = signals.filter((s) => {
-    const v = String(s.vertical || s.target_vertical || '').toLowerCase();
-    return ALLOWED_VERTICALS.has(v);
-  });
-  const scored = applyDailyLimits(filtered.map(scoreSignal));
+  const scored = applyDailyLimits(signals.map(scoreSignal));
   writeJson(OUTPUT, scored);
 
   const counts = scored.reduce((acc, s) => {
