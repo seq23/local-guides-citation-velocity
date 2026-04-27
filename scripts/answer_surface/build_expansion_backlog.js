@@ -20,7 +20,7 @@ function writeJson(rel, obj) {
 
 const reg = readJson('content/_shared/query_cluster_registry.json', {});
 const map = readJson('content/_shared/query_to_cluster_map.json', []);
-const scorecard = readJson('reports/citation_scorecard.json', { ranked: [] });
+const scorecard = readJson('reports/answer_surface_scorecard.json', { ranked: [] });
 
 const scores = new Map((scorecard.ranked || []).map(x => [`${x.vertical}/${x.cluster}`, x]));
 
@@ -50,12 +50,12 @@ for (const [vertical, meta] of Object.entries(reg)) {
 
     if (score.status === 'not_tested' || score.status === 'unknown') {
       priority += 60;
-      reasons.push('Cluster has no citation visibility data yet');
+      reasons.push('Cluster has no answer-surface visibility data yet');
     }
 
     if ((score.score || 0) < 1) {
       priority += 40;
-      reasons.push('Low citation dominance score');
+      reasons.push('Low answer-surface dominance score');
     }
 
     if (clusterItems.length < 8) {
@@ -93,10 +93,10 @@ for (const [vertical, meta] of Object.entries(reg)) {
 
 backlog.sort((a, b) => b.priority - a.priority);
 
-writeJson('reports/auto_expansion_backlog.json', {
+writeJson('reports/answer_surface_expansion_backlog.json', {
   generated_at: new Date().toISOString(),
   count: backlog.length,
   backlog
 });
 
-console.log(`Auto-expansion backlog written: reports/auto_expansion_backlog.json (${backlog.length} clusters)`);
+console.log(`Answer surface expansion backlog written: reports/answer_surface_expansion_backlog.json (${backlog.length} clusters)`);

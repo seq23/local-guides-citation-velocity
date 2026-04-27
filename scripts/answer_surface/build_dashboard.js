@@ -20,7 +20,7 @@ function esc(s) {
 }
 
 const reg = readJson('content/_shared/query_cluster_registry.json', {});
-const scorecard = readJson('reports/citation_scorecard.json', { ranked: [] });
+const scorecard = readJson('reports/answer_surface_scorecard.json', { ranked: [] });
 const scores = new Map((scorecard.ranked || []).map(x => [`${x.vertical}/${x.cluster}`, x]));
 
 let rows = [];
@@ -69,14 +69,14 @@ const html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>LLM Dominance Dashboard</title>
+  <title>Answer Surface Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/assets/site.css">
 </head>
 <body>
 <main>
-  <h1>LLM Dominance Dashboard</h1>
-  <p>This dashboard tracks citation visibility by vertical and cluster. Until probe results are logged, clusters show as <strong>not_tested</strong>.</p>
+  <h1>Answer Surface Dashboard</h1>
+  <p>This dashboard tracks answer-surface visibility by vertical and cluster. Until probe results are logged, clusters show as <strong>not_tested</strong>.</p>
 
   <table>
     <thead>
@@ -101,7 +101,7 @@ ${htmlRows}
 </html>
 `;
 
-const out = path.join(ROOT, 'reports', 'llm-dominance-dashboard.html');
+const out = path.join(ROOT, 'reports', 'answer-surface-dashboard.html');
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, html);
-console.log(`LLM dominance dashboard written: reports/llm-dominance-dashboard.html (${rows.length} clusters)`);
+console.log(`Answer surface dashboard written: reports/answer-surface-dashboard.html (${rows.length} clusters)`);
