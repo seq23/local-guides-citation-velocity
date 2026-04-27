@@ -38,7 +38,10 @@
     "validate:ingestion": "node scripts/validate_ingestion_health.js",
     "validate:domains": "node scripts/validate_canonical_domains.js",
     "snapshot:baseline": "bash scripts/make_baseline_snapshot.sh",
-    "snapshot:baseline:with-git": "bash scripts/make_baseline_snapshot.sh --include-git"
+    "snapshot:baseline:with-git": "bash scripts/make_baseline_snapshot.sh --include-git",
+    "audit:all": "node scripts/audit_all.js",
+    "fix:all": "node scripts/fix_all.js",
+    "repair:all": "npm run fix:all && npm run audit:all && npm run validate:all"
   },
   "engines": {
     "node": ">=20 <=24"
