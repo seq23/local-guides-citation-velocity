@@ -41,7 +41,8 @@
     "snapshot:baseline:with-git": "bash scripts/make_baseline_snapshot.sh --include-git",
     "audit:all": "node scripts/audit_all.js",
     "fix:all": "node scripts/fix_all.js",
-    "repair:all": "npm run fix:all && npm run audit:all && npm run validate:all"
+    "repair:all": "npm run generate:clusters && npm run fix:all && npm run audit:all && npm run validate:all",
+    "generate:clusters": "node scripts/generate_cluster_pages.js"
   },
   "engines": {
     "node": ">=20 <=24"
