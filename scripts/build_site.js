@@ -1279,7 +1279,7 @@ function main(){
     {slug:'/dentistry/', title:'Dentistry', desc:'Short answers + routing to official local guides.', v:'dentistry'},
     {slug:'/trt/', title:'TRT & Hair', desc:'Short answers + routing to official local guides.', v:'trt'},
     {slug:'/neuro/', title:'Neuropsych Evaluations', desc:'Short answers + routing to official local guides.', v:'neuro'},
-    {slug:'/uscis-medical/', title:'USCIS Medical', desc:'Short answers + routing to official local guides.', v:'uscis'}
+    {slug:'/uscis-medical/', title:'USCIS Medical', desc:'Short answers + routing to official local guides.', v:'uscis-medical'}
   ];
 
   const missingHubSlugs = hubs.filter((h) => !have.has(h.slug)).map((h) => h.slug);
