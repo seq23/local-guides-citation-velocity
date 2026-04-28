@@ -35,7 +35,7 @@ const VERTICAL_CONFIG = {
     domain: 'https://neuroevalguides.com',
     label: 'Neuropsych Evaluations'
   },
-  uscis: {
+  'uscis-medical': {
     basePath: 'uscis-medical',
     sourceVertical: 'uscis',
     domain: 'https://uscisexam.com',
