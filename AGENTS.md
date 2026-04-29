@@ -79,11 +79,9 @@ The approved promotion flow is:
 
 Deprecated promotion artifacts such as `data/community/publish_queue.json` and `data/community/patch_plan.json` are not runtime authority. Any script that tries to publish queued Velocity pages directly must remain disabled or review-gated.
 
-## Addendum — Deterministic Repo Execution, Audit Discipline, and Source-of-Truth Rules
+## Addendum — Deterministic Repo Execution, Audit Discipline, Source-of-Truth Rules, and Completion Contract
 
-This addendum is cumulative and authoritative. It extends the existing agent rules and is intended to prevent validator hell, drift, incomplete bundles, and fragile one-off patching.
-
----
+This addendum is cumulative and authoritative. It extends the existing agent rules and is intended to prevent validator hell, drift, incomplete bundles, fragile one-off patching, and confusion between canonical inputs and derived outputs.
 
 ### 1. Primary operating rule: fix causes, not reflections
 
@@ -123,8 +121,6 @@ These are generally **not** valid patch targets:
 
 **Rule:** If a file can be deterministically regenerated, do not treat it as the primary repair surface.
 
----
-
 ### 2. Never patch generated files when generator logic is the real issue
 
 If the bug is caused by generation, mapping, publish-path logic, or manifest drift:
@@ -138,12 +134,9 @@ Do **not**:
 - manually edit manifest JSON to compensate for bad slug logic
 - manually patch sitemap/inventory files if the generator or map is wrong
 
----
-
 ### 3. Required dependency thinking before any patch
 
 Before writing or suggesting a patch, the agent must explicitly determine:
-
 - What creates this file?
 - What consumes this file?
 - Is this file canonical or derived?
@@ -159,8 +152,6 @@ Before writing or suggesting a patch, the agent must explicitly determine:
 
 If these dependency questions are not answered, the task is not ready for mutation.
 
----
-
 ### 4. Inspect first, mutate second
 
 No blind patching.
@@ -175,8 +166,6 @@ For any repo change, the agent must first inspect relevant file shape using stru
 
 Do not assume a line exists just because it existed in a previous bundle or container copy.
 
----
-
 ### 5. Never rely on exact-block replacement when structure may vary
 
 Avoid fragile patch logic based on exact string blocks whenever possible.
@@ -189,16 +178,269 @@ Prefer:
 
 If exact replacement is required, the agent must verify the exact source block first in the current repo state.
 
----
-
 ### 6. Fail before write
 
 For generated content and generated manifests, validation must happen **before** bad content is written when possible.
 
 Required pattern:
 
-```text
-generate candidate
-→ validate candidate/prewrite contract
-→ if fail: stop or regenerate
+generate candidate  
+→ validate candidate/prewrite contract  
+→ if fail: stop or regenerate  
 → if pass: write
+
+Do **not** use:
+
+write bad output  
+→ validate later  
+→ try to repair downstream drift
+
+### 7. Two operating modes are required: Guardrail Mode and Audit Mode
+
+#### Guardrail Mode
+Used for routine work and CI.
+- hard-fail
+- deterministic
+- fast
+- protects structural integrity
+
+#### Audit Mode
+Used when something breaks or before major patch bundles.
+- collect-all
+- does not stop at first defect
+- writes consolidated issue report
+- groups failures by defect class
+- used before broad refactors and patch deliveries
+
+**Rule:** If repeated fail-fast iterations begin surfacing different errors one at a time, stop normal patching and switch to Audit Mode.
+
+### 8. No “done” claim without full real-chain execution
+
+A patch is not complete just because:
+- files exist
+- syntax passes
+- partial validators pass
+- workflows look correct
+- a report was written
+
+A repo task is only complete when the **actual runtime chain** used by the repo passes on a clean tree.
+
+Minimum completion contract:
+1. start from a clean repo state
+2. apply changes
+3. remove generated junk as required by repo policy
+4. run the real repo chain (for this repo, `npm run guardrails:all`)
+5. inspect final working tree
+6. confirm no unexpected generated artifacts are staged/tracked
+7. only then declare complete
+
+### 9. Package/workflow parity is mandatory
+
+Before shipping any patch bundle, the agent must verify that every script/workflow reference is actually present.
+
+This includes checking:
+- `package.json` scripts
+- workflow `run:` commands
+- validator invocations
+- helper imports
+- library dependencies
+- pre-commit hook calls
+
+**No patch bundle is complete unless all referenced files are included.**
+
+This specifically means:
+- if `package.json` references a validator, that validator must be in the bundle
+- if a workflow references a script, that script must be in the bundle
+- if a build script imports a helper, that helper must be present
+
+### 10. Generated artifact hygiene is a hard rule
+
+Generated artifacts must not accumulate in tracked state unless the repo explicitly treats them as runtime-authoritative.
+
+Default rule:
+- `.build/`
+- `dist/`
+- `reports/`
+- monitoring outputs
+- temporary audit outputs
+
+must be cleaned before validation/commit unless specifically required.
+
+The agent must respect repo-specific policy on whether generated directories are:
+- ignored
+- deleted before commit
+- or runtime-authoritative and tracked
+
+Never assume all generated directories should be tracked.
+
+### 11. Special-case pages must still obey shared contracts
+
+If the system creates special pages, exception pages, report-fix pages, or editorial/static cluster pages, they must still be evaluated against the shared publishing contract.
+
+The agent must not create hidden “special” surfaces that bypass:
+- linking rules
+- hierarchy expectations
+- slug policy
+- publish inventory
+- sitemap parity
+- manifest expectations
+
+If a truly special class exists, encode that exception deliberately in source logic and validators. Do not leave it as an undocumented edge case.
+
+### 12. Slug, publish path, and mapping changes require full dependent rebuild
+
+If slug rules or publish paths change, the agent must rebuild all dependent layers together.
+
+Typical dependent layers include:
+- rendered pages
+- live insights manifest
+- published URLs inventory
+- query-to-cluster maps
+- atlas registry
+- sitemap
+- href/link surfaces
+- LLM export layers
+- community/promotion indexes
+
+Do not patch one of these in isolation when the root issue is slug generation or publish-path logic.
+
+### 13. Validation categories: hard-fail vs audit-tier
+
+The agent must preserve strong hard-fail validators for true integrity invariants.
+
+Examples of valid hard-fail invariants:
+- broken slug contracts
+- missing mapped publish paths
+- sitemap parity
+- publish inventory parity
+- canonical immutability
+- rendered internal href breakage
+- deterministic manifest drift
+- executable-bit/runtime policy if required
+
+Heuristic/editorial checks that do not break publish integrity should be:
+- warning-tier
+- audit-tier
+- or prewrite content-quality gates, not random downstream blockers
+
+Do not convert the validator system into an unbounded pile of overlapping fail conditions.
+
+### 14. No repeated live terminal whack-a-mole
+
+If more than one or two sequential terminal patches are needed to surface “the next error,” stop.
+
+Switch to:
+- audit mode
+- collect-all reporting
+- grouped defect-class repair
+- rebuilt patch bundle
+
+Do not continue indefinitely with:
+- patch
+- rerun
+- new error
+- patch
+- rerun
+
+That pattern is only acceptable for tiny, isolated issues. It is not acceptable for systemic repo work.
+
+### 15. Updater compatibility is part of completion
+
+If work is delivered as a patch/baseline bundle for an updater script, the agent must verify compatibility with the updater’s actual rules.
+
+Examples:
+- ZIP vs tarball expectations
+- no report/artifact files in patch bundles if updater forbids them
+- correct root structure
+- correct naming pattern if enforced
+- patch-mode restrictions and required env vars
+- pre-commit behavior during updater auto-commit
+
+A bundle that contains valid code but fails updater policy is **not complete**.
+
+### 16. Commit cleanliness is part of success
+
+After successful validation, the agent must consider:
+- what is staged
+- what is unstaged
+- whether generated files re-dirtied the tree
+- whether timestamp-only drifts should be restored
+- whether `.build`, `dist`, `reports`, or monitoring files are being accidentally tracked
+
+A task is not complete if the runtime passes but the working tree is dirty for avoidable reasons.
+
+### 17. Velocity vs LKG repo boundary
+
+For this repo specifically:
+
+- **Velocity** is signal discovery, clustering, scoring, candidate generation, and PR proposal.
+- **LKG** is the publishing authority and final release surface.
+
+Velocity must not silently auto-publish into production.
+Velocity may:
+- generate candidates
+- validate candidates
+- open PRs into LKG
+- maintain community/LLM support layers
+
+LKG remains final authority for guide creation and release approval.
+
+### 18. Approval architecture rule
+
+The intended future flow is:
+
+Velocity detects demand  
+→ Velocity exports LKG candidate(s)  
+→ PR opens into LKG  
+→ owner reviews/approves in LKG  
+→ LKG validates/builds/releases
+
+The agent must preserve this separation and must not collapse it into uncontrolled automatic publishing.
+
+### 19. Mandatory post-change checklist for the agent
+
+Before declaring completion, the agent must be able to answer “yes” to all of these:
+- Did I change source logic instead of hand-patching a derived artifact?
+- Did I inspect actual file shape before patching?
+- Did I verify all downstream dependents?
+- Did I verify package/workflow references against actual files?
+- Did I run the real end-to-end repo chain on a clean tree?
+- Did I confirm generated artifact hygiene?
+- Did I confirm the updater/bundle format is acceptable?
+- Did I inspect the final working tree state?
+- If this involved a patch bundle, did I verify the bundle is complete and self-consistent?
+
+If any answer is “no,” the task is not complete.
+
+### 20. Final rule: no false certainty
+
+The agent must not claim:
+- “fixed”
+- “fully working”
+- “ready”
+- “guaranteed clean”
+
+unless the real repo chain has been executed successfully in a clean state.
+
+Syntax checks, file existence, and partial reports are not enough.
+
+### 21. Execution note for this repo
+
+For this repo, no change should be treated as complete unless the repo starts clean and the full real chain passes:
+
+```bash
+npm run guardrails:all
+
+If repeated failures surface different problems one by one, switch to audit mode and collect all defect classes before patching further.
+
+22. Document hierarchy rule
+
+AGENTS.md is the authoritative runtime law for this repo.
+
+If a separate AI SOP document exists, it must be treated as:
+
+human-facing guidance only
+optional summary only
+non-authoritative if any conflict exists
+
+If there is any conflict between documents, AGENTS.md wins.
