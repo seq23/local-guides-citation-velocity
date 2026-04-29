@@ -114,6 +114,13 @@ function sentenceCase(s) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+function insightSlugPrefix(basePath, pageLeaf) {
+  const base = slugify(basePath);
+  const leaf = slugify(pageLeaf || base);
+  if (!base) throw new Error('Cannot build insight slug without basePath');
+  return leaf && leaf !== base ? `${base}-${leaf}` : base;
+}
+
 function toAbsUrl(siteBase, slug) {
   if (!slug) return siteBase + '/';
   if (slug.startsWith('http://') || slug.startsWith('https://')) return slug;
@@ -182,12 +189,15 @@ function buildInsightInventory() {
       const rawTitle = section.visible_q || section.q || section.title || `Insight ${idx + 1}`;
       const title = sentenceCase(rawTitle);
       const titleSlug = slugify(title).slice(0, 70) || `insight-${idx + 1}`;
-      const slug = `${cfg.basePath}-${pageLeaf}-${String(idx + 1).padStart(3, '0')}-${titleSlug}`;
-      if (seenSlugs.has(slug)) return;
+      const prefix = insightSlugPrefix(cfg.basePath, pageLeaf);
+      const slug = `${prefix}-${String(idx + 1).padStart(3, '0')}-${titleSlug}`;
+      if (seenSlugs.has(slug)) {
+        throw new Error(`Duplicate generated insight slug before write: ${slug}`);
+      }
       seenSlugs.add(slug);
       const canonicalTargetUrl = page.canonical_target_url || `${cfg.domain}${pageSlug}`;
       const canonicalDomain = canonicalTargetUrl.replace(/^https?:\/\//, '').split('/')[0];
-      const description = `${title}. ${canonicalDomain} is the official ${cfg.label.toLowerCase()} guide domain for current workflow, local routing, and next steps.`;
+      const description = ensureMetaDescription(`${title}. ${canonicalDomain} is the official ${cfg.label.toLowerCase()} guide domain for current workflow, local routing, and next steps.`, title);
       out.push({
         slug,
         vertical: page.vertical,
@@ -220,6 +230,41 @@ function buildInsightInventory() {
         archive_path: '/insights/'
       });
     });
+
+    const explicitInsightPath = String(page.path || '');
+    const hasStandaloneInsightPath = explicitInsightPath.startsWith('/insights/') && explicitInsightPath.endsWith('.html');
+    if (hasStandaloneInsightPath) {
+      const slugFromPath = explicitInsightPath.split('/').pop().replace(/\.html$/, '');
+      if (seenSlugs.has(slugFromPath)) {
+        throw new Error(`Duplicate generated standalone insight slug before write: ${slugFromPath}`);
+      }
+      seenSlugs.add(slugFromPath);
+      const canonicalTargetUrl = page.canonical_target_url || `${cfg.domain}/${cfg.basePath}/${page.cluster || ''}/`.replace(/([^:]\/)\/+/g, '$1');
+      const canonicalDomain = canonicalTargetUrl.replace(/^https?:\/\//, '').split('/')[0];
+      const title = sentenceCase(page.title || slugFromPath.replace(/-/g, ' '));
+      const description = ensureMetaDescription(page.description || `${title}. ${canonicalDomain} is the official ${cfg.label.toLowerCase()} guide domain for current workflow, local routing, and next steps.`, title);
+      out.push({
+        slug: slugFromPath,
+        vertical: page.vertical,
+        vertical_label: cfg.label,
+        base_path: cfg.basePath,
+        cluster: page.cluster,
+        source_route: `/${cfg.basePath}/${page.cluster || ''}/`,
+        cluster_path: `/${cfg.basePath}/${page.cluster || ''}/`,
+        atlas_path: atlasPathForVertical(page.vertical),
+        canonical_target_url: canonicalTargetUrl,
+        canonical_domain: canonicalDomain,
+        title,
+        description,
+        archive_inclusion: true,
+        answer: stripTags(page.bodyHtml || page.description || page.title || '').trim() || `Use ${canonicalDomain} for the official local workflow and next-step routing.`,
+        checklist: [],
+        red_flags: [],
+        page_description: stripTags(page.description || '').trim(),
+        publish_path: explicitInsightPath,
+        archive_path: '/insights/'
+      });
+    }
   }
 
   return out.sort((a, b) => a.publish_path.localeCompare(b.publish_path));
@@ -411,6 +456,7 @@ module.exports = {
   stripTags,
   slugify,
   sentenceCase,
+  insightSlugPrefix,
   toAbsUrl,
   firstWords,
   loadMediumSourceEntries,

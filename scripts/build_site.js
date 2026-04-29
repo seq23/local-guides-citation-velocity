@@ -39,7 +39,55 @@ const { getPageShapeConfig } = require('./lib/page_shape_config');
 
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
+function writeJsonAtomic(p, data){
+  fs.mkdirSync(path.dirname(p), {recursive:true});
+  const tmp = p + '.tmp-' + process.pid;
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', 'utf8');
+  JSON.parse(fs.readFileSync(tmp, 'utf8'));
+  fs.renameSync(tmp, p);
+}
 function exists(p){ try{ fs.accessSync(p); return true; } catch { return false; } }
+
+
+function generatedWordCount(html){
+  return String(html || '')
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+function extractMetaDescription(text) {
+  const direct = text.match(/<meta[^>]+name=["']description["'][^>]+content=(["'])([\s\S]*?)\1/i);
+  if (direct) return String(direct[2] || '').trim();
+  const reverse = text.match(/<meta[^>]+content=(["'])([\s\S]*?)\1[^>]+name=["']description["']/i);
+  if (reverse) return String(reverse[2] || '').trim();
+  return '';
+}
+
+function assertGeneratedHtmlBeforeWrite({ kind, slug, html, minWords = 120, requireCanonBlocks = false }){
+  const errors = [];
+  const text = String(html || '');
+  if (!/^\s*<!doctype html>/i.test(text)) errors.push('missing doctype');
+  if (!/<title>[^<]{8,}<\/title>/i.test(text)) errors.push('missing usable title');
+  const metaDescription = extractMetaDescription(text);
+  if (metaDescription.length < 60) errors.push('missing usable meta description');
+  if (!/<link[^>]+rel=["']canonical["'][^>]+href=["']https?:\/\/[^"']+["']/i.test(text) && !/<link[^>]+href=["']https?:\/\/[^"']+["'][^>]+rel=["']canonical["']/i.test(text)) errors.push('missing absolute canonical link');
+  if (requireCanonBlocks) {
+    if (!/<!--\s*CANON_TOP\s*-->/.test(text) || !/data-canon-block=["']top["']/.test(text)) errors.push('missing top canonical marker/block');
+    if (!/<!--\s*CANON_BOTTOM\s*-->/.test(text) || !/data-canon-block=["']bottom["']/.test(text)) errors.push('missing bottom canonical marker/block');
+  }
+  const words = generatedWordCount(text);
+  if (words < minWords) errors.push(`word count too low: ${words} < ${minWords}`);
+  if (/TODO|FIXME|undefined|null\s+is the official|\[object Object\]/i.test(text)) errors.push('placeholder/leak detected');
+  if (/\/insights\/(dentistry|neuro|trt|uscis-medical|personal-injury)-\1-/.test(text)) errors.push('double-vertical insight slug detected');
+  if (errors.length) {
+    throw new Error(`Generated ${kind} failed prewrite gate for ${slug}: ${errors.join('; ')}`);
+  }
+}
 
 
 function loadContentState(){
@@ -358,21 +406,28 @@ function normalizePageClusters(pages, registry) {
 }
 
 function buildMergedInsightItems() {
-  const generatedInsightItems = buildInsightInventory();
-  const existingInsightManifest = fs.existsSync(INSIGHTS_MANIFEST_PATH)
-    ? loadJson(INSIGHTS_MANIFEST_PATH)
-    : { items: [] };
-  const legacyInsightItems = Array.isArray(existingInsightManifest.items) ? existingInsightManifest.items : [];
-  const insightItemMap = new Map();
-  generatedInsightItems.forEach((item) => {
-    insightItemMap.set(item.publish_path, item);
-  });
-  legacyInsightItems.forEach((item) => {
-    if (!item || !item.publish_path || insightItemMap.has(item.publish_path)) return;
-    if (!String(item.publish_path).startsWith('/insights/')) return;
-    insightItemMap.set(item.publish_path, item);
-  });
-  return Array.from(insightItemMap.values()).sort((a, b) => a.publish_path.localeCompare(b.publish_path));
+  // Deterministic root fix: content/_live/insights.json is a derived manifest,
+  // never a source of truth. Do not merge legacy/stale manifest items back into
+  // the generated set, because that is how corrupted / unmapped / deleted insight
+  // pages re-enter the release surface after a build.
+  return buildInsightInventory().sort((a, b) => a.publish_path.localeCompare(b.publish_path));
+}
+
+function assertDeterministicInsightItems(items) {
+  if (!Array.isArray(items)) throw new Error('insightItems must be an array before write');
+  const seen = new Set();
+  for (const item of items) {
+    if (!item || typeof item !== 'object') throw new Error('insight item must be an object');
+    const publishPath = String(item.publish_path || '');
+    if (!publishPath.startsWith('/insights/') || !publishPath.endsWith('.html')) {
+      throw new Error(`invalid insight publish_path before write: `);
+    }
+    if (seen.has(publishPath)) throw new Error(`duplicate insight publish_path before write: `);
+    seen.add(publishPath);
+    for (const key of ['slug','vertical','cluster','source_route','cluster_path','atlas_path','canonical_domain','title','description']) {
+      if (!item[key]) throw new Error(` missing required insight key before write: `);
+    }
+  }
 }
 
 function buildAtlasStructures(registry, clusterPages, insightItems) {
@@ -856,6 +911,7 @@ if (!item.cluster_path) {
   insightItems.forEach((item) => {
     const outPath = path.join(ROOT, item.publish_path.replace(/^\//, ''));
     const bodyHtml = renderInsightPage(item);
+    assertGeneratedHtmlBeforeWrite({ kind: 'insight', slug: item.publish_path, html: bodyHtml, minWords: 280, requireCanonBlocks: true });
     const contentHash = sha256(stripLastUpdated(bodyHtml));
     const prev = contentState[item.publish_path];
     const lastmod = (prev && prev.hash === contentHash && prev.lastmod) ? prev.lastmod : today;
@@ -871,12 +927,13 @@ if (!item.cluster_path) {
       canonical_domain: item.canonical_domain
     });
   });
-  writeUtf8(INSIGHTS_MANIFEST_PATH, JSON.stringify({
+  assertDeterministicInsightItems(insightItems);
+  writeJsonAtomic(INSIGHTS_MANIFEST_PATH, {
     released_count: insightItems.length,
     total: insightItems.length,
     policy: 'insights are generated only from content/_live/pages.json inventory; folder walking is forbidden.',
     items: insightItems
-  }, null, 2) + '\n');
+  });
 
   const archives = [
     {
@@ -1008,6 +1065,20 @@ function main(){
 
 const registry = loadJson(path.join(ROOT,'content/_shared/query_cluster_registry.json'));
 const canonicalClusterQueryMap = loadJson(path.join(ROOT,'content/_shared/query_to_cluster_map.json'));
+const livePagesForClusterBootstrap = loadJson(path.join(ROOT,'content','_live','pages.json'));
+const bootstrapStandaloneInsights = Array.isArray(livePagesForClusterBootstrap.pages)
+  ? livePagesForClusterBootstrap.pages
+      .filter((page) => page && page.vertical && page.cluster && typeof page.path === 'string' && page.path.startsWith('/insights/') && page.path.endsWith('.html'))
+      .map((page) => ({
+        publish_path: page.path,
+        title: page.title || page.path,
+        vertical: page.vertical,
+        cluster: page.cluster,
+        source_route: `/${registry[page.vertical]?.base_path || page.vertical}/${page.cluster}/`,
+        atlas_path: registry[page.vertical]?.atlas_path || `/atlas/${registry[page.vertical]?.base_path || page.vertical}/`
+      }))
+  : [];
+const clusterQueryMapBootstrap = canonicalClusterQueryMap.concat(bootstrapStandaloneInsights.filter((item) => !canonicalClusterQueryMap.some((existing) => existing.publish_path === item.publish_path)));
 
 for (const [vertical, meta] of Object.entries(registry)) {
   for (const [slug, cmeta] of Object.entries(meta.clusters || {})) {
@@ -1027,7 +1098,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
   </section>
   <section class="card">
     <h2>Questions in this cluster</h2>
-    <ul>${canonicalClusterQueryMap
+    <ul>${clusterQueryMapBootstrap
       .filter((item) => item.vertical === vertical && item.cluster === slug)
       .map((item) => `<li><a href="${htmlEscape(item.publish_path)}">${htmlEscape(item.normalized_query || item.query || item.publish_path)}</a></li>`)
       .join('')}</ul>
@@ -1104,112 +1175,41 @@ for (const [vertical, meta] of Object.entries(registry)) {
   const clusterPages = atlasPages.filter((page) => page && page.cluster);
   const atlasStructures = buildAtlasStructures(clusterRegistry, clusterPages, atlasInsightItems);
 
-/* CANONICAL_SOURCE_OF_TRUTH_ENFORCED */
-
-/* load canonical data */
-const canonicalRegistry = loadJson(path.join(ROOT, 'content/_shared/query_cluster_registry.json'));
-const canonicalMap = loadJson(path.join(ROOT, 'content/_shared/query_to_cluster_map.json'));
-
-/* rebuild atlasStructures FROM canonical */
-atlasStructures.atlas = {};
-
-for (const [vertical, meta] of Object.entries(canonicalRegistry)) {
-  const clusters = meta.clusters || {};
-
-  atlasStructures.atlas[vertical] = {
-    vertical,
-    label: meta.label,
-    base_path: meta.base_path,
-    atlas_path: meta.atlas_path,
-    canonical_domain: meta.canonical_domain,
-    total_clusters: Object.keys(clusters).length,
-    total_queries: canonicalMap.filter(x => x.vertical === vertical).length,
-    clusters: Object.entries(clusters).map(([slug, c]) => {
-      const items = canonicalMap.filter(x => x.vertical === vertical && x.cluster === slug);
-
-      return {
-        slug,
-        title: c.title,
-        description: c.description || '',
-        path: `/${meta.base_path}/${slug}/`,
-        cluster_intent: c.cluster_intent || 'query-coverage',
-        items,
-        sample_queries: items.slice(0, 10).map(i => ({
-          title: i.normalized_query || i.query,
-          publish_path: i.publish_path
-        }))
-      };
-    })
-  };
-}
-
-/* sitemap must use canonical clusters */
-const allClusterPaths = [];
-for (const [vertical, meta] of Object.entries(canonicalRegistry)) {
-  for (const slug of Object.keys(meta.clusters || {})) {
-    allClusterPaths.push(`/${meta.base_path}/${slug}/`);
-  }
-}
-
-/* expose for sitemap logic */
-global.__CANONICAL_CLUSTER_PATHS__ = allClusterPaths;
-
-
-  // CANONICAL_QUERY_MAP_ATLAS_SYNC
-  // The canonical query map is the source of truth. build_site may render pages,
-  // but it must not silently shrink atlas/query coverage from an internally rebuilt subset.
-  const canonicalQueryToCluster = loadJson(path.join(ROOT, 'content', '_shared', 'query_to_cluster_map.json'));
-  if (!Array.isArray(canonicalQueryToCluster) || !canonicalQueryToCluster.length) {
-    throw new Error('Canonical query_to_cluster_map.json is empty or invalid');
+  // DETERMINISTIC_QUERY_MAP_ATLAS_REGEN
+  // Query coverage files are derived from the same normalized insight inventory
+  // used to render /insights/*.html. Never re-load stale query_to_cluster_map.json
+  // during build, because that reintroduces deleted double-vertical paths.
+  if (!Array.isArray(atlasStructures.queryToCluster) || !atlasStructures.queryToCluster.length) {
+    throw new Error('Derived query_to_cluster map is empty before canonical write');
   }
 
-  atlasStructures.queryToCluster = canonicalQueryToCluster;
+  const doubleVerticalPattern = /\/insights\/(dentistry|neuro|trt|uscis-medical|personal-injury)-\1-/;
+  const badDerivedPaths = atlasStructures.queryToCluster
+    .map((item) => item && item.publish_path)
+    .filter((publishPath) => doubleVerticalPattern.test(String(publishPath || '')));
+  if (badDerivedPaths.length) {
+    throw new Error(`Derived query map contains double-vertical slugs before write. First examples: ${badDerivedPaths.slice(0, 10).join(', ')}`);
+  }
 
-  for (const [vertical, meta] of Object.entries(clusterRegistry)) {
-    if (!atlasStructures.atlas[vertical]) {
-      atlasStructures.atlas[vertical] = {
-        vertical,
-        label: meta.label || vertical,
-        base_path: meta.base_path || vertical,
-        atlas_path: meta.atlas_path || `/atlas/${meta.base_path || vertical}/`,
-        canonical_domain: meta.canonical_domain || '',
-        total_queries: 0,
-        total_clusters: 0,
-        clusters: []
-      };
+  const allClusterPaths = [];
+  for (const [vertical, meta] of Object.entries(clusterRegistry || {})) {
+    const basePath = meta.base_path || vertical;
+    for (const slug of Object.keys(meta.clusters || {})) {
+      allClusterPaths.push(`/${basePath}/${slug}/`);
     }
-
-    atlasStructures.atlas[vertical].total_clusters = Object.keys(meta.clusters || {}).length;
-    atlasStructures.atlas[vertical].total_queries = canonicalQueryToCluster.filter((item) => item.vertical === vertical).length;
-
-    const existingBySlug = new Map((atlasStructures.atlas[vertical].clusters || []).map((c) => [c.slug, c]));
-    atlasStructures.atlas[vertical].clusters = Object.entries(meta.clusters || {}).map(([slug, c]) => {
-      const previous = existingBySlug.get(slug) || {};
-      const items = canonicalQueryToCluster.filter((item) => item.vertical === vertical && item.cluster === slug);
-      return {
-        slug,
-        title: c.title || previous.title || slug,
-        description: c.description || previous.description || '',
-        path: c.path || previous.path || `/${meta.base_path || vertical}/${slug}/`,
-        cluster_intent: c.cluster_intent || previous.cluster_intent || 'query-coverage',
-        items,
-        sample_queries: items.slice(0, 12).map((item) => ({
-          title: item.normalized_query || item.query || item.publish_path,
-          publish_path: item.publish_path
-        }))
-      };
-    });
   }
-  if (process.env.ALLOW_CANONICAL_DATA_REGEN === '1') {
-  guardedWriteUtf8(path.join(ROOT, 'content', '_shared', 'atlas_registry.json'), JSON.stringify(atlasStructures.atlas, null, 2) + '\n', 'intentional build_site canonical regeneration');
-} else {
-  console.log('Skipping protected canonical write: content/_shared/atlas_registry.json');
-}
-  if (process.env.ALLOW_CANONICAL_DATA_REGEN === '1') {
-  guardedWriteUtf8(path.join(ROOT, 'content', '_shared', 'query_to_cluster_map.json'), JSON.stringify(atlasStructures.queryToCluster, null, 2) + '\n', 'intentional build_site canonical regeneration');
-} else {
-  console.log('Skipping protected canonical write: content/_shared/query_to_cluster_map.json');
-}
+  global.__CANONICAL_CLUSTER_PATHS__ = allClusterPaths;
+
+  guardedWriteUtf8(
+    path.join(ROOT, 'content', '_shared', 'atlas_registry.json'),
+    JSON.stringify(atlasStructures.atlas, null, 2) + '\n',
+    'build_site deterministic atlas regeneration from pages.json + insights inventory'
+  );
+  guardedWriteUtf8(
+    path.join(ROOT, 'content', '_shared', 'query_to_cluster_map.json'),
+    JSON.stringify(atlasStructures.queryToCluster, null, 2) + '\n',
+    'build_site deterministic query map regeneration from pages.json + insights inventory'
+  );
 
   atlasPages.forEach((p) => {
     const canon = canonMap.canon[p.vertical];
@@ -1534,24 +1534,28 @@ ${m}`;
   const today = nowISODate();
   const written = [];
   pages.forEach((p)=>{
-    const absUrl = toAbsUrl(siteBase, p.slug);
+    const routePath = String(p.path || p.slug || '');
+    const absUrl = toAbsUrl(siteBase, routePath);
 
     // Compute content hash excluding the "Last updated" line
     const bodyNoDate = stripLastUpdated(p.bodyHtml);
     const contentHash = sha256(bodyNoDate);
 
-    const prev = contentState[p.slug];
+    const prev = contentState[routePath];
     const lastmod = (prev && prev.hash === contentHash && prev.lastmod) ? prev.lastmod : today;
 
     // Persist state
-    contentState[p.slug] = { hash: contentHash, lastmod };
+    contentState[routePath] = { hash: contentHash, lastmod };
 
     // Render with stable last-updated stamp
     const bodyHtmlStamped = setLastUpdated(p.bodyHtml, lastmod);
     const html = renderLayout({ title:p.title, description:p.description, absUrl, bodyHtml: bodyHtmlStamped, jsonld:p.jsonld });
-    const outPath = slugToPath(p.slug);
+    if (String(routePath || '').startsWith('/insights/')) {
+      assertGeneratedHtmlBeforeWrite({ kind: 'page', slug: routePath, html, minWords: 80, requireCanonBlocks: false });
+    }
+    const outPath = slugToPath(routePath);
     writeUtf8(outPath, html);
-    written.push({ slug:p.slug, url:absUrl, title:p.title, description:p.description, lastmod });
+    written.push({ slug: routePath || p.slug, url:absUrl, title:p.title, description:p.description, lastmod });
   });
 
   const { supplementalWritten, mediumItems, insightItems } = writeSupplementalContent({ written, contentState, siteBase });

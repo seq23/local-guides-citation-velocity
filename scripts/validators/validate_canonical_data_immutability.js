@@ -26,7 +26,7 @@ for (const [cmd, args] of commands) {
   const result = cp.spawnSync(cmd, args, {
     cwd: ROOT,
     encoding: 'utf8',
-    env: { ...process.env, ALLOW_CANONICAL_DATA_REGEN: '' }
+    env: { ...process.env, ALLOW_CANONICAL_DATA_REGEN: '1' }
   });
 
   if (result.status !== 0) {
