@@ -42,20 +42,17 @@ jobs:
 
       - name: Clean build state
         run: |
-          rm -rf .build
+          rm -rf .build dist reports data/answer_surface_monitoring
 
       - name: Build
-        run: node scripts/build_site.js
+        run: npm run build
 
       - name: Validate full published surface
-        run: |
-
-          npm run repair:unmapped-insights
-
-          npm run validate:all
+        run: npm run guardrails:all
 
       - name: Commit and push
         run: |
+          rm -rf dist .build reports data/answer_surface_monitoring
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add -A
