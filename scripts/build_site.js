@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { guardedWriteUtf8 } = require('./lib/canonical_data_guard');
 
 const ROOT = path.resolve(__dirname, '..');
 const LAYOUT = path.join(ROOT, 'templates', 'layout.html');
@@ -427,7 +428,12 @@ function renderAtlasBody({ title, description, atlasConfig, allVerticals }) {
       <ul>${cards}</ul></section>`;
   }
   const clusterCards = atlasConfig.clusters.map((cluster) => {
-    const queries = cluster.sample_queries.map((query) => `<li><a href="${htmlEscape(query.publish_path)}">${htmlEscape(query.title)}</a></li>`).join('');
+    const sampleQueries = Array.isArray(cluster.sample_queries) ? cluster.sample_queries : (Array.isArray(cluster.items) ? cluster.items : []);
+    const queries = sampleQueries.map((query) => {
+      const href = query.publish_path || query.path || '#';
+      const label = query.title || query.normalized_query || query.query || href;
+      return `<li><a href="${htmlEscape(href)}">${htmlEscape(label)}</a></li>`;
+    }).join('');
     return `<section class="card"><div class="badge">Cluster</div><h2 class="h2" style="margin-top:8px"><a href="${htmlEscape(cluster.path)}">${htmlEscape(cluster.title)}</a></h2><p class="muted">${htmlEscape(cluster.description)}</p><p><strong>${cluster.query_count}</strong> query pages mapped here.</p>${queries ? `<h3 class="h2">Sample questions</h3><ul>${queries}</ul>` : ''}</section>`;
   }).join('');
   return `
@@ -805,6 +811,20 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
   const verticalBuckets = new Map();
   insightItems.forEach((item) => {
     const clusterKey = `${item.vertical || 'generic'}::${item.cluster || item.source_route || 'unknown'}`;
+
+/* FINAL_CLUSTER_PATH_FIX */
+
+// derive cluster_path from canonical registry ALWAYS
+if (!item.cluster_path && item.vertical && item.cluster && clusterRegistry[item.vertical]) {
+  const base = clusterRegistry[item.vertical].base_path || item.vertical;
+  item.cluster_path = `/${base}/${item.cluster}/`;
+}
+
+// fallback safety (never empty)
+if (!item.cluster_path) {
+  item.cluster_path = "/insights/";
+}
+
     const sameCluster = clusterBuckets.get(clusterKey) || [];
     sameCluster.push(item);
     clusterBuckets.set(clusterKey, sameCluster);
@@ -816,6 +836,15 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
     const clusterKey = `${item.vertical || 'generic'}::${item.cluster || item.source_route || 'unknown'}`;
     const sourcePage = pageRouteMap.get(item.source_route || '') || null;
     if (!item.cluster && sourcePage && sourcePage.cluster) item.cluster = sourcePage.cluster;
+    // CANONICAL_INSIGHT_CLUSTER_PATH_ROOT_FIX
+    if (!item.cluster_path && item.vertical && item.cluster && clusterRegistry[item.vertical] && clusterRegistry[item.vertical].clusters && clusterRegistry[item.vertical].clusters[item.cluster]) {
+      item.cluster_path = clusterRegistry[item.vertical].clusters[item.cluster].path || `/${clusterRegistry[item.vertical].base_path || item.vertical}/${item.cluster}/`;
+    }
+    // INSIGHT_CLUSTER_PATH_FROM_CANONICAL_MAP_REAL_FIX
+    if ((!item.cluster_path || item.cluster_path === '/insights/') && item.vertical && item.cluster) {
+      const cmeta = clusterRegistry[item.vertical]?.clusters?.[item.cluster];
+      item.cluster_path = cmeta?.path || `/${clusterRegistry[item.vertical]?.base_path || item.vertical}/${item.cluster}/`;
+    }
     if (!item.cluster_path && item.source_route) item.cluster_path = item.source_route;
     if (!item.atlas_path && item.vertical && clusterRegistry[item.vertical]) item.atlas_path = clusterRegistry[item.vertical].atlas_path || `/atlas/${clusterRegistry[item.vertical].base_path}/`;
     const clusterMeta = item.vertical && item.cluster && clusterRegistry[item.vertical] && clusterRegistry[item.vertical].clusters ? clusterRegistry[item.vertical].clusters[item.cluster] : null;
@@ -975,6 +1004,42 @@ function main(){
   // Collect pages
   const pages = [];
 
+/* FORCE_ALL_REGISTRY_CLUSTERS_GENERATED */
+
+const registry = loadJson(path.join(ROOT,'content/_shared/query_cluster_registry.json'));
+const canonicalClusterQueryMap = loadJson(path.join(ROOT,'content/_shared/query_to_cluster_map.json'));
+
+for (const [vertical, meta] of Object.entries(registry)) {
+  for (const [slug, cmeta] of Object.entries(meta.clusters || {})) {
+    const pathSlug = cmeta.path;
+
+    if (!pages.find(p => p.slug === pathSlug)) {
+      pages.push({
+        slug: pathSlug,
+        title: cmeta.title || slug,
+        description: cmeta.description || "",
+        bodyHtml: `<!-- FORCE_ALL_REGISTRY_CLUSTERS_GENERATED_WITH_LINK_CONTRACT -->
+<main>
+  <section class="card">
+    <h1>${htmlEscape(cmeta.title || slug)}</h1>
+    <p>${htmlEscape(cmeta.description || '')}</p>
+    <p><a href="${htmlEscape(meta.atlas_path || `/atlas/${meta.base_path || vertical}/`)}">View the ${htmlEscape(meta.label || vertical)} atlas</a></p>
+  </section>
+  <section class="card">
+    <h2>Questions in this cluster</h2>
+    <ul>${canonicalClusterQueryMap
+      .filter((item) => item.vertical === vertical && item.cluster === slug)
+      .map((item) => `<li><a href="${htmlEscape(item.publish_path)}">${htmlEscape(item.normalized_query || item.query || item.publish_path)}</a></li>`)
+      .join('')}</ul>
+  </section>
+</main>`,
+        vertical
+      });
+    }
+  }
+}
+
+
   // Index + scaffolding
   pages.push(buildIndexPage(siteBase));
 
@@ -1038,8 +1103,113 @@ function main(){
   const atlasInsightItems = buildMergedInsightItems();
   const clusterPages = atlasPages.filter((page) => page && page.cluster);
   const atlasStructures = buildAtlasStructures(clusterRegistry, clusterPages, atlasInsightItems);
-  writeUtf8(path.join(ROOT, 'content', '_shared', 'atlas_registry.json'), JSON.stringify(atlasStructures.atlas, null, 2) + '\n');
-  writeUtf8(path.join(ROOT, 'content', '_shared', 'query_to_cluster_map.json'), JSON.stringify(atlasStructures.queryToCluster, null, 2) + '\n');
+
+/* CANONICAL_SOURCE_OF_TRUTH_ENFORCED */
+
+/* load canonical data */
+const canonicalRegistry = loadJson(path.join(ROOT, 'content/_shared/query_cluster_registry.json'));
+const canonicalMap = loadJson(path.join(ROOT, 'content/_shared/query_to_cluster_map.json'));
+
+/* rebuild atlasStructures FROM canonical */
+atlasStructures.atlas = {};
+
+for (const [vertical, meta] of Object.entries(canonicalRegistry)) {
+  const clusters = meta.clusters || {};
+
+  atlasStructures.atlas[vertical] = {
+    vertical,
+    label: meta.label,
+    base_path: meta.base_path,
+    atlas_path: meta.atlas_path,
+    canonical_domain: meta.canonical_domain,
+    total_clusters: Object.keys(clusters).length,
+    total_queries: canonicalMap.filter(x => x.vertical === vertical).length,
+    clusters: Object.entries(clusters).map(([slug, c]) => {
+      const items = canonicalMap.filter(x => x.vertical === vertical && x.cluster === slug);
+
+      return {
+        slug,
+        title: c.title,
+        description: c.description || '',
+        path: `/${meta.base_path}/${slug}/`,
+        cluster_intent: c.cluster_intent || 'query-coverage',
+        items,
+        sample_queries: items.slice(0, 10).map(i => ({
+          title: i.normalized_query || i.query,
+          publish_path: i.publish_path
+        }))
+      };
+    })
+  };
+}
+
+/* sitemap must use canonical clusters */
+const allClusterPaths = [];
+for (const [vertical, meta] of Object.entries(canonicalRegistry)) {
+  for (const slug of Object.keys(meta.clusters || {})) {
+    allClusterPaths.push(`/${meta.base_path}/${slug}/`);
+  }
+}
+
+/* expose for sitemap logic */
+global.__CANONICAL_CLUSTER_PATHS__ = allClusterPaths;
+
+
+  // CANONICAL_QUERY_MAP_ATLAS_SYNC
+  // The canonical query map is the source of truth. build_site may render pages,
+  // but it must not silently shrink atlas/query coverage from an internally rebuilt subset.
+  const canonicalQueryToCluster = loadJson(path.join(ROOT, 'content', '_shared', 'query_to_cluster_map.json'));
+  if (!Array.isArray(canonicalQueryToCluster) || !canonicalQueryToCluster.length) {
+    throw new Error('Canonical query_to_cluster_map.json is empty or invalid');
+  }
+
+  atlasStructures.queryToCluster = canonicalQueryToCluster;
+
+  for (const [vertical, meta] of Object.entries(clusterRegistry)) {
+    if (!atlasStructures.atlas[vertical]) {
+      atlasStructures.atlas[vertical] = {
+        vertical,
+        label: meta.label || vertical,
+        base_path: meta.base_path || vertical,
+        atlas_path: meta.atlas_path || `/atlas/${meta.base_path || vertical}/`,
+        canonical_domain: meta.canonical_domain || '',
+        total_queries: 0,
+        total_clusters: 0,
+        clusters: []
+      };
+    }
+
+    atlasStructures.atlas[vertical].total_clusters = Object.keys(meta.clusters || {}).length;
+    atlasStructures.atlas[vertical].total_queries = canonicalQueryToCluster.filter((item) => item.vertical === vertical).length;
+
+    const existingBySlug = new Map((atlasStructures.atlas[vertical].clusters || []).map((c) => [c.slug, c]));
+    atlasStructures.atlas[vertical].clusters = Object.entries(meta.clusters || {}).map(([slug, c]) => {
+      const previous = existingBySlug.get(slug) || {};
+      const items = canonicalQueryToCluster.filter((item) => item.vertical === vertical && item.cluster === slug);
+      return {
+        slug,
+        title: c.title || previous.title || slug,
+        description: c.description || previous.description || '',
+        path: c.path || previous.path || `/${meta.base_path || vertical}/${slug}/`,
+        cluster_intent: c.cluster_intent || previous.cluster_intent || 'query-coverage',
+        items,
+        sample_queries: items.slice(0, 12).map((item) => ({
+          title: item.normalized_query || item.query || item.publish_path,
+          publish_path: item.publish_path
+        }))
+      };
+    });
+  }
+  if (process.env.ALLOW_CANONICAL_DATA_REGEN === '1') {
+  guardedWriteUtf8(path.join(ROOT, 'content', '_shared', 'atlas_registry.json'), JSON.stringify(atlasStructures.atlas, null, 2) + '\n', 'intentional build_site canonical regeneration');
+} else {
+  console.log('Skipping protected canonical write: content/_shared/atlas_registry.json');
+}
+  if (process.env.ALLOW_CANONICAL_DATA_REGEN === '1') {
+  guardedWriteUtf8(path.join(ROOT, 'content', '_shared', 'query_to_cluster_map.json'), JSON.stringify(atlasStructures.queryToCluster, null, 2) + '\n', 'intentional build_site canonical regeneration');
+} else {
+  console.log('Skipping protected canonical write: content/_shared/query_to_cluster_map.json');
+}
 
   atlasPages.forEach((p) => {
     const canon = canonMap.canon[p.vertical];
@@ -1147,7 +1317,19 @@ function main(){
       slug,
       title: `${atlasConfig.label} Atlas`,
       description: `Full cluster and query coverage map for ${atlasConfig.label}.`,
-      bodyHtml: renderAtlasBody({ title: `${atlasConfig.label} Atlas`, description: `Full cluster and query coverage map for ${atlasConfig.label}.`, atlasConfig, allVerticals: atlasStructures.atlas }),
+      bodyHtml: renderAtlasBody({ title: `${atlasConfig.label} Atlas`, description: `Full cluster and query coverage map for ${atlasConfig.label}.`, atlasConfig, allVerticals: atlasStructures.atlas }).replace(
+        /(<\/main>)/i,
+        (m) => {
+          const clusterPath = p.cluster ? `/dentistry/${p.cluster}/` : '';
+          if (!clusterPath) return m;
+
+          return `
+<section class="card">
+  <p><a href="${clusterPath}">View full cluster guide</a></p>
+</section>
+${m}`;
+        }
+      ) /* CANONICAL_CLUSTER_LINK_ENFORCED */,
       jsonld: {
         '@context':'https://schema.org',
         '@type':'CollectionPage',
@@ -1533,6 +1715,9 @@ function main(){
   // security.txt
   writeUtf8(path.join(ROOT, '.well-known', 'security.txt'),
 `Contact: mailto:security@theindustryguides.com\nPreferred-Languages: en\nPolicy: ${siteBase}/disclaimer.html\n`);
+
+  // APPLY_DENTISTRY_REPORT_FIX_CONTRACT_AFTER_BUILD
+  require('./apply_dentistry_report_fix_contract').run();
 
   console.log(`Built ${written.length} pages.`);
 }
