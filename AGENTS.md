@@ -78,3 +78,127 @@ The approved promotion flow is:
 5. The user approves by merging the LKG pull request. LKG is the only repo allowed to publish.
 
 Deprecated promotion artifacts such as `data/community/publish_queue.json` and `data/community/patch_plan.json` are not runtime authority. Any script that tries to publish queued Velocity pages directly must remain disabled or review-gated.
+
+## Addendum — Deterministic Repo Execution, Audit Discipline, and Source-of-Truth Rules
+
+This addendum is cumulative and authoritative. It extends the existing agent rules and is intended to prevent validator hell, drift, incomplete bundles, and fragile one-off patching.
+
+---
+
+### 1. Primary operating rule: fix causes, not reflections
+
+The agent must prefer editing **source inputs** over **derived outputs**.
+
+#### Source inputs (preferred targets)
+These are usually valid places to make changes:
+- generator/build logic
+  - `scripts/build_site.js`
+  - `scripts/lib/publish_contract.js`
+  - generator helpers / shared libs
+- validator logic
+  - `scripts/validators/*.js`
+- canonical/shared mapping data
+  - `content/_shared/*.json`
+- package/workflow/runtime wiring
+  - `package.json`
+  - `.github/workflows/*.yml`
+- templates, renderers, shared components, canonical content registries
+
+#### Derived outputs (do not hand-edit except emergency one-off repairs explicitly requested by owner)
+These are generally **not** valid patch targets:
+- rendered HTML pages
+  - `insights/*.html`
+  - `atlas/**/*.html`
+  - generated top-level pages
+- generated manifests / inventories
+  - `content/_live/insights.json`
+  - `content/_live/published_urls.json`
+- generated indexes / exports / temp artifacts
+  - `dist/*`
+  - `.build/*`
+  - `reports/*`
+  - `data/community/*.json`
+  - `data/lkg_candidates/*.json`
+  - other generated caches, snapshots, monitoring outputs
+
+**Rule:** If a file can be deterministically regenerated, do not treat it as the primary repair surface.
+
+---
+
+### 2. Never patch generated files when generator logic is the real issue
+
+If the bug is caused by generation, mapping, publish-path logic, or manifest drift:
+1. inspect source logic first
+2. patch generator / canonical source layer
+3. rebuild dependent layers
+4. validate full chain
+
+Do **not**:
+- manually edit 20+ rendered pages to fix a generator defect
+- manually edit manifest JSON to compensate for bad slug logic
+- manually patch sitemap/inventory files if the generator or map is wrong
+
+---
+
+### 3. Required dependency thinking before any patch
+
+Before writing or suggesting a patch, the agent must explicitly determine:
+
+- What creates this file?
+- What consumes this file?
+- Is this file canonical or derived?
+- What other layers must be rebuilt if this changes?
+- Will a future build overwrite this fix?
+- Is this file referenced by:
+  - `package.json`
+  - GitHub workflows
+  - validators
+  - pre-commit hooks
+  - release scripts
+  - updater scripts
+
+If these dependency questions are not answered, the task is not ready for mutation.
+
+---
+
+### 4. Inspect first, mutate second
+
+No blind patching.
+
+For any repo change, the agent must first inspect relevant file shape using structural inspection:
+- grep
+- head / tail
+- line-number inspection
+- targeted search
+- surrounding function inspection
+- package/workflow references
+
+Do not assume a line exists just because it existed in a previous bundle or container copy.
+
+---
+
+### 5. Never rely on exact-block replacement when structure may vary
+
+Avoid fragile patch logic based on exact string blocks whenever possible.
+
+Prefer:
+- structural replacements
+- targeted function-level rewrites
+- guarded AST-like / regex-safe edits
+- exact line verification before replacement
+
+If exact replacement is required, the agent must verify the exact source block first in the current repo state.
+
+---
+
+### 6. Fail before write
+
+For generated content and generated manifests, validation must happen **before** bad content is written when possible.
+
+Required pattern:
+
+```text
+generate candidate
+→ validate candidate/prewrite contract
+→ if fail: stop or regenerate
+→ if pass: write
