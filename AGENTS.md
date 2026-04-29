@@ -64,7 +64,6 @@ Before offering a script to fix a problem, an agent must answer:
 - Are duplicate repo copies, nested ZIPs, generated artifacts, or stale reports being scanned?
 - What exact command proves the fix?
 
-
 ## Velocity → LKG promotion boundary
 
 Velocity is not a publisher. Velocity may collect non-auth public signals, normalize them, cluster them, score them, and export LKG guide candidates. It must not directly create live LKG pages, mutate LKG runtime files, or publish content.
@@ -430,17 +429,349 @@ For this repo, no change should be treated as complete unless the repo starts cl
 
 ```bash
 npm run guardrails:all
+```
 
 If repeated failures surface different problems one by one, switch to audit mode and collect all defect classes before patching further.
 
-22. Document hierarchy rule
+### 22. Document hierarchy rule
 
-AGENTS.md is the authoritative runtime law for this repo.
+`AGENTS.md` is the authoritative runtime law for this repo.
 
 If a separate AI SOP document exists, it must be treated as:
+- human-facing guidance only
+- optional summary only
+- non-authoritative if any conflict exists
 
-human-facing guidance only
-optional summary only
-non-authoritative if any conflict exists
+If there is any conflict between documents, `AGENTS.md` wins.
 
-If there is any conflict between documents, AGENTS.md wins.
+To avoid future drift, do not maintain two competing full source-of-truth process documents for the same repo.
+
+## Addendum — Citation Velocity Recommendation Intake, Page Improvement Rules, and Future-Safe Patch Discipline
+
+This addendum governs how the agent must handle citation-velocity PDFs, CSVs, audit reports, and recommendation documents for already-published pages.
+
+This addendum exists to solve the exact problem where:
+- a report identifies weak live pages
+- those pages need specific upgrades
+- future pages should inherit the same improvements
+- the repo must not fall back into validator hell or render-layer drift
+
+### 1. Core rule
+
+Citation recommendations must be implemented through **durable source layers**, not random ad hoc edits to generated output.
+
+The agent must not interpret “do not patch derived output” as “do not improve live pages.”
+
+The correct rule is:
+1. improve the specific page the report calls out
+2. decide whether the same improvement should become a reusable template or generator rule
+3. rebuild the dependent outputs
+4. validate the full chain
+
+### 2. Three valid improvement scopes
+
+Every recommendation from a PDF/CSV/report must be classified into one or more of these scopes:
+
+#### A. Page override
+Use when a recommendation is specific to one published page.
+
+Examples:
+- rewrite the opening answer on one guide
+- add a comparison table to one guide
+- add a decision checklist to one page
+- expand one page for missing subtopics
+
+These changes should be stored in a structured page-level source layer when possible.
+
+#### B. Template / family fix
+Use when the same improvement should apply to a whole page family.
+
+Examples:
+- city pages need a decision checklist above the fold
+- all “red flags” guides need a scannable checklist block
+- all “cost” pages need direct price-range answer formatting
+- all “does it work / is it safe” pages need direct answer opening logic
+
+These changes belong in:
+- shared templates
+- family-level content builders
+- page-type render rules
+- reusable section registries
+
+#### C. Generator-wide rule
+Use when the recommendation represents a general pattern that should influence future pages automatically.
+
+Examples:
+- comparison-intent pages should get a comparison table above the fold
+- clarity-sensitive queries should remove hedging in the opening answer
+- completeness-sensitive pages should include required subtopic sets by intent family
+
+These changes belong in:
+- generator logic
+- shared intent-family rules
+- reusable content enhancement systems
+- structured recommendation-to-template mapping
+
+### 3. What the agent must not do
+
+The agent must not default to this pattern:
+
+open rendered HTML  
+edit live page directly  
+repeat page by page  
+commit random render changes
+
+That pattern is only acceptable if:
+- the owner explicitly asks for a one-off emergency patch
+- there is no durable source layer yet
+- the patch is logged as temporary and should later be migrated upstream
+
+### 4. Correct implementation pattern
+
+When given a recommendation report, the agent must use this workflow:
+
+recommendation report  
+→ normalize recommendations into structured patch items  
+→ map each item to the correct repo source target  
+→ classify item as page override, template fix, generator rule, or combination  
+→ patch source layer  
+→ rebuild affected outputs  
+→ validate full chain  
+→ report exact changed files and why
+
+### 5. Required structured intake format
+
+When the owner provides a citation recommendation PDF, CSV, or report, the agent must normalize each recommendation into a structured record.
+
+Recommended shape:
+
+```json
+{
+  "repo": "velocity",
+  "url": "https://theindustryguides.com/guides/trt-cost-breakdown/",
+  "query_target": "how much does TRT cost per month",
+  "fix_type": "clarity",
+  "scope": ["page_override", "generator_rule"],
+  "actions": [
+    "rewrite_opening_direct_answer",
+    "remove_hedging",
+    "add_price_range_above_fold"
+  ],
+  "source_target": "guide source / page override layer / shared guide opening rule",
+  "acceptance_check": "opening gives direct price answer without hedging and remains validator-safe"
+}
+```
+
+Every recommendation item should include:
+- repo
+- target URL
+- target query
+- fix type
+- scope
+- actions
+- source target
+- acceptance check
+
+### 6. Required fix-type vocabulary
+
+At minimum, the agent must support these fix types from recommendation reports:
+- `structure`
+- `clarity`
+- `completeness`
+
+Recommended interpretation:
+
+#### STRUCTURE
+Usually means:
+- add a bold decision checklist above the fold
+- add a comparison table above the fold
+- move answer-supporting structure earlier
+- make the page easier for LLM extraction and user scanning
+
+#### CLARITY
+Usually means:
+- rewrite opening to remove hedging
+- provide a direct answer immediately
+- improve query phrasing match
+- reduce vague framing before the answer
+
+#### COMPLETENESS
+Usually means:
+- add missing subtopics LLMs are synthesizing elsewhere
+- fill decision gaps
+- cover missing edge cases or timeline questions
+- improve authority depth for a specific intent family
+
+### 7. Required dual-action rule
+
+If a recommendation improves a current page and is likely to recur, the agent must do both:
+1. fix the current target page
+2. also update the reusable template / generator rule if relevant
+
+This is mandatory when the recommendation clearly reflects a repeated pattern.
+
+Examples:
+- one current page needs a decision checklist
+- future pages of the same family would also benefit from that same decision checklist pattern
+
+### 8. Velocity repo rule
+
+For the Velocity repo, recommendation changes should usually be implemented in one or more of these places:
+- page-specific source content
+- page override data keyed by slug
+- guide-family template logic
+- shared section registry
+- intent-family enhancement rules
+- generator logic for answer structure / comparison blocks / clarity rules
+
+The agent must not treat the final rendered page HTML as the preferred long-term source of truth.
+
+### 9. Canonical LKG repo rule
+
+For the canonical LKG repo, when the recommendation explicitly says the template or family should be updated, the agent must follow that instruction and patch the template/source layer.
+
+Typical targets include:
+- `data/listings/` for city/listing-family changes
+- `data/global_pages/...` for guide-family changes
+- shared render/template logic for family-wide fixes
+
+If the recommendation names a specific guide JSON or template path, that path must be treated as the preferred repair surface.
+
+### 10. Exact example — TRT / Hair Loss report
+
+The following examples are authoritative illustrations of how to classify recommendations.
+
+#### Example A — Velocity page-specific structure fix
+
+Report recommendation:
+- URL: `https://theindustryguides.com/guides/prp-hair-vs-microneedling/`
+- Fix type: `STRUCTURE`
+- Query target: `PRP vs microneedling for hair loss which works better`
+- Recommendation: add a bold decision checklist or comparison table above the fold
+
+Correct classification:
+- repo: `velocity`
+- scope: `page_override` plus likely `generator_rule`
+- immediate action:
+  - improve that specific page’s above-fold decision structure
+- reusable action:
+  - strengthen comparison-intent guide pattern so future similar pages can inherit a comparison block automatically
+
+#### Example B — Velocity clarity fix
+
+Report recommendation:
+- URL: `https://theindustryguides.com/guides/trt-cost-breakdown/`
+- Fix type: `CLARITY`
+- Query target: `how much does TRT cost per month`
+- Recommendation: rewrite the opening section to remove hedging language and give a direct answer
+
+Correct classification:
+- repo: `velocity`
+- scope: `page_override` plus likely `generator_rule`
+- immediate action:
+  - rewrite the opening on that exact page in a durable source layer
+- reusable action:
+  - improve the shared rule for cost-intent pages so future cost pages lead with a direct answer and price-range framing instead of hedging
+
+#### Example C — Velocity completeness fix
+
+Report recommendation:
+- URL: `https://theindustryguides.com/guides/trt-first-90-days/`
+- Fix type: `COMPLETENESS`
+- Query target: `TRT side effects what to expect first 90 days`
+- Recommendation: expand missing subtopics LLMs are synthesizing from other sources
+
+Correct classification:
+- repo: `velocity`
+- scope: `page_override` plus likely `generator_rule`
+- immediate action:
+  - add the missing subtopics to that guide through source-layer content controls
+- reusable action:
+  - create or strengthen required-subtopic rules for timeline / early-side-effects / first-90-days intent families
+
+#### Example D — Canonical LKG city template fix
+
+Report recommendation:
+- URL: `https://hormonesivhair.com/atlanta-ga/`
+- Fix type: `STRUCTURE`
+- Query target: `TRT clinic near me Atlanta`
+- Recommendation: add a bold decision checklist or comparison table above the fold
+- Template note: update the city page template in `data/listings/` because it affects all city pages in the vertical
+
+Correct classification:
+- repo: `lkg`
+- scope: `template_family`
+- source target: `data/listings/`
+- action:
+  - update city-template source logic so TRT/Hair/Hormone city pages inherit the improved above-fold decision structure
+
+#### Example E — Canonical LKG guide-level clarity fix
+
+Report recommendation:
+- URL: `https://hormonesivhair.com/guides/trt-cost-breakdown/`
+- Fix type: `CLARITY`
+- Query target: `how much does TRT cost per month`
+- Recommendation: rewrite opening section to remove hedging language and give a direct answer
+- Template note: update the guide template or guide JSON under `data/global_pages/trt_global_pages/...`
+
+Correct classification:
+- repo: `lkg`
+- scope: `page_override` and possibly `template_family`
+- source target: `data/global_pages/trt_global_pages/...`
+- action:
+  - improve that exact guide’s source content
+  - if the same clarity issue affects multiple TRT educational guides, promote the improvement into the shared guide-opening pattern for that family
+
+### 11. Required future-safe improvement library
+
+The agent should prefer using or creating a reusable recommendation-pattern library for recurring fixes.
+
+Examples of reusable patterns:
+- `structure_checklist_above_fold`
+- `structure_comparison_table_above_fold`
+- `clarity_direct_answer_opening`
+- `clarity_remove_hedging_opening`
+- `completeness_required_subtopics_by_intent_family`
+
+These patterns should be mapped to:
+- page types
+- intent families
+- content families
+- vertical-specific templates where appropriate
+
+### 12. Required acceptance logic
+
+After applying recommendation-driven improvements, the agent must verify:
+- the exact target page improved in the intended way
+- future relevant pages inherit the reusable improvement if appropriate
+- the repo rebuilds deterministically
+- validators still pass
+- no generated-artifact drift is introduced
+- no source-of-truth boundary is violated
+- no raw render-layer patching became the permanent storage mechanism by accident
+
+### 13. Completion rule for recommendation-driven updates
+
+A recommendation-driven task is not complete unless the agent can show:
+1. which pages were specifically targeted
+2. which source files were changed
+3. which reusable rules/templates were updated for future pages
+4. what rebuild command was run
+5. what validation command was run
+6. why the chosen repair surface was page override, template fix, generator rule, or combination
+
+### 14. Final operating law
+
+When a citation report suggests improvements for already-published pages, the correct response is not:
+
+“never touch those pages because they are rendered output”
+
+The correct response is:
+
+“improve those pages through durable source-layer controls, and if the same improvement should recur, also encode it into shared template or generator logic.”
+
+That is how the system:
+- improves current citation losers
+- upgrades future pages
+- avoids drift
+- and stays validator-safe
