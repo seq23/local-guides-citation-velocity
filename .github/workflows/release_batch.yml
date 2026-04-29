@@ -48,7 +48,11 @@ jobs:
         run: node scripts/build_site.js
 
       - name: Validate full published surface
-        run: npm run validate:all
+        run: |
+
+          npm run repair:unmapped-insights
+
+          npm run validate:all
 
       - name: Commit and push
         run: |

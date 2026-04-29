@@ -60,7 +60,11 @@ jobs:
         run: node scripts/build_site.js
 
       - name: Validate full release surface
-        run: npm run validate:all
+        run: |
+
+          npm run repair:unmapped-insights
+
+          npm run validate:all
 
       - name: Stage changes (for delta IndexNow)
         run: git add -A
