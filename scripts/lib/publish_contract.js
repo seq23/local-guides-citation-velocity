@@ -1,3 +1,11 @@
+
+function ensureMetaDescription(desc, title) {
+  if (!desc || desc.length < 60) {
+    return `Structured decision guide for ${title}. Compare options, costs, risks, and next steps before choosing a provider.`;
+  }
+  return desc;
+}
+
 'use strict';
 
 const fs = require('fs');
@@ -318,7 +326,7 @@ function renderInsightPage(item) {
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>${htmlEscape(item.title)} | Insight</title>
-<meta name="description" content="${htmlEscape(item.description)}"/>
+<meta name="description" content="${htmlEscape(ensureMetaDescription(item.description, item.title))}"/>
 <link rel="canonical" href="${SITE_BASE}${item.publish_path}"/>
 <script type="application/ld+json">${JSON.stringify(schema)}</script>
 </head>
