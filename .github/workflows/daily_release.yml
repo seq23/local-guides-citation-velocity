@@ -24,8 +24,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout main
         uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -33,8 +36,11 @@ jobs:
           node-version: "24"
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Sync to latest main before release
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
 
       - name: Compile staged Reddit query clusters
         run: node scripts/compile_reddit_queries.js
@@ -74,11 +80,14 @@ jobs:
           INDEXNOW_MODE: "delta"
         run: node scripts/indexnow_submit.js
 
-      - name: Commit and push
+      - name: Commit release changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add -A
-          git commit -m "daily release $(date -u +%F)" || echo "No changes to commit"
-          git pull --rebase || true
-          git push
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "daily release $(date -u +%F)"
+
+      - name: Push to main
+        run: |
+          git push origin HEAD:main
