@@ -20,9 +20,11 @@ function verticalKey(v) {
   if (s === 'uscis_medical' || s === 'uscis') return 'uscis-medical';
   return s || 'unknown';
 }
+
 function unique(arr) {
   return [...new Set((arr || []).map(x => String(x || '').trim()).filter(Boolean))];
 }
+
 function queryText(signal) {
   return String(
     signal.query ||
@@ -34,6 +36,7 @@ function queryText(signal) {
     ''
   ).trim();
 }
+
 function findMapRow(cluster) {
   if (!Array.isArray(queryMap)) return null;
   const key = verticalKey(cluster.vertical);
@@ -59,6 +62,7 @@ function candidateFromCluster(cluster, idx) {
     query: baseText.replace(/\s+/g, ' ').trim(),
     cluster: unique([cluster.cluster, ...(Array.isArray(mapRow.cluster) ? mapRow.cluster : [mapRow.cluster])]).filter(Boolean),
     source: 'local-guides-citation-velocity',
+    source_role: 'velocity_signal_detection_only',
     confidence: Number.isFinite(score) ? score : null,
     evidence: {
       mapped_publish_path: cluster.mapped_publish_path || null,
@@ -88,6 +92,7 @@ const candidates = clusters
 const payload = {
   contract_version: '1.0',
   source_repo: 'local-guides-citation-velocity',
+  source_repo_role: 'velocity_signal_detection_only',
   generated_at: new Date().toISOString(),
   candidates
 };
