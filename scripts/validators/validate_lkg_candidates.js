@@ -5,6 +5,7 @@ const fs = require('fs');
 
 const file = process.argv[2] || 'data/lkg_candidates/latest.json';
 const EXPECTED_VERSION = '1.0';
+const EXPECTED_ROLE = 'velocity_signal_detection_only';
 const ALLOWED_VERTICALS = new Set(['personal-injury', 'dentistry', 'neuro', 'trt', 'uscis-medical']);
 
 if (!fs.existsSync(file)) {
@@ -27,6 +28,9 @@ if (data.contract_version !== EXPECTED_VERSION) {
 if (typeof data.source_repo !== 'string' || !data.source_repo.trim()) {
   errors.push('source_repo is required');
 }
+if (data.source_repo_role !== EXPECTED_ROLE) {
+  errors.push(`source_repo_role must be ${EXPECTED_ROLE}`);
+}
 if (typeof data.generated_at !== 'string' || !data.generated_at.trim()) {
   errors.push('generated_at is required');
 }
@@ -46,6 +50,9 @@ for (const [i, c] of (data.candidates || []).entries()) {
     ) {
       errors.push(`${prefix}.${k} is required`);
     }
+  }
+  if (c.source_role !== EXPECTED_ROLE) {
+    errors.push(`${prefix}.source_role must be ${EXPECTED_ROLE}`);
   }
   if (!ALLOWED_VERTICALS.has(String(c.vertical || ''))) {
     errors.push(`${prefix}.vertical invalid: ${String(c.vertical)}`);
