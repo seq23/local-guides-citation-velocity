@@ -20,11 +20,9 @@ function verticalKey(v) {
   if (s === 'uscis_medical' || s === 'uscis') return 'uscis-medical';
   return s || 'unknown';
 }
-
 function unique(arr) {
   return [...new Set((arr || []).map(x => String(x || '').trim()).filter(Boolean))];
 }
-
 function queryText(signal) {
   return String(
     signal.query ||
@@ -36,7 +34,6 @@ function queryText(signal) {
     ''
   ).trim();
 }
-
 function findMapRow(cluster) {
   if (!Array.isArray(queryMap)) return null;
   const key = verticalKey(cluster.vertical);
@@ -56,7 +53,7 @@ function candidateFromCluster(cluster, idx) {
   const score = Number(cluster.score || 0);
 
   return {
-    id: `${TODAY}-${vertical}-${clusterSlug}`,
+    id: `${vertical}-${clusterSlug}`,
     vertical,
     geo: null,
     query: baseText.replace(/\s+/g, ' ').trim(),
