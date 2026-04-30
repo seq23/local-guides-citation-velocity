@@ -65,12 +65,10 @@ jobs:
           token: ${{ secrets.LKG_TOKEN }}
           path: lkg
 
-      - name: Copy candidate payload into LKG intake folder
+      - name: Copy candidate payload into current LKG intake file
         run: |
           set -euo pipefail
-          stamp="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
-          mkdir -p lkg/data/velocity_intake/guide_candidates
-          cp velocity/data/lkg_candidates/latest.json "lkg/data/velocity_intake/guide_candidates/velocity-candidates-${stamp}.json"
+          cp velocity/data/lkg_candidates/latest.json lkg/data/reference/promotion_candidates.source.json
 
       - name: Create LKG intake pull request
         uses: peter-evans/create-pull-request@v6
@@ -79,12 +77,17 @@ jobs:
           path: lkg
           branch: velocity/lkg-candidates-${{ github.run_id }}
           title: "Velocity guide candidates — ${{ github.run_id }}"
-          commit-message: "Add Velocity guide candidates"
+          commit-message: "Update promotion candidates from Velocity"
           body: |
-            Automated Velocity → LKG candidate handoff.
+            Automated Velocity → current LKG candidate handoff.
 
-            Approval model:
-            - Velocity only proposes guide candidates.
-            - LKG remains the generation and publishing authority.
-            - Merge this PR only after reviewing the candidate payload and LKG validation output.
+            This PR updates:
+            - data/reference/promotion_candidates.source.json
+
+            Current LKG behavior:
+            - LKG ingests candidate payloads from data/reference/promotion_candidates.source.json
+            - LKG then pulls into incoming candidates and generates reference surfaces through its own scripts/workflows
+            - LKG remains the final authority for generation, validation, and publishing
+
+            Merge only after reviewing the candidate payload and confirming it should enter the current LKG ingestion path.
           labels: velocity-intake, guide-candidates
