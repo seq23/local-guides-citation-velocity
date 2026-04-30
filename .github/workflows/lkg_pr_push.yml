@@ -6,7 +6,8 @@ on:
     - cron: "15 14 * * 1-5"
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 concurrency:
   group: lkg-pr-push
@@ -28,6 +29,7 @@ jobs:
       REDDIT_PUBLIC_DELAY_MS: "8000"
       REDDIT_PUBLIC_JITTER_MS: "7000"
       PUBLIC_SIGNAL_USER_AGENT: "local-guides-citation-velocity/1.0 by SpryLabs contact:info@spryvc.com"
+
     steps:
       - name: Checkout Velocity
         uses: actions/checkout@v6
@@ -53,13 +55,13 @@ jobs:
         working-directory: velocity
         run: npm run validate:lkg-candidates
 
-      - name: Stop if LKG secrets are not configured
+      - name: Skip if LKG secrets are not configured
         if: ${{ env.LKG_REPO_SECRET == '' || env.LKG_TOKEN_SECRET == '' }}
         run: |
-          echo "LKG_REPO and LKG_TOKEN secrets are required to open cross-repo PRs."
-          exit 1
+          echo "LKG_REPO and/or LKG_TOKEN not set. Skipping cross-repo PR creation."
 
       - name: Checkout LKG repo
+        if: ${{ env.LKG_REPO_SECRET != '' && env.LKG_TOKEN_SECRET != '' }}
         uses: actions/checkout@v6
         with:
           repository: ${{ secrets.LKG_REPO }}
@@ -67,11 +69,13 @@ jobs:
           path: lkg
 
       - name: Copy candidate payload into current LKG intake file
+        if: ${{ env.LKG_REPO_SECRET != '' && env.LKG_TOKEN_SECRET != '' }}
         run: |
           set -euo pipefail
           cp velocity/data/lkg_candidates/latest.json lkg/data/reference/promotion_candidates.source.json
 
       - name: Create LKG intake pull request
+        if: ${{ env.LKG_REPO_SECRET != '' && env.LKG_TOKEN_SECRET != '' }}
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.LKG_TOKEN }}
