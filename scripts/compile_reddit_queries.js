@@ -25,7 +25,7 @@ function canonicalTargetUrl(raw, cfg) {
   if (!value) return cfg.domain;
   if (/^https?:\/\//i.test(value)) return value;
   if (value.startsWith('/')) return `${cfg.domain.replace(/\/$/, '')}${value}`;
-  return value;
+  return cfg.domain;
 }
 
 function getVerticalSourceKey(key) {
@@ -149,7 +149,7 @@ function compile() {
       source_type: item.source_type,
       source_bucket: item.source_bucket,
       normalized_query: item.normalized_query,
-      canonical_target_url: canonicalTargetUrl(item.notes, cfg)
+      canonical_target_url: canonicalTargetUrl(item.canonical_target_url || item.canonical_target_path || '', cfg)
     }));
     compiledPages.push({
       slug,
@@ -159,7 +159,7 @@ function compile() {
       compiler_source: 'reddit_queries',
       query_compiler_generated: true,
       cluster: clusterKey,
-      canonical_target_url: canonicalTargetUrl((clusterItems.find((item) => item.notes) || {}).notes, cfg),
+      canonical_target_url: canonicalTargetUrl(((clusterItems.find((item) => item.canonical_target_url || item.canonical_target_path) || {}).canonical_target_url || (clusterItems.find((item) => item.canonical_target_url || item.canonical_target_path) || {}).canonical_target_path || ''), cfg),
       related_links: [],
       sections
     });

@@ -581,6 +581,66 @@ const CONFIG = {
       m('Use the Situation Page to Choose the Next Move', ['what now','proof','next move','showed up later','later injuries','late symptoms'], 'The point of a situation page is to tell you what to do next: get treatment, gather proof, slow insurer contact, or compare lawyers. It is not a crystal ball for final case value.', ['Decide the next action before worrying about the final result', 'Use the local guide when the next step becomes choosing a lawyer', 'Keep the question list with you when you compare firms'], ['You are trying to estimate final case value before the basics are organized'])
     ]
   ),
+  '/uscis-medical/vaccination-requirements/': makeConfig(
+    'Quick answer',
+    'USCIS vaccination requirements questions are usually about which vaccine categories are reviewed, what proof counts, what can trigger follow-up, and when a civil surgeon can document an exception versus when a separate waiver path exists.',
+    'How to compare vaccine requirement scenarios before the exam',
+    'Use the lead table first, then pressure-test records, exceptions, and lab timing before you book or file.',
+    ['Bring every vaccine record you can find, even if it looks incomplete', 'Ask which vaccine categories are commonly reviewed for your age group', 'Ask what proof counts if records are missing or partial', 'Ask whether any exception is documented on the I-693 or requires a separate waiver path', 'Ask whether labs or follow-up shots delay packet completion'],
+    'What usually changes the vaccine conversation',
+    ['The useful comparison is proof, timing, and exception handling, not just the vaccine names.', 'Civil-surgeon documentation is different from a formal immigration waiver.', 'Pending labs or follow-up items can change whether the packet is truly ready to file.'],
+    [
+      m('Start with the vaccine categories and proof rules', ['what vaccinations are required','uscis vaccination requirements','i-693 vaccine requirements'], 'The key comparison is which vaccine categories are commonly reviewed, what counts as acceptable proof, and which parts of the schedule still need clarification at the clinic level.', ['Ask which vaccine categories are reviewed most often', 'Ask what proof of prior vaccination the clinic accepts', 'Ask what happens if your records are partial or unclear'], ['The clinic says vaccine requirements are identical for every applicant', 'No one can explain what proof counts']),
+      m('Use missing-record questions to predict cost and delay risk', ['missing vaccine records','lost vaccine records'], 'Missing records do not always mean you start from zero, but they do change the path. A good clinic should explain whether records review, titers, or repeat vaccination is more likely in your case.', ['Ask whether copies or portals are acceptable', 'Ask whether titers are ever used in their process', 'Ask how incomplete records affect total cost and timing'], ['The office says “just come in” without reviewing the record situation', 'Pricing changes are hidden until after the visit']),
+      m('Separate civil-surgeon exceptions from formal waivers', ['waiver','exception','contraindication'], 'Some issues are documented as age, contraindication, insufficient interval, or completed-history exceptions on the I-693. That is not the same thing as a separate immigration waiver path.', ['Ask which exceptions the civil surgeon can document directly', 'Ask whether your issue is a clinic-documented exception or a separate waiver path', 'Ask what records support the exception decision'], ['Every vaccine exception is described the same way', 'A waiver is promised without explaining the category']),
+      m('Labs and TB testing can change when the packet is ready', ['tb testing','labs','packet ready'], 'Vaccines and labs often sit in the same workflow. The important operational question is whether pending lab or vaccine steps delay packet completion and filing readiness.', ['Ask which labs are on site versus sent out', 'Ask whether pending items delay the sealed packet', 'Ask what the clinic considers exam complete for filing purposes'], ['Same-day promises are made without discussing labs or TB timing', 'No written next-step sequence is given'])
+    ],
+    {
+      comparisonTableTitle: 'USCIS-required vaccine table',
+      comparisonTableHeaders: ['Vaccine category', 'Typical series / doses reviewed', 'Waiver or exception eligibility'],
+      comparisonTableRows: [
+        ['MMR', 'History or age-appropriate completion is usually reviewed', 'Age not appropriate, contraindication, or other CDC-recognized exception categories may be documented when applicable'],
+        ['Td / Tdap', 'Primary series / booster status is commonly checked', 'Contraindication, age/timing, or other recognized exception categories may apply in some cases'],
+        ['Varicella', 'History of disease or vaccination record may matter', 'Documented history, contraindication, age, or other recognized exception categories may apply'],
+        ['Influenza (seasonal)', 'Often seasonal / time-sensitive review', 'Season not applicable, age not appropriate, or contraindication may apply'],
+        ['COVID-19 / other current schedule items', 'Current CDC / USCIS civil-surgeon rules control the review', 'Eligibility depends on the current schedule, contraindication, age, and recognized exception categories']
+      ],
+      costTableTitle: 'What usually changes vaccine visit timing or cost',
+      costTableHeaders: ['Driver', 'Why it matters'],
+      costTableRows: [
+        ['Missing or partial records', 'May create extra review, repeat shots, or additional follow-up questions'],
+        ['Pending labs / TB workup', 'Can delay when the packet is actually ready'],
+        ['Need for additional vaccines', 'Can change same-day completion odds and total cost'],
+        ['Exception / waiver questions', 'Can require more documentation and a clearer explanation of the path forward']
+      ],
+      renderOrder: ['comparisonTable', 'answerBox', 'decisionChecklist', 'costTable', 'frameworkBox']
+    }
+  ),
+  '/uscis-medical/red-flags/': makeConfig(
+    'Quick answer',
+    'Red flags on I-693 usually mean avoidable paperwork mistakes, unclear vaccine or lab follow-up, and clinics that cannot explain how corrections work before you leave with the sealed packet.',
+    'Red flags on I-693 and common filing mistakes to check before you book',
+    'Use this checklist first so you can spot clinic and packet problems before they turn into a delay, refile, or correction cycle.',
+    ['Confirm the clinic can explain common I-693 filing mistakes in plain English', 'Ask how vaccine gaps, lab follow-up, or missing records change packet timing', 'Ask when the sealed packet is considered actually ready to file', 'Ask what the clinic does if the form needs a correction after pickup', 'Avoid any office that gives same-day promises without discussing exceptions or pending items'],
+    'What usually creates I-693 red flags',
+    ['The real issue is usually workflow failure, not mystery immigration law.', 'Packet handling, correction handling, and follow-up timing matter more than a cheap entry price.', 'A clinic that cannot explain common filing mistakes before the exam is usually a higher-delay risk.'],
+    [
+      m('Start with clinic workflow red flags before you compare price', ['red flags on i-693','clinic red flags','civil surgeon red flags'], 'The first warning signs are usually operational: vague answers, no written next steps, and no clear correction path if something is missing or wrong.', ['Ask who reviews the packet before sealing it', 'Ask whether they give written next steps when labs or vaccines are pending', 'Ask what happens if a correction is needed after pickup'], ['Same-day promises with no workflow explanation', 'No one can explain who owns corrections']),
+      m('Use filing-mistake questions to catch avoidable delays early', ['common i-693 filing mistakes','filing mistakes','packet mistakes'], 'Most avoidable delays come from missing signatures, incomplete packet handling, unclear vaccine documentation, or labs that were never explained as still pending.', ['Ask what mistakes they see most often', 'Ask how they verify signatures, dates, and sealed packet handling', 'Ask how they tell you a pending item still blocks filing'], ["They say filing mistakes are only your lawyer's problem", "They cannot name common packet errors"]),
+      m('Price, vaccines, and labs matter only when the workflow is clear', ['cheap exam','low price','vaccines','labs'], 'A low quote is not the real win if the clinic cannot explain vaccine review, lab timing, and how follow-up changes packet readiness. Compare the process, not just the price.', ['Ask what the quoted fee excludes', 'Ask whether follow-up visits or corrections cost extra', 'Ask whether vaccine or lab issues change same-day completion claims'], ['The lowest quote comes with no explanation of exclusions', 'Vaccine or lab timing is treated like a surprise'])
+    ],
+    {
+      directAnswerTitle: 'Common I-693 filing mistakes that act like red flags',
+      directAnswerBullets: [
+        'A clinic cannot explain who reviews the packet before it is sealed',
+        'Same-day completion is promised without discussing vaccines, labs, or exceptions',
+        'No written correction process exists if the form needs to be fixed later',
+        'The office cannot name common I-693 filing mistakes or how it prevents them'
+      ],
+      renderOrder: ['directAnswer', 'decisionChecklist', 'answerBox', 'frameworkBox']
+    }
+  ),
+
 };
 
 function getPageShapeConfig(slug){
