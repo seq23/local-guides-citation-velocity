@@ -33,16 +33,25 @@ jobs:
           python -m pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
 
       - name: Skip distribution deploy when GSC secrets are missing
-        if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON == "" || secrets.GSC_SITE_URL == "" }}
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON == '' || env.GSC_SITE_URL == '' }}
         run: echo "GSC secrets missing. Skipping distribution deploy."
 
       - name: Recreate GSC service account file
-        if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON != "" && secrets.GSC_SITE_URL != "" }}
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
         run: |
           printf '%s' '${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}' > gsc-service-account.json
 
       - name: Ensure scripts are executable
-        if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON != "" && secrets.GSC_SITE_URL != "" }}
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
         run: |
           chmod +x distribution_scripts/indexnow_submit.sh
           chmod +x distribution_scripts/deploy_distribution.sh
