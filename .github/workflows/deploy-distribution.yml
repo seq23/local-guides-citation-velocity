@@ -59,13 +59,19 @@ jobs:
           chmod +x distribution_scripts/gsc_inspect_urls.py
 
       - name: Generate site and IndexNow artifacts
-        if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON != "" && secrets.GSC_SITE_URL != "" }}
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
         run: |
           npm run build
           ls -l .build/indexnow-priority.txt .build/indexnow-batch.txt
 
       - name: Run distribution deploy
-        if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON != "" && secrets.GSC_SITE_URL != "" }}
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
         env:
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
         run: |
