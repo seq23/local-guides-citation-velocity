@@ -72,8 +72,6 @@ jobs:
           GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
         if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
-        env:
-          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
         run: |
           ./distribution_scripts/deploy_distribution.sh \
             --creds gsc-service-account.json \
