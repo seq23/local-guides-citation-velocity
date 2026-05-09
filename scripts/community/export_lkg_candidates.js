@@ -13,6 +13,7 @@ const MIN_SCORE = Number(process.env.LKG_CANDIDATE_MIN_SCORE || 20);
 
 const scored = readJson('data/community/scored_clusters.json', []);
 const queryMap = readJson('content/_shared/query_to_cluster_map.json', []);
+const ALLOWED_VERTICALS = new Set(['personal-injury', 'dentistry', 'neuro', 'trt', 'uscis-medical']);
 
 function verticalKey(v) {
   const s = String(v || '').trim();
@@ -83,7 +84,7 @@ function candidateFromCluster(cluster, idx) {
 
 const clusters = Array.isArray(scored) ? scored : [];
 const candidates = clusters
-  .filter(c => verticalKey(c.vertical) !== 'unknown')
+  .filter(c => ALLOWED_VERTICALS.has(verticalKey(c.vertical)))
   .filter(c => Number(c.score || 0) >= MIN_SCORE || ['high', 'review'].includes(c.publish_priority))
   .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
   .slice(0, MAX)

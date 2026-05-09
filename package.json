@@ -74,7 +74,7 @@
     "social:loop": "npm run ingest:public",
     "validate:social-loop": "node scripts/validators/validate_social_content_loop.js",
     "llm:all": "npm run build:llm-exports && npm run validate:llm-exports && npm run build:answer-blocks && npm run validate:answer-blocks && npm run build:entity-graph && npm run validate:entity-graph && npm run build:citation-targets && npm run validate:citation-targets",
-    "guardrails:all": "npm run preclean:guardrails && npm run validate:repo-hygiene && npm run build && npm run validate:generated-content-gate && npm run validate:all && npm run llm:all && npm run social:offline",
+    "guardrails:all": "npm run preclean:guardrails && npm run validate:repo-hygiene && npm run build && npm run validate:generated-content-gate && npm run validate:all && npm run llm:all && npm run social:offline && npm run postclean:guardrails",
     "validate:insights-manifest": "node scripts/validators/validate_insights_manifest.js",
     "social:offline": "npm run social:cluster && npm run social:score && npm run lkg:all && npm run social:update-indexes && npm run validate:social-loop",
     "social:all": "npm run ingest:public",
@@ -86,7 +86,8 @@
     "build:report-fix-queue": "node scripts/recommendations/build_report_fix_queue.js",
     "validate:report-fix-queue": "node scripts/validators/validate_report_fix_queue.js",
     "inspect:report-fix-queue": "node scripts/recommendations/apply_report_fixes.js --inspect",
-    "validate:report-fix-lane": "sh -c 'if [ -f reports/velocity_ai_report_inventory.json ]; then npm run build:report-fix-queue && npm run validate:report-fix-queue; else echo \"[validate:report-fix-lane] skipped (no report inventory present)\"; fi'"
+    "validate:report-fix-lane": "sh -c 'if [ -f reports/velocity_ai_report_inventory.json ]; then npm run build:report-fix-queue && npm run validate:report-fix-queue; else echo \"[validate:report-fix-lane] skipped (no report inventory present)\"; fi'",
+    "postclean:guardrails": "rm -rf dist"
   },
   "engines": {
     "node": ">=20 <=24"
