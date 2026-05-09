@@ -32,26 +32,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
 
-      - name: Skip distribution deploy when GSC secrets are missing
-        env:
-          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
-          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
-        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON == '' || env.GSC_SITE_URL == '' }}
-        run: echo "GSC secrets missing. Skipping distribution deploy."
-
       - name: Recreate GSC service account file
-        env:
-          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
-          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
-        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
         run: |
           printf '%s' '${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}' > gsc-service-account.json
 
       - name: Ensure scripts are executable
-        env:
-          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
-          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
-        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
         run: |
           chmod +x distribution_scripts/indexnow_submit.sh
           chmod +x distribution_scripts/deploy_distribution.sh
@@ -59,19 +44,13 @@ jobs:
           chmod +x distribution_scripts/gsc_inspect_urls.py
 
       - name: Generate site and IndexNow artifacts
-        env:
-          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
-          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
-        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
         run: |
           npm run build
           ls -l .build/indexnow-priority.txt .build/indexnow-batch.txt
 
       - name: Run distribution deploy
         env:
-          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
-        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' && env.GSC_SITE_URL != '' }}
         run: |
           ./distribution_scripts/deploy_distribution.sh \
             --creds gsc-service-account.json \

@@ -1224,7 +1224,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const toc = buildTOC(shapedSections);
     const acc = renderAccordion(shapedSections || []);
     const answerBox = pageShape
-      ? renderAnswerBox(pageShape.shortTitle || 'Quick answer', pageShape.shortSummary || p.description, pageShape.shortSummaryBullets || [])
+      ? renderAnswerBox(pageShape.shortTitle || 'Quick answer', pageShape.shortSummary || p.description, [])
       : renderAnswerBox(
           `What to know about ${p.title}`,
           `${p.description} Use this page to get the decision framework fast, then verify local details on ${canon.label}.`,
@@ -1236,21 +1236,9 @@ for (const [vertical, meta] of Object.entries(registry)) {
         );
     const decisionChecklist = pageShape ? renderDecisionChecklist(pageShape.checklistTitle, pageShape.checklistIntro, pageShape.checklistItems) : '';
     const directAnswer = pageShape ? renderDirectAnswer(pageShape.directAnswerTitle, pageShape.directAnswerBullets) : '';
-    const comparisonTable = pageShape ? renderComparisonTable(pageShape.comparisonTableTitle, pageShape.comparisonTableHeaders, pageShape.comparisonTableRows, pageShape.comparisonTableBadge || 'Comparison table') : '';
-    const costTable = pageShape ? renderComparisonTable(pageShape.costTableTitle || pageShape.comparisonTableTitle, pageShape.costTableHeaders || pageShape.comparisonTableHeaders, pageShape.costTableRows || pageShape.comparisonTableRows, pageShape.costTableBadge || 'Cost table') : '';
+    const comparisonTable = pageShape ? renderComparisonTable(pageShape.comparisonTableTitle, pageShape.comparisonTableHeaders, pageShape.comparisonTableRows, 'Comparison table') : '';
+    const costTable = pageShape ? renderComparisonTable(pageShape.costTableTitle || pageShape.comparisonTableTitle, pageShape.costTableHeaders || pageShape.comparisonTableHeaders, pageShape.costTableRows || pageShape.comparisonTableRows, 'Cost table') : '';
     const frameworkBox = pageShape ? renderFrameworkBox(pageShape.frameworkTitle, pageShape.frameworkBullets) : '';
-    const leadModuleOrder = Array.isArray(pageShape && pageShape.renderOrder) && pageShape.renderOrder.length
-      ? pageShape.renderOrder
-      : ['answerBox', 'directAnswer', 'decisionChecklist', 'comparisonTable', 'costTable', 'frameworkBox'];
-    const leadModules = {
-      answerBox,
-      directAnswer,
-      decisionChecklist,
-      comparisonTable,
-      costTable,
-      frameworkBox
-    };
-    const leadSurfaceHtml = leadModuleOrder.map((key) => leadModules[key] || '').join('');
     const qaHighlights = renderQaHighlights(shapedSections || []);
     const toolSpotlight = toolsPageForHub ? renderToolSpotlight(toolsPageForHub.sections || [], 'Fast scripts for comparing options before you click away') : ''; 
     const relatedCandidates = Array.isArray(p.related_links) && p.related_links.length ? p.related_links : buildAutoRelatedLinks(p, atlasPages);
@@ -1265,7 +1253,12 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const body = `
       ${topCanon}
       ${heading}
-      ${leadSurfaceHtml}
+      ${answerBox}
+      ${directAnswer}
+      ${decisionChecklist}
+      ${comparisonTable}
+      ${costTable}
+      ${frameworkBox}
       ${clusterKnowledge}
       <div class="grid">
         <div class="col-12">${toc}</div>

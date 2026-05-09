@@ -10,10 +10,10 @@ const OUT_PATH = path.join(OUT_DIR, `${TODAY}.json`);
 const LATEST_PATH = path.join(OUT_DIR, 'latest.json');
 const MAX = Math.max(1, Number(process.env.LKG_CANDIDATE_LIMIT || 25));
 const MIN_SCORE = Number(process.env.LKG_CANDIDATE_MIN_SCORE || 20);
+const ALLOWED_VERTICALS = new Set(['personal-injury', 'dentistry', 'neuro', 'trt', 'uscis-medical']);
 
 const scored = readJson('data/community/scored_clusters.json', []);
 const queryMap = readJson('content/_shared/query_to_cluster_map.json', []);
-const ALLOWED_VERTICALS = new Set(['personal-injury', 'dentistry', 'neuro', 'trt', 'uscis-medical']);
 
 function verticalKey(v) {
   const s = String(v || '').trim();

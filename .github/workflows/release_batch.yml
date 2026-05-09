@@ -32,9 +32,6 @@ jobs:
           node-version: "24"
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Compile staged Reddit query clusters
         run: node scripts/compile_reddit_queries.js
 
@@ -51,7 +48,7 @@ jobs:
         run: npm run build
 
       - name: Validate full published surface
-        run: npm run validate:all
+        run: npm run guardrails:all
 
       - name: Commit and push
         run: |

@@ -24,25 +24,6 @@ for (const slug of Object.keys(CONFIG)) {
   const html = readUtf8(fp);
   if (!html.includes('class="card decision-checklist"')) fail(`${slug}: missing decision checklist block`);
   if (!html.includes('class="card framework-box"')) fail(`${slug}: missing framework box`);
-  if (Array.isArray(CONFIG[slug].comparisonTableRows) && CONFIG[slug].comparisonTableRows.length && !html.includes('class="card comparison-table"')) fail(`${slug}: missing comparison table block`);
-  if (Array.isArray(CONFIG[slug].directAnswerBullets) && CONFIG[slug].directAnswerBullets.length && !html.includes('badge">Direct answer<')) fail(`${slug}: missing direct answer block`);
-
-  const blockPositions = {
-    answerBox: html.indexOf('badge">Quick answer<'),
-    directAnswer: html.indexOf('badge">Direct answer<'),
-    decisionChecklist: html.indexOf('class="card decision-checklist"'),
-    comparisonTable: html.indexOf('class="card comparison-table"'),
-    costTable: html.indexOf('badge">Cost table<'),
-    frameworkBox: html.indexOf('class="card framework-box"')
-  };
-  const renderOrder = Array.isArray(CONFIG[slug].renderOrder) ? CONFIG[slug].renderOrder : [];
-  let lastPos = -1;
-  for (const key of renderOrder) {
-    const pos = blockPositions[key];
-    if (typeof pos !== 'number' || pos < 0) continue;
-    if (pos < lastPos) fail(`${slug}: lead surface render order broken at ${key}`);
-    lastPos = pos;
-  }
 
   const tocLinks = Array.from(html.matchAll(/<div class="toc">[\s\S]*?<\/div>/g)).map((m) => m[0]).join('');
   const labels = Array.from(tocLinks.matchAll(/<a href="#([^"]+)">([^<]+)<\/a>/g)).map((m) => m[2].trim());
@@ -57,8 +38,7 @@ for (const slug of Object.keys(CONFIG)) {
   const accDupes = accTitles.filter((label, idx) => accTitles.indexOf(label) !== idx);
   if (accDupes.length) fail(`${slug}: duplicate accordion titles found (${Array.from(new Set(accDupes)).join(', ')})`);
 
-  const minCanonicalModules = Array.isArray(CONFIG[slug].comparisonTableRows) && CONFIG[slug].comparisonTableRows.length ? 2 : 3;
-  if (accTitles.length < minCanonicalModules) fail(`${slug}: too few canonical modules rendered (${accTitles.length})`);
+  if (accTitles.length < 3) fail(`${slug}: too few canonical modules rendered (${accTitles.length})`);
 }
 
 if (!process.exitCode) console.log('OK: answer-shape validation passed');
