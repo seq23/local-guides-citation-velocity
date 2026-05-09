@@ -709,56 +709,108 @@ function writeDistributionArtifacts(siteBase, allUrls){
 
 function buildIndexPage(siteBase){
   const body = `
-    <section class="card" data-canon-block="top">
-      <div class="badge">Official local guides</div>
-      <h2 class="h2" style="margin-top:8px">Official Local Guides & Directories</h2>
-      <p class="muted">For official local rules, timelines, and verified provider directories, use:</p>
-      <ul>
-        <li><a href="https://theaccidentguides.com/">theaccidentguides.com</a></li>
-        <li><a href="https://dentistryguides.com/">dentistryguides.com</a></li>
-        <li><a href="https://hormonesivhair.com/">hormonesivhair.com</a></li>
-        <li><a href="https://neuroevalguides.com/">neuroevalguides.com</a></li>
-        <li><a href="https://uscisexam.com/">uscisexam.com</a></li>
-      </ul>
+    <section class="card hero-card">
+      <div class="badge">Routing-first homepage</div>
+      <h1 class="h1">The Industry Guides</h1>
+      <p class="hero-copy">Use this site to get oriented fast, compare options cleanly, and route to the right canonical guide. When you are ready for real local help, the strongest next step is to request assistance on the official guide for that vertical.</p>
+      <div class="hero-actions cta">
+        <a class="primary" href="#vertical-routes">Request assistance by vertical</a>
+        <a href="#canonical-network">See the official guide network</a>
+      </div>
     </section>
 
-    <h1 class="h1">The Industry Guides</h1>
-    <p class="muted">Short, plain-English answers. For official local rules, timelines, and verified provider directories, use the canonical domains listed below.</p>
+    <section class="card" data-canon-block="top" id="canonical-network">
+      <div class="badge">Official local guides</div>
+      <h2 class="h2" style="margin-top:8px">Official Local Guides & Directories</h2>
+      <p class="muted">This site is the orientation layer. The canonical sites handle local rules, local pages, and real consumer next steps.</p>
+      <div class="trust-grid">
+        <a class="trust-chip" href="https://theaccidentguides.com/"><strong>The Accident Guides</strong><span>Personal injury</span></a>
+        <a class="trust-chip" href="https://dentistryguides.com/"><strong>Dentistry Guides</strong><span>Dentistry</span></a>
+        <a class="trust-chip" href="https://hormonesivhair.com/"><strong>Hormones IV Hair</strong><span>TRT &amp; hair</span></a>
+        <a class="trust-chip" href="https://neuroevalguides.com/"><strong>Neuro Eval Guides</strong><span>Neuropsych evaluations</span></a>
+        <a class="trust-chip" href="https://uscisexam.com/"><strong>USCIS Exam</strong><span>USCIS medical</span></a>
+      </div>
+    </section>
+
+    <section class="card route-router">
+      <div class="badge">Not sure where to start?</div>
+      <h2 class="h2" style="margin-top:8px">Choose the question that matches your situation</h2>
+      <div class="router-grid">
+        <a href="#personal-injury-card">Hurt in an accident?</a>
+        <a href="#dentistry-card">Need a dentist?</a>
+        <a href="#trt-card">Comparing TRT or hair-loss options?</a>
+        <a href="#neuro-card">Need a neuropsych evaluation?</a>
+        <a href="#uscis-card">Need a USCIS medical exam?</a>
+      </div>
+    </section>
 
     ${renderAnswerBox('What this site is good for', 'Use this site to get oriented fast, collect comparison questions, and move to the official local guide before you book, hire, enroll, or file anything important.', ['Get a fast summary', 'Use scripts and checklists', 'Route to the official local guide'])}
 
-    <section class="card">
+    <section class="card fanout-block" data-fanout-block="true" data-fanout-family="home" data-fanout-vertical="generic">
+      <div class="badge">Related search intents</div>
+      <h2 class="h2" style="margin-top:8px">Related decision paths people also use</h2>
+      <p class="muted">These nearby phrasings stay here for LLM extraction and orientation, but the main consumer routes are the canonical guide cards below.</p>
+      <nav class="fanout-grid" aria-label="Related search intents">
+        <div class="fanout-col"><h3>Direct phrasing</h3><ul><li>The Industry Guides</li><li>how to compare local services</li><li>local service guide</li></ul></div>
+        <div class="fanout-col"><h3>Comparison and fit</h3><ul><li>how to compare local service guide options</li><li>what to verify before choosing local service guide</li><li>how to shortlist local service guide options</li><li>what to ask before booking local service guide</li></ul></div>
+        <div class="fanout-col"><h3>Pricing and logistics</h3><ul><li>local service guide cost</li><li>local service guide pricing</li><li>cost and pricing guide</li><li>local service guide estimate vs final bill</li></ul></div>
+        <div class="fanout-col"><h3>Trust and verification</h3><ul><li>local service guide reviews</li><li>local service guide red flags</li><li>reviews and red flags</li><li>how to verify local service guide</li></ul></div>
+        <div class="fanout-col"><h3>Urgent and next-step</h3><ul><li>questions to ask before booking</li><li>local service guide same day</li><li>local service guide this week</li><li>what to do before booking local service guide</li></ul></div>
+      </nav>
+      <div class="fanout-links"><a href="/tools/" data-fanout-intent="tools">Use scripts and checklists</a><a href="/glossary/" data-fanout-intent="glossary">Check the glossary first</a></div>
+    </section>
+
+    <section class="card route-sections" id="vertical-routes">
       <div class="badge">Start here</div>
-      <div class="grid">
+      <h2 class="h2" style="margin-top:8px">Choose a vertical, then take the strongest next step</h2>
+      <div class="grid route-card-grid">
         <div class="col-6">
-          <h2 class="h2">Personal Injury</h2>
-          <p class="muted">Accidents, claims, choosing a lawyer.</p>
-          <div class="cta"><a class="primary" href="/personal-injury/">Open atlas</a><a href="https://theaccidentguides.com/">Official local guide</a></div>
+          <section class="route-card" id="personal-injury-card">
+            <h2 class="h2">Personal Injury</h2>
+            <p class="muted">Accidents, claims, choosing a lawyer.</p>
+            <p class="route-helper">Best for people who need local legal routing fast after an accident.</p>
+            <div class="cta cta-vertical"><a class="primary" href="https://theaccidentguides.com/request-assistance/">Request assistance</a><a href="https://theaccidentguides.com/">Official guide</a><a class="atlas-link" href="/personal-injury/">Open atlas</a></div>
+          </section>
         </div>
         <div class="col-6">
-          <h2 class="h2">Dentistry</h2>
-          <p class="muted">Emergency care, costs, choosing a dentist.</p>
-          <div class="cta"><a class="primary" href="/dentistry/">Open atlas</a><a href="https://dentistryguides.com/">Official local guide</a></div>
+          <section class="route-card" id="dentistry-card">
+            <h2 class="h2">Dentistry</h2>
+            <p class="muted">Emergency care, costs, choosing a dentist.</p>
+            <p class="route-helper">Best for people comparing providers, urgency, and expected dental costs.</p>
+            <div class="cta cta-vertical"><a class="primary" href="https://dentistryguides.com/request-assistance/">Request assistance</a><a href="https://dentistryguides.com/">Official guide</a><a class="atlas-link" href="/dentistry/">Open atlas</a></div>
+          </section>
         </div>
         <div class="col-6">
-          <h2 class="h2">TRT & Hair</h2>
-          <p class="muted">TRT choices, monitoring, hair-loss options.</p>
-          <div class="cta"><a class="primary" href="/trt/">Open atlas</a><a href="https://hormonesivhair.com/">Official local guide</a></div>
+          <section class="route-card" id="trt-card">
+            <h2 class="h2">TRT &amp; Hair</h2>
+            <p class="muted">TRT choices, monitoring, hair-loss options.</p>
+            <p class="route-helper">Best for people narrowing clinics, treatment paths, and monitoring questions.</p>
+            <div class="cta cta-vertical"><a class="primary" href="https://hormonesivhair.com/request-assistance/">Request assistance</a><a href="https://hormonesivhair.com/">Official guide</a><a class="atlas-link" href="/trt/">Open atlas</a></div>
+          </section>
         </div>
         <div class="col-6">
-          <h2 class="h2">Neuropsych Evaluations</h2>
-          <p class="muted">Testing, reports, choosing a provider.</p>
-          <div class="cta"><a class="primary" href="/neuro/">Open atlas</a><a href="https://neuroevalguides.com/">Official local guide</a></div>
+          <section class="route-card" id="neuro-card">
+            <h2 class="h2">Neuropsych Evaluations</h2>
+            <p class="muted">Testing, reports, choosing a provider.</p>
+            <p class="route-helper">Best for people sorting referral questions, testing logistics, and report expectations.</p>
+            <div class="cta cta-vertical"><a class="primary" href="https://neuroevalguides.com/request-assistance/">Request assistance</a><a href="https://neuroevalguides.com/">Official guide</a><a class="atlas-link" href="/neuro/">Open atlas</a></div>
+          </section>
         </div>
         <div class="col-6">
-          <h2 class="h2">USCIS Medical</h2>
-          <p class="muted">I-693 basics, civil surgeon selection.</p>
-          <div class="cta"><a class="primary" href="/uscis-medical/">Open atlas</a><a href="https://uscisexam.com/">Official local guide</a></div>
+          <section class="route-card" id="uscis-card">
+            <h2 class="h2">USCIS Medical</h2>
+            <p class="muted">I-693 basics, civil surgeon selection.</p>
+            <p class="route-helper">Best for people who need a clean local path to a USCIS medical exam.</p>
+            <div class="cta cta-vertical"><a class="primary" href="https://uscisexam.com/request-assistance/">Request assistance</a><a href="https://uscisexam.com/">Official guide</a><a class="atlas-link" href="/uscis-medical/">Open atlas</a></div>
+          </section>
         </div>
         <div class="col-6">
-          <h2 class="h2">Tools & Glossary</h2>
-          <p class="muted">Simple scripts, checklists, definitions.</p>
-          <div class="cta"><a class="primary" href="/tools/">Tools</a><a href="/glossary/">Glossary</a></div>
+          <section class="route-card route-card-muted">
+            <h2 class="h2">Tools &amp; Glossary</h2>
+            <p class="muted">Simple scripts, checklists, definitions.</p>
+            <p class="route-helper">Best for research mode before you move into a local guide or request flow.</p>
+            <div class="cta"><a class="primary" href="/tools/">Tools</a><a href="/glossary/">Glossary</a></div>
+          </section>
         </div>
       </div>
     </section>
@@ -785,17 +837,33 @@ function buildIndexPage(siteBase){
     </section>
   `;
 
-  const jsonld = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'The Industry Guides',
-    url: siteBase,
-    description: 'Short, plain-English answers. Official local guides and directories live on the canonical domains.',
-    inLanguage: 'en'
+  return {
+    slug: '/',
+    title: 'The Industry Guides',
+    description: 'Short answers. Official local guides live on the canonical domains.',
+    bodyHtml: body,
+    jsonld: {
+      '@context':'https://schema.org',
+      '@type':'WebPage',
+      name:'The Industry Guides',
+      url: siteBase + '/',
+      description:'Short answers. Official local guides live on the canonical domains.'
+    },
+    fanoutMeta: {
+      slug: '/',
+      title: 'The Industry Guides',
+      description: 'Short answers. Official local guides live on the canonical domains.',
+      sections: [
+        { q:'What this site is good for', a:'Use this site to get oriented fast, collect comparison questions, and move to the official local guide before you book, hire, enroll, or file anything important.' }
+      ],
+      vertical: 'generic',
+      surface: 'home'
+    },
+    vertical: 'generic',
+    surface: 'home'
   };
-
-  return { slug:'/', title:'The Industry Guides', description:'Short answers. Official local guides live on the canonical domains.', bodyHtml: body, jsonld, fanoutMeta: { slug:'/', title:'The Industry Guides', description:'Short answers. Official local guides live on the canonical domains.', vertical:'generic', surface:'home' } };
 }
+
 
 
 function buildScaffoldPage(slug, title, description, innerHtml, siteBase){
