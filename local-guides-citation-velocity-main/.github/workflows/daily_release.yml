@@ -1,0 +1,93 @@
+name: Daily Release
+
+on:
+  schedule:
+    # Goal: consistent daily change to train crawlers + keep sitemap fresh.
+    # IMPORTANT: GitHub cron is UTC and does NOT auto-adjust for daylight savings.
+    # We run two schedules so you get ~8:10am Chicago time year-round:
+    # - 14:10 UTC ≈ 8:10am CT (standard time)
+    # - 13:10 UTC ≈ 8:10am CT (daylight savings)
+    - cron: "10 14 * * *"
+    - cron: "10 13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-release
+  cancel-in-progress: true
+
+jobs:
+  # MAY 2026 MAINTENANCE: Before June 2, 2026, follow README_MAY_2026_GITHUB_ACTIONS_NODE24.md
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Sync to latest main before release
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+
+      - name: Compile staged Reddit query clusters
+        run: node scripts/compile_reddit_queries.js
+
+      - name: Release (pages until complete, then evergreen sections)
+        env:
+          PAGE_BATCH: "5"
+          SECTION_BATCH: "5"
+          MEDIUM_BATCH: "1"
+          INSIGHT_BATCH: "1"
+        run: node scripts/daily_release.js
+
+      - name: Clean build state
+        run: |
+          rm -rf .build
+
+      - name: Snapshot previous published URL inventory
+        run: |
+          mkdir -p .build
+          if [ -f content/_live/published_urls.json ]; then
+            cp content/_live/published_urls.json .build/published_urls.previous.json
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate full release surface
+        run: |
+          npm run repair:unmapped-insights
+          npm run validate:all
+
+      - name: Stage changes (for delta IndexNow)
+        run: git add -A
+
+      - name: IndexNow submit (delta)
+        env:
+          INDEXNOW_MODE: "delta"
+        run: node scripts/indexnow_submit.js
+
+      - name: Commit release changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "daily release $(date -u +%F)"
+
+      - name: Push to main
+        run: |
+          git push origin HEAD:main

@@ -1,0 +1,102 @@
+name: Push Velocity Candidates to LKG PR
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 14 * * 1-5"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: lkg-pr-push
+  cancel-in-progress: true
+
+jobs:
+  push-candidates:
+    runs-on: ubuntu-latest
+    env:
+      LKG_REPO_SECRET: ${{ secrets.LKG_REPO }}
+      LKG_TOKEN_SECRET: ${{ secrets.LKG_TOKEN }}
+      SIGNAL_SOURCE_TIMEOUT_MS: "20000"
+      SIGNAL_FETCH_TIMEOUT_MS: "18000"
+      SIGNAL_COLLECT_SEQUENTIAL: "true"
+      REDDIT_PUBLIC_PREFER_RSS: "true"
+      REDDIT_PUBLIC_LIMIT: "5"
+      REDDIT_PUBLIC_MAX_SIGNALS: "5"
+      REDDIT_PUBLIC_TERM_LIMIT: "2"
+      REDDIT_PUBLIC_DELAY_MS: "8000"
+      REDDIT_PUBLIC_JITTER_MS: "7000"
+      PUBLIC_SIGNAL_USER_AGENT: "local-guides-citation-velocity/1.0 by SpryLabs contact:info@spryvc.com"
+
+    steps:
+      - name: Checkout Velocity
+        uses: actions/checkout@v6
+        with:
+          path: velocity
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: velocity/package-lock.json
+
+      - name: Install Velocity deps
+        working-directory: velocity
+        run: npm ci
+
+      - name: Generate LKG candidates
+        working-directory: velocity
+        run: npm run ingest:public
+
+      - name: Verify candidate export
+        working-directory: velocity
+        run: npm run validate:lkg-candidates
+
+      - name: Skip if LKG secrets are not configured
+        if: ${{ env.LKG_REPO_SECRET == '' || env.LKG_TOKEN_SECRET == '' }}
+        run: |
+          echo "LKG_REPO and/or LKG_TOKEN not set. Skipping cross-repo PR creation."
+
+      - name: Checkout LKG repo
+        if: ${{ env.LKG_REPO_SECRET != '' && env.LKG_TOKEN_SECRET != '' }}
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ secrets.LKG_REPO }}
+          token: ${{ secrets.LKG_TOKEN }}
+          path: lkg
+          persist-credentials: false
+
+      - name: Copy candidate payload into current LKG intake file
+        if: ${{ env.LKG_REPO_SECRET != '' && env.LKG_TOKEN_SECRET != '' }}
+        run: |
+          set -euo pipefail
+          cp velocity/data/lkg_candidates/latest.json lkg/data/reference/promotion_candidates.source.json
+
+      - name: Create LKG intake pull request
+        if: ${{ env.LKG_REPO_SECRET != '' && env.LKG_TOKEN_SECRET != '' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.LKG_TOKEN }}
+          path: lkg
+          branch: velocity/lkg-candidates-${{ github.run_id }}
+          title: "Velocity guide candidates — ${{ github.run_id }}"
+          commit-message: "Update promotion candidates from Velocity"
+          body: |
+            Automated Velocity → current LKG candidate handoff.
+
+            This PR updates:
+            - data/reference/promotion_candidates.source.json
+
+            Current LKG behavior:
+            - LKG ingests candidate payloads from data/reference/promotion_candidates.source.json
+            - LKG then pulls into incoming candidates and generates reference surfaces through its own scripts/workflows
+            - LKG remains the final authority for generation, validation, and publishing
+
+            Merge only after reviewing the candidate payload and confirming it should enter the current LKG ingestion path.
+          labels: |
+            velocity-intake
+            guide-candidates
