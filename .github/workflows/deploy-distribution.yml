@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   distribute:
     runs-on: ubuntu-latest
@@ -27,12 +30,13 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Install Python dependencies
+      - name: Install optional Python dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
 
-      - name: Recreate GSC service account file
+      - name: Recreate optional GSC service account file
+        if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON != '' }}
         run: |
           printf '%s' '${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}' > gsc-service-account.json
 
@@ -45,13 +49,37 @@ jobs:
 
       - name: Generate site and IndexNow artifacts
         run: |
-          npm run build
+          npm run distribution:prepare
           ls -l .build/indexnow-priority.txt .build/indexnow-batch.txt
+
+      - name: Validate IndexNow workflow wiring
+        run: npm run validate:indexnow-workflow
 
       - name: Run distribution deploy
         env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
         run: |
-          ./distribution_scripts/deploy_distribution.sh \
-            --creds gsc-service-account.json \
-            --gsc-site "$GSC_SITE_URL"
+          if [ -f gsc-service-account.json ] && [ -n "${GSC_SITE_URL:-}" ]; then
+            ./distribution_scripts/deploy_distribution.sh \
+              --artifact-dir .build \
+              --key "${INDEXNOW_KEY:-}" \
+              --creds gsc-service-account.json \
+              --gsc-site "$GSC_SITE_URL"
+          else
+            ./distribution_scripts/deploy_distribution.sh \
+              --artifact-dir .build \
+              --key "${INDEXNOW_KEY:-}"
+          fi
+
+      - name: Upload distribution reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: velocity-distribution-reports
+          path: |
+            .build
+            reports/indexnow-submit-report.json
+            reports/indexnow-priority-submit-report.json
+            reports/indexnow-batch-submit-report.json
+            reports/validate_indexnow_workflow.json

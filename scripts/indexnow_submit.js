@@ -12,7 +12,8 @@ const KEY_PATH = process.env.INDEXNOW_KEY_PATH || path.join(process.cwd(), 'inde
 const INVENTORY_PATH = process.env.INDEXNOW_PUBLISHED_URLS || path.join(process.cwd(), 'content', '_live', 'published_urls.json');
 const PREV_INVENTORY_PATH = process.env.INDEXNOW_PREVIOUS_PUBLISHED_URLS || path.join(process.cwd(), '.build', 'published_urls.previous.json');
 const DRY_RUN = /^(1|true|yes|y|on)$/i.test(String(process.env.INDEXNOW_DRY_RUN || process.env.INDEXNOW_DRY || ''));
-const ENDPOINT = process.env.INDEXNOW_ENDPOINT || 'https://www.bing.com/indexnow';
+const ENDPOINT = process.env.INDEXNOW_ENDPOINT || 'https://api.indexnow.org/indexnow';
+const REPORT_PATH = process.env.INDEXNOW_REPORT_PATH || path.join(process.cwd(), 'reports', 'indexnow-delta-submit-report.json');
 const MODE = String(process.env.INDEXNOW_MODE || 'full').toLowerCase();
 
 function readText(p) { return fs.readFileSync(p, 'utf8'); }
@@ -46,6 +47,23 @@ function computeDeletionUrls(previousInventory, currentInventory) {
   const current = new Set(currentInventory);
   return previousInventory.filter((url) => !current.has(url));
 }
+
+function writeReport(payload) {
+  try {
+    fs.mkdirSync(path.dirname(REPORT_PATH), { recursive: true });
+    fs.writeFileSync(REPORT_PATH, JSON.stringify(Object.assign({
+      repo: 'local-guides-citation-velocity',
+      writtenAt: new Date().toISOString(),
+      endpoint: ENDPOINT,
+      mode: MODE,
+      host: HOST,
+      dryRun: DRY_RUN
+    }, payload), null, 2) + '\n');
+  } catch (e) {
+    console.log(`[IndexNow] WARNING: could not write report: ${e.message}`);
+  }
+}
+
 function postJson(url, body) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
@@ -69,12 +87,12 @@ function postJson(url, body) {
 
 (async function main() {
   try {
-    if (!fileExists(KEY_PATH)) { console.log(`[IndexNow] SKIP: key file missing at ${KEY_PATH}`); process.exit(0); }
+    if (!fileExists(KEY_PATH)) { console.log(`[IndexNow] SKIP: key file missing at ${KEY_PATH}`); writeReport({ status: 'skipped', reason: `key file missing at ${KEY_PATH}` }); process.exit(0); }
     const key = readText(KEY_PATH).trim();
-    if (!key) { console.log('[IndexNow] SKIP: key is empty'); process.exit(0); }
+    if (!key) { console.log('[IndexNow] SKIP: key is empty'); writeReport({ status: 'skipped', reason: 'key is empty' }); process.exit(0); }
 
     const currentInventory = uniq(loadInventory(INVENTORY_PATH)).filter((u) => u.startsWith(`https://${HOST}/`));
-    if (!currentInventory.length) { console.log('[IndexNow] SKIP: published URL inventory is empty'); process.exit(0); }
+    if (!currentInventory.length) { console.log('[IndexNow] SKIP: published URL inventory is empty'); writeReport({ status: 'skipped', reason: 'published URL inventory is empty' }); process.exit(0); }
 
     let urls = currentInventory.slice();
     if (MODE === 'delta') {
@@ -90,7 +108,7 @@ function postJson(url, body) {
 
     const deletionUrls = MODE === 'delta' ? uniq(computeDeletionUrls(loadInventory(PREV_INVENTORY_PATH), currentInventory)).filter((u) => u.startsWith(`https://${HOST}/`)) : [];
     const submitUrls = uniq(urls.concat(deletionUrls));
-    if (!submitUrls.length) { console.log('[IndexNow] SKIP: no URLs found to submit'); process.exit(0); }
+    if (!submitUrls.length) { console.log('[IndexNow] SKIP: no URLs found to submit'); writeReport({ status: 'skipped', reason: 'no URLs found to submit' }); process.exit(0); }
 
     const batches = chunk(submitUrls, 200);
     console.log(`[IndexNow] Host=${HOST} URLs=${submitUrls.length} Batches=${batches.length} Endpoint=${ENDPOINT}`);
@@ -111,10 +129,12 @@ function postJson(url, body) {
       }
     }
     console.log(`[IndexNow] Done. OK=${ok} FAIL=${fail} deletions=${deletionUrls.length} (warn-only)`);
+    writeReport({ status: fail ? 'partial' : (DRY_RUN ? 'dry-run' : 'success'), ok, fail, deletionCount: deletionUrls.length, submittedCount: submitUrls.length, batchCount: batches.length });
     process.exit(0);
   } catch (e) {
     console.log('[IndexNow] Fatal error (warn-only):');
     console.log(String(e && e.stack ? e.stack : e));
+    writeReport({ status: 'failed', error: String(e && e.stack ? e.stack : e) });
     process.exit(0);
   }
 })();
