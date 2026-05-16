@@ -474,3 +474,32 @@ That is how these repos get better without falling back into validator hell.
 
 ```
 ```
+
+---
+
+## Citation-Agent Fixes Must Prove Source-to-Published Trace
+
+Do not update the citation-agent fix ledger or validator expectations until the recommended fix has been added to the canonical source file and proven through a clean rebuild.
+
+Generated files do not count as implementation.
+Reports do not count as implementation.
+Ledger records do not count as implementation.
+Validator expectations do not count as implementation.
+
+A citation-agent fix is complete only when every required marker is present in all four layers:
+
+1. canonical source file
+2. `content/_live/pages.json`
+3. `content/_staged/pages.json`
+4. rendered HTML page
+
+Required local proof before commit:
+
+```bash
+npm run build
+npm run trace:citation-agent-fixes
+npm run validate:citation-agent-fixes
+npm run guardrails:all
+```
+
+If a marker is missing, fix the source layer first. Do not weaken the validator to make a report pass. Do not patch only generated HTML unless the owner explicitly requests an emergency one-off patch.

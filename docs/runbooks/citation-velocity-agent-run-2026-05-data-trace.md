@@ -53,3 +53,28 @@ PDF/CSV recommendations
 ## Deferred canonical targets
 
 All canonical city/template/guide fixes named in the PDFs are deferred to the LKG batch.
+
+## 2026-05-16 hardening addendum — source-to-published trace
+
+The citation-agent lane now requires source-to-published proof before a fix can be considered complete.
+
+For each trace-enabled fix in `data/report_fixes/velocity_citation_agent_2026_05.json`, the repo must prove the same required markers in:
+
+- declared `sourceFiles`
+- `content/_live/pages.json`
+- `content/_staged/pages.json`
+- declared rendered HTML path
+
+The dedicated trace command is:
+
+```bash
+npm run trace:citation-agent-fixes
+```
+
+The full protected command path is:
+
+```bash
+npm run guardrails:all
+```
+
+This prevents the prior failure mode where a ledger or validator expectation could be added before the actual content reached the rebuilt published surface.

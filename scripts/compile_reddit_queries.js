@@ -180,6 +180,8 @@ function compile() {
 
   const output = { pages: [...seedPages, ...compiledPages].sort((a, b) => a.slug.localeCompare(b.slug)) };
   writeJson(PAGES_PATH, output);
+  const { applyCitationAgentFixes } = require('./apply_citation_agent_fixes_2026_05');
+  applyCitationAgentFixes({ targets: ['content/_staged/pages.json'] });
   writeJson(DEBUG_OUT, { generated_at: new Date().toISOString(), generated_pages: compiledPages.length, pages: compiledPages });
   console.log(`Compiled ${compiledPages.length} query-cluster pages from ${unique.length} staged queries.`);
 }
