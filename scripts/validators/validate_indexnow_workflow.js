@@ -41,7 +41,12 @@ if (workflow) {
   includes(workflow, 'INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}', workflowPath);
   includes(workflow, 'reports/indexnow-submit-report.json', workflowPath);
   includes(workflow, 'actions/upload-artifact', workflowPath);
-  if (!workflow.includes('gsc-service-account.json') || !workflow.includes('if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON')) {
+  const hasGscServiceAccountFile = workflow.includes('gsc-service-account.json');
+  const hasSafeGscGate =
+    workflow.includes('GSC_SERVICE_ACCOUNT_JSON_PRESENT') ||
+    workflow.includes('if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON');
+
+  if (!hasGscServiceAccountFile || !hasSafeGscGate) {
     warn('GSC service account is not clearly optional/gated in workflow');
   }
 }
