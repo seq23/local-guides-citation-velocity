@@ -155,7 +155,7 @@ const CONFIG = {
   '/dentistry/choosing-a-dentist/': makeConfig(
     'Quick answer',
     'Most people choose the right dentist by checking provider type, treatment-plan clarity, written pricing, office trust signals, and whether the next step is explained clearly. A good choice usually comes from comparing a shortlist with the same checklist instead of choosing on reviews alone.',
-    'How to choose the right dentist without guessing',
+    '5-factor checklist: what to look for when choosing a dentist',
     'Start with the checklist. Compare two or three offices using the same questions before you let ratings or convenience decide the whole choice.',
     ['Confirm whether you need a general dentist or a specialist', 'Ask for a written treatment plan and estimate', 'Compare how clearly options and alternatives are explained', 'Check how urgent care, follow-up, or sedation are handled', 'Do not choose on reviews alone', 'Compare two or three offices using the same questions'],
     'What usually drives a good dental choice',
