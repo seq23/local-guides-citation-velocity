@@ -34,8 +34,8 @@ function wordCount(text) {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
-function fail(file, msg) {
-  return { file, msg };
+function fail(file, msg, severity = 'error') {
+  return { file, msg, severity };
 }
 
 function hasCanonTop(html) {
@@ -127,10 +127,10 @@ function validateFile(relPath) {
   const text = stripHtml(html);
   const wc = wordCount(text);
 
-  // Cushion around your 600-1000 target; avoids false fails.
-  if (wc < 600 || wc > 1200) {
-    return fail(rel, `Word count must be 600-1200. Detected: ${wc}.`);
-  }
+  // Word count is editorial telemetry only.
+  // Medium article length drift must not fail CI and must not emit validation warnings.
+  // Structural and metadata defects above remain hard failures.
+  void wc;
 
   return null;
 }
@@ -168,10 +168,21 @@ function main() {
     process.exit(0);
   }
 
-  const errors = [];
+  const findings = [];
   for (const rel of targets) {
-    const err = validateFile(rel);
-    if (err) errors.push(err);
+    const finding = validateFile(rel);
+    if (finding) findings.push(finding);
+  }
+
+  const errors = findings.filter((f) => f.severity !== 'warning');
+  const warnings = findings.filter((f) => f.severity === 'warning');
+
+  if (warnings.length) {
+    console.warn('\n! Medium articles validation warnings:\n');
+    for (const w of warnings) {
+      console.warn(`- ${w.file}: ${w.msg}`);
+    }
+    console.warn('');
   }
 
   if (errors.length) {
@@ -183,7 +194,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(scanAll ? `Medium articles validation passed (${targets.length} files checked).` : `Medium articles validation passed (${targets.length} changed files checked).`);
+  console.log(scanAll ? `Medium articles validation passed (${targets.length} files checked, ${warnings.length} warning(s)).` : `Medium articles validation passed (${targets.length} changed files checked, ${warnings.length} warning(s)).`);
   process.exit(0);
 }
 
