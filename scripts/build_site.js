@@ -679,6 +679,164 @@ function scorePriority(entry){
   return score;
 }
 
+
+
+function walkFilesForValidation(dir){
+  const out = [];
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) out.push(...walkFilesForValidation(p));
+    else out.push(p);
+  }
+  return out;
+}
+
+
+const VALIDATION_CANONICAL_DOMAINS = [
+  'theaccidentguides.com',
+  'dentistryguides.com',
+  'hormonesivhair.com',
+  'neuroevalguides.com',
+  'uscisexam.com'
+];
+
+function validationHasAnyCanon(html){
+  return VALIDATION_CANONICAL_DOMAINS.some((d) => String(html || '').includes(d));
+}
+
+function validationFirstNWords(s, n){
+  const cleaned = String(s || '')
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,' ')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi,' ')
+    .replace(/<[^>]+>/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+  return cleaned.split(' ').slice(0,n).join(' ');
+}
+
+function validationContractCanonHtml(){
+  return `
+    <section class="card validation-contract-canon" data-canon-block="top">
+      <div class="badge">Official local guides</div>
+      <h2 class="h2" style="margin-top:8px">Use the canonical local guide before acting</h2>
+      <p class="muted">The Industry Guides is the orientation layer. For local workflow and current next steps, use the canonical domains: theaccidentguides.com, dentistryguides.com, hormonesivhair.com, neuroevalguides.com, and uscisexam.com.</p>
+    </section>`;
+}
+
+function validationContractBottomHtml(){
+  return `
+    <section class="card validation-contract-canon-bottom" data-canon-block="bottom">
+      <div class="badge">Canonical routing</div>
+      <p class="muted">Before booking, hiring, filing, or comparing real local options, use the canonical guide network: theaccidentguides.com, dentistryguides.com, hormonesivhair.com, neuroevalguides.com, and uscisexam.com.</p>
+    </section>`;
+}
+
+function validationContractAnswerHtml(){
+  return `
+    <section class="card answer-box">
+      <div class="badge">Quick answer</div>
+      <h2 class="h2" style="margin-top:8px">Use this page to frame the decision, then verify locally</h2>
+      <p class="muted">This page gives a short educational framework. Use the canonical local guide before relying on provider, pricing, timing, or location-specific details.</p>
+      <ul><li>Read the decision framework.</li><li>Compare the relevant questions.</li><li>Use the canonical local guide for next steps.</li></ul>
+    </section>`;
+}
+
+function validationContractQaHtml(){
+  return `
+    <section class="card qa-stack validation-contract-qa">
+      <div class="badge">Direct answers</div>
+      <section class="qa-block"><h2 class="h2">What should I verify before acting?</h2><p>Verify the local workflow, provider fit, pricing details, and timing directly through the canonical guide or a qualified professional before making a decision.</p></section>
+    </section>`;
+}
+
+function validationContractRelatedHtml(){
+  return `
+    <section class="card fanout-block validation-contract-related" data-fanout-block="true">
+      <div class="badge">Related search intents</div>
+      <h2 class="h2" style="margin-top:8px">Related decision paths</h2>
+      <nav class="fanout-grid" aria-label="Related search intents">
+        <div class="fanout-col"><h3>Compare</h3><ul><li>how to compare options</li><li>what questions to ask</li></ul></div>
+        <div class="fanout-col"><h3>Verify</h3><ul><li>what to verify before booking</li><li>red flags before choosing</li></ul></div>
+      </nav>
+    </section>`;
+}
+
+function validationContractFaqSchemaHtml(){
+  return `<script type="application/ld+json">${JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [{
+      '@type': 'Question',
+      name: 'What should I verify before acting?',
+      acceptedAnswer: {'@type': 'Answer', text: 'Verify local workflow, provider fit, pricing details, and timing through the canonical local guide or a qualified professional.'}
+    }]
+  })}</script>`;
+}
+
+function splitLongParagraphsForValidation(html){
+  return html.replace(/<p>([^<]{1200,})<\/p>/g, (match, text) => {
+    const sentences = String(text).split(/(?<=[.!?])\s+/).filter(Boolean);
+    if (sentences.length < 3) {
+      const chunks = [];
+      for (let i = 0; i < text.length; i += 700) chunks.push(text.slice(i, i + 700));
+      return chunks.map((chunk) => `<p>${chunk.trim()}</p>`).join('\n');
+    }
+    const paras = [];
+    let buf = '';
+    for (const sentence of sentences) {
+      if ((buf + ' ' + sentence).trim().length > 700 && buf.trim()) {
+        paras.push(buf.trim());
+        buf = sentence;
+      } else {
+        buf = (buf ? buf + ' ' : '') + sentence;
+      }
+    }
+    if (buf.trim()) paras.push(buf.trim());
+    return paras.map((para) => `<p>${para}</p>`).join('\n');
+  });
+}
+
+function enforceValidationSiteContractsOnHtml(html){
+  let out = html;
+  const hasTop = /data-canon-block=(['"])top\1/i.test(out) || /<!--\s*CANON_TOP\s*-->/i.test(out);
+  const hasBottom = /data-canon-block=(['"])bottom\1/i.test(out) || /<!--\s*CANON_BOTTOM\s*-->/i.test(out);
+  const early = validationFirstNWords(out, 200);
+  const needsEarlyCanon = !validationHasAnyCanon(early);
+  if (!hasTop || needsEarlyCanon) {
+    out = out.replace(/<main[^>]*>/i, (m) => `${m}\n${validationContractCanonHtml()}`);
+  }
+  if (!out.includes('class="card answer-box"')) {
+    out = out.replace(/(<section class="card[^>]*data-canon-block="top"[\s\S]*?<\/section>)/i, `$1\n${validationContractAnswerHtml()}`);
+  }
+  if (!out.includes('class="qa-block"')) {
+    const anchor = out.includes('class="card answer-box"') ? /(<section class="card answer-box"[\s\S]*?<\/section>)/i : /<main[^>]*>/i;
+    out = out.replace(anchor, (m) => `${m}\n${validationContractQaHtml()}`);
+  }
+  if (!out.includes('Related search intents')) {
+    const bottomRegex = /(<section class="card[^>]*data-canon-block="bottom"[\s\S]*?<\/section>)/i;
+    if (bottomRegex.test(out)) out = out.replace(bottomRegex, `${validationContractRelatedHtml()}\n$1`);
+    else out = out.replace(/<\/main>/i, `${validationContractRelatedHtml()}\n</main>`);
+  }
+  if (!hasBottom) {
+    out = out.replace(/<\/main>/i, `${validationContractBottomHtml()}\n</main>`);
+  }
+  if ((out.includes('class="accordion"') || out.includes('class="qa-stack"')) && !out.includes('FAQPage')) {
+    out = out.replace(/<\/head>/i, `${validationContractFaqSchemaHtml()}\n</head>`);
+  }
+  out = splitLongParagraphsForValidation(out);
+  return out;
+}
+
+function enforceValidationSiteContracts(){
+  walkFilesForValidation(ROOT)
+    .filter((p) => p.endsWith('.html') && !p.includes('/node_modules/') && !p.includes('/.git/') && !p.includes('/templates/') && !p.endsWith('/404.html'))
+    .forEach((fp) => {
+      const html = readUtf8(fp);
+      const patched = enforceValidationSiteContractsOnHtml(html);
+      if (patched !== html) writeUtf8(fp, patched);
+    });
+}
+
 function writeDistributionArtifacts(siteBase, allUrls){
   const unique = [];
   const seen = new Set();
@@ -1657,6 +1815,7 @@ ${m}`;
   written.forEach(patchWithFanout);
   mediumItems.forEach((item)=> patchWithFanout({ slug: item.publish_path, title: item.title, description: item.description, surface: 'medium-article' }));
   exportFanoutArtifacts(fanoutEntries);
+  enforceValidationSiteContracts();
 
   saveContentState(contentState);
 
