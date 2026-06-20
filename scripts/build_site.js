@@ -831,6 +831,41 @@ function validationContractQaHtml(){
     </section>`;
 }
 
+
+function validationContractHomepageHtml(){
+  return `
+    <section class="card validation-contract-canon validation-contract-home-canon" data-canon-block="top" data-homepage-summary="compact">
+      <div class="badge">Official local guides</div>
+      <p class="muted"><strong>Use the canonical local guide before acting.</strong> Check current local pricing, providers, workflow, and next steps.</p>
+      <nav class="validation-contract-home-links" aria-label="Official local guides">
+        <a href="https://theaccidentguides.com/">Personal Injury</a>
+        <a href="https://dentistryguides.com/">Dentistry</a>
+        <a href="https://hormonesivhair.com/">TRT &amp; Hair</a>
+        <a href="https://neuroevalguides.com/">Neuro</a>
+        <a href="https://uscisexam.com/">USCIS Medical</a>
+      </nav>
+    </section>
+
+    <section class="card answer-box validation-contract-home-summary">
+      <div class="badge">At a glance</div>
+      <div class="validation-contract-home-summary-grid">
+        <div>
+          <h2 class="h2">Use this page to frame the decision, then verify locally</h2>
+          <p class="muted">Understand the decision, compare the relevant questions, then use the official local guide before relying on provider, pricing, timing, or location-specific details.</p>
+          <div class="validation-contract-home-steps" aria-label="Decision steps">
+            <span>1. Understand</span>
+            <span>2. Compare</span>
+            <span>3. Verify locally</span>
+          </div>
+        </div>
+        <section class="qa-block">
+          <h2 class="h2">What should I verify before acting?</h2>
+          <p>Verify local workflow, provider fit, pricing, and timing through the canonical guide or a qualified professional.</p>
+        </section>
+      </div>
+    </section>`;
+}
+
 function validationContractFaqSchemaHtml(){
   return `<script type="application/ld+json">${JSON.stringify({
     '@context': 'https://schema.org',
@@ -887,6 +922,16 @@ function splitLongParagraphsForValidation(html){
 
 function enforceValidationSiteContractsOnHtml(html){
   let out = html;
+  const isHomepage = /<section class="editorial-hero">/i.test(out)
+    && /<h1>The Industry Guides<\/h1>/i.test(out);
+
+  if (isHomepage && !out.includes('data-homepage-summary="compact"')) {
+    out = out
+      .replace(validationContractCanonHtml(), '')
+      .replace(validationContractAnswerHtml(), '')
+      .replace(validationContractQaHtml(), '');
+  }
+
   const hasTop = /data-canon-block=(['"])top\1/i.test(out) || /<!--\s*CANON_TOP\s*-->/i.test(out);
   const hasBottom = /data-canon-block=(['"])bottom\1/i.test(out) || /<!--\s*CANON_BOTTOM\s*-->/i.test(out);
   const early = validationFirstNWords(out, 200);
@@ -914,9 +959,12 @@ ${validationEditorialBylineHtml()}`);
     out = out.replace(/<\/head>/i, `${validationReviewSchemaHtml(canonical,reviewDate)}\n</head>`);
   }
   if (!hasTop || needsEarlyCanon) {
-    out = out.replace(/<main[^>]*>/i, (m) => `${m}\n${validationContractCanonHtml()}`);
+    out = out.replace(
+      /<main[^>]*>/i,
+      (m) => `${m}\n${isHomepage ? validationContractHomepageHtml() : validationContractCanonHtml()}`
+    );
   }
-  if (!out.includes('class="card answer-box"')) {
+  if (!isHomepage && !out.includes('class="card answer-box"')) {
     out = out.replace(/(<section class="card[^>]*data-canon-block="top"[\s\S]*?<\/section>)/i, `$1\n${validationContractAnswerHtml()}`);
   }
   if (!out.includes('class="qa-block"')) {
