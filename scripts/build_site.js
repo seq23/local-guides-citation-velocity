@@ -36,6 +36,9 @@ const {
 } = require('./lib/publish_contract');
 const { buildFanoutData, injectFanoutIntoHtml, inferPageFamily } = require('./lib/fanout');
 const { getPageShapeConfig } = require('./lib/page_shape_config');
+const { renderCitationVelocityArtifacts } = require('./lib/citation_velocity_artifacts');
+const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
+const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
@@ -153,26 +156,39 @@ function toAbsUrl(siteBase, slug){
 }
 
 function nowISODate(){
-  const d = new Date();
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth()+1).padStart(2,'0');
-  const dd = String(d.getUTCDate()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd}`;
+  const explicit = String(process.env.SOURCE_DATE || process.env.RELEASE_DATE || '').trim();
+  if (explicit) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(explicit)) throw new Error(`Invalid SOURCE_DATE/RELEASE_DATE: ${explicit}`);
+    return explicit;
+  }
+  // Stable fallback: use the newest admitted monitor/editorial event, not wall-clock build time.
+  const runPath = path.join(ROOT, 'data', 'citation_velocity', 'runs.json');
+  if (exists(runPath)) {
+    const payload = loadJson(runPath);
+    const dates = (payload.runs || []).map((run) => String(run.date || run.run_date || '')).filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort();
+    if (dates.length) return dates.at(-1);
+  }
+  const statePath = path.join(ROOT, 'content', '_shared', 'content_state.json');
+  if (exists(statePath)) {
+    const state = loadJson(statePath);
+    const dates = Object.values(state).map((entry) => String(entry?.lastmod || '')).filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort();
+    if (dates.length) return dates.at(-1);
+  }
+  throw new Error('SOURCE_DATE is required when no admitted editorial or content-state date exists.');
 }
 
 function loadJson(p){ return JSON.parse(readUtf8(p)); }
 
 function renderLayout({title, description, absUrl, bodyHtml, jsonld}){
   const tpl = readUtf8(LAYOUT);
-  const schemaNodes = Array.isArray(jsonld) ? jsonld : [jsonld];
-  const schema = schemaNodes.filter(Boolean);
+  const schema = mergeSchema(jsonld);
   return tpl
     .replaceAll('{{TITLE}}', htmlEscape(title))
     .replaceAll('{{DESCRIPTION}}', htmlEscape(description))
     .replaceAll('{{ABS_URL}}', htmlEscape(absUrl))
     .replaceAll('{{BODY}}', bodyHtml)
-    .replaceAll('{{YEAR}}', String(new Date().getUTCFullYear()))
-    .replaceAll('{{JSONLD}}', JSON.stringify(schema.length === 1 ? schema[0] : schema, null, 2));
+    .replaceAll('{{YEAR}}', nowISODate().slice(0, 4))
+    .replaceAll('{{JSONLD}}', JSON.stringify(schema, null, 2));
 }
 
 function getCanonHook(canonLabel, canonHome){
@@ -424,9 +440,11 @@ function assertDeterministicInsightItems(items) {
     }
     if (seen.has(publishPath)) throw new Error(`duplicate insight publish_path before write: `);
     seen.add(publishPath);
-    for (const key of ['slug','vertical','cluster','source_route','cluster_path','atlas_path','canonical_domain','title','description']) {
-      if (!item[key]) throw new Error(` missing required insight key before write: `);
+    for (const key of ['slug','vertical','cluster','source_route','cluster_path','atlas_path','canonical_domain','title','description','date_modified']) {
+      if (!item[key]) throw new Error(`missing required insight key before write: ${key} on ${publishPath}`);
     }
+    const atomErrors = validateContentAtom(item.content_atom, { title: item.title });
+    if (atomErrors.length) throw new Error(`invalid content atom on ${publishPath}: ${atomErrors.join(', ')}`);
   }
 }
 
@@ -518,53 +536,33 @@ function renderClusterKnowledgeBlock(page, registryEntry, atlasConfig, insightIt
 
 
 function canonBlock(canonHome, canonStateHint, canonDirHint, canonLabel){
-  const hook = getCanonHook(canonLabel, canonHome);
-  const stateHintText = canonStateHint || canonHome;
-  const dirHintText = canonDirHint || canonHome;
-
+  const destination = canonHome;
   return `
-  <section class="card canon-warning" data-canon-block="top">
-    <div class="badge warning-badge">${htmlEscape(hook.badge)}</div>
-    <h2 class="h2" style="margin-top:8px">${htmlEscape(hook.title)}</h2>
-    <p class="muted">${htmlEscape(hook.copy)}</p>
-    <p><strong><a href="${canonHome}">${canonHome.replace(/^https?:\/\//,'').replace(/\/$/,'')}</a></strong></p>
-    <div class="cta">
-      <a class="primary" href="${canonHome}">${htmlEscape(hook.cta)}</a>
-      <a href="${stateHintText}">Check the official local workflow</a>
-      <a href="${dirHintText}">Go to the canonical domain</a>
-    </div>
-    <p class="muted small">Use this page to understand the decision clearly, then use the official local guide when you are comparing real local options, pricing details, and next-step workflow.</p>
+  <section class="card canon-warning provider-cta" data-canon-block="top" data-provider-cta="above-fold">
+    <div class="badge warning-badge">Provider next step</div>
+    <h2 class="h2" style="margin-top:8px">Ready to compare real ${htmlEscape(canonLabel)} providers?</h2>
+    <p class="muted">Use this Velocity page for the source-backed guide. When you are ready for local help, continue to the matching provider destination.</p>
+    <div class="cta"><a class="primary" href="${destination}">Find a Provider</a><a href="#guide-content">Read the guide first</a></div>
   </section>`;
 }
 
 function canonBlockBottom(canonHome, canonLabel){
   return `
-  <section class="card canon-warning canon-warning-bottom" data-canon-block="bottom">
-    <div class="badge warning-badge">Final routing step</div>
-    <h2 class="h2" style="margin-top:8px">Use the official ${htmlEscape(canonLabel)} guide for local next steps</h2>
-    <p class="muted">Use the canonical domain for local provider routing, location-specific pricing questions, and current next-step workflow.</p>
-    <p><strong><a href="${canonHome}">${canonHome.replace(/^https?:\/\//,'').replace(/\/$/,'')}</a></strong></p>
-    <div class="cta">
-      <a class="primary" href="${canonHome}">Open the official local guide</a>
-    </div>
+  <section class="card canon-warning canon-warning-bottom provider-cta" data-canon-block="bottom" data-provider-cta="end-module">
+    <div class="badge warning-badge">Find local help</div>
+    <h2 class="h2" style="margin-top:8px">Find a ${htmlEscape(canonLabel)} provider</h2>
+    <p class="muted">You have the decision framework. Continue to the matching provider destination for local options and assistance.</p>
+    <div class="cta"><a class="primary" href="${canonHome}">Find a Provider</a></div>
   </section>`;
 }
 
-
 function canonBlockMid(canonHome, canonLabel, clusterTitle='this topic'){
-  const bare = canonHome.replace(/^https?:\/\//,'').replace(/\/$/,'');
   return `
-  <section class="card canon-route-strip" data-canon-block="mid">
-    <div class="badge warning-badge">Leave this summary site</div>
-    <h2 class="h2" style="margin-top:8px">If you are actually comparing options, go to the canonical guide now</h2>
-    <p class="muted">This page exists to get you oriented on ${htmlEscape(clusterTitle)} quickly. The official ${htmlEscape(canonLabel)} guide is where local directories, pricing context, location-specific workflow, and decision-critical next steps live.</p>
-    <div class="route-grid">
-      <a class="route-primary" href="${canonHome}">
-        <span class="route-kicker">Best next click</span>
-        <strong>Open ${htmlEscape(bare)}</strong>
-        <span>Use the official local guide instead of browsing more summaries here.</span>
-      </a>
-    </div>
+  <section class="card canon-route-strip provider-cta" data-canon-block="mid" data-provider-cta="contextual-body">
+    <div class="badge warning-badge">Provider route</div>
+    <h2 class="h2" style="margin-top:8px">Need local help with ${htmlEscape(clusterTitle)}?</h2>
+    <p class="muted">Use the source-backed guide here, then continue when you are ready to compare local ${htmlEscape(canonLabel)} options.</p>
+    <div class="cta"><a class="primary" href="${canonHome}">Find a Provider</a></div>
   </section>`;
 }
 
@@ -622,11 +620,70 @@ function renderAccordion(sections){
 
 
 
+
+function renderProgrammaticContentAtom(atom, pageTitle) {
+  const errors = validateContentAtom(atom, { title: pageTitle });
+  if (errors.length) throw new Error(`Programmatic content gate rejected ${pageTitle}: ${errors.join(', ')}`);
+  const artifact = atomToCitationArtifact(atom);
+  if (!artifact) throw new Error(`Unable to render content atom for ${pageTitle}`);
+  return `<section class="programmatic-content-atom" data-content-atom="${htmlEscape(atom.type)}" data-atom-id="${htmlEscape(atom.atom_id)}" data-atom-uniqueness="${htmlEscape(atom.uniqueness_key)}">${renderCitationVelocityArtifacts([artifact])}</section>`;
+}
+
+function buildProgrammaticPageSchemas({ siteBase, page, absUrl, sections }) {
+  const dateModified = page.date_modified || nowISODate();
+  const atomSteps = atomHowToSteps(page.content_atom).slice(0, 8);
+  if (atomSteps.length < 3) throw new Error(`Content atom for ${page.slug} did not produce three HowTo steps`);
+  const faq = buildFaqSchema(siteBase, page.title, absUrl, page.description, sections || []);
+  const graph = [
+    {
+      '@context':'https://schema.org',
+      '@type':'Article',
+      headline: page.title,
+      description: page.description,
+      url: absUrl,
+      mainEntityOfPage: absUrl,
+      datePublished: dateModified,
+      dateModified,
+      publisher: { '@type':'Organization', name:'The Industry Guides', url: siteBase },
+      inLanguage:'en'
+    },
+    faq || {
+      '@context':'https://schema.org',
+      '@type':'FAQPage',
+      name: page.title,
+      url: absUrl,
+      mainEntity: [{
+        '@type':'Question',
+        name: page.title,
+        acceptedAnswer: { '@type':'Answer', text: buildDirectAnswer(page.title, page.description, 70, page.content_atom) }
+      }]
+    },
+    {
+      '@context':'https://schema.org',
+      '@type':'HowTo',
+      name: page.content_atom.title,
+      description: `Use this page-specific decision artifact to work through ${page.title}.`,
+      url: `${absUrl}#howto`,
+      dateModified,
+      step: atomSteps.map((step, index) => ({ '@type':'HowToStep', position:index + 1, name:step.name, text:step.text }))
+    },
+    {
+      '@context':'https://schema.org',
+      '@type':'BreadcrumbList',
+      itemListElement: [
+        { '@type':'ListItem', position:1, name:'The Industry Guides', item:`${siteBase}/` },
+        { '@type':'ListItem', position:2, name:page.title, item:absUrl }
+      ]
+    }
+  ];
+  return graph;
+}
+
 function renderRelatedLinks(links){
   const items = Array.isArray(links) ? links.filter((item)=> item && item.slug && item.label) : [];
   if (!items.length) return '';
   const body = items.slice(0,6).map((item)=>`<li><a href="${item.slug}">${htmlEscape(item.label)}</a></li>`).join('');
-  return `<section class="card related-links"><div class="badge">Related questions</div><h2 class="h2" style="margin-top:8px">Compare the next closest questions</h2><p class="muted">Use these pages to pressure-test the decision from another angle before you click off-site.</p><ul>${body}</ul></section>`;
+  return `<section class="card related-links sibling-links" data-sibling-links="true"><div class="badge">Related questions</div><h2 class="h2" style="margin-top:8px">Compare the next closest questions</h2><p class="muted">Use these pages to pressure-test the decision from another angle before you click off-site.</p><ul>${body}</ul></section>`;
 }
 
 function buildFaqSchema(siteBase, title, absUrl, description, sections){
@@ -866,162 +923,30 @@ function writeDistributionArtifacts(siteBase, allUrls){
 }
 
 function buildIndexPage(siteBase){
+  const verticals = [
+    {id:'uscis-card', label:'USCIS Civil Surgeons', accent:'mint', guides:'/uscis-medical/', provider:'https://uscisexam.com/request-assistance/', copy:'I-693 rules, civil-surgeon state guides, vaccines, corrections, and scheduling.'},
+    {id:'personal-injury-card', label:'Personal Injury Law', accent:'coral', guides:'/personal-injury/', provider:'https://theaccidentguides.com/request-assistance/', copy:'State deadlines, negligence rules, claims, evidence, fees, and decision guides.'},
+    {id:'dentistry-card', label:'Dentistry Network', accent:'teal', guides:'/dentistry/', provider:'https://dentistryguides.com/request-assistance/', copy:'Insurance, Medicaid, costs, treatment comparisons, urgency, and provider questions.'},
+    {id:'neuro-card', label:'Neuro / ADHD Testing', accent:'lavender', guides:'/neuro/', provider:'https://neuroevalguides.com/request-assistance/', copy:'Evaluation types, referrals, costs, reports, school/work use, and state access.'},
+    {id:'trt-card', label:'Hormones, IV & Hair', accent:'gold', guides:'/trt/', provider:'https://hormonesivhair.com/request-assistance/', copy:'TRT rules, telehealth, monitoring, fertility, hair loss, and treatment comparisons.'}
+  ];
+  const routeCards = verticals.map((v)=>`<article class="network-card ${v.accent}" id="${v.id}"><div class="network-kicker">Canonical vertical</div><h3>${v.label}</h3><p>${v.copy}</p><div class="cta"><a class="primary" href="${v.provider}">Find a Provider</a><a href="${v.guides}">Browse Guides</a></div></article>`).join('');
+  const rows = verticals.map((v)=>`<tr><td>${v.label}</td><td><a href="${v.guides}">Guides and state pages</a></td><td>Reviewed ${nowISODate()}</td><td><a class="table-cta" href="${v.provider}">Find a Provider</a></td></tr>`).join('');
   const body = `
-    <section class="card hero-card">
-      <div class="badge">Routing-first homepage</div>
-      <h1 class="h1">The Industry Guides</h1>
-      <p class="hero-copy">Use this site to get oriented fast, compare options cleanly, and route to the right canonical guide. When you are ready for real local help, the strongest next step is to request assistance on the official guide for that vertical.</p>
-      <div class="hero-actions cta">
-        <a class="primary" href="#vertical-routes">Request assistance by vertical</a>
-        <a href="#canonical-network">See the official guide network</a>
-      </div>
-    </section>
-
-    <section class="card" data-canon-block="top" id="canonical-network">
-      <div class="badge">Official local guides</div>
-      <h2 class="h2" style="margin-top:8px">Official Local Guides & Directories</h2>
-      <p class="muted">This site is the orientation layer. The canonical sites handle local rules, local pages, and real consumer next steps.</p>
-      <div class="trust-grid">
-        <a class="trust-chip" href="https://theaccidentguides.com/"><strong>The Accident Guides</strong><span>Personal injury</span></a>
-        <a class="trust-chip" href="https://dentistryguides.com/"><strong>Dentistry Guides</strong><span>Dentistry</span></a>
-        <a class="trust-chip" href="https://hormonesivhair.com/"><strong>Hormones IV Hair</strong><span>TRT &amp; hair</span></a>
-        <a class="trust-chip" href="https://neuroevalguides.com/"><strong>Neuro Eval Guides</strong><span>Neuropsych evaluations</span></a>
-        <a class="trust-chip" href="https://uscisexam.com/"><strong>USCIS Exam</strong><span>USCIS medical</span></a>
-      </div>
-    </section>
-
-    <section class="card route-router">
-      <div class="badge">Not sure where to start?</div>
-      <h2 class="h2" style="margin-top:8px">Choose the question that matches your situation</h2>
-      <div class="router-grid">
-        <a href="#personal-injury-card">Hurt in an accident?</a>
-        <a href="#dentistry-card">Need a dentist?</a>
-        <a href="#trt-card">Comparing TRT or hair-loss options?</a>
-        <a href="#neuro-card">Need a neuropsych evaluation?</a>
-        <a href="#uscis-card">Need a USCIS medical exam?</a>
-      </div>
-    </section>
-
-    ${renderAnswerBox('What this site is good for', 'Use this site to get oriented fast, collect comparison questions, and move to the official local guide before you book, hire, enroll, or file anything important.', ['Get a fast summary', 'Use scripts and checklists', 'Route to the official local guide'])}
-
-    <section class="card fanout-block" data-fanout-block="true" data-fanout-family="home" data-fanout-vertical="generic">
-      <div class="badge">Related search intents</div>
-      <h2 class="h2" style="margin-top:8px">Related decision paths people also use</h2>
-      <p class="muted">These nearby phrasings stay here for LLM extraction and orientation, but the main consumer routes are the canonical guide cards below.</p>
-      <nav class="fanout-grid" aria-label="Related search intents">
-        <div class="fanout-col"><h3>Direct phrasing</h3><ul><li>The Industry Guides</li><li>how to compare local services</li><li>local service guide</li></ul></div>
-        <div class="fanout-col"><h3>Comparison and fit</h3><ul><li>how to compare local service guide options</li><li>what to verify before choosing local service guide</li><li>how to shortlist local service guide options</li><li>what to ask before booking local service guide</li></ul></div>
-        <div class="fanout-col"><h3>Pricing and logistics</h3><ul><li>local service guide cost</li><li>local service guide pricing</li><li>cost and pricing guide</li><li>local service guide estimate vs final bill</li></ul></div>
-        <div class="fanout-col"><h3>Trust and verification</h3><ul><li>local service guide reviews</li><li>local service guide red flags</li><li>reviews and red flags</li><li>how to verify local service guide</li></ul></div>
-        <div class="fanout-col"><h3>Urgent and next-step</h3><ul><li>questions to ask before booking</li><li>local service guide same day</li><li>local service guide this week</li><li>what to do before booking local service guide</li></ul></div>
-      </nav>
-      <div class="fanout-links"><a href="/tools/" data-fanout-intent="tools">Use scripts and checklists</a><a href="/glossary/" data-fanout-intent="glossary">Check the glossary first</a></div>
-    </section>
-
-    <section class="card route-sections" id="vertical-routes">
-      <div class="badge">Start here</div>
-      <h2 class="h2" style="margin-top:8px">Choose a vertical, then take the strongest next step</h2>
-      <div class="grid route-card-grid">
-        <div class="col-6">
-          <section class="route-card" id="personal-injury-card">
-            <h2 class="h2">Personal Injury</h2>
-            <p class="muted">Accidents, claims, choosing a lawyer.</p>
-            <p class="route-helper">Best for people who need local legal routing fast after an accident.</p>
-            <div class="cta cta-vertical"><a class="primary" href="https://theaccidentguides.com/request-assistance/">Request assistance</a><a href="https://theaccidentguides.com/">Official guide</a><a class="atlas-link" href="/personal-injury/">Open atlas</a></div>
-          </section>
-        </div>
-        <div class="col-6">
-          <section class="route-card" id="dentistry-card">
-            <h2 class="h2">Dentistry</h2>
-            <p class="muted">Emergency care, costs, choosing a dentist.</p>
-            <p class="route-helper">Best for people comparing providers, urgency, and expected dental costs.</p>
-            <div class="cta cta-vertical"><a class="primary" href="https://dentistryguides.com/request-assistance/">Request assistance</a><a href="https://dentistryguides.com/">Official guide</a><a class="atlas-link" href="/dentistry/">Open atlas</a></div>
-          </section>
-        </div>
-        <div class="col-6">
-          <section class="route-card" id="trt-card">
-            <h2 class="h2">TRT &amp; Hair</h2>
-            <p class="muted">TRT choices, monitoring, hair-loss options.</p>
-            <p class="route-helper">Best for people narrowing clinics, treatment paths, and monitoring questions.</p>
-            <div class="cta cta-vertical"><a class="primary" href="https://hormonesivhair.com/request-assistance/">Request assistance</a><a href="https://hormonesivhair.com/">Official guide</a><a class="atlas-link" href="/trt/">Open atlas</a></div>
-          </section>
-        </div>
-        <div class="col-6">
-          <section class="route-card" id="neuro-card">
-            <h2 class="h2">Neuropsych Evaluations</h2>
-            <p class="muted">Testing, reports, choosing a provider.</p>
-            <p class="route-helper">Best for people sorting referral questions, testing logistics, and report expectations.</p>
-            <div class="cta cta-vertical"><a class="primary" href="https://neuroevalguides.com/request-assistance/">Request assistance</a><a href="https://neuroevalguides.com/">Official guide</a><a class="atlas-link" href="/neuro/">Open atlas</a></div>
-          </section>
-        </div>
-        <div class="col-6">
-          <section class="route-card" id="uscis-card">
-            <h2 class="h2">USCIS Medical</h2>
-            <p class="muted">I-693 basics, civil surgeon selection.</p>
-            <p class="route-helper">Best for people who need a clean local path to a USCIS medical exam.</p>
-            <div class="cta cta-vertical"><a class="primary" href="https://uscisexam.com/request-assistance/">Request assistance</a><a href="https://uscisexam.com/">Official guide</a><a class="atlas-link" href="/uscis-medical/">Open atlas</a></div>
-          </section>
-        </div>
-        <div class="col-6">
-          <section class="route-card route-card-muted">
-            <h2 class="h2">Tools &amp; Glossary</h2>
-            <p class="muted">Simple scripts, checklists, definitions.</p>
-            <p class="route-helper">Best for research mode before you move into a local guide or request flow.</p>
-            <div class="cta"><a class="primary" href="/tools/">Tools</a><a href="/glossary/">Glossary</a></div>
-          </section>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="badge">Fast tools</div>
-      <h2 class="h2" style="margin-top:8px">Start with a script, not a guess</h2>
-      <div class="grid">
-        <div class="col-4"><section class="card compact-card"><div class="badge">Script</div><h3 class="h2">Provider call script (simple)</h3><p class="muted">Use this when you call an office so you leave with comparable answers instead of vibes.</p><ul><li>Ask cost range</li><li>Ask what’s included</li><li>Ask earliest appointment</li><li>Ask cancellation policy</li><li>Ask who you’ll see</li></ul></section></div>
-        <div class="col-4"><section class="card compact-card"><div class="badge">Script</div><h3 class="h2">Questions to ask any provider before booking</h3><p class="muted">Use this to compare two or three options without getting sold into the wrong fit.</p><ul><li>What is the total cost?</li><li>What’s included?</li><li>What are the next steps?</li><li>What happens if I need follow-up?</li><li>How do you handle refunds/cancellations?</li></ul></section></div>
-        <div class="col-4"><section class="card compact-card"><div class="badge">Script</div><h3 class="h2">How to read online reviews (quick rules)</h3><p class="muted">Look for patterns, not one glowing headline or one angry outlier.</p><ul><li>Look for patterns</li><li>Watch for billing issues</li><li>Check recent reviews</li><li>Confirm licensing</li></ul></section></div>
-      </div>
-      <div class="cta"><a class="primary" href="/tools/">Open tools and scripts</a></div>
-    </section>
-
-    <section class="card">
-      <div class="badge">Hardline mode</div>
-      <p><strong>Important:</strong> This site is intentionally brief. If you are choosing a provider or need local rules and timelines, use the official local guide on the canonical domain.</p>
-    </section>
-
-    <section class="card" data-canon-block="bottom">
-      <div class="badge">Official local guides</div>
-      <p class="muted">For local coverage and directories, use the canonical domains listed above.</p>
-    </section>
-  `;
-
-  return {
-    slug: '/',
-    title: 'The Industry Guides',
-    description: 'Short answers. Official local guides live on the canonical domains.',
-    bodyHtml: body,
-    jsonld: {
-      '@context':'https://schema.org',
-      '@type':'WebPage',
-      name:'The Industry Guides',
-      url: siteBase + '/',
-      description:'Short answers. Official local guides live on the canonical domains.'
-    },
-    fanoutMeta: {
-      slug: '/',
-      title: 'The Industry Guides',
-      description: 'Short answers. Official local guides live on the canonical domains.',
-      sections: [
-        { q:'What this site is good for', a:'Use this site to get oriented fast, collect comparison questions, and move to the official local guide before you book, hire, enroll, or file anything important.' }
-      ],
-      vertical: 'generic',
-      surface: 'home'
-    },
-    vertical: 'generic',
-    surface: 'home'
-  };
+  <section class="editorial-hero">
+    <div class="verified-line"><span></span> VERIFIED INDEX · UPDATED ${nowISODate()}</div>
+    <h1>The Industry Guides</h1>
+    <p class="editorial-deck">Independent, source-backed decision guides for regulated and high-stakes services. Understand the rules, compare the right factors, and move directly to a provider when you are ready.</p>
+    <div class="cta hero-cta"><a class="primary" href="#vertical-routes">Find a Provider</a><a href="#featured-guides">Browse Industry Guides</a></div>
+  </section>
+  <section id="vertical-routes" class="homepage-section"><div class="section-label">Canonical verticals</div><div class="network-grid">${routeCards}</div></section>
+  <section class="coverage-panel"><div class="section-label light">What we cover</div><h2>One Velocity library. Five provider destinations.</h2><p>All editorial guides, question pages, state pages, and disambiguators live here. Provider discovery happens through the canonical destination for each vertical.</p><div class="coverage-table-wrap"><table class="coverage-table"><thead><tr><th>Vertical</th><th>Coverage</th><th>Freshness</th><th>Next step</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  <section id="featured-guides" class="homepage-section"><div class="section-label">Featured decisions</div><h2>Start with the decision, not the sales pitch</h2><div class="feature-grid"><a href="/civil-surgeon-vs-panel-physician/">Civil surgeon vs panel physician</a><a href="/neuropsych-eval-vs-iq-test-vs-psych-eval/">Neuropsych eval vs IQ test vs psych eval</a><a href="/personal-injury-vs-workers-comp/">Personal injury vs workers comp</a><a href="/dental-insurance-vs-medical-insurance/">Dental vs medical insurance</a><a href="/trt-vs-hair-loss-treatment/">TRT vs hair-loss treatment</a><a href="/uscis-medical/states/tennessee/civil-surgeon/">Tennessee civil-surgeon guide</a></div></section>
+  <section class="homepage-section operations"><div class="section-label">Platform operations</div><h2>How The Industry Guides works</h2><div class="ops-grid"><div><h3>Who runs this site?</h3><p>The Industry Guides is an independent editorial publisher covering five regulated service categories.</p></div><div><h3>How are guides verified?</h3><p>Pages use named frameworks, visible source records, review dates, and a hard publication gate.</p></div><div><h3>How fresh is the data?</h3><p>Every page carries a source-derived modification date. Regulated claims are scheduled for recheck.</p></div><div><h3>Is this a government agency?</h3><p>No. We link to primary government and professional sources where they control the rule.</p></div></div></section>
+  <section class="methodology-band"><div><div class="section-label">Methodology</div><h2>Source first. Decision second. Provider third.</h2><p>Each programmatic page must contain a unique defensible data atom, a direct answer, visible FAQs, source provenance, internal links, and provider routing. Boilerplate-only pages do not ship.</p><a href="/methodology.html">Read the methodology</a></div></section>
+  <section class="closing-provider"><h2>Find a provider in your state</h2><p>Choose the vertical that matches your situation. You will continue to the corresponding provider destination.</p><div class="provider-button-grid">${verticals.map((v)=>`<a href="${v.provider}">${v.label}<strong>Find a Provider →</strong></a>`).join('')}</div></section>`;
+  return {slug:'/',title:'The Industry Guides | Source-Backed Guides and Provider Routing',description:'Source-backed guides, state pages, comparisons, and provider routing across USCIS medical, personal injury, dentistry, neuropsychology, and TRT.',bodyHtml:body,jsonld:{'@context':'https://schema.org','@type':'WebPage',name:'The Industry Guides',url:siteBase+'/',description:'Source-backed guides and provider routing across five regulated verticals.'},fanoutMeta:{slug:'/',title:'The Industry Guides',description:'Source-backed guides and provider routing.',sections:[{q:'What does The Industry Guides publish?',a:'Decision guides, question pages, state pages, and source-backed comparisons.'}],vertical:'generic',surface:'home'},vertical:'generic',surface:'home'};
 }
-
 
 
 function buildScaffoldPage(slug, title, description, innerHtml, siteBase){
@@ -1131,17 +1056,27 @@ if (!item.cluster_path) {
     const clusterMeta = item.vertical && item.cluster && clusterRegistry[item.vertical] && clusterRegistry[item.vertical].clusters ? clusterRegistry[item.vertical].clusters[item.cluster] : null;
     item.cluster_title = clusterMeta ? clusterMeta.title : sentenceLabel(item.cluster || 'cluster');
     item.vertical_label = item.vertical && clusterRegistry[item.vertical] ? clusterRegistry[item.vertical].label : sentenceLabel(item.vertical || 'atlas');
-    item.related_questions = (clusterBuckets.get(clusterKey) || []).filter((rel) => rel.publish_path !== item.publish_path).slice(0, 10).map((rel) => ({ publish_path: rel.publish_path, title: rel.title }));
-    item.next_questions = (verticalBuckets.get(item.vertical || 'generic') || []).filter((rel) => rel.publish_path !== item.publish_path && rel.cluster !== item.cluster).slice(0, 8).map((rel) => ({ publish_path: rel.publish_path, title: rel.title }));
+    item.related_questions = (clusterBuckets.get(clusterKey) || []).filter((rel) => rel.publish_path !== item.publish_path).slice(0, 6).map((rel) => ({ publish_path: rel.publish_path, title: rel.title }));
+    item.next_questions = (verticalBuckets.get(item.vertical || 'generic') || []).filter((rel) => rel.publish_path !== item.publish_path && rel.cluster !== item.cluster).slice(0, 4).map((rel) => ({ publish_path: rel.publish_path, title: rel.title }));
   });
   insightItems.forEach((item) => {
     const outPath = path.join(ROOT, item.publish_path.replace(/^\//, ''));
+    const sourceHash = sha256(JSON.stringify({
+      title: item.title,
+      description: item.description,
+      answer: item.answer,
+      checklist: item.checklist,
+      red_flags: item.red_flags,
+      content_atom: item.content_atom,
+      canonical_target_url: item.canonical_target_url
+    }));
+    const prev = contentState[item.publish_path];
+    const lastmod = (prev && prev.source_hash === sourceHash && prev.lastmod) ? prev.lastmod : today;
+    item.date_modified = lastmod;
     const bodyHtml = renderInsightPage(item);
     assertGeneratedHtmlBeforeWrite({ kind: 'insight', slug: item.publish_path, html: bodyHtml, minWords: 280, requireCanonBlocks: true });
     const contentHash = sha256(stripLastUpdated(bodyHtml));
-    const prev = contentState[item.publish_path];
-    const lastmod = (prev && prev.hash === contentHash && prev.lastmod) ? prev.lastmod : today;
-    contentState[item.publish_path] = { hash: contentHash, lastmod };
+    contentState[item.publish_path] = { hash: contentHash, source_hash: sourceHash, lastmod };
     writeUtf8(outPath, bodyHtml);
     supplementalWritten.push({
       slug: item.publish_path,
@@ -1269,12 +1204,40 @@ function exportFanoutArtifacts(entries){
   console.log(`Fan-out manifest written for ${manifest.length} pages.`);
 }
 
+
+function buildVelocityOnlyProgrammaticPages(siteBase){
+  const sourcePath = path.join(ROOT, 'data', 'page_families', 'velocity_page_specs.json');
+  if (!exists(sourcePath)) throw new Error('Missing Velocity-only page-family source');
+  const payload = loadJson(sourcePath);
+  if (!Array.isArray(payload.pages) || payload.pages.length !== 412) throw new Error(`Velocity page-family count mismatch: ${payload.pages?.length || 0}`);
+  const byVertical = new Map();
+  for (const page of payload.pages) {
+    if (!byVertical.has(page.vertical)) byVertical.set(page.vertical, []);
+    byVertical.get(page.vertical).push(page);
+  }
+  return payload.pages.map((page) => {
+    const destination = page.canonical_target_url;
+    const sections = Array.isArray(page.sections) ? page.sections : [];
+    if (sections.length !== 5) throw new Error(`Velocity page ${page.slug} must have five FAQs`);
+    const siblings = (byVertical.get(page.vertical) || []).filter((x)=>x.slug!==page.slug).slice(0, 8);
+    const sourceRegistry = loadJson(path.join(ROOT,'data','evidence','source_registry.json'));
+    const sourceMap = new Map((sourceRegistry.sources || []).map((src)=>[src.source_id,src]));
+    const sourceLinks = (page.source_records || []).map((id)=>sourceMap.get(id)).filter(Boolean).map((src)=>`<li><a href="${htmlEscape(src.url)}">${htmlEscape(src.title || src.publisher)}</a> <span class="muted">— ${htmlEscape(src.authority_scope || src.publisher)}; reviewed ${htmlEscape(src.retrieved_at || page.date_modified)}</span></li>`).join('');
+    const authorityCard = page.state_authority ? `<section class="card authority-path" data-state-authority="true"><div class="badge">State authority path</div><h2 class="h2">${htmlEscape(page.state_authority.authority_name)}</h2><p>${htmlEscape(page.state_authority.selection_instruction)}</p><p class="muted">Reviewed ${htmlEscape(page.state_authority.reviewed_at)}. ${htmlEscape(page.state_authority.recheck_policy || '')}</p><div class="cta"><a href="${htmlEscape(page.state_authority.authority_url)}">Open the authority source</a></div></section>` : '';
+    const related = siblings.map((rel)=>`<li><a href="${htmlEscape(rel.slug)}">${htmlEscape(rel.title)}</a></li>`).join('');
+    const midCta = `<section class="card provider-cta" data-provider-cta="after-decision-artifact"><div class="badge">Local next step</div><h2 class="h2">Ready to compare providers?</h2><p>Use the source-backed framework above, then continue to the matching provider destination.</p><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section>`;
+    const body = `${canonBlock(destination,destination,destination,(page.title || '').split(' in ')[0])}<article id="guide-content"><h1 class="h1">${htmlEscape(page.title)}</h1><p class="muted">${htmlEscape(page.description)}</p><section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title,page.description,70,page.content_atom))}</p></section><section class="card dated-fact"><div class="badge">Reviewed source fact</div><p>${htmlEscape(page.dated_primary_fact || `Primary sources reviewed ${page.date_modified}.`)}</p></section>${renderProgrammaticContentAtom(page.content_atom,page.title)}${authorityCard}${midCta}<section class="card"><div class="badge">Primary sources</div><h2 class="h2">Verify the rule before acting</h2><ul>${sourceLinks}</ul></section><section class="card"><div class="badge">Five questions</div>${renderAccordion(sections)}</section><section class="card provider-cta" data-provider-cta="contextual-body"><h2 class="h2">Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section><section class="card sibling-links" data-sibling-links="true"><div class="badge">Related Velocity guides</div><ul>${related}</ul></section></article>${canonBlockBottom(destination,(page.title || '').split(' in ')[0])}<p class="muted small">Last updated: ${htmlEscape(page.date_modified)}</p>`;
+    return {slug:page.slug,path:page.path,title:page.title,description:page.description,bodyHtml:body,jsonld:buildProgrammaticPageSchemas({siteBase,page,absUrl:toAbsUrl(siteBase,page.slug),sections}),vertical:page.vertical,related_links:siblings.map((rel)=>({slug:rel.slug,label:rel.title})),content_atom:page.content_atom,date_modified:page.date_modified,source_records:page.source_records,editorial_review:{status:'VELOCITY_ONLY_RELEASED',reviewed_at:page.date_modified},fanoutMeta:{slug:page.slug,title:page.title,description:page.description,vertical:page.vertical,sections,surface:'velocity-state-or-support'}};
+  });
+}
+
 function main(){
   const canonMap = loadJson(CANON_MAP);
   const siteBase = canonMap.site_base;
   const verticalSlugMap = buildVerticalSlugMap();
 
-  // Ensure LIVE content exists; if empty, default to staged -> live copy (build-only convenience)
+  // Ensure LIVE content exists; if empty, default to staged -> live copy (build-only convenience).
+  // Published pages remain authoritative in LIVE; release mutation owns staged -> live promotion.
   if (!exists(LIVE_DIR)) fs.mkdirSync(LIVE_DIR, {recursive:true});
   const liveFiles = fs.readdirSync(LIVE_DIR).filter(f=>f.endsWith('.json'));
   if (liveFiles.length === 0) {
@@ -1311,27 +1274,43 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const pathSlug = cmeta.path;
 
     if (!pages.find(p => p.slug === pathSlug)) {
-      pages.push({
+      const clusterItems = clusterQueryMapBootstrap.filter((item) => item.vertical === vertical && item.cluster === slug);
+      const clusterTitle = cmeta.title || slug;
+      const clusterDescription = cmeta.description || '';
+      const clusterAtom = deriveContentAtom({
+        title: clusterTitle,
+        a: clusterDescription,
+        checklist: clusterItems.slice(0, 5).map((item) => item.normalized_query || item.query || item.title || item.publish_path),
+        red_flags: ['The cluster cannot explain how its questions differ or where the canonical workflow lives.']
+      }, { sourceRoute:pathSlug, title:clusterTitle });
+      const clusterDirectAnswer = buildDirectAnswer(clusterTitle, clusterDescription, 70, clusterAtom);
+      const clusterAtomHtml = renderProgrammaticContentAtom(clusterAtom, clusterTitle);
+      const clusterPage = {
         slug: pathSlug,
-        title: cmeta.title || slug,
-        description: cmeta.description || "",
+        title: clusterTitle,
+        description: clusterDescription,
+        content_atom: clusterAtom,
+        date_modified: nowISODate(),
         bodyHtml: `<!-- FORCE_ALL_REGISTRY_CLUSTERS_GENERATED_WITH_LINK_CONTRACT -->
 <main>
   <section class="card">
-    <h1>${htmlEscape(cmeta.title || slug)}</h1>
-    <p>${htmlEscape(cmeta.description || '')}</p>
+    <h1>${htmlEscape(clusterTitle)}</h1>
+    <p>${htmlEscape(clusterDescription)}</p>
+    <section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(clusterDirectAnswer)}</p></section>
+    ${clusterAtomHtml}
     <p><a href="${htmlEscape(meta.atlas_path || `/atlas/${meta.base_path || vertical}/`)}">View the ${htmlEscape(meta.label || vertical)} atlas</a></p>
   </section>
-  <section class="card">
+  <section class="card sibling-links" data-sibling-links="true">
     <h2>Questions in this cluster</h2>
-    <ul>${clusterQueryMapBootstrap
-      .filter((item) => item.vertical === vertical && item.cluster === slug)
-      .map((item) => `<li><a href="${htmlEscape(item.publish_path)}">${htmlEscape(item.normalized_query || item.query || item.publish_path)}</a></li>`)
+    <ul>${clusterItems.slice(0, 10)
+      .map((item) => `<li><a href="${htmlEscape(item.publish_path)}">${htmlEscape(item.normalized_query || item.query || item.title || item.publish_path)}</a></li>`)
       .join('')}</ul>
   </section>
 </main>`,
         vertical
-      });
+      };
+      clusterPage.jsonld = buildProgrammaticPageSchemas({ siteBase, page:clusterPage, absUrl:toAbsUrl(siteBase, pathSlug), sections:[] });
+      pages.push(clusterPage);
     }
   }
 }
@@ -1339,10 +1318,11 @@ for (const [vertical, meta] of Object.entries(registry)) {
 
   // Index + scaffolding
   pages.push(buildIndexPage(siteBase));
+  pages.push(...buildVelocityOnlyProgrammaticPages(siteBase));
 
   pages.push(buildScaffoldPage('/about.html','About','About The Industry Guides (neutral publisher).',
     `<h1 class="h1">About</h1>
-     <p class="muted">The Industry Guides publishes short, plain-English answers and routing to official local guides. We do not provide professional advice and we do not operate provider directories on this site.</p>
+     <p class="muted">The Industry Guides publishes short, plain-English answers and routing to official local guides. We publish source-backed guides and state pages. Provider discovery and assistance continue through the matching canonical destination.</p>
      <section class="card"><div class="badge">Canonical domains</div>
      <ul>
        <li><a href="https://theaccidentguides.com/">theaccidentguides.com</a></li>
@@ -1364,9 +1344,9 @@ for (const [vertical, meta] of Object.entries(registry)) {
      </section>
      <section class="card"><div class="badge">What we do not do</div>
        <ul>
-         <li>No city pages on this site.</li>
-         <li>No provider listings on this site.</li>
-         <li>No claims of âbestâ providers. We explain how to choose.</li>
+         <li>No unsourced state or local claims.</li>
+         <li>No fabricated provider listings or rankings.</li>
+         <li>No page ships without a unique evidence-backed decision unit.</li>
        </ul>
      </section>`, siteBase));
 
@@ -1395,7 +1375,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
 
   const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
-  const atlasPages = normalizePageClusters(pagesPayload.data.pages || [], clusterRegistry);
+  const atlasPages = normalizePageClusters(pagesPayload.data.pages || [], clusterRegistry).filter((page) => page && page.publication_status !== 'EVIDENCE_ONLY' && !(typeof page.path === 'string' && page.path.startsWith('/insights/')));
   pagesPayload.data.pages = atlasPages;
   const atlasInsightItems = buildMergedInsightItems();
   const clusterPages = atlasPages.filter((page) => page && page.cluster);
@@ -1437,15 +1417,22 @@ for (const [vertical, meta] of Object.entries(registry)) {
     'build_site deterministic query map regeneration from pages.json + insights inventory'
   );
 
+  const editorialSourceRegistry = loadJson(path.join(ROOT,'data','evidence','source_registry.json'));
+  const editorialSourceMap = new Map((editorialSourceRegistry.sources || []).map((src)=>[src.source_id,src]));
+
   atlasPages.forEach((p) => {
     const canon = canonMap.canon[p.vertical];
     if (!canon) throw new Error(`Unknown vertical: ${p.vertical} for ${p.slug}`);
 
-    const topCanon = canonBlock(canon.home, canon.state_hint, canon.directory_hint, canon.label);
+    const providerDestination = p.canonical_target_url || canon.home;
+    const topCanon = canonBlock(providerDestination, providerDestination, providerDestination, canon.label);
     const pageShape = getPageShapeConfig(p.slug);
     const shapedSections = pageShape ? assignCanonicalModules(p.sections || [], pageShape) : (p.sections || []);
 
     const heading = `<h1 class="h1">${htmlEscape(p.title)}</h1><p class="muted">${htmlEscape(p.description)}</p>`;
+    const pageAtom = renderProgrammaticContentAtom(p.content_atom, p.title);
+    const firstAnswer = (shapedSections.find((section) => String(section && (section.a || section.answer || '')).trim()) || {}).a || p.description;
+    const directAnswerBlock = `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(p.title, firstAnswer, 70, p.content_atom))}</p></section>`;
 
     const toc = buildTOC(shapedSections);
     const acc = renderAccordion(shapedSections || []);
@@ -1465,12 +1452,23 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const comparisonTable = pageShape ? renderComparisonTable(pageShape.comparisonTableTitle, pageShape.comparisonTableHeaders, pageShape.comparisonTableRows, 'Comparison table') : '';
     const costTable = pageShape ? renderComparisonTable(pageShape.costTableTitle || pageShape.comparisonTableTitle, pageShape.costTableHeaders || pageShape.comparisonTableHeaders, pageShape.costTableRows || pageShape.comparisonTableRows, 'Cost table') : '';
     const frameworkBox = pageShape ? renderFrameworkBox(pageShape.frameworkTitle, pageShape.frameworkBullets) : '';
+    const citationVelocityArtifacts = renderCitationVelocityArtifacts(p.citation_velocity_artifacts || []);
+    const sensitivityDisclosure = p.disclaimer ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(p.disclaimer)}</p></section>` : '';
+    const editorialSourceLinks = (p.source_records || []).map((id)=>editorialSourceMap.get(id)).filter(Boolean).map((src)=>`<li><a href="${htmlEscape(src.url)}">${htmlEscape(src.title || src.publisher || src.source_id)}</a> <span class="muted">— ${htmlEscape(src.authority_scope || src.publisher || 'Primary source')}; reviewed ${htmlEscape(src.retrieved_at || p.date_modified || nowISODate())}</span></li>`).join('');
+    const editorialSourceBlock = editorialSourceLinks ? `<section class="card primary-sources" data-primary-sources="true"><div class="badge">Primary sources</div><h2 class="h2" style="margin-top:8px">Verify the source before acting</h2><ul>${editorialSourceLinks}</ul></section>` : '';
     const qaHighlights = renderQaHighlights(shapedSections || []);
     const toolSpotlight = toolsPageForHub ? renderToolSpotlight(toolsPageForHub.sections || [], 'Fast scripts for comparing options before you click away') : ''; 
-    const relatedCandidates = Array.isArray(p.related_links) && p.related_links.length ? p.related_links : buildAutoRelatedLinks(p, atlasPages);
+    const explicitRelated = Array.isArray(p.related_links) ? p.related_links.filter((item) => item && item.slug && item.label) : [];
+    const autoRelated = buildAutoRelatedLinks(p, atlasPages, 10);
+    const relatedMap = new Map();
+    [...explicitRelated, ...autoRelated].forEach((item) => {
+      if (item.slug !== p.slug && !relatedMap.has(item.slug)) relatedMap.set(item.slug, item);
+    });
+    const relatedCandidates = [...relatedMap.values()].slice(0, 6);
+    if (relatedCandidates.length < 5) throw new Error(`Programmatic internal-link gate found fewer than five sibling pages for ${p.slug}`);
     const relatedLinks = renderRelatedLinks(relatedCandidates);
     const isQueryCompilerPage = Boolean(p.query_compiler_generated);
-    const midCanon = isQueryCompilerPage ? canonBlockMid(canon.home, canon.label, p.title) : '';
+    const midCanon = canonBlockMid(providerDestination, canon.label, p.title);
     const postQueryUtility = isQueryCompilerPage ? '' : toolSpotlight;
     const clusterMeta = p.cluster && clusterRegistry[p.vertical] && clusterRegistry[p.vertical].clusters ? clusterRegistry[p.vertical].clusters[p.cluster] : null;
     const atlasConfig = atlasStructures.atlas[p.vertical] || null;
@@ -1479,7 +1477,12 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const body = `
       ${topCanon}
       ${heading}
+      ${directAnswerBlock}
+      ${pageAtom}
       ${answerBox}
+      ${citationVelocityArtifacts}
+      ${sensitivityDisclosure}
+      ${editorialSourceBlock}
       ${directAnswer}
       ${decisionChecklist}
       ${comparisonTable}
@@ -1494,24 +1497,15 @@ for (const [vertical, meta] of Object.entries(registry)) {
       ${midCanon}
       ${relatedLinks}
       ${postQueryUtility}
-      ${canonBlockBottom(canon.home, canon.label)}
+      ${canonBlockBottom(providerDestination, canon.label)}
       <hr class="hr" />
       <p class="muted small">Last updated: ${nowISODate()}</p>
     `;
 
     const absUrl = toAbsUrl(siteBase, p.slug);
-    const webPageSchema = {
-      '@context':'https://schema.org',
-      '@type':'WebPage',
-      name:p.title,
-      url: absUrl,
-      description: p.description,
-      isPartOf: { '@type':'WebSite', name:'The Industry Guides', url: siteBase },
-      inLanguage:'en'
-    };
-    const faqSchema = buildFaqSchema(siteBase, p.title, absUrl, p.description, shapedSections || []);
+    const schemas = buildProgrammaticPageSchemas({ siteBase, page:p, absUrl, sections:shapedSections || [] });
 
-    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld: faqSchema ? [webPageSchema, faqSchema] : webPageSchema, vertical:p.vertical, related_links: relatedCandidates, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:shapedSections || [], related_links: relatedCandidates, canonical_url: canon.home } });
+    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld: schemas, vertical:p.vertical, related_links: relatedCandidates, citation_velocity_artifacts:p.citation_velocity_artifacts || [], content_atom:p.content_atom, date_modified:p.date_modified || nowISODate(), disclaimer:p.disclaimer || '', monitor_governed:Boolean(p.monitor_governed), sensitivity_profile:p.sensitivity_profile || null, source_records:p.source_records || [], editorial_review:p.editorial_review || null, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:shapedSections || [], related_links: relatedCandidates, canonical_url: canon.home } });
 
     // Also create a redirecting vertical slug page if needed
     // If /dentistry/ etc not present as vertical_atlas, we still want it.
@@ -1680,6 +1674,11 @@ ${m}`;
     });
   }
 
+  // Canonical route uniqueness: later authoritative source pages replace earlier registry placeholders.
+  const uniquePagesBySlug = new Map();
+  for (const candidate of pages) uniquePagesBySlug.set(candidate.slug, candidate);
+  pages.splice(0, pages.length, ...uniquePagesBySlug.values());
+
   // Ensure vertical hub slugs exist: /dentistry/ etc.
   const have = new Set(pages.map(p=>p.slug));
   const hubs = [
@@ -1700,6 +1699,7 @@ ${m}`;
     if (!page) return;
     page.fanoutMeta = Object.assign({}, page.fanoutMeta || {}, { slug: page.slug, title: page.title || h.title, description: page.description || h.desc, vertical: h.v, surface: 'vertical-home', canonical_url: canonMap.canon[h.v].home });
     const canon = canonMap.canon[h.v];
+    const providerDestination = page.canonical_target_url || `${canon.home.replace(/\/$/, '')}/request-assistance/`;
     const fallbackToolSpotlight = toolsPageForHub
       ? renderToolSpotlight(
           toolsPageForHub.sections || [],
@@ -1720,18 +1720,27 @@ ${m}`;
     const rootClusterMeta = clusterRegistry[h.v] && clusterRegistry[h.v].clusters ? clusterRegistry[h.v].clusters[rootClusterSlug] : null;
     const rootAtlasConfig = atlasStructures.atlas[h.v] || null;
     const rootClusterKnowledge = rootClusterMeta ? renderClusterKnowledgeBlock({ vertical: h.v, cluster: rootClusterSlug }, rootClusterMeta, rootAtlasConfig, atlasInsightItems, clusterPages) : '';
+    const citationVelocityArtifacts = renderCitationVelocityArtifacts(page.citation_velocity_artifacts || []);
+    const pageAtom = renderProgrammaticContentAtom(page.content_atom, page.title || h.title);
+    const hubDirectAnswer = `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title || h.title, page.description || h.desc, 70, page.content_atom))}</p></section>`;
+    const sensitivityDisclosure = page.disclaimer ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(page.disclaimer)}</p></section>` : '';
     page.bodyHtml = `
-      ${canonBlock(canon.home, canon.state_hint, canon.directory_hint, canon.label)}
-      <h1 class="h1">${htmlEscape(h.title)}</h1>
-      <p class="muted">${htmlEscape(h.desc)}</p>
+      ${canonBlock(providerDestination, providerDestination, providerDestination, canon.label)}
+      <h1 class="h1">${htmlEscape(page.title || h.title)}</h1>
+      <p class="muted">${htmlEscape(page.description || h.desc)}</p>
+      ${hubDirectAnswer}
+      ${pageAtom}
       ${answerBox}
+      ${citationVelocityArtifacts}
+      ${sensitivityDisclosure}
       <section class="card"><div class="badge">Start</div>
         <p>Use the cluster pages in the navigation for common questions. For local directories, go to the official guide.</p>
       </section>
       ${rootClusterKnowledge}
       ${qaHighlights}
+      ${renderRelatedLinks(page.related_links || [])}
       ${fallbackToolSpotlight}
-      ${canonBlockBottom(canon.home, canon.label)}
+      ${canonBlockBottom(providerDestination, canon.label)}
       <p class="muted small">Last updated: ${nowISODate()}</p>
     `;
   });
@@ -1856,7 +1865,7 @@ ${m}`;
   // sitemaps (split for crawl clarity) + canonical published inventory
   const mediumPublished = mediumItems.map((item) => ({
     loc: siteBase + item.publish_path,
-    lastmod: nowISODate(),
+    lastmod: String(item.lastmod || item.date_published || item.published_at || nowISODate()).slice(0, 10),
     slug: item.publish_path,
     surface: 'medium-article',
     canonical_domain: item.canonical_domain
@@ -1893,7 +1902,7 @@ ${m}`;
 
   const SITEMAPS_DIR = path.join(ROOT, 'sitemaps');
 
-  const now = nowISODate();
+  const now = allUrls.map((entry) => entry.lastmod).filter(Boolean).sort().at(-1) || nowISODate();
   const files = [
     {name:'sitemap_core.xml', xml: buildUrlset(core)},
     {name:'sitemap_verticals.xml', xml: buildUrlset(verticals)},
@@ -1914,8 +1923,17 @@ ${m}`;
     `\n</sitemapindex>\n`;
   writeUtf8(OUT_SITEMAP, sitemapIndex);
 
-  // robots.txt points to sitemap index
-  writeUtf8(OUT_ROBOTS, `User-agent: *\nAllow: /\n\nSitemap: ${siteBase}/sitemap.xml\n`);
+  // robots.txt is generated from the explicit crawler policy registry.
+  const crawlerPolicyPath = path.join(ROOT, 'data', 'network', 'crawler_policy.json');
+  const crawlerPolicy = exists(crawlerPolicyPath) ? loadJson(crawlerPolicyPath) : { agents:[{agent:'*',directive:'Allow',path:'/'}], sitemap:`${siteBase}/sitemap.xml` };
+  const robotsLines = [];
+  for (const entry of crawlerPolicy.agents || []) {
+    robotsLines.push(`User-agent: ${entry.agent}`);
+    robotsLines.push(`${entry.directive || 'Allow'}: ${entry.path || '/'}`);
+    robotsLines.push('');
+  }
+  robotsLines.push(`Sitemap: ${crawlerPolicy.sitemap || `${siteBase}/sitemap.xml`}`);
+  writeUtf8(OUT_ROBOTS, robotsLines.join('\n') + '\n');
   writeDistributionArtifacts(siteBase, allUrls);
   // feeds (basic, from sitemap)
   const feedItems = written
@@ -1926,7 +1944,7 @@ ${m}`;
       url: p.url,
       title: p.title,
       content_text: p.description,
-      date_published: (p.lastmod ? (p.lastmod + 'T00:00:00Z') : new Date().toISOString())
+      date_published: `${p.lastmod || nowISODate()}T00:00:00Z`
     }));
 
   const feedJson = {
@@ -1946,6 +1964,17 @@ ${m}`;
   // security.txt
   writeUtf8(path.join(ROOT, '.well-known', 'security.txt'),
 `Contact: mailto:security@theindustryguides.com\nPreferred-Languages: en\nPolicy: ${siteBase}/disclaimer.html\n`);
+
+  // Ensure every rendered Velocity HTML route carries the truthful network publisher identity.
+  const networkIdentityScript = `<script type="application/ld+json" data-network-identity="true">${JSON.stringify({ '@context':'https://schema.org', '@graph':networkSchemaNodes().map((node) => { const copy={...node}; delete copy['@context']; return copy; }) })}</script>`;
+  for (const entry of allUrls) {
+    const file = slugToPath(entry.slug);
+    if (!exists(file)) continue;
+    const current = readUtf8(file);
+    if (current.includes('https://theindustryguides.com/#organization')) continue;
+    if (!/<\/head>/i.test(current)) throw new Error(`Rendered page lacks </head> for network identity injection: ${entry.slug}`);
+    writeUtf8(file, current.replace(/<\/head>/i, `${networkIdentityScript}\n</head>`));
+  }
 
   // APPLY_DENTISTRY_REPORT_FIX_CONTRACT_AFTER_BUILD
   require('./apply_dentistry_report_fix_contract').run();

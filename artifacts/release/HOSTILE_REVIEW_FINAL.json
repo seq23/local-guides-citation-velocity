@@ -1,0 +1,183 @@
+{
+  "schema_version": "1.0",
+  "review_date": "2026-06-19",
+  "status": "PASS",
+  "source_root": "local-guides-citation-velocity-main",
+  "checks": [
+    {
+      "id": "registry-executable",
+      "title": "Executable validation registry",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "_validation_registry.json",
+      "detail": "68 registered definitions; central runner controls validation aliases."
+    },
+    {
+      "id": "matrix-projection",
+      "title": "Severity matrix and registry parity",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "_repo_validation_matrix.json",
+      "detail": "Generated matrix is a projection of the executable registry and policy self-test passes."
+    },
+    {
+      "id": "strict-profile",
+      "title": "Strict validation profile",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/validation-summary-strict.json",
+      "detail": "42 checks passed; zero errors or warnings."
+    },
+    {
+      "id": "release-profile",
+      "title": "Release validation profile",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/validation-summary-release.json",
+      "detail": "39 checks passed."
+    },
+    {
+      "id": "advisory-profile",
+      "title": "Advisory validation profile",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/validation-summary-advisory.json",
+      "detail": "3 checks passed without phantom output requirements."
+    },
+    {
+      "id": "bounded-self-heal",
+      "title": "Crash-safe staged self-heal",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/release-pipeline-report.json",
+      "detail": "15 bounded stages passed with checkpoint/resume and 3072MB heap limit."
+    },
+    {
+      "id": "monitor-derived",
+      "title": "Future-proof monitor ledger",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/monitor-ledger.json",
+      "detail": "Current derived totals are 65 recommendations, 43 runs, 8 wins; exact cumulative totals are not release constants."
+    },
+    {
+      "id": "monitor-append",
+      "title": "Future monitor append simulation",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/monitor-future-append-self-test.json",
+      "detail": "A simulated 44th run passed while the June 19 historical baseline remained immutable."
+    },
+    {
+      "id": "future-page-append",
+      "title": "Future automatic page append simulation",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "FUTURE_PAGE_APPEND_PROOF.json",
+      "detail": "One new page raised admission to 1764, self-healed to 5 unique FAQs and 2235 rendered words, and passed 6 selected hard gates."
+    },
+    {
+      "id": "state-substance",
+      "title": "State-page citation substance",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/programmatic-substance.json",
+      "detail": "400 pages, 2000 exact unique FAQ answers, 320 normalized patterns."
+    },
+    {
+      "id": "state-render-depth",
+      "title": "Rendered state-page depth",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/rendered-programmatic-substance.json",
+      "detail": "Minimum 1430 words; average 1544 words."
+    },
+    {
+      "id": "authority-depth",
+      "title": "Direct state authority mapping",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "data/evidence/state_source_registry.json",
+      "detail": "400 family/state authority mappings; generic usa.gov/states references found: 0."
+    },
+    {
+      "id": "workflow-lineage",
+      "title": "Workflow trigger and data lineage",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/workflow-data-trace.json",
+      "detail": "6 workflows; 1 push workflow; 1 scheduled mutation workflow; 6 manual-ready."
+    },
+    {
+      "id": "workflow-failure-boundaries",
+      "title": "Workflow failure boundaries",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "data/workflows/workflow_contract_registry.json",
+      "detail": "Each workflow declares inputs, outputs, upstream/downstream dependencies, permissions, and blocking conditions."
+    },
+    {
+      "id": "browser-budget",
+      "title": "Bounded representative browser suite",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "_browser_suite_contract.json",
+      "detail": "36 route/device cases, 432 assertions, hard cap 96 (<100)."
+    },
+    {
+      "id": "ui-test-parity",
+      "title": "Browser contract implementation parity",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "artifacts/validation/ui-test-parity.json",
+      "detail": "18 representative routes \u00d7 2 devices with all 12 declared assertions implemented."
+    },
+    {
+      "id": "lkg-retired",
+      "title": "No active LKG/cross-repository release machinery",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "repository tree and .github/workflows",
+      "detail": "Active forbidden paths: []; active workflow tokens: []."
+    },
+    {
+      "id": "cta-copy",
+      "title": "Old CTA visible-copy removal",
+      "status": "PASS",
+      "classification": "INTERNAL",
+      "evidence": "rendered HTML scan",
+      "detail": "Rendered pages with visible \u2018Request assistance\u2019 copy: 0."
+    },
+    {
+      "id": "local-browser-proof",
+      "title": "Local Node 24 real-browser proof",
+      "status": "BLOCKED",
+      "classification": "EXTERNAL",
+      "evidence": "_repo_lifecycle_profile.json",
+      "detail": "Requires operator machine/browser; container evidence does not claim this proof."
+    },
+    {
+      "id": "deployed-browser-proof",
+      "title": "Deployed public click audit",
+      "status": "BLOCKED",
+      "classification": "EXTERNAL",
+      "evidence": ".github/workflows/postdeploy_public_audit.yml",
+      "detail": "Requires deployed HTTPS target after release."
+    }
+  ],
+  "summary": {
+    "internal_pass": 18,
+    "internal_fail": 0,
+    "external_blocked": 2,
+    "strict_pass": 42,
+    "release_pass": 39,
+    "workflow_count": 6,
+    "browser_cases": 36,
+    "browser_assertions": 432,
+    "state_pages": 400,
+    "state_unique_faq_answers": 2000,
+    "state_patterns": 320,
+    "state_min_words": 1430
+  },
+  "hostile_conclusion": "All container-provable defects identified in the prior hostile review are repaired. Local Node 24 real-browser and deployed HTTPS proof remain honestly external."
+}

@@ -1,38 +1,6 @@
-const fs = require('fs');
-const path = require('path');
-
-const BAD_DOMAINS = [
-  ['hormoesivhair', 'com'].join('.'),
-  ['hormoesivehair', 'com'].join('.')
-];
-
-const SKIP_DIRS = new Set(['.git', 'node_modules']);
-
-function scan(dir) {
-  let violations = [];
-  for (const file of fs.readdirSync(dir)) {
-    const full = path.join(dir, file);
-    const rel = path.relative(process.cwd(), full);
-    const stat = fs.statSync(full);
-    if (stat.isDirectory()) {
-      if (SKIP_DIRS.has(file)) continue;
-      violations = violations.concat(scan(full));
-    } else {
-      if (rel === 'scripts/validate_canonical_domains.js') continue;
-      let content;
-      try { content = fs.readFileSync(full, 'utf8'); } catch { continue; }
-      BAD_DOMAINS.forEach((domain) => {
-        if (content.includes(domain)) violations.push({ file: rel, domain });
-      });
-    }
-  }
-  return violations;
-}
-
-const results = scan(process.cwd());
-if (results.length > 0) {
-  console.error('❌ BAD CANONICAL DOMAIN FOUND');
-  results.forEach((r) => console.error(`${r.domain} in ${r.file}`));
-  process.exit(1);
-}
-console.log('✅ Canonical domains clean');
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs');const path=require('path');const ROOT=path.resolve(__dirname,'..');
+const BAD_DOMAINS=[['hormoesivhair','com'].join('.'),['hormoesivehair','com'].join('.')];const SKIP_DIRS=new Set(['.git','node_modules','logs','artifacts']);
+function scan(dir){let violations=[];for(const file of fs.readdirSync(dir)){const full=path.join(dir,file);const rel=path.relative(ROOT,full).replace(/\\/g,'/');const stat=fs.statSync(full);if(stat.isDirectory()){if(SKIP_DIRS.has(file))continue;violations=violations.concat(scan(full));}else{if(rel==='scripts/validate_canonical_domains.js')continue;let content;try{content=fs.readFileSync(full,'utf8');}catch{continue;}for(const domain of BAD_DOMAINS)if(content.includes(domain))violations.push({file:rel,domain});}}return violations;}
+const violations=scan(ROOT);const report={validator:'canonical-domains',status:violations.length?'FAIL':'PASS',ok:violations.length===0,checked_domains:BAD_DOMAINS,violations};fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts/validation/canonical-domains.json'),JSON.stringify(report,null,2)+'\n');if(violations.length){console.error('BAD CANONICAL DOMAIN FOUND');for(const r of violations)console.error(`${r.domain} in ${r.file}`);process.exit(1);}console.log('Canonical domains clean');

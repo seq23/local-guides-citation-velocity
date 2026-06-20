@@ -1,0 +1,73 @@
+{
+  "schema_version": "2.0",
+  "effective_date": "2026-06-19",
+  "standard_name": "One Defensible Data Atom Per Programmatic Page",
+  "scope": {
+    "included": [
+      "Every generated insight page sourced from content/_staged/pages.json or content/_live/pages.json",
+      "Every Velocity-owned editorial hub or cluster page sourced from pages.json",
+      "All future pages produced by query compilation, signal ingestion, release mutation, or generator scripts"
+    ],
+    "excluded": [
+      "Legal and policy pages",
+      "Site utilities",
+      "Archive indexes",
+      "Atlas indexes",
+      "Redirect-only files"
+    ]
+  },
+  "ship_law": "A programmatic editorial page without one valid, page-specific, defensible data atom is not admitted to the public release inventory.",
+  "allowed_atom_types": {
+    "original_comparison_table": "An original decision-support comparison table with at least three rows and two columns.",
+    "dated_primary_stat": "A dated original observation with sample size, method, and source URLs.",
+    "named_framework": "A uniquely named framework with at least three explicit steps.",
+    "copy_paste_prompt": "A working, page-specific prompt or script with at least three usable lines.",
+    "decision_tree": "A branching decision tree with at least three condition/action paths.",
+    "aggregated_review_synthesis": "A dated synthesis with sample size, method, source URLs, and at least three findings."
+  },
+  "required_page_contract": {
+    "direct_answer": "A literal answer at the top of the page, 70 words or fewer.",
+    "metadata": [
+      "unique title",
+      "unique meta description",
+      "unique H1",
+      "canonical URL"
+    ],
+    "schema": {
+      "always": [
+        "Article or WebPage",
+        "BreadcrumbList",
+        "publisher Organization"
+      ],
+      "conditional": [
+        "FAQPage when visible FAQs exist",
+        "HowTo when a real procedure or decision sequence is visible",
+        "MedicalWebPage for actual medical editorial content",
+        "CollectionPage or ItemList for resource collections",
+        "Dataset for published original datasets"
+      ],
+      "prohibited": [
+        "LegalService on an editorial publisher",
+        "MedicalClinic for clinics not owned by the publisher",
+        "sameAs between distinct brands",
+        "schema absent from visible content"
+      ]
+    },
+    "structure": "At least one table or numbered list, normally supplied by the atom.",
+    "internal_links": "At least five descriptive links to sibling or cluster pages.",
+    "freshness": "dateModified changes only when the source data row changes.",
+    "boilerplate": "Generic rewritten filler, duplicated answer bodies, or atoms that do not overlap the page topic are rejected.",
+    "provenance": "Regulated and numeric claims must resolve through the source and claim registries with jurisdiction, review date, and recheck date.",
+    "canonical_routing": "Every eligible Velocity page routes above the fold, contextually, from decision artifacts where relevant, and at the end of the page to the registered canonical owner."
+  },
+  "programmatic_axes": [
+    "entity_use_case_matrix",
+    "comparison_graph",
+    "literal_question_clusters"
+  ],
+  "admission_behavior": {
+    "new_content": "Build fails before publication when a source row lacks a valid atom.",
+    "existing_content": "The June 19 migration supplies and validates one source-backed atom for every existing editorial row; output is regenerated from source.",
+    "invalid_content": "Invalid rows are excluded from the release inventory or fail the release gate; no silent publication is allowed."
+  }
+}

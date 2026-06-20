@@ -150,21 +150,24 @@ else
 fi
 
 echo "Verifying ZIP root and workflow inclusion..."
-ZIP_ROOTS="$(unzip -Z1 "$ZIP_PATH" | awk -F/ 'NF {print $1}' | sort -u | tr '\n' ' ')"
+ZIP_LIST_FILE="$(mktemp)"
+trap 'rm -f "$ZIP_LIST_FILE"' EXIT
+unzip -Z1 "$ZIP_PATH" > "$ZIP_LIST_FILE"
+ZIP_ROOTS="$(awk -F/ 'NF {print $1}' "$ZIP_LIST_FILE" | sort -u | tr '\n' ' ')"
 if [[ "$ZIP_ROOTS" != "$BASE " && "$ZIP_ROOTS" != "$BASE" ]]; then
   echo "Snapshot refused: ZIP has unexpected root entries: $ZIP_ROOTS" >&2
   exit 1
 fi
 
 if [[ -d .github/workflows ]]; then
-  if ! unzip -Z1 "$ZIP_PATH" | grep -q "^$BASE/.github/workflows/"; then
+  if ! grep -q "^$BASE/.github/workflows/" "$ZIP_LIST_FILE"; then
     echo "Snapshot refused: .github/workflows files missing from ZIP" >&2
     exit 1
   fi
 fi
 
 if [[ "$INCLUDE_GIT" == "0" ]]; then
-  if unzip -Z1 "$ZIP_PATH" | grep -q "^$BASE/.git/"; then
+  if grep -q "^$BASE/.git/" "$ZIP_LIST_FILE"; then
     echo "Snapshot refused: .git present despite default exclusion" >&2
     exit 1
   fi

@@ -2,27 +2,60 @@ name: Validate Repo
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 50
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup Node
+        with:
+          fetch-depth: 0
+      - name: Setup Node 24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: Install deps
-        run: npm ci || npm install
-
-      - name: Run audit
-        run: npm run audit:all
-
-      - name: Run validation
-        run: npm run validate:all
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Build and validate exact artifact in bounded stages
+        run: npm run release:ci-validate
+      - name: Upload exact validated artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velocity-validated-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+          path: |
+            .
+            !.git/**
+            !node_modules/**
+            !dist/**
+            !reports/**
+            !logs/**
+            !artifacts/diagnostics/**
+      - name: Upload validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velocity-validation-diagnostics-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            logs/**
+            artifacts/validation/**

@@ -6,6 +6,7 @@ const path = require('path');
 const { normalizeQuery } = require('./normalize_queries');
 const { dedupeByNormalized } = require('./dedupe_queries');
 const { VERTICAL_CONFIG } = require('./lib/publish_contract');
+const { deriveContentAtom } = require('./lib/content_atom');
 
 const ROOT = path.resolve(__dirname, '..');
 const STAGED_DIR = path.join(ROOT, 'content', '_staged');
@@ -138,20 +139,26 @@ function compile() {
     const cfg = VERTICAL_CONFIG[verticalKey];
     const clusterMeta = reg.clusters[clusterKey];
     const slug = `/${cfg.basePath}/${clusterKey}/`;
-    const sections = clusterItems.map((item) => ({
-      q: item.query,
-      visible_q: titleCase(item.normalized_query),
-      query_variants: [item.query],
-      a: item.answer || questionAnswer(verticalKey, clusterKey, item.query),
-      checklist: item.checklist || [],
-      red_flags: item.red_flags || [],
-      intent_type: item.intent_type,
-      source_type: item.source_type,
-      source_bucket: item.source_bucket,
-      normalized_query: item.normalized_query,
-      canonical_target_url: canonicalTargetUrl(item.notes, cfg)
-    }));
-    compiledPages.push({
+    const mutationDate = String(process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10));
+    const sections = clusterItems.map((item, itemIndex) => {
+      const section = {
+        q: item.query,
+        visible_q: titleCase(item.normalized_query),
+        query_variants: [item.query],
+        a: item.answer || questionAnswer(verticalKey, clusterKey, item.query),
+        checklist: item.checklist || [],
+        red_flags: item.red_flags || [],
+        intent_type: item.intent_type,
+        source_type: item.source_type,
+        source_bucket: item.source_bucket,
+        normalized_query: item.normalized_query,
+        canonical_target_url: canonicalTargetUrl(item.notes, cfg),
+        date_modified: mutationDate
+      };
+      section.content_atom = deriveContentAtom(section, { sourceRoute: `${slug}#section-${itemIndex + 1}`, title: section.visible_q || section.q });
+      return section;
+    });
+    const compiledPage = {
       slug,
       vertical: verticalKey,
       title: clusterMeta.title,
@@ -161,8 +168,16 @@ function compile() {
       cluster: clusterKey,
       canonical_target_url: canonicalTargetUrl((clusterItems.find((item) => item.notes) || {}).notes, cfg),
       related_links: [],
-      sections
-    });
+      sections,
+      date_modified: mutationDate
+    };
+    compiledPage.content_atom = deriveContentAtom({
+      title: compiledPage.title,
+      a: compiledPage.description,
+      checklist: sections.slice(0, 5).map((section) => section.visible_q || section.q),
+      red_flags: ['The page cannot explain how its questions differ from sibling clusters.']
+    }, { sourceRoute: slug, title: compiledPage.title });
+    compiledPages.push(compiledPage);
   }
 
   const byVertical = new Map();

@@ -160,3 +160,8 @@ This repo uses a light distribution layer to accelerate discovery for the canoni
 
 ### Operating rule
 After each deploy, submit `sitemap.xml`, push the priority and batch URL files through IndexNow, inspect the priority set, and manually request indexing for only the 5–10 highest-value URLs.
+
+
+## Full-Scope Network Overhaul
+
+The June 19 full-scope implementation adds 20 Velocity disambiguators, 200 literal-question pages, 412 canonical LKG candidate specifications, explicit network crawler identity, source/claim governance, aggressive Velocity-to-canonical routing, disavow/search-submission tooling, and a fixed 100-prompt citation panel. Run `npm run overhaul:apply` to regenerate the governed source and release artifacts.

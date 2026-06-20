@@ -1,64 +1,87 @@
 name: Release Batch
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       batch_size:
-        description: "How many staged pages to add to LIVE"
+        description: "How many staged pages to admit to LIVE"
         required: true
         default: "5"
+        type: string
 
 permissions:
   contents: write
 
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+  BATCH_SIZE: ${{ inputs.batch_size }}
+
 concurrency:
-  group: release-batch
-  cancel-in-progress: true
+  group: release-batch-main
+  cancel-in-progress: false
 
 jobs:
-  # MAY 2026 MAINTENANCE: Before June 2, 2026, follow README_MAY_2026_GITHUB_ACTIONS_NODE24.md
   release:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 75
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Compile staged Reddit query clusters
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Synchronize source before mutation
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+      - name: Set release date
+        run: echo "SOURCE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
+      - name: Compile admitted query clusters
         run: node scripts/compile_reddit_queries.js
-
-      - name: Release batch
+      - name: Mutate requested release batch
         env:
-          BATCH_SIZE: ${{ github.event.inputs.batch_size || '5' }}
+          BATCH_SIZE: ${{ inputs.batch_size }}
         run: node scripts/release_batch.js "$BATCH_SIZE"
-
-      - name: Clean build state
-        run: |
-          rm -rf .build dist reports data/answer_surface_monitoring
-
-      - name: Build
+      - name: Build proposed release
         run: npm run build
-
-      - name: Validate full published surface
+      - name: Validate proposed release
         run: npm run guardrails:all
-
-      - name: Commit and push
+      - name: Commit validated release candidate
+        id: candidate
         run: |
-          rm -rf dist .build reports data/answer_surface_monitoring
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "release batch ($BATCH_SIZE) $(date -u +%F)" || echo "No changes to commit"
-          git pull --rebase || true
-          git push
+          if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          git commit -m "release batch ($BATCH_SIZE) $(date -u +%F)"
+      - name: Rebase, revalidate, and push
+        if: ${{ steps.candidate.outputs.changed == 'true' }}
+        run: |
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            npm run release:self-healing
+            git add -A
+            git commit --amend --no-edit
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 15))
+          done
+          exit 1
+      - name: Upload release diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velocity-batch-release-diagnostics-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            logs/**
+            artifacts/validation/**
