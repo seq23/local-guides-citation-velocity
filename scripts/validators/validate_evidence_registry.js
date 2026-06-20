@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs'),path=require('path'); const ROOT=path.resolve(__dirname,'..','..'); const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8')); const errors=[];
+const sources=read('data/evidence/source_registry.json'); const claims=read('data/evidence/claim_registry.json'); const pages=read('content/_live/pages.json');
+const sourceIds=new Set((sources.sources||[]).map(s=>s.source_id)); const claimIds=new Set((claims.claims||[]).map(c=>c.claim_id));
+for(const s of sources.sources||[]){if(!/^https:\/\//.test(s.url))errors.push(`source_url:${s.source_id}`);if(!/^\d{4}-\d{2}-\d{2}$/.test(s.retrieved_at||''))errors.push(`source_retrieved:${s.source_id}`);if(!s.allowed_claim_classes?.length)errors.push(`source_claim_classes:${s.source_id}`)}
+for(const c of claims.claims||[]){for(const id of c.source_ids||[])if(!sourceIds.has(id))errors.push(`claim_unknown_source:${c.claim_id}:${id}`);if(!/^\d{4}-\d{2}-\d{2}$/.test(c.last_verified||''))errors.push(`claim_last_verified:${c.claim_id}`)}
+for(const p of pages.pages||[]){if(!p.full_scope_program)continue;for(const id of p.source_records||[])if(!sourceIds.has(id))errors.push(`page_unknown_source:${p.path||p.slug}:${id}`);for(const id of p.claim_ids||[])if(!claimIds.has(id))errors.push(`page_unknown_claim:${p.path||p.slug}:${id}`)}
+const report={validator:'evidence-registry',ok:!errors.length,sources:sourceIds.size,claims:claimIds.size,errors};fs.mkdirSync(path.join(ROOT,'artifacts','validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts','validation','evidence-registry.json'),JSON.stringify(report,null,2)+'\n');if(errors.length){console.error(errors.slice(0,50).join('\n'));process.exit(1)}console.log(`Evidence registry passed: ${sourceIds.size} sources and ${claimIds.size} full-scope claims.`);

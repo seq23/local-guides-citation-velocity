@@ -5,7 +5,7 @@ Use this as the updated SOP:
 ````md
 # AI Agent Daily Citation Workflow SOP
 
-This SOP applies to both Velocity and Canonical LKG repos.
+This SOP applies to both Velocity and Velocity repos.
 
 ## Authority Rule
 
@@ -78,7 +78,7 @@ When a PDF/CSV says a page is weak, the job is:
 
 ## Canonical Prompt (USE THIS EVERY TIME)
 
-Today is [DATE]. Target repo is [REPO NAME]. Target vertical is [VERTICAL]. Scope is [Velocity only / Canonical LKG only].
+Today is [DATE]. Target repo is [REPO NAME]. Target vertical is [VERTICAL]. Scope is [Velocity only / Velocity only].
 
 Attached:
 - PDF report
@@ -257,9 +257,9 @@ Do not treat final rendered page HTML as the preferred long-term source of truth
 
 ---
 
-## Canonical LKG Repo Rule
+## Velocity Repo Rule
 
-For the canonical LKG repo, when the recommendation explicitly says the template or family should be updated, follow that instruction and patch the template/source layer.
+For the Velocity repo, when the recommendation explicitly says the template or family should be updated, follow that instruction and patch the template/source layer.
 
 Typical targets include:
 

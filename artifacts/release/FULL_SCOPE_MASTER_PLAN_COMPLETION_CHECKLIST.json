@@ -1,0 +1,251 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-06-19T00:00:00.000Z",
+  "scope_counts": {
+    "existing_routes_baseline": 1131,
+    "velocity_disambiguators": 20,
+    "velocity_questions": 200,
+    "canonical_candidate_specs": 412,
+    "total_new_pages_committed": 632,
+    "monitor_recommendations": 65,
+    "monitor_runs": 43,
+    "monitor_wins": 8
+  },
+  "actual_counts": {
+    "admitted_velocity_routes": 1351,
+    "canonical_routing_records": 1337,
+    "canonical_candidates": 412,
+    "source_records": 15,
+    "claim_records": 220,
+    "measurement_prompts": 100
+  },
+  "status_counts": {
+    "DONE": 13,
+    "PARTIAL": 2,
+    "BLOCKED": 6
+  },
+  "items": [
+    {
+      "id": "P0-01",
+      "phase": "Phase 0",
+      "requirement": "Master scope, opportunity, page-family, source, claim, routing, and validation registries",
+      "status": "DONE",
+      "evidence": [
+        "data/overhaul/full_scope_overhaul_contract.json",
+        "data/overhaul/opportunity_registry.json",
+        "data/overhaul/page_family_registry.json",
+        "data/evidence/source_registry.json",
+        "data/evidence/claim_registry.json",
+        "data/routing/canonical_destination_registry.json"
+      ]
+    },
+    {
+      "id": "P0-02",
+      "phase": "Phase 0",
+      "requirement": "Every current and new Velocity route has a disposition",
+      "status": "DONE",
+      "evidence": [
+        "data/overhaul/page_disposition_registry.json"
+      ]
+    },
+    {
+      "id": "P1-01",
+      "phase": "Phase 1",
+      "requirement": "Explicit crawler policy and truthful network identity schema",
+      "status": "DONE",
+      "evidence": [
+        "data/network/crawler_policy.json",
+        "data/network/network_identity_registry.json",
+        "robots.txt"
+      ]
+    },
+    {
+      "id": "P1-02",
+      "phase": "Phase 1",
+      "requirement": "Source, claim, review, and freshness contracts",
+      "status": "DONE",
+      "evidence": [
+        "data/evidence/source_registry.json",
+        "data/evidence/claim_registry.json"
+      ]
+    },
+    {
+      "id": "P1-03",
+      "phase": "Phase 1",
+      "requirement": "Backlink evidence, proposed disavow files, and six-domain search-submission tooling",
+      "status": "PARTIAL",
+      "evidence": [
+        "data/seo/backlink_evidence_registry.json",
+        "seo/disavow/proposed/",
+        "artifacts/release/SEARCH_SUBMISSION_MANIFEST.json"
+      ],
+      "blocker": "Backlink exports and Search Console/Bing credentials were not supplied; files are intentionally empty rather than fabricated."
+    },
+    {
+      "id": "P2-01",
+      "phase": "Phase 2",
+      "requirement": "All existing Velocity routes admitted under atom, routing, source, safety, sitemap, and freshness governance",
+      "status": "DONE",
+      "evidence": [
+        "data/content/page_admission_registry.json",
+        "data/overhaul/page_disposition_registry.json",
+        "artifacts/validation/generated-content-gate.json",
+        "artifacts/validation/canonical-routing-law.json"
+      ]
+    },
+    {
+      "id": "P2-02",
+      "phase": "Phase 2",
+      "requirement": "Individual editorial rewrite, merge, redirect, or removal decision implemented for every preexisting page",
+      "status": "PARTIAL",
+      "evidence": [
+        "data/overhaul/page_disposition_registry.json"
+      ],
+      "blocker": "All routes have a governed disposition, but the repository did not contain page-by-page editorial research sufficient to truthfully rewrite or merge every legacy page in this execution."
+    },
+    {
+      "id": "P3-01",
+      "phase": "Phase 3",
+      "requirement": "20 Velocity hub disambiguators",
+      "status": "DONE",
+      "evidence": [
+        "content/_staged/pages.json",
+        "sitemap.xml"
+      ]
+    },
+    {
+      "id": "P3-02",
+      "phase": "Phase 3",
+      "requirement": "200 literal-question Velocity pages",
+      "status": "DONE",
+      "evidence": [
+        "content/_live/insights.json",
+        "sitemaps/sitemap_insights.xml"
+      ]
+    },
+    {
+      "id": "P3-03",
+      "phase": "Phase 3",
+      "requirement": "Aggressive Velocity-to-canonical routing on eligible pages",
+      "status": "DONE",
+      "evidence": [
+        "data/routing/canonical_destination_registry.json",
+        "artifacts/validation/canonical-routing-law.json"
+      ]
+    },
+    {
+      "id": "P4-01",
+      "phase": "Phase 4",
+      "requirement": "Shared PageSpec/StateSpec quality contract and eight canonical page-family specifications",
+      "status": "DONE",
+      "evidence": [
+        "data/overhaul/page_family_registry.json",
+        "data/canonical_candidates/full_scope_2026_06_19/manifest.json"
+      ]
+    },
+    {
+      "id": "P4-02",
+      "phase": "Phase 4",
+      "requirement": "Canonical rendering implementations in the five owning repositories",
+      "status": "BLOCKED",
+      "evidence": [
+        "data/canonical_candidates/full_scope_2026_06_19/manifest.json",
+        "docs/overhaul/CANONICAL_REPOSITORY_HANDOFF.md"
+      ],
+      "blocker": "The five canonical repository source ZIPs were not supplied."
+    },
+    {
+      "id": "P5-01",
+      "phase": "Phase 5",
+      "requirement": "All 412 canonical pages built and validated in owning repositories",
+      "status": "BLOCKED",
+      "evidence": [
+        "data/canonical_candidates/full_scope_2026_06_19/manifest.json"
+      ],
+      "blocker": "412 complete route-specific specs exist, but rendering, state research, directory integration, and deployment require the owning repositories."
+    },
+    {
+      "id": "P6-01",
+      "phase": "Phase 6",
+      "requirement": "Velocity outbound integration to canonical owners",
+      "status": "DONE",
+      "evidence": [
+        "data/routing/canonical_destination_registry.json"
+      ]
+    },
+    {
+      "id": "P6-02",
+      "phase": "Phase 6",
+      "requirement": "Canonical-to-Velocity backlinks and conversion-event instrumentation",
+      "status": "BLOCKED",
+      "evidence": [
+        "docs/overhaul/CANONICAL_REPOSITORY_HANDOFF.md"
+      ],
+      "blocker": "Requires canonical source ZIPs and analytics credentials."
+    },
+    {
+      "id": "P7-01",
+      "phase": "Phase 7",
+      "requirement": "Disavow harmful domains and resubmit six-domain sitemaps",
+      "status": "BLOCKED",
+      "evidence": [
+        "data/seo/backlink_evidence_registry.json",
+        "data/seo/search_submission_registry.json",
+        "artifacts/release/GSC_BING_RESUBMISSION_RUNBOOK.md"
+      ],
+      "blocker": "Credentialed external action and backlink exports required. No harmful domains were invented."
+    },
+    {
+      "id": "P8-01",
+      "phase": "Phase 8",
+      "requirement": "Fixed 100-query LLM citation observation panel",
+      "status": "DONE",
+      "evidence": [
+        "data/measurement/llm_query_panel.json"
+      ]
+    },
+    {
+      "id": "P8-02",
+      "phase": "Phase 8",
+      "requirement": "GA4/GSC/Bing/LLM measurement connections and live dashboard",
+      "status": "BLOCKED",
+      "evidence": [
+        "data/measurement/llm_query_panel.json"
+      ],
+      "blocker": "Analytics and webmaster credentials were not supplied."
+    },
+    {
+      "id": "REG-01",
+      "phase": "Regression",
+      "requirement": "65 recommendations, 43 runs, 8 wins, and June 19 USCIS run preserved",
+      "status": "DONE",
+      "evidence": [
+        "data/citation_velocity/recommendations.json",
+        "data/citation_velocity/runs.json",
+        "data/citation_velocity/wins.json",
+        "artifacts/validation/full-scope-overhaul.json"
+      ]
+    },
+    {
+      "id": "VAL-01",
+      "phase": "Validation",
+      "requirement": "Executable simplified registry and hard/strong/soft/local classification",
+      "status": "DONE",
+      "evidence": [
+        "_validation_registry.json",
+        "_repo_validation_matrix.json"
+      ]
+    },
+    {
+      "id": "EXT-01",
+      "phase": "External proof",
+      "requirement": "Deployed browser audit and local Node 24 updater validation",
+      "status": "BLOCKED",
+      "evidence": [
+        "_browser_suite_contract.json",
+        "_repo_update_contract.json"
+      ],
+      "blocker": "Requires deployed URL and the operator local environment."
+    }
+  ]
+}

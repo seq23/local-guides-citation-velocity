@@ -1,13 +1,45 @@
 {
+  "schema_version": "3.1",
   "repo_name": "local-guides-citation-velocity",
-  "repo_class": "artifact",
-  "canonical_updater": "~/update_repo_from_zip_generic_v3.sh",
-  "allowed_modes": ["snapshot", "patch"],
-  "patch_mode_allowed": true,
-  "snapshot_zip_pattern": "local-guides-citation-velocity-main_BASELINE_MM-DD-YY_<sha>.zip",
-  "forbidden_updaters": [
-    "~/update_lkg_from_zip.sh"
+  "repo_class": "generated-static-publishing-citation-velocity",
+  "canonical_updater": "~/update_repo_from_zip_generic_v3_1.sh",
+  "fallback_updater": "~/update_repo_from_zip_generic_v3.sh",
+  "allowed_modes": [
+    "snapshot"
   ],
+  "patch_mode_allowed": false,
+  "snapshot_zip_pattern": "local-guides-citation-velocity-main_BASELINE_MM-DD-YY_<sha>.zip",
+  "source_zip_is_truth": true,
   "validation_required": true,
-  "artifact_only": true
+  "local_browser_proof_required": true,
+  "artifact_only": false,
+  "forbidden_updaters": [
+    "all external-repository and cross-repository update scripts"
+  ],
+  "source_boundaries": {
+    "velocity_content": [
+      "content/_shared",
+      "content/_staged",
+      "content/_live",
+      "data/report_fixes",
+      "data/citation_velocity",
+      "data/page_families"
+    ],
+    "generator": [
+      "scripts",
+      "templates"
+    ],
+    "rendered_public": "generated_never_hand_edit",
+    "canonical_destinations": "outbound_links_only",
+    "network_overhaul": [
+      "data/overhaul",
+      "data/evidence",
+      "data/routing",
+      "data/network",
+      "data/seo",
+      "data/measurement",
+      "data/page_families",
+      "docs/overhaul"
+    ]
+  }
 }

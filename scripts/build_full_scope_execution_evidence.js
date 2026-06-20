@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs'),path=require('path');
+const ROOT=path.resolve(__dirname,'..');
+const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
+const write=(p,v)=>{const out=path.join(ROOT,p);fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,typeof v==='string'?v.trimEnd()+'\n':JSON.stringify(v,null,2)+'\n');};
+const specs=read('data/page_families/velocity_page_specs.json');
+const admission=read('data/content/page_admission_registry.json');
+const routing=read('data/routing/canonical_destination_registry.json');
+const sources=read('data/evidence/source_registry.json');
+const stateSources=read('data/evidence/state_source_registry.json');
+const claims=read('data/evidence/claim_registry.json');
+const panel=read('data/measurement/llm_query_panel.json');
+const rec=read('data/citation_velocity/recommendations.json');
+const runs=read('data/citation_velocity/runs.json');
+const wins=read('data/citation_velocity/wins.json');
+const backlink=read('data/seo/backlink_evidence_registry.json');
+const search=read('data/seo/search_submission_registry.json');
+const live=read('content/_live/pages.json').pages;
+const questions=live.filter(p=>p.full_scope_program==='VELOCITY_QUESTION_200');
+const disambiguators=live.filter(p=>p.full_scope_program==='VELOCITY_DISAMBIGUATOR_20');
+const items=[
+ {id:'AUTH-01',area:'Architecture',requirement:'Velocity owns every guide, question page, disambiguator, and state/support page',status:'DONE',evidence:['REPO_IDENTITY.md','docs/architecture/ADR-2026-06-19-02-VELOCITY-ONLY.md','data/page_families/velocity_page_specs.json']},
+ {id:'AUTH-02',area:'Architecture',requirement:'Canonical sites are outbound provider destinations only; no reciprocal backlink or canonical-repo work',status:'DONE',evidence:['data/routing/canonical_destination_registry.json','artifacts/validation/canonical-routing-law.json']},
+ {id:'WF-01',area:'Workflow',requirement:'External handoff and cross-repository PR machinery removed',status:'DONE',evidence:['.github/workflows/velocity_content_release.yml','.github/workflows/velocity_full_rebuild.yml','scripts/velocity_content_release.js','artifacts/validation/workflow.json']},
+ {id:'WF-02',area:'Workflow',requirement:'Velocity content releases build, validate, commit, rebase, revalidate, and push this repository only',status:'DONE',evidence:['.github/workflows/velocity_content_release.yml','.github/workflows/release_batch.yml','.github/workflows/deploy-distribution.yml']},
+ {id:'PAGES-01',area:'Pages',requirement:'All 412 approved state/support pages render in Velocity',status:'DONE',evidence:['data/page_families/velocity_page_specs.json','data/content/page_admission_registry.json','artifacts/validation/velocity-only-overhaul.json'],note:'400 state pages, 10 USCIS supporting guides, and 2 dentistry cost hubs are admitted under the Velocity domain.'},
+ {id:'PAGES-02',area:'Pages',requirement:'All 50 states have a state-specific official government source record',status:'DONE',evidence:['data/evidence/state_source_registry.json','data/evidence/source_registry.json'],note:'Each state page includes a direct state legislature, licensing board, federal locator, or official state selector plus a dated verification map; generic USAGov state landing pages are forbidden.'},
+ {id:'PAGES-03',area:'Pages',requirement:'Every state row is fully populated as a source-first verification page with a unique state source, dated evidence map, multiple substantive decision sections, and no placeholders or unsupported claims',status:'DONE',evidence:['data/page_families/velocity_page_specs.json','data/evidence/state_source_registry.json','artifacts/validation/velocity-only-overhaul.json'],note:'Optional numeric or legal specifics are included only when verified; the release never substitutes guessed values for missing evidence.'},
+ {id:'Q-01',area:'Question pages',requirement:'200 literal-question pages with usable direct answers, visible decision sections, applicable schema, dated evidence, and canonical routing',status:'DONE',evidence:['content/_live/pages.json','content/_live/insights.json','artifacts/validation/velocity-only-overhaul.json']},
+ {id:'DIS-01',area:'Disambiguators',requirement:'20 disambiguator pages with required routes, sourced decision artifacts, visible decision sections, and canonical routing',status:'DONE',evidence:['content/_live/pages.json','_redirects','artifacts/validation/velocity-only-overhaul.json']},
+ {id:'CTA-01',area:'CTA',requirement:'Visible Request assistance language replaced by Find a Provider',status:'DONE',evidence:['artifacts/validation/velocity-only-overhaul.json','data/routing/canonical_destination_registry.json']},
+ {id:'HOME-01',area:'Homepage',requirement:'Homepage rebuilt as an editorial routing surface with five vertical cards, coverage, methodology, featured guides, and provider CTA',status:'DONE',evidence:['index.html','assets/site.css','artifacts/validation/homepage-request-assistance.json']},
+ {id:'ROUTE-01',area:'Routing',requirement:'Eligible Velocity pages route to the closest registered canonical destination at multiple CTA placements',status:'DONE',evidence:['data/routing/canonical_destination_registry.json','artifacts/validation/canonical-routing-law.json']},
+ {id:'SCHEMA-01',area:'Schema',requirement:'Article, BreadcrumbList, truthful network Organization, and WebSite schema generated where applicable; FAQPage and HowTo are optional when they match visible content',status:'DONE',evidence:['scripts/build_site.js','scripts/lib/publish_contract.js','artifacts/validation/network-crawler-contract.json']},
+ {id:'CRAWL-01',area:'Crawler access',requirement:'Googlebot, Bingbot, and OAI-SearchBot explicitly allowed; training and control bots have an explicit publisher choice',status:'DONE',evidence:['robots.txt','data/network/crawler_policy.json','artifacts/validation/network-crawler-contract.json']},
+ {id:'SEO-01',area:'Disavow',requirement:'Operator-supplied harmful-domain package imported and preserved as evidence',status:'DONE',evidence:['seo/disavow/theindustryguides.com-disavow.txt','seo/disavow/source/operator_theindustryguides.com-disavow.txt','seo/disavow/source/operator_README.md','seo/disavow/source/source_package.sha256','data/seo/backlink_evidence_registry.json'],note:`${backlink.confirmed_harmful_domains.length} domains included.`},
+ {id:'SEO-02',area:'Search submission',requirement:'Velocity sitemap, robots, disavow, and priority URL package generated for manual GSC/Bing submission',status:'DONE',evidence:['sitemap.xml','robots.txt','artifacts/release/SEARCH_SUBMISSION_MANIFEST.json','artifacts/release/GSC_BING_RESUBMISSION_RUNBOOK.md']},
+ {id:'SEO-03',area:'Search submission',requirement:'GSC and Bing submissions performed by repository automation',status:'NOT_APPLICABLE',evidence:['data/seo/search_submission_registry.json'],note:'Owner explicitly retained manual submission.'},
+ {id:'VAL-01',area:'Validation',requirement:'Executable central validation registry and generated severity matrix',status:'DONE',evidence:['_validation_registry.json','_repo_validation_matrix.json','artifacts/validation/validation-registry.json']},
+ {id:'VAL-02',area:'Validation',requirement:'Release validation executes from the central dependency-aware registry',status:'DONE',evidence:['artifacts/validation/validation-summary-release.json'],note:'The current validator count is derived from the registry rather than frozen in this checklist.'},
+ {id:'VAL-03',area:'Validation',requirement:'Deterministic clean rebuild',status:'DONE',evidence:['artifacts/validation/determinism.json']},
+ {id:'VAL-04',area:'Validation',requirement:'Bounded self-healing content pipeline repairs, rescoring, source evidence, usable content, render integrity, and only then advances',status:'DONE',evidence:['scripts/content/run_source_self_heal_loop.js','scripts/release/run_staged_release.js','artifacts/validation/programmatic-substance.json','artifacts/validation/rendered-programmatic-substance.json']},
+ {id:'WF-03',area:'Workflow',requirement:'All GitHub Actions workflows have executable trigger, input, secret, artifact, mutation, and failure-boundary lineage',status:'DONE',evidence:['data/workflows/workflow_contract_registry.json','artifacts/validation/workflow-data-trace.json','artifacts/validation/workflow-data-trace.md']},
+ {id:'BR-01',area:'Browser proof',requirement:'Representative Playwright contract remains bounded below 100 tests and covers every state-page family plus major route types',status:'DONE',evidence:['_browser_suite_contract.json','_public_route_manifest.json','artifacts/validation/browser-contract.json','artifacts/validation/ui-test-parity.json']},
+ {id:'MON-01',area:'Monitor regression',requirement:`Current monitor ledger (${rec.recommendations.length} recommendations, ${runs.runs.length} runs, ${wins.wins.length} wins) validates dynamically while the June 19 USCIS fixture and all history through that date remain immutable`,status:'DONE',evidence:['data/citation_velocity/historical_baseline_2026-06-19.json','artifacts/validation/monitor-ledger.json','artifacts/validation/citation-velocity.json']},
+ {id:'EXT-01',area:'External proof',requirement:'Deployed Playwright click audit',status:'BLOCKED',evidence:['_browser_suite_contract.json','.github/workflows/postdeploy_public_audit.yml'],blocker:'Requires the live deployed URL after the artifact is installed.'},
+ {id:'EXT-02',area:'External proof',requirement:'Local Node 24 updater validation, commit, and push',status:'BLOCKED',evidence:['_repo_update_contract.json'],blocker:'Must run in the operator local repository environment.'}
+];
+const counts=items.reduce((a,i)=>(a[i.status]=(a[i.status]||0)+1,a),{});
+const payload={schema_version:'2.0',evidence_date:'2026-06-20',scope:'VELOCITY_ONLY',actual_counts:{admitted_routes:admission.count,velocity_page_specs:specs.pages.length,state_source_records:stateSources.count,question_pages:questions.length,disambiguators:disambiguators.length,routing_records:routing.count,source_records:sources.sources.length,claim_records:claims.claims.length,measurement_prompts:panel.count,recommendations:rec.recommendations.length,runs:runs.runs.length,wins:wins.wins.length,search_domains:search.domains.length},status_counts:counts,items};
+write('data/release/full_scope_master_plan_completion_registry.json',payload);
+write('data/release/master_plan_completion_registry.json',payload);
+write('artifacts/release/VELOCITY_ONLY_MASTER_PLAN_COMPLETION_CHECKLIST.json',payload);
+write('artifacts/release/MASTER_PLAN_COMPLETION_CHECKLIST.json',payload);
+let md='# Velocity-Only Master Plan Completion Checklist\n\n';
+md+=`Evidence date: ${payload.evidence_date}\n\n`;
+md+=`Status totals: ${Object.entries(counts).map(([k,v])=>`**${k}: ${v}**`).join(' · ')}\n\n`;
+md+='| Area | Requirement | Status | Evidence / note |\n|---|---|---|---|\n';
+for(const i of items){const detail=[...(i.evidence||[]),i.note?`NOTE: ${i.note}`:null,i.blocker?`BLOCKER: ${i.blocker}`:null].filter(Boolean).join('<br>');md+=`| ${i.area} | ${i.requirement} | **${i.status}** | ${detail} |\n`;}
+write('artifacts/release/VELOCITY_ONLY_MASTER_PLAN_COMPLETION_CHECKLIST.md',md);
+write('artifacts/release/MASTER_PLAN_COMPLETION_CHECKLIST.md',md);
+const report=`# Velocity-Only Overhaul Execution Report
+
+Evidence date: 2026-06-20
+
+## Delivered
+
+- ${admission.count} admitted Velocity routes.
+- ${specs.pages.length} newly rendered Velocity state/support pages.
+- ${questions.length} literal-question source pages and ${disambiguators.length} disambiguators.
+- ${routing.count} eligible page-level provider-routing records.
+- ${stateSources.count} state-specific official government source anchors and ${sources.sources.length} total source records.
+- ${backlink.confirmed_harmful_domains.length}-domain operative disavow file preserved with its source package.
+- Velocity-only release workflows with no cross-repository mutation path.
+- Find a Provider CTA architecture and editorial homepage routing.
+
+## Truth boundary
+
+The state pages do not invent state-specific deadlines, provider counts, prices, coverage levels, or prescribing rules. Where a precise current claim was not verified in the supplied evidence, the page exposes the state-specific official source path and the topic authority instead. Deployed browser proof and local Node 24 updater validation remain external to the container artifact.
+`;
+write('artifacts/release/VELOCITY_ONLY_OVERHAUL_EXECUTION_REPORT.md',report);
+write('artifacts/release/FULL_SCOPE_OVERHAUL_EXECUTION_REPORT.md',report);
+console.log(JSON.stringify({status_counts:counts,actual_counts:payload.actual_counts},null,2));

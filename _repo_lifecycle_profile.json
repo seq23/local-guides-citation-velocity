@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "repo": "local-guides-citation-velocity-main",
+  "browser_surface": true,
+  "public_routes": "APPLICABLE",
+  "authentication": "NOT_APPLICABLE",
+  "roles": "NOT_APPLICABLE",
+  "tenant_isolation": "NOT_APPLICABLE",
+  "container_prepush_command": "npm run release:prepush:container",
+  "local_prepush_command": "npm run release:prepush:local",
+  "local_browser_proof_command": "npm run postdeploy:public-click-audit",
+  "browser_suite_contract": "_browser_suite_contract.json",
+  "ui_test_parity_command": "npm run validate:ui-test-parity",
+  "postpush_command": "npm run release:postpush",
+  "live_proof": "NOT_APPLICABLE_NO_MUTATING_PROVIDER",
+  "deployed_click_audit": "npm run postdeploy:public-click-audit",
+  "cleanup": "NOT_APPLICABLE_NO_LIVE_FIXTURES",
+  "evidence_root": "artifacts/diagnostics",
+  "external_evidence_root": "~/repo-validation-evidence/local-guides-citation-velocity-main/<run-id>/",
+  "completion_requirements": [
+    "container staged release passes",
+    "browser suite contract passes",
+    "UI/test parity passes",
+    "local or deployed browser audit passes after deployment"
+  ],
+  "node_version": "24",
+  "validation_is_pure": true,
+  "cross_repo_pull_requests": false,
+  "release_source": "VELOCITY_ONLY",
+  "scheduled_mutation_workflows": [
+    "velocity_content_release.yml"
+  ],
+  "push_validation_workflows": [
+    "validate.yml"
+  ]
+}

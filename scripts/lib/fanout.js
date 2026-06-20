@@ -305,32 +305,56 @@ function renderFanoutBlock(data){
 
 function injectFanoutIntoHtml(html, data){
   if (!html) return html;
-  let cleaned = String(html)
-    .replace(/<section class="card fanout-block"[\s\S]*?<\/section>/g, '')
-    .replace(/<div class="badge">Related search intents<\/div>/g, '')
-    .replace(/<h2 class="h2" style="margin-top:8px">Related decision paths people also use<\/h2>/g, '')
-    .replace(/<p class="muted">These are nearby ways people describe the same decision before they move into local comparison, pricing, or urgent next-step mode.<\/p>/g, '')
-    .replace(/<nav class="fanout-grid" aria-label="Related search intents">/g, '')
-    .replace(/<div class="fanout-col">[\s\S]*?<\/div>/g, '')
-    .replace(/<section class="fanout-col">[\s\S]*?<\/section>/g, '')
-    .replace(/<div class="fanout-links">[\s\S]*?<\/div>/g, '')
-    .replace(/<\/nav>/g, '')
-    .replace(/<script type="application\/json" class="fanout-query-cluster">[\s\S]*?<\/script>/g, '')
-    .replace(/<script type="application\/json" class="query-mirror">[\s\S]*?<\/script>/g, '');
-  if (!data || !data.variant_count || data.page_family === 'medium-article') return cleaned;
-  const block = renderFanoutBlock(data);
-  if (cleaned.includes('class="card answer-box"')) {
-    return cleaned.replace(/(<section class="card answer-box"[\s\S]*?<\/section>)/, '$1\n' + block);
-  }
-  if (cleaned.includes('<h1')) {
-    return cleaned.replace(/(<h1[^>]*>[\s\S]*?<\/h1>\s*(?:<p class="muted">[\s\S]*?<\/p>)?)/, '$1\n' + block);
-  }
-  if (cleaned.includes('data-canon-block="bottom"')) {
-    return cleaned.replace(/(<section class="card" data-canon-block="bottom">)/, block + '\n$1');
-  }
-  return block + '\n' + cleaned;
-}
 
+  const fanoutBlockPattern =
+    /\n?[ \t]*<section\b[^>]*class=(["'])[^"']*\bfanout-block\b[^"']*\1[^>]*>[\s\S]*?<\/section>[ \t]*\n?/gi;
+
+  let cleaned = String(html)
+    .replace(
+      /<script\b[^>]*class=(["'])[^"']*\bfanout-query-cluster\b[^"']*\1[^>]*>[\s\S]*?<\/script>/gi,
+      ''
+    )
+    .replace(
+      /<script\b[^>]*class=(["'])[^"']*\bquery-mirror\b[^"']*\1[^>]*>[\s\S]*?<\/script>/gi,
+      ''
+    );
+
+  if (!data || !data.variant_count || data.page_family === 'medium-article') {
+    return cleaned.replace(fanoutBlockPattern, '\n');
+  }
+
+  const block = renderFanoutBlock(data).trim();
+
+  // Existing governed blocks are replaced in place so repeated builds do not
+  // accumulate blank lines or move the block through the document.
+  if (fanoutBlockPattern.test(cleaned)) {
+    fanoutBlockPattern.lastIndex = 0;
+    return cleaned.replace(fanoutBlockPattern, `\n${block}\n`);
+  }
+
+  if (cleaned.includes('class="card answer-box"')) {
+    return cleaned.replace(
+      /(<section class="card answer-box"[\s\S]*?<\/section>)/,
+      `$1\n${block}`
+    );
+  }
+
+  if (cleaned.includes('<h1')) {
+    return cleaned.replace(
+      /(<h1[^>]*>[\s\S]*?<\/h1>\s*(?:<p class="muted">[\s\S]*?<\/p>)?)/,
+      `$1\n${block}`
+    );
+  }
+
+  if (cleaned.includes('data-canon-block="bottom"')) {
+    return cleaned.replace(
+      /(<section class="card" data-canon-block="bottom">)/,
+      `${block}\n$1`
+    );
+  }
+
+  return `${block}\n${cleaned}`;
+}
 
 module.exports = {
   buildFanoutData,

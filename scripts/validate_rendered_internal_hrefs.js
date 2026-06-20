@@ -44,7 +44,7 @@ for (const file of htmlFiles) {
     else if ((href.startsWith('/') || (!href.startsWith('../') && !href.startsWith('./'))) && !internalExists(href)) errors.push({ file: relFile, href, issue: 'internal target missing' });
   }
 }
-fs.mkdirSync(path.join(ROOT,'.build'), { recursive:true });
-fs.writeFileSync(path.join(ROOT,'.build','rendered_internal_href_audit.json'), JSON.stringify({ generated_at:new Date().toISOString(), checked, error_count:errors.length, errors }, null, 2)+'\n');
+fs.mkdirSync(path.join(ROOT,'artifacts','validation'), { recursive:true });
+fs.writeFileSync(path.join(ROOT,'artifacts','validation','hrefs.json'), JSON.stringify({ validator:'rendered-internal-hrefs', ok:errors.length===0, checked, error_count:errors.length, errors }, null, 2)+'\n');
 if (errors.length) { console.error(`[validate_rendered_internal_hrefs] ${errors.length} rendered href issues found.`); console.error(errors.slice(0,50).map(e=>`${e.file} -> ${e.href} (${e.issue})`).join('\n')); process.exit(1); }
 console.log(`[validate_rendered_internal_hrefs] OK. Checked ${checked} rendered href/src values.`);

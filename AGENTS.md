@@ -64,19 +64,21 @@ Before offering a script to fix a problem, an agent must answer:
 - Are duplicate repo copies, nested ZIPs, generated artifacts, or stale reports being scanned?
 - What exact command proves the fix?
 
-## Velocity → LKG promotion boundary
+## Velocity-only publishing boundary
 
-Velocity is not a publisher. Velocity may collect non-auth public signals, normalize them, cluster them, score them, and export LKG guide candidates. It must not directly create live LKG pages, mutate LKG runtime files, or publish content.
+This repository is the publishing authority for `theindustryguides.com`. It owns the editorial guides, state pages, question pages, comparison pages, disambiguators, sitemaps, feeds, and retrieval exports produced by this pipeline.
 
-The approved promotion flow is:
+The five registered canonical destination sites remain outbound provider-discovery and transactional destinations only. This repository must not mutate those external repositories, create cross-repository promotion pull requests, or treat their provider inventories as local source data.
 
-1. Velocity runs public signal ingestion from non-auth sources.
-2. Velocity exports `data/lkg_candidates/YYYY-MM-DD.json` and `data/lkg_candidates/latest.json`.
-3. Velocity opens a pull request against the LKG repository with the candidate payload under `data/velocity_intake/guide_candidates/`.
-4. LKG validates the candidate payload, generates draft guide/page artifacts, builds, validates, and deploys preview only.
-5. The user approves by merging the LKG pull request. LKG is the only repo allowed to publish.
+The approved flow is:
 
-Deprecated promotion artifacts such as `data/community/publish_queue.json` and `data/community/patch_plan.json` are not runtime authority. Any script that tries to publish queued Velocity pages directly must remain disabled or review-gated.
+1. Durable source, evidence, routing, and admission records are updated in this repository.
+2. The local generator rebuilds the public site deterministically.
+3. The validation registry proves evidence, safety, route, canonical, workflow, and packaging integrity.
+4. The repository deploys its own generated static site.
+5. Provider-seeking intent continues through the registered canonical destination for the applicable vertical.
+
+Legacy LKG/candidate handoff surfaces such as `data/lkg_candidates/`, `data/canonical_candidates/`, `.github/workflows/lkg_pr_push.yml`, and cross-repository promotion scripts are forbidden. Public-signal inputs may inform this repository only through reviewed, repo-local source and admission controls.
 
 ## Addendum — Deterministic Repo Execution, Audit Discipline, Source-of-Truth Rules, and Completion Contract
 

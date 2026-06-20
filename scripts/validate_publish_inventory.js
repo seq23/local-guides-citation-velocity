@@ -3,10 +3,21 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { ROOT, MEDIUM_MANIFEST_PATH, INSIGHTS_MANIFEST_PATH, loadJson } = require('./lib/publish_contract');
 
 function fail(msg) { console.error('VALIDATION FAIL:', msg); process.exitCode = 1; }
-if (fs.existsSync(path.join(ROOT, 'dist'))) fail('dist/ directory must not exist in publish repo');
+let trackedDist = '';
+try {
+  trackedDist = execFileSync('git', ['ls-files', '--', 'dist'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    stdio: ['ignore','pipe','ignore']
+  }).trim();
+} catch (_) {
+  trackedDist = '';
+}
+if (trackedDist) fail(`tracked dist/ files must not exist in publish repo: ${trackedDist.split('\n').join(', ')}`);
 const mediumManifest = loadJson(MEDIUM_MANIFEST_PATH);
 const insightManifest = loadJson(INSIGHTS_MANIFEST_PATH);
 for (const item of mediumManifest.items || []) {

@@ -1,0 +1,305 @@
+'use strict';
+
+const crypto = require('crypto');
+
+const ALLOWED_ATOM_TYPES = Object.freeze([
+  'original_comparison_table',
+  'dated_primary_stat',
+  'named_framework',
+  'copy_paste_prompt',
+  'decision_tree',
+  'aggregated_review_synthesis'
+]);
+
+const STOPWORDS = new Set('a an and are as at be best by can do does for from how i in into is it me my near of on or should the this to vs what when where which who why with you your'.split(' '));
+
+function clean(value) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function words(value) {
+  return clean(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word && !STOPWORDS.has(word));
+}
+
+function unique(items) {
+  return [...new Set((items || []).map(clean).filter(Boolean))];
+}
+
+function shortTitle(raw, max = 72) {
+  const value = clean(raw).replace(/[?!.]+$/g, '');
+  if (value.length <= max) return value;
+  const clipped = value.slice(0, max + 1);
+  return clipped.slice(0, clipped.lastIndexOf(' ')).trim() || value.slice(0, max).trim();
+}
+
+function artifactMatchesTitle(artifact, title) {
+  const titleTokens = new Set(words(title));
+  const artifactTokens = new Set(words(artifact && artifact.title));
+  if (!titleTokens.size || !artifactTokens.size) return false;
+  const overlap = [...titleTokens].filter((token) => artifactTokens.has(token));
+  return overlap.length >= Math.min(2, titleTokens.size);
+}
+
+function factorLabel(value, index) {
+  const candidates = words(value).filter((word) => word.length > 2).slice(0, 5);
+  if (!candidates.length) return `Decision factor ${index + 1}`;
+  return candidates.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+function hash(value, length = 16) {
+  return crypto.createHash('sha256').update(String(value), 'utf8').digest('hex').slice(0, length);
+}
+
+function sourceBasis({ sourceRoute, sourceFields, method = 'page_specific_editorial_synthesis', claimScope = 'Decision-support synthesis. No empirical performance claim is made.' }) {
+  return {
+    method,
+    source_route: clean(sourceRoute || '/'),
+    source_fields: unique(sourceFields || []),
+    factual_claim_scope: claimScope
+  };
+}
+
+function checklistFrom(input) {
+  const direct = Array.isArray(input.checklist) ? input.checklist : [];
+  const fallback = Array.isArray(input.items) ? input.items : [];
+  return unique([...direct, ...fallback]).slice(0, 6);
+}
+
+function redFlagsFrom(input) {
+  return unique(Array.isArray(input.red_flags) ? input.red_flags : []).slice(0, 5);
+}
+
+function ensureSpecificItems(title, checklist, redFlags) {
+  const topic = shortTitle(title, 90);
+  const items = unique(checklist);
+  if (items.length < 3) {
+    items.push(`Define the exact decision behind “${topic}” before comparing options.`);
+    items.push(`Ask for the current cost, timing, exclusions, and next step in writing.`);
+    items.push(`Pause when the answer cannot be verified or the tradeoff is not explained.`);
+  }
+  const risks = unique(redFlags);
+  if (!risks.length) risks.push('The provider or source cannot explain the tradeoff in writing.');
+  return { items: unique(items).slice(0, 6), risks: risks.slice(0, 5) };
+}
+
+function mapCitationArtifact(artifact, context) {
+  if (!artifact || typeof artifact !== 'object') return null;
+  const type = clean(artifact.type);
+  const title = clean(artifact.title) || `${shortTitle(context.title)} Decision Artifact`;
+  const basis = sourceBasis({
+    sourceRoute: context.sourceRoute,
+    sourceFields: ['citation_velocity_artifacts'],
+    method: 'preserved_monitor_acceptance_artifact'
+  });
+
+  if (['comparison_table', 'cost_table', 'timeline_table', 'scorecard', 'worksheet', 'severity_matrix'].includes(type)) {
+    const headers = unique(artifact.headers || []);
+    const rows = Array.isArray(artifact.rows) ? artifact.rows.filter((row) => Array.isArray(row) && row.length >= 2).map((row) => row.map(clean)) : [];
+    if (rows.length >= 2) return finalize({ type: 'original_comparison_table', title, headers, rows, source_basis: basis }, context);
+  }
+  if (type === 'decision_matrix') {
+    const rows = Array.isArray(artifact.rows) ? artifact.rows.filter((row) => Array.isArray(row) && row.length >= 2) : [];
+    const branches = rows.map((row) => ({ condition: clean(row[0]), action: clean(row[1]), rationale: clean(row[2] || 'Use the stated condition to choose the next step.') }));
+    if (branches.length >= 2) return finalize({ type: 'decision_tree', title, branches, source_basis: basis }, context);
+  }
+  if (['numbered_framework', 'protocol', 'checklist'].includes(type)) {
+    const steps = unique(artifact.items || []).map((action, index) => ({ label: `Step ${index + 1}`, action }));
+    if (steps.length >= 3) return finalize({ type: 'named_framework', title, steps, source_basis: basis }, context);
+  }
+  if (type === 'script') {
+    const lines = unique([...(artifact.lines || []), ...(artifact.items || [])]);
+    if (lines.length >= 3) return finalize({ type: 'copy_paste_prompt', title, lines, source_basis: basis }, context);
+  }
+  return null;
+}
+
+function deriveContentAtom(input = {}, context = {}) {
+  const title = shortTitle(input.visible_q || input.q || input.title || context.title || 'Decision guide', 100);
+  const sourceRoute = context.sourceRoute || input.source_route || context.pageSlug || '/';
+  const mapped = (input.citation_velocity_artifacts || [])
+    .filter((artifact) => artifactMatchesTitle(artifact, title))
+    .map((artifact) => mapCitationArtifact(artifact, { title, sourceRoute }))
+    .find(Boolean);
+  if (mapped) return mapped;
+
+  const { items, risks } = ensureSpecificItems(title, checklistFrom(input), redFlagsFrom(input));
+  const lower = title.toLowerCase();
+  const basis = sourceBasis({ sourceRoute, sourceFields: ['title', 'answer', 'checklist', 'red_flags'] });
+
+  if (/(what should i ask|questions? to ask|how to ask|what do i say|script|call|consultation)/i.test(lower)) {
+    const lines = [
+      `I am deciding how to handle “${title}.” Please answer the following before I act:`,
+      ...items.slice(0, 4).map((item) => `Can you explain this clearly and in writing: ${item.replace(/[.]+$/,'')}?`),
+      `What would make you tell me to pause, compare another option, or seek a different professional?`
+    ];
+    return finalize({ type: 'copy_paste_prompt', title: `${title}: Copy-Paste Verification Prompt`, lines, source_basis: basis }, { title, sourceRoute });
+  }
+
+  if (/(urgent|emergency|red flag|warning|when should|do i need|should i|can i|valid|deadline|timeline|rejected|denied|mistake|correction)/i.test(lower)) {
+    const branches = [
+      { condition: `Proceed only when the core requirement for “${title}” is confirmed`, action: items[0], rationale: 'This verifies the first decision-critical fact.' },
+      { condition: 'Compare or clarify when information is incomplete', action: items[1] || items[0], rationale: 'Missing details can change cost, timing, eligibility, or fit.' },
+      { condition: `Pause when this warning appears: ${risks[0]}`, action: 'Get the answer in writing or use a qualified second source before acting.', rationale: 'An unexplained red flag makes the next step less defensible.' }
+    ];
+    return finalize({ type: 'decision_tree', title: `${title}: Proceed / Compare / Pause Decision Tree`, branches, source_basis: basis }, { title, sourceRoute });
+  }
+
+  if (/(\bvs\b|versus|compare|comparison|choose|choosing|best|top|near me|cost|price|pricing|insurance|financing|fit)/i.test(lower)) {
+    const rowCount = Math.max(3, Math.min(5, items.length));
+    const rows = [];
+    for (let index = 0; index < rowCount; index += 1) {
+      const verification = items[index] || `Verify the ${index + 1}th decision factor for “${title}.”`;
+      rows.push([
+        factorLabel(verification, index),
+        verification,
+        risks[index % risks.length]
+      ]);
+    }
+    return finalize({
+      type: 'original_comparison_table',
+      title: `${title}: Original Verification Table`,
+      headers: ['Decision factor', 'What to verify', 'Pause or compare when'],
+      rows,
+      source_basis: basis
+    }, { title, sourceRoute });
+  }
+
+  const steps = [
+    { label: 'Frame', action: `State the exact decision behind “${title}.”` },
+    { label: 'Verify', action: items[0] },
+    { label: 'Compare', action: items[1] || items[0] },
+    { label: 'Stress-test', action: `Check for this page-specific warning: ${risks[0]}` },
+    { label: 'Act', action: items[2] || 'Choose the next step only after the tradeoff is clear in writing.' }
+  ];
+  return finalize({ type: 'named_framework', title: `${title}: Evidence-to-Action Framework`, steps, source_basis: basis }, { title, sourceRoute });
+}
+
+function finalize(atom, context = {}) {
+  const payload = { ...atom };
+  payload.type = clean(payload.type);
+  payload.title = clean(payload.title);
+  payload.source_basis = payload.source_basis || sourceBasis({ sourceRoute: context.sourceRoute, sourceFields: [] });
+  const signaturePayload = { type: payload.type, title: payload.title, rows: payload.rows, steps: payload.steps, lines: payload.lines, branches: payload.branches, stat: payload.stat, synthesis: payload.synthesis };
+  payload.uniqueness_key = hash(JSON.stringify(signaturePayload), 24);
+  payload.atom_id = `ATOM-${hash(`${context.sourceRoute || ''}|${context.title || ''}|${payload.uniqueness_key}`, 18).toUpperCase()}`;
+  return payload;
+}
+
+function validateContentAtom(atom, context = {}) {
+  const errors = [];
+  if (!atom || typeof atom !== 'object') return ['missing_content_atom'];
+  if (!ALLOWED_ATOM_TYPES.includes(atom.type)) errors.push(`unsupported_atom_type:${atom.type || 'missing'}`);
+  if (clean(atom.title).length < 12) errors.push('atom_title_too_short');
+  if (!clean(atom.atom_id).startsWith('ATOM-')) errors.push('missing_atom_id');
+  if (!/^[a-f0-9]{24}$/i.test(clean(atom.uniqueness_key))) errors.push('missing_uniqueness_key');
+  if (!atom.source_basis || !clean(atom.source_basis.method) || !(atom.source_basis.source_fields || []).length) errors.push('missing_source_basis');
+
+  if (atom.type === 'original_comparison_table') {
+    if (!Array.isArray(atom.headers) || atom.headers.length < 2) errors.push('comparison_headers_missing');
+    if (!Array.isArray(atom.rows) || atom.rows.length < 3 || atom.rows.some((row) => !Array.isArray(row) || row.length < 2)) errors.push('comparison_rows_insufficient');
+  }
+  if (atom.type === 'named_framework') {
+    if (!Array.isArray(atom.steps) || atom.steps.length < 3 || atom.steps.some((step) => !clean(step.label) || !clean(step.action))) errors.push('framework_steps_insufficient');
+  }
+  if (atom.type === 'copy_paste_prompt') {
+    if (!Array.isArray(atom.lines) || atom.lines.length < 3 || atom.lines.some((line) => clean(line).length < 12)) errors.push('prompt_lines_insufficient');
+  }
+  if (atom.type === 'decision_tree') {
+    if (!Array.isArray(atom.branches) || atom.branches.length < 3 || atom.branches.some((branch) => !clean(branch.condition) || !clean(branch.action))) errors.push('decision_branches_insufficient');
+  }
+  if (atom.type === 'dated_primary_stat') {
+    const stat = atom.stat || {};
+    if (!clean(stat.observation_date) || !clean(stat.metric) || !clean(stat.value) || !Number.isFinite(Number(stat.sample_size)) || Number(stat.sample_size) <= 0 || !Array.isArray(stat.source_urls) || !stat.source_urls.length) errors.push('primary_stat_evidence_incomplete');
+  }
+  if (atom.type === 'aggregated_review_synthesis') {
+    const synthesis = atom.synthesis || {};
+    if (!Number.isFinite(Number(synthesis.sample_size)) || Number(synthesis.sample_size) <= 0 || !clean(synthesis.date_range) || !clean(synthesis.method) || !Array.isArray(synthesis.source_urls) || !synthesis.source_urls.length || !Array.isArray(synthesis.findings) || synthesis.findings.length < 3) errors.push('review_synthesis_evidence_incomplete');
+  }
+
+  const titleTokens = new Set(words(context.title || ''));
+  const atomTokens = new Set(words(`${atom.title} ${JSON.stringify(atom.rows || atom.steps || atom.lines || atom.branches || '')} ${atom.source_basis?.source_route || ''}`));
+  const overlap = [...titleTokens].filter((token) => atomTokens.has(token));
+  if (atom.source_basis?.method !== 'preserved_monitor_acceptance_artifact' && titleTokens.size >= 2 && overlap.length < 1) errors.push('atom_not_page_specific');
+  return errors;
+}
+
+function atomToCitationArtifact(atom) {
+  if (!atom) return null;
+  if (atom.type === 'original_comparison_table') return { type: 'comparison_table', title: atom.title, headers: atom.headers, rows: atom.rows, id: atom.atom_id };
+  if (atom.type === 'named_framework') return { type: 'numbered_framework', title: atom.title, items: atom.steps.map((step) => `${step.label}: ${step.action}`), id: atom.atom_id };
+  if (atom.type === 'copy_paste_prompt') return { type: 'script', title: atom.title, lines: atom.lines, id: atom.atom_id };
+  if (atom.type === 'decision_tree') return { type: 'decision_matrix', title: atom.title, headers: ['Condition', 'Action', 'Why'], rows: atom.branches.map((branch) => [branch.condition, branch.action, branch.rationale || '']), id: atom.atom_id };
+  if (atom.type === 'dated_primary_stat') return { type: 'callout', title: atom.title, items: [`${atom.stat.metric}: ${atom.stat.value}`, `Observed ${atom.stat.observation_date}; sample size ${atom.stat.sample_size}`], id: atom.atom_id };
+  if (atom.type === 'aggregated_review_synthesis') return { type: 'comparison_table', title: atom.title, headers: ['Finding', 'Evidence note'], rows: atom.synthesis.findings.map((finding) => [finding.label || finding.finding || 'Finding', finding.detail || finding.evidence || '']), id: atom.atom_id };
+  return null;
+}
+
+function summarizeAtomForAnswer(title, atom) {
+  const topic = shortTitle(title, 105);
+  if (!atom) return `For “${topic},” verify the key criteria, compare the tradeoffs, and pause when the answer cannot be confirmed in writing.`;
+  if (atom.type === 'original_comparison_table') {
+    const factors = (atom.rows || []).slice(0, 3).map((row) => clean(row[1] || row[0])).filter(Boolean);
+    const warning = clean((atom.rows || [])[0]?.[2] || 'the tradeoff is not explained');
+    return `For “${topic},” compare ${factors.join('; ')}. Pause or get a second source when ${warning.toLowerCase()}.`;
+  }
+  if (atom.type === 'decision_tree') {
+    const branches = (atom.branches || []).slice(0, 3);
+    return `For “${topic},” use three paths: proceed when ${clean(branches[0]?.condition || 'the core requirement is confirmed').toLowerCase()}; compare when ${clean(branches[1]?.condition || 'important information is incomplete').toLowerCase()}; and pause when ${clean(branches[2]?.condition || 'a warning sign appears').toLowerCase()}.`;
+  }
+  if (atom.type === 'named_framework') {
+    const actions = (atom.steps || []).slice(0, 3).map((step) => clean(step.action)).filter(Boolean);
+    return `For “${topic},” use ${clean(atom.title)}: ${actions.join('; ')}.`;
+  }
+  if (atom.type === 'copy_paste_prompt') {
+    const lines = (atom.lines || []).slice(1, 3).map(clean).filter(Boolean);
+    return `For “${topic},” use the copy-paste verification prompt below to ask for ${lines.join(' and ').toLowerCase()}.`;
+  }
+  if (atom.type === 'dated_primary_stat') return `For “${topic},” start with the dated observation in ${clean(atom.title)} and verify the sample, method, and source date before using it.`;
+  if (atom.type === 'aggregated_review_synthesis') return `For “${topic},” use the dated review synthesis below, then verify its sample size, collection method, and source set before relying on the pattern.`;
+  return `For “${topic},” verify the key criteria, compare the tradeoffs, and pause when the answer cannot be confirmed in writing.`;
+}
+
+function buildDirectAnswer(title, answer, maxWords = 70, atom = null) {
+  const rawAnswer = clean(answer);
+  const topic = shortTitle(title, 105);
+  const titleTokens = words(topic).slice(0, 6);
+  const rawLower = rawAnswer.toLowerCase();
+  const generic = !rawAnswer
+    || rawAnswer.split(/\s+/).filter(Boolean).length < 8
+    || /this page gives a short|short framing answer|short routing answer|official local workflow|typically comes down to cost, timeline|start with a quick checklist, then use the official/i.test(rawAnswer)
+    || (titleTokens.length && !titleTokens.some((token) => rawLower.includes(token)));
+  let combined = generic ? summarizeAtomForAnswer(topic, atom) : rawAnswer;
+  const normalizedCombined = clean(combined).toLowerCase();
+  const normalizedTopic = clean(topic).toLowerCase();
+  if (!normalizedCombined.startsWith(normalizedTopic) && !normalizedCombined.startsWith(`for “${normalizedTopic}”`)) {
+    combined = `For “${topic}”: ${combined.charAt(0).toLowerCase()}${combined.slice(1)}`;
+  }
+  const parts = combined.split(/\s+/).filter(Boolean);
+  if (parts.length <= maxWords) return combined.replace(/\s+([,.!?;:])/g, '$1');
+  const clipped = parts.slice(0, maxWords).join(' ').replace(/[,;:]?$/, '');
+  return `${clipped}.`;
+}
+
+function atomHowToSteps(atom) {
+  if (!atom) return [];
+  if (atom.type === 'named_framework') return atom.steps.map((step) => ({ name: step.label, text: step.action }));
+  if (atom.type === 'decision_tree') return atom.branches.map((branch) => ({ name: branch.condition, text: branch.action }));
+  if (atom.type === 'copy_paste_prompt') return atom.lines.slice(1).map((line, index) => ({ name: `Prompt step ${index + 1}`, text: line }));
+  if (atom.type === 'original_comparison_table') return atom.rows.map((row, index) => ({ name: clean(row[0]) || `Comparison step ${index + 1}`, text: clean(row[1]) }));
+  if (atom.type === 'dated_primary_stat') return [{ name: 'Review the observation', text: `${atom.stat.metric}: ${atom.stat.value}` }, { name: 'Check the evidence date', text: atom.stat.observation_date }, { name: 'Verify the source set', text: (atom.stat.source_urls || []).join(', ') }];
+  if (atom.type === 'aggregated_review_synthesis') return atom.synthesis.findings.map((finding, index) => ({ name: finding.label || `Finding ${index + 1}`, text: finding.detail || finding.evidence || '' }));
+  return [];
+}
+
+module.exports = {
+  ALLOWED_ATOM_TYPES,
+  atomHowToSteps,
+  atomToCitationArtifact,
+  buildDirectAnswer,
+  deriveContentAtom,
+  validateContentAtom
+};

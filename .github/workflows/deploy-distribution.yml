@@ -1,97 +1,105 @@
 name: Deploy Distribution
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["Validate Repo"]
+    types: [completed]
   workflow_dispatch:
+    inputs:
+      artifact_name:
+        description: "Validated artifact name from Validate Repo"
+        required: true
+        type: string
+      artifact_run_id:
+        description: "Validate Repo workflow run ID containing the artifact"
+        required: true
+        type: string
+      commit_sha:
+        description: "Validated commit SHA"
+        required: true
+        type: string
 
 permissions:
+  actions: read
   contents: read
+
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
+concurrency:
+  group: deploy-distribution
+  cancel-in-progress: false
 
 jobs:
   distribute:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.event == 'push' &&
+           github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
+      - name: Resolve validated artifact identity
+        id: artifact
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ inputs.artifact_name }}" >> "$GITHUB_OUTPUT"
+            echo "run_id=${{ inputs.artifact_run_id }}" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=${{ inputs.commit_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=velocity-validated-${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Download exact validated artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: '24'
-          cache: npm
-
-      - name: Set up Python
+          name: ${{ steps.artifact.outputs.name }}
+          run-id: ${{ steps.artifact.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: .
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-
-      - name: Install Node dependencies
-        run: npm ci
-
-      - name: Install optional Python dependencies
+          python-version: "3.11"
+      - name: Verify validation attestation and distribution inputs
+        env:
+          EXPECTED_COMMIT_SHA: ${{ steps.artifact.outputs.commit_sha }}
+        run: node scripts/prepare_distribution_from_attestation.js
+      - name: Install optional Google Search Console dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
-
-      - name: Detect optional GSC secret
+      - name: Restore optional Google Search Console credentials
         env:
           GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
         run: |
-          if [ -n "$GSC_SERVICE_ACCOUNT_JSON" ]; then
-            echo "GSC_SERVICE_ACCOUNT_JSON_PRESENT=1" >> "$GITHUB_ENV"
-          else
-            echo "GSC_SERVICE_ACCOUNT_JSON_PRESENT=0" >> "$GITHUB_ENV"
+          if [ -n "${GSC_SERVICE_ACCOUNT_JSON:-}" ]; then
+            printf '%s' "$GSC_SERVICE_ACCOUNT_JSON" > gsc-service-account.json
           fi
-
-      - name: Recreate optional GSC service account file
-        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON_PRESENT == '1' }}
-        env:
-          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
-        run: |
-          printf '%s' "$GSC_SERVICE_ACCOUNT_JSON" > gsc-service-account.json
-
-      - name: Ensure scripts are executable
-        run: |
-          chmod +x distribution_scripts/indexnow_submit.sh
-          chmod +x distribution_scripts/deploy_distribution.sh
-          chmod +x distribution_scripts/gsc_submit_sitemaps.py
-          chmod +x distribution_scripts/gsc_inspect_urls.py
-
-      - name: Generate site and IndexNow artifacts
-        run: |
-          npm run distribution:prepare
-          ls -l .build/indexnow-priority.txt .build/indexnow-batch.txt
-
-      - name: Validate IndexNow workflow wiring
-        run: npm run validate:indexnow-workflow
-
-      - name: Run distribution deploy
+      - name: Deploy validated distribution payload
         env:
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
         run: |
+          chmod +x distribution_scripts/*.sh
           if [ -f gsc-service-account.json ] && [ -n "${GSC_SITE_URL:-}" ]; then
-            ./distribution_scripts/deploy_distribution.sh \
-              --artifact-dir .build \
-              --key "${INDEXNOW_KEY:-}" \
-              --creds gsc-service-account.json \
-              --gsc-site "$GSC_SITE_URL"
+            ./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key "${INDEXNOW_KEY:-}" --creds gsc-service-account.json --gsc-site "$GSC_SITE_URL"
           else
-            ./distribution_scripts/deploy_distribution.sh \
-              --artifact-dir .build \
-              --key "${INDEXNOW_KEY:-}"
+            ./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key "${INDEXNOW_KEY:-}"
           fi
-
-      - name: Upload distribution reports
-        uses: actions/upload-artifact@v4
+      - name: Upload distribution evidence
         if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: velocity-distribution-reports
+          name: velocity-distribution-${{ github.run_id }}
+          if-no-files-found: warn
           path: |
-            .build
-            reports/indexnow-submit-report.json
-            reports/indexnow-priority-submit-report.json
-            reports/indexnow-batch-submit-report.json
-            reports/validate_indexnow_workflow.json
+            .build/**
+            reports/indexnow-*.json

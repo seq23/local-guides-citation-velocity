@@ -16,9 +16,15 @@ exclude_file = lambda do |rel|
   return true if parts.include?('.cache')
   return true if parts.include?('tmp')
   return true if parts.include?('logs')
+  return true if parts.include?('.build')
+  return true if parts.include?('dist')
+  return true if parts.include?('reports')
   return true if parts.include?('.git') && !include_git
-  return true if File.basename(rel) == '.DS_Store'
-  return true if File.extname(rel) == '.zip'
+  return true if parts[0, 3] == ['artifacts', 'validation', 'runtime']
+  basename = File.basename(rel)
+  return true if basename == '.DS_Store'
+  return true if basename == '.env' || basename.start_with?('.env.')
+  return true if File.extname(rel) == '.zip' || File.extname(rel) == '.log'
   false
 end
 

@@ -56,4 +56,13 @@ if (/secrets\.[A-Z0-9_]+/.test(workflow) && /if:\s*\$\{\{[^\n]*secrets\./.test(w
   fail('workflow must not use secrets.* directly inside if expressions');
 }
 
+const evidencePath = path.join(ROOT, 'artifacts', 'validation', 'release-batch-workflow.json');
+fs.mkdirSync(path.dirname(evidencePath), { recursive: true });
+fs.writeFileSync(evidencePath, `${JSON.stringify({
+  schema_version: '1.0',
+  validator: 'release-batch-workflow',
+  status: 'PASS',
+  workflow: '.github/workflows/release_batch.yml'
+}, null, 2)}\n`);
+
 console.log('Release batch workflow contract PASS');

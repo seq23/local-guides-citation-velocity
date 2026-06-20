@@ -85,7 +85,7 @@ for (const [vertical, meta] of Object.entries(reg)) {
         'Strengthen short-answer block on cluster page',
         'Add stronger canonical-domain handoff',
         'Add related-cluster links from adjacent high-volume clusters',
-        'Promote strongest matching canonical page in LKG'
+        'Publish or strengthen the matching Velocity page and route its provider CTA to the canonical destination'
       ]
     });
   }
@@ -94,7 +94,7 @@ for (const [vertical, meta] of Object.entries(reg)) {
 backlog.sort((a, b) => b.priority - a.priority);
 
 writeJson('reports/answer_surface_expansion_backlog.json', {
-  generated_at: new Date().toISOString(),
+  generated_at: '2026-06-19T00:00:00.000Z',
   count: backlog.length,
   backlog
 });

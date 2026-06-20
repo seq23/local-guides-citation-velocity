@@ -1,0 +1,136 @@
+{
+  "validator": "workflow-data-trace",
+  "status": "PASS",
+  "workflow_count": 6,
+  "manual_ready_count": 6,
+  "scheduled_count": 1,
+  "push_count": 1,
+  "scheduled_mutation_count": 1,
+  "lineage": [
+    {
+      "file": "validate.yml",
+      "triggers": [
+        "push:main",
+        "pull_request",
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "repository source",
+        "package-lock.json",
+        "validation registry"
+      ],
+      "produces": [
+        "velocity-validated-{commit_sha}",
+        "validation diagnostics"
+      ],
+      "upstream": [],
+      "downstream": [
+        "deploy-distribution.yml"
+      ],
+      "failure_boundary": "No artifact is uploaded as validated unless the staged container release passes."
+    },
+    {
+      "file": "deploy-distribution.yml",
+      "triggers": [
+        "workflow_run:Validate Repo",
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "velocity-validated-{commit_sha}",
+        "artifacts/release/validation-attestation.json",
+        ".build/indexnow-priority.txt",
+        ".build/indexnow-batch.txt"
+      ],
+      "produces": [
+        "distribution evidence"
+      ],
+      "upstream": [
+        "validate.yml"
+      ],
+      "downstream": [],
+      "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
+    },
+    {
+      "file": "postdeploy_public_audit.yml",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "deployed HTTPS base URL",
+        "_browser_suite_contract.json",
+        "_public_route_manifest.json"
+      ],
+      "produces": [
+        "artifacts/diagnostics/click-audit/summary.json"
+      ],
+      "upstream": [
+        "deployed site"
+      ],
+      "downstream": [],
+      "failure_boundary": "Browser runtime is installed in-workflow and every declared route/device case must pass."
+    },
+    {
+      "file": "velocity_content_release.yml",
+      "triggers": [
+        "schedule:daily",
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "public signals",
+        "Velocity source queue",
+        "monitor ledgers"
+      ],
+      "produces": [
+        "validated commit on main",
+        "release diagnostics"
+      ],
+      "upstream": [],
+      "downstream": [
+        "validate.yml"
+      ],
+      "failure_boundary": "Source repair, word-count scoring, build, and validation must pass before commit and again after rebase."
+    },
+    {
+      "file": "release_batch.yml",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "staged content",
+        "query clusters"
+      ],
+      "produces": [
+        "validated commit on main",
+        "release diagnostics"
+      ],
+      "upstream": [],
+      "downstream": [
+        "validate.yml"
+      ],
+      "failure_boundary": "The requested batch is never pushed unless the bounded self-healing release passes after mutation and rebase."
+    },
+    {
+      "file": "velocity_full_rebuild.yml",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "Velocity durable source",
+        "monitor ledgers",
+        "page-family data"
+      ],
+      "produces": [
+        "validated commit on main",
+        "rebuild diagnostics"
+      ],
+      "upstream": [],
+      "downstream": [
+        "validate.yml"
+      ],
+      "failure_boundary": "A rebuild cannot commit or push until source repair, word-count scoring, render, and full validation pass."
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "checked_at": "2026-06-20"
+}
