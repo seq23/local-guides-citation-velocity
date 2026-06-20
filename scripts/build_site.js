@@ -806,18 +806,6 @@ function validationContractQaHtml(){
     </section>`;
 }
 
-function validationContractRelatedHtml(){
-  return `
-    <section class="card fanout-block validation-contract-related" data-fanout-block="true">
-      <div class="badge">Related search intents</div>
-      <h2 class="h2" style="margin-top:8px">Related decision paths</h2>
-      <nav class="fanout-grid" aria-label="Related search intents">
-        <div class="fanout-col"><h3>Compare</h3><ul><li>how to compare options</li><li>what questions to ask</li></ul></div>
-        <div class="fanout-col"><h3>Verify</h3><ul><li>what to verify before booking</li><li>red flags before choosing</li></ul></div>
-      </nav>
-    </section>`;
-}
-
 function validationContractFaqSchemaHtml(){
   return `<script type="application/ld+json">${JSON.stringify({
     '@context': 'https://schema.org',
@@ -869,11 +857,6 @@ function enforceValidationSiteContractsOnHtml(html){
     const anchor = out.includes('class="card answer-box"') ? /(<section class="card answer-box"[\s\S]*?<\/section>)/i : /<main[^>]*>/i;
     out = out.replace(anchor, (m) => `${m}\n${validationContractQaHtml()}`);
   }
-  if (!out.includes('Related search intents')) {
-    const bottomRegex = /(<section class="card[^>]*data-canon-block="bottom"[\s\S]*?<\/section>)/i;
-    if (bottomRegex.test(out)) out = out.replace(bottomRegex, `${validationContractRelatedHtml()}\n$1`);
-    else out = out.replace(/<\/main>/i, `${validationContractRelatedHtml()}\n</main>`);
-  }
   if (!hasBottom) {
     out = out.replace(/<\/main>/i, `${validationContractBottomHtml()}\n</main>`);
   }
@@ -890,7 +873,8 @@ function enforceValidationSiteContracts(){
     .forEach((fp) => {
       const html = readUtf8(fp);
       const patched = enforceValidationSiteContractsOnHtml(html);
-      if (patched !== html) writeUtf8(fp, patched);
+      const normalized = patched.replace(/[ \t]+$/gm, '');
+      if (normalized !== html) writeUtf8(fp, normalized);
     });
 }
 
@@ -922,7 +906,7 @@ function writeDistributionArtifacts(siteBase, allUrls){
   ].join('\n') + '\n');
 }
 
-function buildIndexPage(siteBase){
+function buildIndexPage(siteBase, toolSections = []){
   const verticals = [
     {id:'uscis-card', label:'USCIS Civil Surgeons', accent:'mint', guides:'/uscis-medical/', provider:'https://uscisexam.com/request-assistance/', copy:'I-693 rules, civil-surgeon state guides, vaccines, corrections, and scheduling.'},
     {id:'personal-injury-card', label:'Personal Injury Law', accent:'coral', guides:'/personal-injury/', provider:'https://theaccidentguides.com/request-assistance/', copy:'State deadlines, negligence rules, claims, evidence, fees, and decision guides.'},
@@ -942,6 +926,7 @@ function buildIndexPage(siteBase){
   <section id="vertical-routes" class="homepage-section"><div class="section-label">Canonical verticals</div><div class="network-grid">${routeCards}</div></section>
   <section class="coverage-panel"><div class="section-label light">What we cover</div><h2>One Velocity library. Five provider destinations.</h2><p>All editorial guides, question pages, state pages, and disambiguators live here. Provider discovery happens through the canonical destination for each vertical.</p><div class="coverage-table-wrap"><table class="coverage-table"><thead><tr><th>Vertical</th><th>Coverage</th><th>Freshness</th><th>Next step</th></tr></thead><tbody>${rows}</tbody></table></div></section>
   <section id="featured-guides" class="homepage-section"><div class="section-label">Featured decisions</div><h2>Start with the decision, not the sales pitch</h2><div class="feature-grid"><a href="/civil-surgeon-vs-panel-physician/">Civil surgeon vs panel physician</a><a href="/neuropsych-eval-vs-iq-test-vs-psych-eval/">Neuropsych eval vs IQ test vs psych eval</a><a href="/personal-injury-vs-workers-comp/">Personal injury vs workers comp</a><a href="/dental-insurance-vs-medical-insurance/">Dental vs medical insurance</a><a href="/trt-vs-hair-loss-treatment/">TRT vs hair-loss treatment</a><a href="/uscis-medical/states/tennessee/civil-surgeon/">Tennessee civil-surgeon guide</a></div></section>
+  ${renderToolSpotlight(toolSections, 'Fast tools for comparing options before you choose')}
   <section class="homepage-section operations"><div class="section-label">Platform operations</div><h2>How The Industry Guides works</h2><div class="ops-grid"><div><h3>Who runs this site?</h3><p>The Industry Guides is an independent editorial publisher covering five regulated service categories.</p></div><div><h3>How are guides verified?</h3><p>Pages use named frameworks, visible source records, review dates, and a hard publication gate.</p></div><div><h3>How fresh is the data?</h3><p>Every page carries a source-derived modification date. Regulated claims are scheduled for recheck.</p></div><div><h3>Is this a government agency?</h3><p>No. We link to primary government and professional sources where they control the rule.</p></div></div></section>
   <section class="methodology-band"><div><div class="section-label">Methodology</div><h2>Source first. Decision second. Provider third.</h2><p>Each programmatic page must contain a unique defensible data atom, a direct answer, visible FAQs, source provenance, internal links, and provider routing. Boilerplate-only pages do not ship.</p><a href="/methodology.html">Read the methodology</a></div></section>
   <section class="closing-provider"><h2>Find a provider in your state</h2><p>Choose the vertical that matches your situation. You will continue to the corresponding provider destination.</p><div class="provider-button-grid">${verticals.map((v)=>`<a href="${v.provider}">${v.label}<strong>Find a Provider →</strong></a>`).join('')}</div></section>`;
@@ -1317,7 +1302,6 @@ for (const [vertical, meta] of Object.entries(registry)) {
 
 
   // Index + scaffolding
-  pages.push(buildIndexPage(siteBase));
   pages.push(...buildVelocityOnlyProgrammaticPages(siteBase));
 
   pages.push(buildScaffoldPage('/about.html','About','About The Industry Guides (neutral publisher).',
@@ -1368,6 +1352,9 @@ for (const [vertical, meta] of Object.entries(registry)) {
   const payloads = liveJsonFiles.map(f=>({name:f, data:loadJson(path.join(LIVE_DIR,f))}));
   const toolsPayloadRaw = payloads.find(p=>p.name === 'tools.json');
   const toolsPageForHub = toolsPayloadRaw && toolsPayloadRaw.data && toolsPayloadRaw.data.pages ? toolsPayloadRaw.data.pages[0] : null;
+
+  // Homepage consumes the same governed tools payload used by vertical hubs.
+  pages.unshift(buildIndexPage(siteBase, toolsPageForHub ? toolsPageForHub.sections || [] : []));
 
   // pages.json => atlas pages
   const pagesPayload = payloads.find(p=>p.name === 'pages.json');
@@ -1785,11 +1772,12 @@ ${m}`;
     // Render with stable last-updated stamp
     const bodyHtmlStamped = setLastUpdated(p.bodyHtml, lastmod);
     const html = renderLayout({ title:p.title, description:p.description, absUrl, bodyHtml: bodyHtmlStamped, jsonld:p.jsonld });
+    const normalizedHtml = html.replace(/[ \t]+$/gm, '');
     if (String(routePath || '').startsWith('/insights/')) {
-      assertGeneratedHtmlBeforeWrite({ kind: 'page', slug: routePath, html, minWords: 80, requireCanonBlocks: false });
+      assertGeneratedHtmlBeforeWrite({ kind: 'page', slug: routePath, html: normalizedHtml, minWords: 80, requireCanonBlocks: false });
     }
     const outPath = slugToPath(routePath);
-    writeUtf8(outPath, html);
+    writeUtf8(outPath, normalizedHtml);
     written.push({ slug: routePath || p.slug, url:absUrl, title:p.title, description:p.description, lastmod });
   });
 
@@ -1823,6 +1811,41 @@ ${m}`;
   };
   written.forEach(patchWithFanout);
   mediumItems.forEach((item)=> patchWithFanout({ slug: item.publish_path, title: item.title, description: item.description, surface: 'medium-article' }));
+
+  // Legacy standalone USCIS routes are tracked HTML outside the live/admission
+  // page ledgers. Apply the same data-driven fanout renderer without admitting
+  // them into the generated fanout manifest.
+  const legacyStandaloneFanoutPages = [
+    {
+      slug: '/uscis-medical/document-checklist/',
+      title: 'USCIS Medical Exam Document Checklist',
+      description: 'Documents and records to verify before a USCIS medical examination.',
+      vertical: 'uscis-medical',
+      surface: 'legacy-guide'
+    },
+    {
+      slug: '/uscis-medical/i-693-requirements/',
+      title: 'Form I-693 Requirements',
+      description: 'Core Form I-693 requirements, verification questions, and filing preparation.',
+      vertical: 'uscis-medical',
+      surface: 'legacy-guide'
+    },
+    {
+      slug: '/uscis-medical/vaccination-requirements/',
+      title: 'USCIS Vaccination Requirements',
+      description: 'Vaccination-record questions and verification steps for the USCIS medical examination.',
+      vertical: 'uscis-medical',
+      surface: 'legacy-guide'
+    }
+  ];
+
+  for (const meta of legacyStandaloneFanoutPages) {
+    const outPath = slugToPath(meta.slug);
+    if (!exists(outPath)) continue;
+    const html = readUtf8(outPath);
+    writeUtf8(outPath, injectFanoutIntoHtml(html, buildFanoutData(meta)));
+  }
+
   exportFanoutArtifacts(fanoutEntries);
   enforceValidationSiteContracts();
 
