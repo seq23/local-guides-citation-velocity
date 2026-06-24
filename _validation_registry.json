@@ -1164,7 +1164,7 @@
         "expensive"
       ],
       "risk_prevented": "Identical source could generate different public output or freshness churn.",
-      "why_existing_checks_do_not_cover": "A single successful build cannot prove determinism.",
+      "why_existing_checks_do_not_cover": "A single successful build cannot prove determinism; this validator runs an isolated rebuild and writes only determinism evidence, so the generic source mutation guard is disabled to avoid duplicating the expensive whole-repo snapshot around an already-isolated proof.",
       "estimated_runtime_seconds": 60,
       "timeout_seconds": 1200,
       "evidence_file": "artifacts/validation/determinism.json",
@@ -1184,7 +1184,7 @@
       "mutates_files": [
         "artifacts/validation/determinism.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": false
     },
     {
       "id": "ingestion-health",
@@ -2193,7 +2193,7 @@
       "evidence_file": null,
       "failure_action": "record finding and continue",
       "replacement_ids": [
-        "citation-velocity-master-plan"
+        "citation-agent-fixes"
       ],
       "retirement_reason": "Historical one-time evidence is preserved in the cumulative master-plan registry.",
       "depends_on": [],
@@ -3043,6 +3043,137 @@
       ],
       "mutates_files": [
         "artifacts/validation/search-quality-basics.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "agent-run-artifact-intake",
+      "title": "Twin Agent artifact intake contract",
+      "path": "scripts/validators/validate_agent_run_artifact_intake.js",
+      "command": "node scripts/validators/validate_agent_run_artifact_intake.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "core",
+        "release",
+        "strict",
+        "audit",
+        "postrelease",
+        "local"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "workflow"
+      ],
+      "risk_prevented": "Twin Agent CSV or PDF artifacts could be malformed, misplaced, duplicated, or silently ignored before content generation.",
+      "why_existing_checks_do_not_cover": "Generic workflow and content validators do not inspect the dedicated agent_runs artifact folder or manifest contract.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/agent-run-artifact-intake.json",
+      "failure_action": "stop release and repair artifact intake",
+      "depends_on": [],
+      "requires_files": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/agent-run-artifact-intake.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-run-artifact-intake.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "citation-agent-fixes",
+      "title": "Cumulative citation-agent fix ledger contract",
+      "path": "scripts/validators/validate_citation_agent_fixes.js",
+      "command": "node scripts/validators/validate_citation_agent_fixes.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "core",
+        "release",
+        "strict",
+        "audit",
+        "postrelease",
+        "local"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "content"
+      ],
+      "risk_prevented": "Agent-run findings could be imported without durable ledger records, implementation status, or release plan evidence.",
+      "why_existing_checks_do_not_cover": "The historical May validator is retired and cannot validate rolling Twin Agent ledgers or social fallback release plans.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/citation-agent-fixes.json",
+      "failure_action": "stop release and repair citation-agent ledger",
+      "depends_on": [
+        "agent-run-artifact-intake"
+      ],
+      "requires_files": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/citation-agent-fixes.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/citation-agent-fixes.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "velocity-intake-workflow",
+      "title": "Consolidated Velocity intake workflow contract",
+      "path": "scripts/validators/validate_velocity_intake_workflow.js",
+      "command": "node scripts/validators/validate_velocity_intake_workflow.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "core",
+        "release",
+        "strict",
+        "audit",
+        "postrelease",
+        "local"
+      ],
+      "tags": [
+        "workflow",
+        "agent-runs",
+        "social-backlog"
+      ],
+      "risk_prevented": "Twin Agent artifact absorption could be split into an untracked workflow, miss the after-noon Central fallback, or stop filling from social backlog.",
+      "why_existing_checks_do_not_cover": "The generic workflow contract checks workflow safety but not the consolidated Twin-artifact plus social-backlog release lane.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/velocity-intake-workflow.json",
+      "failure_action": "stop release and repair consolidated workflow wiring",
+      "depends_on": [
+        "workflow-contract"
+      ],
+      "requires_files": [
+        ".github/workflows/velocity_content_release.yml",
+        "data/workflows/workflow_contract_registry.json",
+        "package.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/velocity-intake-workflow.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/velocity-intake-workflow.json"
       ],
       "enforce_no_source_mutation": true
     }

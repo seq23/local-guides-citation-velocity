@@ -1,8 +1,13 @@
 name: Velocity Content Release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "data/report_fixes/agent_runs/**"
   schedule:
-    - cron: "10 13 * * *"
+    # After 12:00 PM Central year-round: 18:15 UTC = 12:15 CST / 1:15 CDT.
+    - cron: "15 18 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -10,6 +15,7 @@ permissions:
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
+  VELOCITY_RELEASE_TARGET: "125"
 
 concurrency:
   group: velocity-content-release-main
@@ -18,7 +24,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 120
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -39,12 +45,8 @@ jobs:
           git reset --hard origin/main
       - name: Set release date
         run: echo "SOURCE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
-      - name: Collect and score public signals
-        run: npm run signals:collect && npm run signals:process
-      - name: Admit approved Velocity content
-        run: npm run release:velocity-content
-      - name: Self-heal, rescore, build, and validate before commit
-        run: npm run release:self-healing
+      - name: Absorb Twin artifacts or social backlog and release Velocity content
+        run: npm run release:velocity-intake
       - name: Commit validated Velocity release
         id: candidate
         run: |
@@ -53,7 +55,7 @@ jobs:
           git add -A
           if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
-          git commit -m "velocity content release $(date -u +%F)"
+          git commit -m "velocity intake release $(date -u +%F)"
       - name: Rebase, self-heal, revalidate, and push Velocity
         if: ${{ steps.candidate.outputs.changed == 'true' }}
         run: |
@@ -61,6 +63,8 @@ jobs:
             git fetch origin main
             git rebase origin/main
             npm run release:self-healing
+            npm run trace:citation-agent-fixes
+            npm run validate:citation-agent-fixes
             git add -A
             git commit --amend --no-edit
             if git push origin HEAD:main; then exit 0; fi
@@ -76,3 +80,4 @@ jobs:
           path: |
             logs/**
             artifacts/validation/**
+            data/report_fixes/normalized_agent_runs/**

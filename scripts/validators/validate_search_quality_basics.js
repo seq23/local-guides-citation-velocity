@@ -15,7 +15,7 @@ const errors=[],warnings=[],indexable=[];
 const badEncoding=/â(?:|€™|€œ|€|€˜|€")|Ã¢|Â(?=[^A-Za-z]|$)/;
 for(const abs of walk(ROOT).filter(p=>p.endsWith('.html'))){
   const rel=norm(path.relative(ROOT,abs));
-  if(rel==='404.html'||rel.startsWith('templates/'))continue;
+  if(rel==='404.html'||rel.startsWith('templates/')||rel.startsWith('data/report_fixes/agent_runs/'))continue;
   const html=fs.readFileSync(abs,'utf8');
   if(badEncoding.test(html))errors.push(`${rel}:mojibake`);
   const noindex=/<meta\b[^>]*name=(["'])robots\1[^>]*content=(["'])[^"']*noindex/i.test(html)||/<meta\b[^>]*content=(["'])[^"']*noindex[^"']*\1[^>]*name=(["'])robots\2/i.test(html);

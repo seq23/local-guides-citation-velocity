@@ -1,10 +1,10 @@
 {
   "schema_version": "2.0",
-  "authority": "Every GitHub Actions workflow must declare triggers, inputs, permissions, runtime, commands, artifacts, data lineage, and failure boundaries. Only Validate Repo runs on push; content mutation is scheduled or manual.",
+  "authority": "Every GitHub Actions workflow must declare triggers, inputs, permissions, runtime, commands, artifacts, data lineage, and failure boundaries. Validate Repo runs on general push. Velocity Content Release may also run on path-limited Twin Agent artifact pushes under data/report_fixes/agent_runs/** and on the after-noon Central scheduled fallback.",
   "global_contract": {
     "node_version": "24",
     "node_options": "--max-old-space-size=3072",
-    "maximum_workflows_on_push": 1,
+    "maximum_workflows_on_push": 2,
     "maximum_scheduled_mutation_workflows": 1,
     "forbidden_actions": [
       "peter-evans/create-pull-request",
@@ -17,109 +17,236 @@
     {
       "file": "validate.yml",
       "name": "Validate Repo",
-      "triggers": ["push:main", "pull_request", "workflow_dispatch"],
+      "triggers": [
+        "push:main",
+        "pull_request",
+        "workflow_dispatch"
+      ],
       "manual_ready": true,
       "mutates_repo": false,
-      "permissions": ["contents: read"],
+      "permissions": [
+        "contents: read"
+      ],
       "timeout_minutes": 50,
-      "commands": ["npm ci --ignore-scripts", "npm run release:ci-validate"],
+      "commands": [
+        "npm ci --ignore-scripts",
+        "npm run release:ci-validate"
+      ],
       "required_inputs": [],
       "required_secrets": [],
       "optional_secrets": [],
-      "consumes": ["repository source", "package-lock.json", "validation registry"],
-      "produces": ["velocity-validated-{commit_sha}", "validation diagnostics"],
+      "consumes": [
+        "repository source",
+        "package-lock.json",
+        "validation registry"
+      ],
+      "produces": [
+        "velocity-validated-{commit_sha}",
+        "validation diagnostics"
+      ],
       "upstream": [],
-      "downstream": ["deploy-distribution.yml"],
+      "downstream": [
+        "deploy-distribution.yml"
+      ],
       "failure_boundary": "No artifact is uploaded as validated unless the staged container release passes."
     },
     {
       "file": "deploy-distribution.yml",
       "name": "Deploy Distribution",
-      "triggers": ["workflow_run:Validate Repo", "workflow_dispatch"],
+      "triggers": [
+        "workflow_run:Validate Repo",
+        "workflow_dispatch"
+      ],
       "manual_ready": true,
       "mutates_repo": false,
-      "permissions": ["actions: read", "contents: read"],
+      "permissions": [
+        "actions: read",
+        "contents: read"
+      ],
       "timeout_minutes": 30,
-      "commands": ["node scripts/prepare_distribution_from_attestation.js", "distribution_scripts/deploy_distribution.sh"],
-      "required_inputs": ["artifact_name", "artifact_run_id", "commit_sha"],
+      "commands": [
+        "node scripts/prepare_distribution_from_attestation.js",
+        "distribution_scripts/deploy_distribution.sh"
+      ],
+      "required_inputs": [
+        "artifact_name",
+        "artifact_run_id",
+        "commit_sha"
+      ],
       "required_secrets": [],
-      "optional_secrets": ["INDEXNOW_KEY", "GSC_SERVICE_ACCOUNT_JSON", "GSC_SITE_URL"],
-      "consumes": ["velocity-validated-{commit_sha}", "artifacts/release/validation-attestation.json", ".build/indexnow-priority.txt", ".build/indexnow-batch.txt"],
-      "produces": ["distribution evidence"],
-      "upstream": ["validate.yml"],
+      "optional_secrets": [
+        "INDEXNOW_KEY",
+        "GSC_SERVICE_ACCOUNT_JSON",
+        "GSC_SITE_URL"
+      ],
+      "consumes": [
+        "velocity-validated-{commit_sha}",
+        "artifacts/release/validation-attestation.json",
+        ".build/indexnow-priority.txt",
+        ".build/indexnow-batch.txt"
+      ],
+      "produces": [
+        "distribution evidence"
+      ],
+      "upstream": [
+        "validate.yml"
+      ],
       "downstream": [],
       "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
     },
     {
       "file": "postdeploy_public_audit.yml",
       "name": "Postdeploy Public Audit",
-      "triggers": ["workflow_dispatch"],
+      "triggers": [
+        "workflow_dispatch"
+      ],
       "manual_ready": true,
       "mutates_repo": false,
-      "permissions": ["contents: read"],
+      "permissions": [
+        "contents: read"
+      ],
       "timeout_minutes": 45,
-      "commands": ["npm ci --ignore-scripts", "npm install --no-save playwright@1.55.0", "npx playwright install --with-deps chromium", "npm run postdeploy:public-click-audit"],
-      "required_inputs": ["base_url"],
+      "commands": [
+        "npm ci --ignore-scripts",
+        "npm install --no-save playwright@1.55.0",
+        "npx playwright install --with-deps chromium",
+        "npm run postdeploy:public-click-audit"
+      ],
+      "required_inputs": [
+        "base_url"
+      ],
       "required_secrets": [],
       "optional_secrets": [],
-      "consumes": ["deployed HTTPS base URL", "_browser_suite_contract.json", "_public_route_manifest.json"],
-      "produces": ["artifacts/diagnostics/click-audit/summary.json"],
-      "upstream": ["deployed site"],
+      "consumes": [
+        "deployed HTTPS base URL",
+        "_browser_suite_contract.json",
+        "_public_route_manifest.json"
+      ],
+      "produces": [
+        "artifacts/diagnostics/click-audit/summary.json"
+      ],
+      "upstream": [
+        "deployed site"
+      ],
       "downstream": [],
       "failure_boundary": "Browser runtime is installed in-workflow and every declared route/device case must pass."
     },
     {
       "file": "velocity_content_release.yml",
       "name": "Velocity Content Release",
-      "triggers": ["schedule:daily", "workflow_dispatch"],
+      "triggers": [
+        "push:agent_runs",
+        "schedule:weekday-after-noon-ct",
+        "workflow_dispatch"
+      ],
       "manual_ready": true,
       "mutates_repo": true,
-      "permissions": ["contents: write"],
-      "timeout_minutes": 75,
-      "commands": ["npm run signals:collect", "npm run signals:process", "npm run release:velocity-content", "npm run release:self-healing"],
+      "permissions": [
+        "contents: write"
+      ],
+      "timeout_minutes": 120,
+      "commands": [
+        "npm run release:velocity-intake",
+        "npm run release:self-healing"
+      ],
       "required_inputs": [],
-      "required_secrets": ["GITHUB_TOKEN"],
+      "required_secrets": [
+        "GITHUB_TOKEN"
+      ],
       "optional_secrets": [],
-      "consumes": ["public signals", "Velocity source queue", "monitor ledgers"],
-      "produces": ["validated commit on main", "release diagnostics"],
-      "upstream": [],
-      "downstream": ["validate.yml"],
-      "failure_boundary": "Source repair, word-count scoring, build, and validation must pass before commit and again after rebase."
+      "consumes": [
+        "Twin Agent artifacts in data/report_fixes/agent_runs/**",
+        "social/public backlog",
+        "Velocity source queue",
+        "monitor ledgers"
+      ],
+      "produces": [
+        "validated commit on main",
+        "normalized agent run records",
+        "content source updates",
+        "rendered Velocity content",
+        "release diagnostics"
+      ],
+      "upstream": [
+        "Twin Agent artifact push",
+        "scheduled fallback"
+      ],
+      "downstream": [
+        "validate.yml"
+      ],
+      "failure_boundary": "Twin artifacts are absorbed first; social/public backlog fills the batch if artifacts are absent or insufficient. No commit or push occurs unless content generation, self-heal, agent trace, and release validation pass before commit and again after rebase."
     },
     {
       "file": "release_batch.yml",
       "name": "Release Batch",
-      "triggers": ["workflow_dispatch"],
+      "triggers": [
+        "workflow_dispatch"
+      ],
       "manual_ready": true,
       "mutates_repo": true,
-      "permissions": ["contents: write"],
+      "permissions": [
+        "contents: write"
+      ],
       "timeout_minutes": 75,
-      "commands": ["node scripts/compile_reddit_queries.js", "node scripts/release_batch.js", "npm run release:self-healing"],
-      "required_inputs": ["batch_size"],
-      "required_secrets": ["GITHUB_TOKEN"],
+      "commands": [
+        "node scripts/compile_reddit_queries.js",
+        "node scripts/release_batch.js",
+        "npm run release:self-healing"
+      ],
+      "required_inputs": [
+        "batch_size"
+      ],
+      "required_secrets": [
+        "GITHUB_TOKEN"
+      ],
       "optional_secrets": [],
-      "consumes": ["staged content", "query clusters"],
-      "produces": ["validated commit on main", "release diagnostics"],
+      "consumes": [
+        "staged content",
+        "query clusters"
+      ],
+      "produces": [
+        "validated commit on main",
+        "release diagnostics"
+      ],
       "upstream": [],
-      "downstream": ["validate.yml"],
+      "downstream": [
+        "validate.yml"
+      ],
       "failure_boundary": "The requested batch is never pushed unless the bounded self-healing release passes after mutation and rebase."
     },
     {
       "file": "velocity_full_rebuild.yml",
       "name": "Velocity Full Rebuild",
-      "triggers": ["workflow_dispatch"],
+      "triggers": [
+        "workflow_dispatch"
+      ],
       "manual_ready": true,
       "mutates_repo": true,
-      "permissions": ["contents: write"],
+      "permissions": [
+        "contents: write"
+      ],
       "timeout_minutes": 75,
-      "commands": ["npm run release:self-healing"],
+      "commands": [
+        "npm run release:self-healing"
+      ],
       "required_inputs": [],
-      "required_secrets": ["GITHUB_TOKEN"],
+      "required_secrets": [
+        "GITHUB_TOKEN"
+      ],
       "optional_secrets": [],
-      "consumes": ["Velocity durable source", "monitor ledgers", "page-family data"],
-      "produces": ["validated commit on main", "rebuild diagnostics"],
+      "consumes": [
+        "Velocity durable source",
+        "monitor ledgers",
+        "page-family data"
+      ],
+      "produces": [
+        "validated commit on main",
+        "rebuild diagnostics"
+      ],
       "upstream": [],
-      "downstream": ["validate.yml"],
+      "downstream": [
+        "validate.yml"
+      ],
       "failure_boundary": "A rebuild cannot commit or push until source repair, word-count scoring, render, and full validation pass."
     }
   ]

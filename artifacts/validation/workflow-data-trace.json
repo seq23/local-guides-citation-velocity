@@ -4,7 +4,7 @@
   "workflow_count": 6,
   "manual_ready_count": 6,
   "scheduled_count": 1,
-  "push_count": 1,
+  "push_count": 2,
   "scheduled_mutation_count": 1,
   "lineage": [
     {
@@ -72,23 +72,31 @@
     {
       "file": "velocity_content_release.yml",
       "triggers": [
-        "schedule:daily",
+        "push:agent_runs",
+        "schedule:weekday-after-noon-ct",
         "workflow_dispatch"
       ],
       "consumes": [
-        "public signals",
+        "Twin Agent artifacts in data/report_fixes/agent_runs/**",
+        "social/public backlog",
         "Velocity source queue",
         "monitor ledgers"
       ],
       "produces": [
         "validated commit on main",
+        "normalized agent run records",
+        "content source updates",
+        "rendered Velocity content",
         "release diagnostics"
       ],
-      "upstream": [],
+      "upstream": [
+        "Twin Agent artifact push",
+        "scheduled fallback"
+      ],
       "downstream": [
         "validate.yml"
       ],
-      "failure_boundary": "Source repair, word-count scoring, build, and validation must pass before commit and again after rebase."
+      "failure_boundary": "Twin artifacts are absorbed first; social/public backlog fills the batch if artifacts are absent or insufficient. No commit or push occurs unless content generation, self-heal, agent trace, and release validation pass before commit and again after rebase."
     },
     {
       "file": "release_batch.yml",

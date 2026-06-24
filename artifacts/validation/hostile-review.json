@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "status": "PASS",
+  "review_type": "hostile_review",
+  "checked_at": "2026-06-23",
+  "findings_fixed": [
+    "New validation scripts initially bypassed validation registry; registered all new validators and regenerated matrix.",
+    "Initial trace order was before build/self-heal; moved trace after self-healing and revalidation.",
+    "Legacy May 2026 trace was retired but blocking rolling lane; changed rolling trace to preserve legacy as non-blocking evidence.",
+    "Raw JSON string matching failed on quoted social queries; changed trace to parse staged/live JSON by route.",
+    "Workflow split concept removed; single consolidated Velocity Content Release workflow now handles Twin artifacts, social fallback, self-heal, validation, commit, and push."
+  ],
+  "release_plan": {
+    "selected_count": 125,
+    "agent_selected_count": 18,
+    "social_fallback_selected_count": 107,
+    "target_publish_units": 125
+  },
+  "trace": {
+    "status": "PASS",
+    "selected_trace_count": 18,
+    "release_plan_count": 125
+  },
+  "workflow_data_trace": {
+    "status": "PASS",
+    "workflow_count": 6,
+    "scheduled_count": 1,
+    "push_count": 2
+  },
+  "core_validation": {
+    "status": "PASS",
+    "counts": {
+      "PASS": 41
+    }
+  },
+  "determinism": {
+    "ok": true,
+    "file_count_rebuilt": 1870
+  },
+  "known_tool_limit": "Full release profile was exercised through release validators in the container, but the container command timed out at the expensive deterministic-build stage. The deterministic-build validator was then run directly and passed. Local updater remains the full validation authority."
+}

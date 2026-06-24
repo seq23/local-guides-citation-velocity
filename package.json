@@ -81,10 +81,10 @@
     "preclean:guardrails": "rm -rf .build reports data/answer_surface_monitoring dist",
     "postclean:guardrails": "rm -rf dist",
     "validate:indexnow-workflow": "node scripts/validation/run_validation_registry.js --profile distribution",
-    "validate:citation-agent-fixes": "node scripts/validation/run_validation_registry.js --id citation-velocity-master-plan",
-    "trace:citation-agent-fixes": "node scripts/validators/trace_citation_agent_fixes_2026_05.js",
+    "validate:citation-agent-fixes": "node scripts/validation/run_validation_registry.js --id citation-agent-fixes",
+    "trace:citation-agent-fixes": "node scripts/validators/trace_citation_agent_fixes.js",
     "validate:release-batch-workflow": "node scripts/validation/run_validation_registry.js --id release-batch-workflow",
-    "apply:citation-agent-fixes": "node scripts/apply_citation_agent_fixes_2026_05.js",
+    "apply:citation-agent-fixes": "node scripts/apply_citation_agent_fixes.js",
     "validate:authority": "node scripts/validation/run_validation_registry.js --id authority-contracts",
     "validate:citation-velocity": "node scripts/validation/run_validation_registry.js --id citation-velocity-master-plan",
     "validate:safety": "node scripts/validation/run_validation_registry.js --id content-safety",
@@ -134,7 +134,15 @@
     "release:pipeline:self-heal": "node scripts/release/run_staged_release.js --mode self-heal --resume",
     "validate:rendered-programmatic": "node scripts/validation/run_validation_registry.js --id rendered-programmatic-substance",
     "validate:workflow-yaml": "node scripts/validation/run_validation_registry.js --id workflow-yaml-syntax",
-    "validate:page-release-law": "node scripts/validation/run_validation_registry.js --id page-release-law"
+    "validate:page-release-law": "node scripts/validation/run_validation_registry.js --id page-release-law",
+    "validate:agent-run-intake": "node scripts/validation/run_validation_registry.js --id agent-run-artifact-intake",
+    "citation:prepare-velocity-intake": "node scripts/citation_velocity/prepare_velocity_intake_release.js",
+    "release:velocity-intake": "npm run validate:agent-run-intake && npm run signals:collect && npm run signals:process && npm run citation:prepare-velocity-intake && npm run release:velocity-content && npm run apply:citation-agent-fixes && npm run release:self-healing && npm run trace:citation-agent-fixes && npm run validate:citation-agent-fixes && npm run validate:velocity-intake-workflow",
+    "validate:velocity-intake-workflow": "node scripts/validation/run_validation_registry.js --id velocity-intake-workflow",
+    "release:batch50": "node scripts/release_batch.js 50",
+    "release:batch100": "node scripts/release_batch.js 100",
+    "release:batch125": "node scripts/release_batch.js 125",
+    "release:batch150": "node scripts/release_batch.js 150"
   },
   "engines": {
     "node": "24.x"
