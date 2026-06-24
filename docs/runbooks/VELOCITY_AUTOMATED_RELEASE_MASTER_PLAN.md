@@ -37,7 +37,7 @@ No separate `agent_run_absorption.yml` workflow is used.
 
 Triggers:
 
-- `push` to `main` limited to `data/report_fixes/agent_runs/**`
+- `push` to `main` limited to `data/report_fixes/agent_runs/**/agent_run_manifest.json` so only manifest-ready drops trigger release
 - weekday scheduled fallback after noon Central
 - manual `workflow_dispatch`
 
@@ -55,7 +55,7 @@ Release target:
 
 ## Source Priority
 
-1. Twin Agent artifacts under `data/report_fixes/agent_runs/**`
+1. Twin Agent ready manifests under `data/report_fixes/agent_runs/**/agent_run_manifest.json`, with CSV and HTML committed atomically in the same folder
 2. Social/public backlog under `data/community/publish_queue.json`
 3. Existing Velocity source queues/monitor ledgers
 

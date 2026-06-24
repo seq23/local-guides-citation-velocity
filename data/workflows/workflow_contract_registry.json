@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "authority": "Every GitHub Actions workflow must declare triggers, inputs, permissions, runtime, commands, artifacts, data lineage, and failure boundaries. Validate Repo runs on general push. Velocity Content Release may also run on path-limited Twin Agent artifact pushes under data/report_fixes/agent_runs/** and on the after-noon Central scheduled fallback.",
+  "authority": "Every GitHub Actions workflow must declare triggers, inputs, permissions, runtime, commands, artifacts, data lineage, and failure boundaries. Validate Repo runs on general push. Velocity Content Release may also run on path-limited Twin Agent ready-signal manifest pushes under data/report_fixes/agent_runs/**/agent_run_manifest.json and on the after-noon Central scheduled fallback.",
   "global_contract": {
     "node_version": "24",
     "node_options": "--max-old-space-size=3072",
@@ -135,7 +135,7 @@
       "file": "velocity_content_release.yml",
       "name": "Velocity Content Release",
       "triggers": [
-        "push:agent_runs",
+        "push:agent_run_manifest",
         "schedule:weekday-after-noon-ct",
         "workflow_dispatch"
       ],
@@ -155,7 +155,7 @@
       ],
       "optional_secrets": [],
       "consumes": [
-        "Twin Agent artifacts in data/report_fixes/agent_runs/**",
+        "Twin Agent ready manifests in data/report_fixes/agent_runs/**/agent_run_manifest.json",
         "social/public backlog",
         "Velocity source queue",
         "monitor ledgers"
@@ -168,7 +168,7 @@
         "release diagnostics"
       ],
       "upstream": [
-        "Twin Agent artifact push",
+        "Twin Agent ready manifest push",
         "scheduled fallback"
       ],
       "downstream": [

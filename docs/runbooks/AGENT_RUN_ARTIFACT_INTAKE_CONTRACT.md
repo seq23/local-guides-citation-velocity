@@ -88,7 +88,7 @@ Preferred columns:
 
 ## Absorption Rule
 
-The consolidated Velocity Content Release workflow runs when Twin pushes files under `data/report_fixes/agent_runs/**` or on the scheduled weekday fallback after noon Central.
+The consolidated Velocity Content Release workflow runs when Twin pushes `agent_run_manifest.json` under `data/report_fixes/agent_runs/**/agent_run_manifest.json` or on the scheduled weekday fallback after noon Central. CSV and HTML files should be committed atomically with the manifest, but the manifest path is the ready signal that triggers absorption.
 
 Order:
 

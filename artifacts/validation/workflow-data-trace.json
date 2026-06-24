@@ -72,12 +72,12 @@
     {
       "file": "velocity_content_release.yml",
       "triggers": [
-        "push:agent_runs",
+        "push:agent_run_manifest",
         "schedule:weekday-after-noon-ct",
         "workflow_dispatch"
       ],
       "consumes": [
-        "Twin Agent artifacts in data/report_fixes/agent_runs/**",
+        "Twin Agent ready manifests in data/report_fixes/agent_runs/**/agent_run_manifest.json",
         "social/public backlog",
         "Velocity source queue",
         "monitor ledgers"
@@ -90,7 +90,7 @@
         "release diagnostics"
       ],
       "upstream": [
-        "Twin Agent artifact push",
+        "Twin Agent ready manifest push",
         "scheduled fallback"
       ],
       "downstream": [

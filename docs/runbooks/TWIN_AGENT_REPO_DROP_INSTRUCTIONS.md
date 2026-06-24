@@ -58,6 +58,8 @@ Twin Agent may write only to:
 data/report_fixes/agent_runs/**
 ```
 
+Twin Agent must commit the CSV, HTML, and manifest atomically in one commit. The Velocity workflow trigger is narrowed to the manifest path, so `agent_run_manifest.json` is the ready signal that tells the repo the full artifact package is present.
+
 Twin Agent must not edit production content, generated HTML, citation registries, page-family specs, workflow files, package files, or validation artifacts.
 
 The repo automation will absorb the artifacts and create validated content changes.
