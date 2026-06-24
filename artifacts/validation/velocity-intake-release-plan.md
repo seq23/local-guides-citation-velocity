@@ -4,11 +4,35 @@ Status: **PASS**
 Release date: 2026-06-24
 Target publish units: 125
 Selected units: 125
-Twin agent units: 0
-Social fallback units: 125
+Twin agent units: 24
+Social fallback units: 101
 
 | Source | Vertical | Target route | Query |
 |---|---|---|---|
+| twin_agent_artifact | trt | /trt/community-questions/trt-clinic-near-me-atlanta/ | TRT clinic near me Atlanta |
+| twin_agent_artifact | trt | /trt/community-questions/trt-clinic-near-me-dallas-tx/ | TRT clinic near me Dallas TX |
+| twin_agent_artifact | trt | /trt/community-questions/best-trt-clinic-in-atlanta-ga/ | best TRT clinic in Atlanta GA |
+| twin_agent_artifact | trt | /trt/community-questions/best-testosterone-clinic-in-miami-fl/ | best testosterone clinic in Miami FL |
+| twin_agent_artifact | trt | /trt/community-questions/prp-vs-microneedling-for-hair-loss-which-works-better/ | PRP vs microneedling for hair loss which works better |
+| twin_agent_artifact | trt | /trt/community-questions/can-i-still-have-kids-if-i-start-trt/ | can I still have kids if I start TRT |
+| twin_agent_artifact | trt | /trt/community-questions/do-copper-peptides-actually-regrow-hair/ | do copper peptides actually regrow hair |
+| twin_agent_artifact | trt | /trt/community-questions/does-hair-botox-treatment-actually-stop-hair-loss/ | does hair botox treatment actually stop hair loss |
+| twin_agent_artifact | trt | /trt/community-questions/does-testosterone-replacement-therapy-cause-hair-loss/ | does testosterone replacement therapy cause hair loss |
+| twin_agent_artifact | trt | /trt/community-questions/how-long-until-trt-works/ | how long until TRT works |
+| twin_agent_artifact | trt | /trt/community-questions/how-much-does-trt-cost-per-month/ | how much does TRT cost per month |
+| twin_agent_artifact | trt | /trt/community-questions/how-to-choose-a-trt-clinic/ | how to choose a TRT clinic |
+| twin_agent_artifact | trt | /trt/community-questions/how-to-spot-a-bad-peptide-clinic/ | how to spot a bad peptide clinic |
+| twin_agent_artifact | trt | /trt/community-questions/is-my-hair-loss-hormonal-or-aesthetic-how-to-tell-the-difference/ | is my hair loss hormonal or aesthetic how to tell the difference |
+| twin_agent_artifact | trt | /trt/community-questions/peptide-clinic-red-flags-to-avoid/ | peptide clinic red flags to avoid |
+| twin_agent_artifact | trt | /trt/community-questions/peptides-vs-trt-for-anti-aging-which-is-better/ | peptides vs TRT for anti-aging which is better |
+| twin_agent_artifact | trt | /trt/community-questions/peptides-vs-trt-which-is-better-for-men/ | peptides vs TRT which is better for men |
+| twin_agent_artifact | trt | /trt/community-questions/red-flags-to-avoid-when-choosing-a-trt-clinic/ | red flags to avoid when choosing a TRT clinic |
+| twin_agent_artifact | trt | /trt/community-questions/what-to-expect-in-the-first-90-days-of-trt/ | what to expect in the first 90 days of TRT |
+| twin_agent_artifact | trt | /trt/community-questions/how-to-know-if-i-need-testosterone-therapy-or-if-i-m-just-burnt-out/ | how to know if i need testosterone therapy or if i'm just burnt out |
+| twin_agent_artifact | trt | /trt/community-questions/symptoms-of-low-t-in-men-over-40-that-aren-t-just-low-libido/ | symptoms of low t in men over 40 that aren't just low libido |
+| twin_agent_artifact | trt | /trt/community-questions/how-to-talk-to-my-doctor-about-starting-trt-if-my-levels-are-in-range-but-low/ | how to talk to my doctor about starting trt if my levels are in range but low |
+| twin_agent_artifact | trt | /trt/community-questions/why-is-my-hematocrit-high-on-trt-and-how-do-i-lower-it-without-donating-blood/ | why is my hematocrit high on trt and how do i lower it without donating blood |
+| twin_agent_artifact | trt | /trt/community-questions/what-markers-should-i-ask-for-in-a-full-hormone-panel-besides-just-testosterone/ | what markers should i ask for in a full hormone panel besides just testosterone |
 | social_public_backlog | trt | /trt/community-questions/trt-providers-ask-us-anything-37-peptides-and-getting-summer-ready-98-month-pricing-welcom/ | TRT Providers: Ask Us Anything (#37) \| Peptides and Getting Summer-Ready \| $98/Month Pricing Welcome to AlphaMD’s weekend AMA: **Peptides, TRT, and Getting Summer-Ready** **Starts:** Saturday at 2PM EST **Runs through:** — what should I know? |
 | social_public_backlog | uscis-medical | /uscis-medical/community-questions/1-month-since-biometrics-case-still-showing-uscis-is-processing-your-case-hi-everyone-it-h/ | 1 Month Since Biometrics – Case Still Showing “USCIS Is Processing Your Case” Hi everyone, It has been exactly one month since I completed my biometrics appointment, but my case status still shows “USCIS is processing yo — what should I know? |
 | social_public_backlog | dentistry | /dentistry/community-questions/why-does-it-feel-like-dentists-always-defend-other-dentists-even-when-the-work-seems-quest/ | Why does it feel like dentists always defend other dentists, even when the work seems questionable? |
@@ -110,27 +134,3 @@ Social fallback units: 125
 | social_public_backlog | personal_injury | /personal-injury/community-questions/what-recommendations-can-you-give/ | What recommendations can you give? |
 | social_public_backlog | personal_injury | /personal-injury/community-questions/should-i-be-hopeful-for-an-interview-soon/ | Should I be hopeful for an interview soon? |
 | social_public_backlog | personal_injury | /personal-injury/community-questions/i-suffered-for-a-while-longer-until-i-finally-went-to-a-local-men-s-clinic-i-understand-no/ | I suffered for a while longer until I finally went to a local men’s clinic (I understand now that may not have been the best choice but it was something — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/clomid-hcg-or-enclomiphene-looking-for-some-advice-on-what-s-best-to-use-to-get-my-balls-u/ | Clomid,HCG or Enclomiphene Looking for some advice on what’s best to use to get my balls up and running again — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/25mg-eod-enclomiphene-through-a-private-clinic-i-was-originally-told-to-take-6-what-should/ | 25mg EOD enclomiphene through a private clinic, I was originally told to take 6 — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/feel-free-to-drop-your-questions-below-and-i-ll-do-my-best-to-respond-thoughtfully-and-acc/ | Feel free to drop your questions below and I’ll do my best to respond thoughtfully and accurately — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/officer-was-short-only-asked-the-basic-questions-and-didn-t-ask-proof-of-endeavor-like-our/ | Officer was short only asked the basic questions and didn't ask proof of endeavor like our lawyer said and it didn't give an option to give more recent documents — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/i-do-not-know-how-to-interpret-the-other-hormone-levels-but-i-have-an-appointment-friday-t/ | I do not know how to interpret the other hormone levels but I have an appointment Friday to discuss with Doc — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/k1-visa-denied-today-help-my-brother-s-k-1-visa-was-refused-under-221-g-and-we-re-trying-t/ | K1 Visa Denied Today- HELP My brother’s K-1 visa was refused under 221(g), and we’re trying to understand the best path forward — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/it-s-been-127-days-pending-should-i-wait-or-go-for-premium-processing-now-what-should-i-kn/ | It’s been ~127 days pending Should I wait or go for premium processing now — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/i-m-a-medical-doctor-so-i-m-used-to-educate-myself-on-these-topics-since-unfortunately-the/ | I’m a medical doctor, so I’m used to educate myself on these topics since unfortunately there are no available trustworthy local sources of information on the matter — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/did-anyone-else-experience-this-and-should-i-be-worried-or-is-this-a-sign-the-case-is-movi/ | did anyone else experience this and should i be worried or is this a sign the case is moving quickly — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/gp-pricing-is-climbing-whey-costs-are-skyrocketing-and-glp-1-drugs-like-retatrutide-ozempi/ | GP pricing is climbing, whey costs are skyrocketing, and GLP-1 drugs like Retatrutide, Ozempic, and Tirzepatide are being ordered and consumed at a breakneck pace — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/also-should-i-continue-pinning-hcg-or-wait-until-my-meds-arrive-what-should-i-know/ | also should I continue pinning hcg or wait until my meds arrive — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/finally-i-believe-i-ll-be-getting-on-soon-have-appointment-monday-what-should-i-know/ | Finally I believe I'll be getting on soon have appointment Monday — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/i-have-an-appointment-with-an-endocrinologist-but-i-am-feeling-like-an-idiot-and-guilty-as/ | I have an appointment with an endocrinologist, but I am feeling like an idiot and guilty, as if I am betraying all the effort taken to get me here at this point — what should I know? |
-| social_public_backlog | trt | /trt/community-questions/flawed-study-testosterone-treatment-and-coronary-artery-plaque-volume-in-older-men-with-lo/ | Flawed Study: "Testosterone Treatment and Coronary Artery Plaque Volume in Older Men With Low Testosterone" by Budoff For those still referring to this as a gold standard : The strongest criticism is that the trial’s pri — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/constant-eating-out-eating-late-and-wearing-polyesters-to-the-gym-not-sure-how-much-of-it-/ | Constant eating out, eating late and wearing polyesters to the gym, -> not sure how much of it was eating out but eating late and polyesters both contribute to lower T, I had no idea, how — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/online-clinic-recommendations-i-know-this-has-been-asked-before-in-the-past-but-want-to-as/ | Online Clinic Recommendations I know this has been asked before in the past, but want to ask again for recent experiences — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/my-doctor-is-gonna-be-mad-just-got-my-labs-back-what-should-i-know/ | My doctor is gonna be mad😬 Just got my labs back — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/anyway-my-doctor-never-mentioned-anything-what-should-i-know/ | Anyway, my doctor never mentioned anything — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/also-i-have-long-hair-that-i-ve-been-growing-out-for-years-and-worry-that-i-ll-lose-it-but/ | Also I have long hair that I’ve been growing out for years and worry that I’ll lose it but if that’s the cost of feeling better than oh well — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/during-that-time-i-ve-experimented-with-different-dosages-and-frequencies-to-see-what-work/ | During that time, I’ve experimented with different dosages and frequencies to see what works best with the fewest side effects, giving each adjustment about five weeks for hormones to stabilize before checking blood mark — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/i-ve-got-my-urologist-appointment-in-a-couple-days-but-i-m-curious-about-incorporating-hcg/ | I’ve got my urologist appointment in a couple days but I’m curious about incorporating hCG into my current protocol and had a few questions: 1 — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/which-source-is-king-what-should-i-know/ | Which source is king — what should I know? |
-| social_public_backlog | dentistry | /dentistry/community-questions/my-dad-runs-a-dental-group-of-four-clinics-what-should-i-know/ | My dad runs a dental group of four clinics — what should I know? |
-| social_public_backlog | personal_injury | /personal-injury/community-questions/if-it-can-help-even-one-family-it-will-be-worth-it-what-should-i-know/ | If it can help even one family it will be worth it — what should I know? |
