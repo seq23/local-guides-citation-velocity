@@ -34,4 +34,4 @@ Result: **PASS**
 
 ## Determinism
 
-A clean rebuild matched the current public render across 1963 fingerprinted files.
+A clean rebuild matched the current public render across 1964 fingerprinted files.
