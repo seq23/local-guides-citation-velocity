@@ -12,7 +12,11 @@ const verticalMap = {pi:'personal_injury',personal_injury:'personal_injury',dent
 const targets = {personal_injury:'https://theaccidentguides.com/request-assistance/',dentistry:'https://dentistryguides.com/request-assistance/',trt:'https://hormonesivhair.com/request-assistance/',neuro:'https://neuroevalguides.com/request-assistance/','uscis-medical':'https://uscisexam.com/request-assistance/'};
 const sourceDefaults = {personal_injury:['SRC-CONGRESS-STATE-LEGISLATURES','SRC-CORNELL-SOL'],dentistry:['SRC-ADA-MOUTHHEALTHY'],trt:['SRC-FDA-TESTOSTERONE'],neuro:['SRC-NIMH-ADHD'],'uscis-medical':['SRC-USCIS-I693']};
 const approval = read('data/community/approval_queue.json');
-const ready = (Array.isArray(approval)?approval:[]).filter((x)=>['APPROVED','READY_TO_PUBLISH'].includes(String(x.status||'').toUpperCase()));
+const ready = (Array.isArray(approval)?approval:[]).filter((x)=>{
+  const statusOk=['APPROVED','READY_TO_PUBLISH'].includes(String(x.status||'').toUpperCase());
+  const op=String(x.operation||'CREATE_NEW_TARGET_PAGE').toUpperCase();
+  return statusOk && op !== 'REPAIR_INTENDED_WINNER_PAGE' && !op.startsWith('BLOCKED_');
+});
 const report = {schema_version:'1.0',run_date:DATE,approved:ready.length,created:[],skipped:[]};
 if (!ready.length) { write('artifacts/validation/velocity-content-release.json',report); console.log('No approved public-signal pages to release.'); process.exit(0); }
 for (const rel of ['content/_staged/pages.json','content/_live/pages.json']) {
@@ -22,7 +26,7 @@ for (const rel of ['content/_staged/pages.json','content/_live/pages.json']) {
     if (!vertical || !targets[vertical]) { report.skipped.push({id:item.id,reason:'unsupported_vertical'}); continue; }
     const question=String(item.query||item.normalized_query||'').trim();
     if (question.length<20) { report.skipped.push({id:item.id,reason:'question_too_short'}); continue; }
-    const route=`/${vertical.replace('_','-')}/community-questions/${slugify(question)}/`;
+    const route=item.target_route || `/${vertical.replace('_','-')}/community-questions/${slugify(question)}/`;
     if (existing.has(route)) continue;
     const sourceRecords=Array.isArray(item.source_records)&&item.source_records.length?item.source_records:sourceDefaults[vertical];
     const sections=[

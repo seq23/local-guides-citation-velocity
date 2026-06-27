@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "4bd3a79293b565700f5af672870f2cecf9e06a44dea121228660c9d9ed133745",
+  "registry_sha256": "53d7df3df75968fa3802ce65db723bf165b2eb24c8dacca802b67b3a225024f0",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 75,
-    "active": 50,
+    "total": 78,
+    "active": 53,
     "on_demand": 10,
     "retired": 15,
     "local_only": 1,
-    "hard_fail": 53,
+    "hard_fail": 56,
     "strong_warning": 5,
     "soft_warning": 2,
     "info": 15
@@ -109,7 +109,10 @@
         "search-quality-basics",
         "agent-run-artifact-intake",
         "citation-agent-fixes",
-        "velocity-intake-workflow"
+        "velocity-intake-workflow",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation"
       ],
       "execution_order": [
         "authority-contracts",
@@ -127,6 +130,9 @@
         "live-hubs",
         "medium-articles",
         "agent-run-artifact-intake",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
         "homepage-request-assistance",
@@ -204,7 +210,10 @@
         "search-quality-basics",
         "agent-run-artifact-intake",
         "citation-agent-fixes",
-        "velocity-intake-workflow"
+        "velocity-intake-workflow",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation"
       ],
       "execution_order": [
         "authority-contracts",
@@ -224,6 +233,9 @@
         "live-hubs",
         "medium-articles",
         "agent-run-artifact-intake",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
         "homepage-request-assistance",
@@ -306,7 +318,10 @@
         "search-quality-basics",
         "agent-run-artifact-intake",
         "citation-agent-fixes",
-        "velocity-intake-workflow"
+        "velocity-intake-workflow",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation"
       ],
       "execution_order": [
         "authority-contracts",
@@ -326,6 +341,9 @@
         "live-hubs",
         "medium-articles",
         "agent-run-artifact-intake",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
         "homepage-request-assistance",
@@ -433,7 +451,10 @@
         "search-quality-basics",
         "agent-run-artifact-intake",
         "citation-agent-fixes",
-        "velocity-intake-workflow"
+        "velocity-intake-workflow",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation"
       ],
       "execution_order": [
         "authority-contracts",
@@ -453,6 +474,9 @@
         "live-hubs",
         "medium-articles",
         "agent-run-artifact-intake",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
         "homepage-request-assistance",
@@ -545,7 +569,10 @@
         "search-quality-basics",
         "agent-run-artifact-intake",
         "citation-agent-fixes",
-        "velocity-intake-workflow"
+        "velocity-intake-workflow",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation"
       ],
       "execution_order": [
         "authority-contracts",
@@ -565,6 +592,9 @@
         "live-hubs",
         "medium-articles",
         "agent-run-artifact-intake",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
         "homepage-request-assistance",
@@ -769,7 +799,10 @@
         "search-quality-basics",
         "agent-run-artifact-intake",
         "citation-agent-fixes",
-        "velocity-intake-workflow"
+        "velocity-intake-workflow",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation"
       ],
       "execution_order": [
         "authority-contracts",
@@ -787,6 +820,9 @@
         "live-hubs",
         "medium-articles",
         "agent-run-artifact-intake",
+        "agent-exact-implementation-plan",
+        "agent-exact-implementation-trace",
+        "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
         "homepage-request-assistance",
@@ -928,6 +964,18 @@
     {
       "from": "workflow-contract",
       "to": "velocity-intake-workflow"
+    },
+    {
+      "from": "agent-run-artifact-intake",
+      "to": "agent-exact-implementation-plan"
+    },
+    {
+      "from": "agent-exact-implementation-plan",
+      "to": "agent-exact-implementation-trace"
+    },
+    {
+      "from": "agent-exact-implementation-trace",
+      "to": "agent-exact-implementation"
     }
   ],
   "by_severity": {
@@ -2894,6 +2942,123 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Twin Agent artifact absorption could be split into an untracked workflow, miss the after-noon Central fallback, or stop filling from social backlog.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-exact-implementation-plan",
+        "title": "Exact agent intended-winner implementation plan",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "core",
+          "release",
+          "strict",
+          "audit",
+          "postrelease",
+          "local"
+        ],
+        "path": "scripts/validators/validate_agent_exact_implementation_plan.js",
+        "command": "node scripts/validators/validate_agent_exact_implementation_plan.js",
+        "depends_on": [
+          "agent-run-artifact-intake"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_exact_implementation_policy.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-exact-implementation-plan.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-exact-implementation-plan.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-exact-implementation-trace",
+        "title": "Exact agent intended-winner implementation trace",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "core",
+          "release",
+          "strict",
+          "audit",
+          "postrelease",
+          "local"
+        ],
+        "path": "scripts/validators/validate_agent_exact_implementation_trace.js",
+        "command": "node scripts/validators/validate_agent_exact_implementation_trace.js",
+        "depends_on": [
+          "agent-exact-implementation-plan"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_exact_implementation_policy.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-exact-implementation-trace.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-exact-implementation-trace.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-exact-implementation",
+        "title": "Exact agent intended-winner implementation validator",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "core",
+          "release",
+          "strict",
+          "audit",
+          "postrelease",
+          "local"
+        ],
+        "path": "scripts/validators/validate_agent_exact_implementation.js",
+        "command": "node scripts/validators/validate_agent_exact_implementation.js",
+        "depends_on": [
+          "agent-exact-implementation-trace"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_exact_implementation_policy.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-exact-implementation.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-exact-implementation.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -4894,6 +5059,123 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Agent-run findings could be imported without durable ledger records, implementation status, or release plan evidence.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-exact-implementation-plan",
+        "title": "Exact agent intended-winner implementation plan",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "core",
+          "release",
+          "strict",
+          "audit",
+          "postrelease",
+          "local"
+        ],
+        "path": "scripts/validators/validate_agent_exact_implementation_plan.js",
+        "command": "node scripts/validators/validate_agent_exact_implementation_plan.js",
+        "depends_on": [
+          "agent-run-artifact-intake"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_exact_implementation_policy.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-exact-implementation-plan.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-exact-implementation-plan.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-exact-implementation-trace",
+        "title": "Exact agent intended-winner implementation trace",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "core",
+          "release",
+          "strict",
+          "audit",
+          "postrelease",
+          "local"
+        ],
+        "path": "scripts/validators/validate_agent_exact_implementation_trace.js",
+        "command": "node scripts/validators/validate_agent_exact_implementation_trace.js",
+        "depends_on": [
+          "agent-exact-implementation-plan"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_exact_implementation_policy.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-exact-implementation-trace.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-exact-implementation-trace.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-exact-implementation",
+        "title": "Exact agent intended-winner implementation validator",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "core",
+          "release",
+          "strict",
+          "audit",
+          "postrelease",
+          "local"
+        ],
+        "path": "scripts/validators/validate_agent_exact_implementation.js",
+        "command": "node scripts/validators/validate_agent_exact_implementation.js",
+        "depends_on": [
+          "agent-exact-implementation-trace"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_exact_implementation_policy.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-exact-implementation.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-exact-implementation.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

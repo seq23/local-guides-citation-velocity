@@ -63,6 +63,8 @@ jobs:
             git fetch origin main
             git rebase origin/main
             npm run release:self-healing
+            npm run trace:agent-exact
+            npm run validate:agent-exact
             npm run trace:citation-agent-fixes
             npm run validate:citation-agent-fixes
             git add -A
@@ -81,3 +83,6 @@ jobs:
             logs/**
             artifacts/validation/**
             data/report_fixes/normalized_agent_runs/**
+            data/report_fixes/agent_exact_implementation_policy.json
+            data/report_fixes/agent_exact_implementation_plan.json
+            artifacts/validation/agent-exact-implementation*.json

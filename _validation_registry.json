@@ -3176,6 +3176,141 @@
         "artifacts/validation/velocity-intake-workflow.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "agent-exact-implementation-plan",
+      "title": "Exact agent intended-winner implementation plan",
+      "path": "scripts/validators/validate_agent_exact_implementation_plan.js",
+      "command": "node scripts/validators/validate_agent_exact_implementation_plan.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "core",
+        "release",
+        "strict",
+        "audit",
+        "postrelease",
+        "local"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "content"
+      ],
+      "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
+      "why_existing_checks_do_not_cover": "Existing artifact and ledger validators prove intake but not exact intended-winner implementation.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/agent-exact-implementation-plan.json",
+      "failure_action": "stop release and repair exact intended-winner implementation tracing",
+      "depends_on": [
+        "agent-run-artifact-intake"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_exact_implementation_policy.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/agent-exact-implementation-plan.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-exact-implementation-plan.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "agent-exact-implementation-trace",
+      "title": "Exact agent intended-winner implementation trace",
+      "path": "scripts/validators/validate_agent_exact_implementation_trace.js",
+      "command": "node scripts/validators/validate_agent_exact_implementation_trace.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "core",
+        "release",
+        "strict",
+        "audit",
+        "postrelease",
+        "local"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "content"
+      ],
+      "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
+      "why_existing_checks_do_not_cover": "Existing artifact and ledger validators prove intake but not exact intended-winner implementation.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/agent-exact-implementation-trace.json",
+      "failure_action": "stop release and repair exact intended-winner implementation tracing",
+      "depends_on": [
+        "agent-exact-implementation-plan"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_exact_implementation_policy.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/agent-exact-implementation-trace.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-exact-implementation-trace.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "agent-exact-implementation",
+      "title": "Exact agent intended-winner implementation validator",
+      "path": "scripts/validators/validate_agent_exact_implementation.js",
+      "command": "node scripts/validators/validate_agent_exact_implementation.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "core",
+        "release",
+        "strict",
+        "audit",
+        "postrelease",
+        "local"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "content"
+      ],
+      "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
+      "why_existing_checks_do_not_cover": "Existing artifact and ledger validators prove intake but not exact intended-winner implementation.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/agent-exact-implementation.json",
+      "failure_action": "stop release and repair exact intended-winner implementation tracing",
+      "depends_on": [
+        "agent-exact-implementation-trace"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_exact_implementation_policy.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/agent-exact-implementation.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-exact-implementation.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {
