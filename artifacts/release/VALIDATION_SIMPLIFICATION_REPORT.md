@@ -12,11 +12,11 @@ Result: **PASS**
 
 ## Inventory
 
-- Registered checks: 78
-- Active checks: 53
-- On-demand checks: 10
+- Registered checks: 83
+- Active checks: 57
+- On-demand checks: 11
 - Retired checks: 15
-- Hard-fail registrations: 56
+- Hard-fail registrations: 61
 - Strong-warning registrations: 5
 - Soft-warning registrations: 2
 - Informational registrations: 15
@@ -34,4 +34,4 @@ Result: **PASS**
 
 ## Determinism
 
-A clean rebuild matched the current public render across 1963 fingerprinted files.
+A clean rebuild matched the current public render across 2005 fingerprinted files.

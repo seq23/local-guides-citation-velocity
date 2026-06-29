@@ -88,35 +88,45 @@ if not key_file_present:
 
 submissions = []
 status = "success"
+chunk_size = int(os.environ.get('INDEXNOW_CHUNK_SIZE', '100') or '100')
+chunk_size = max(1, min(chunk_size, 100))
+
+def chunks(items, n):
+    for i in range(0, len(items), n):
+        yield i // n + 1, items[i:i+n]
 
 def submit(host, host_urls):
-    payload = {"host": host, "key": key, "urlList": host_urls}
-    record = {"host": host, "count": len(host_urls), "status": "pending", "httpStatus": None, "error": None}
-    if dry_run:
-        record["status"] = "dry-run"
-        print(f"IndexNow DRY RUN: host={host} count={len(host_urls)}")
-        return record
-    body = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json; charset=utf-8"}, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            text = resp.read().decode("utf-8", errors="replace")
-            record["httpStatus"] = resp.status
-            record["status"] = "success" if 200 <= resp.status < 300 else "failed"
-            if text.strip():
-                record["response"] = text.strip()[:500]
-            print(f"IndexNow submit {record['status']}: host={host} count={len(host_urls)} status={resp.status}")
-    except Exception as exc:
-        record["status"] = "failed"
-        record["error"] = str(exc)
-        print(f"IndexNow submit failed: host={host} count={len(host_urls)} error={exc}")
-    return record
+    host_records = []
+    for chunk_index, url_chunk in chunks(host_urls, chunk_size):
+        payload = {"host": host, "key": key, "urlList": url_chunk}
+        record = {"host": host, "count": len(url_chunk), "chunk": chunk_index, "status": "pending", "httpStatus": None, "error": None}
+        if dry_run:
+            record["status"] = "dry-run"
+            print(f"IndexNow DRY RUN: host={host} chunk={chunk_index} count={len(url_chunk)}")
+            host_records.append(record)
+            continue
+        body = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json; charset=utf-8"}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                text = resp.read().decode("utf-8", errors="replace")
+                record["httpStatus"] = resp.status
+                record["status"] = "success" if 200 <= resp.status < 300 else "failed"
+                if text.strip():
+                    record["response"] = text.strip()[:500]
+                print(f"IndexNow submit {record['status']}: host={host} chunk={chunk_index} count={len(url_chunk)} status={resp.status}")
+        except Exception as exc:
+            record["status"] = "failed"
+            record["error"] = str(exc)
+            print(f"IndexNow submit failed: host={host} chunk={chunk_index} count={len(url_chunk)} error={exc}")
+        host_records.append(record)
+    return host_records
 
 if allow_mixed and len(by_host) > 1:
     for host in sorted(by_host):
-        submissions.append(submit(host, by_host[host]))
+        submissions.extend(submit(host, by_host[host]))
 else:
-    submissions.append(submit(forced_host, urls))
+    submissions.extend(submit(forced_host, urls))
 
 if any(r["status"] == "failed" for r in submissions):
     status = "partial" if any(r["status"] in {"success", "dry-run"} for r in submissions) else "failed"

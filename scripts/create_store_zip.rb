@@ -17,7 +17,8 @@ exclude_file = lambda do |rel|
   return true if parts.include?('tmp')
   return true if parts.include?('logs')
   return true if parts.include?('.build')
-  return true if parts.include?('dist')
+  # LKG updater completeness gate requires dist/ in baseline ZIPs.
+  # dist/ remains gitignored and excluded from source hygiene, but it must be present in operator handoff archives.
   return true if parts.include?('reports')
   return true if parts.include?('.git') && !include_git
   return true if parts[0, 3] == ['artifacts', 'validation', 'runtime']

@@ -108,6 +108,19 @@ else
   echo "Skipping validate:all."
 fi
 
+echo "Verifying LKG updater completeness artifacts..."
+if [[ ! -d dist ]]; then
+  echo "Snapshot refused: required updater directory missing: dist/" >&2
+  exit 1
+fi
+for coverage_file in coverage_targets.csv coverage_runtime_support.csv coverage_promoted.csv; do
+  if [[ ! -f "$coverage_file" && -f "data/$coverage_file" ]]; then
+    cp "data/$coverage_file" "$coverage_file"
+  fi
+  require_file "$coverage_file"
+done
+require_file data/site.json
+
 if [[ -n "$SHA_OVERRIDE" ]]; then
   SHA="$SHA_OVERRIDE"
 elif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then

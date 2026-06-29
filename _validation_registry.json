@@ -3088,6 +3088,64 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "html-report-contract",
+      "title": "Twin Agent HTML report contract",
+      "path": "scripts/validators/validate_html_report_contract.js",
+      "command": "node scripts/validators/validate_html_report_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "core",
+        "release",
+        "strict",
+        "audit",
+        "postrelease",
+        "local"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "content",
+        "html-report"
+      ],
+      "risk_prevented": "Twin Agent HTML summaries could be attached but ignored, causing page-fix sections and pages-to-build recommendations to be lost.",
+      "why_existing_checks_do_not_cover": "CSV artifact intake validates tabular rows, but not the human-readable HTML report sections that contain explicit New Fixes, Pending Action, and Pages to Build items.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/html-report-contract-validation.json",
+      "failure_action": "stop release and repair HTML report contract ingestion",
+      "depends_on": [
+        "agent-run-artifact-intake"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_runs"
+      ],
+      "prepare_commands": [
+        "npm run citation:apply-html-report-contract"
+      ],
+      "prepare_produces_files": [
+        "artifacts/validation/html-report-contract.json",
+        "data/report_fixes/html_report_contract.generated.json"
+      ],
+      "prepare_mutates_files": [
+        "artifacts/validation/html-report-contract.json",
+        "data/report_fixes/html_report_contract.generated.json",
+        "data/community/approval_queue.json",
+        "content/_live/insights.json",
+        "content/_live/pages.json",
+        "content/_staged/pages.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/html-report-contract-validation.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/html-report-contract-validation.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "citation-agent-fixes",
       "title": "Cumulative citation-agent fix ledger contract",
       "path": "scripts/validators/validate_citation_agent_fixes.js",
@@ -3199,7 +3257,7 @@
         "citation-velocity",
         "content"
       ],
-      "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs.",
+      "risk_prevented": "Agent artifact page-fix recommendations could be satisfied by unrelated supporting pages or fallback content instead of exact intended-winner repairs. The planner is admitted as a controlled source-refresh validator because the implementation plan is durable release evidence.",
       "why_existing_checks_do_not_cover": "Existing artifact and ledger validators prove intake but not exact intended-winner implementation.",
       "estimated_runtime_seconds": 30,
       "timeout_seconds": 300,
@@ -3215,12 +3273,14 @@
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
-        "artifacts/validation/agent-exact-implementation-plan.json"
+        "artifacts/validation/agent-exact-implementation-plan.json",
+        "data/report_fixes/agent_exact_implementation_plan.json"
       ],
       "mutates_files": [
-        "artifacts/validation/agent-exact-implementation-plan.json"
+        "artifacts/validation/agent-exact-implementation-plan.json",
+        "data/report_fixes/agent_exact_implementation_plan.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": false
     },
     {
       "id": "agent-exact-implementation-trace",
@@ -3309,6 +3369,171 @@
       ],
       "mutates_files": [
         "artifacts/validation/agent-exact-implementation.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "local-pantry",
+      "title": "Local pantry expansion validation",
+      "path": "scripts/content/validate_local_pantry.js",
+      "command": "node scripts/content/validate_local_pantry.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "release",
+        "core",
+        "strict",
+        "audit",
+        "local"
+      ],
+      "tags": [
+        "pantry",
+        "workflow",
+        "authority"
+      ],
+      "risk_prevented": "Prevents pantry or workflow expansion from shipping without executable governance and data trace proof.",
+      "why_existing_checks_do_not_cover": "Existing site validators do not inspect the newly added pantry banks or workflow trace coverage.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/local-pantry.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/content/validate_local_pantry.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/local-pantry.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/local-pantry.json"
+      ],
+      "enforce_no_source_mutation": false
+    },
+    {
+      "id": "local-pantry-trace",
+      "title": "Local pantry usage trace",
+      "path": "scripts/content/validate_local_pantry_trace.js",
+      "command": "node scripts/content/validate_local_pantry_trace.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "release",
+        "core",
+        "strict",
+        "audit",
+        "local"
+      ],
+      "tags": [
+        "pantry",
+        "workflow",
+        "authority"
+      ],
+      "risk_prevented": "Prevents pantry or workflow expansion from shipping without executable governance and data trace proof.",
+      "why_existing_checks_do_not_cover": "Existing site validators do not inspect the newly added pantry banks or workflow trace coverage.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/local-pantry-trace.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/content/trace_local_pantry_usage.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/local-pantry-trace.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/local-pantry-trace.json"
+      ],
+      "enforce_no_source_mutation": false
+    },
+    {
+      "id": "nap-consistency",
+      "title": "NAP citation registry consistency",
+      "path": "scripts/content/validate_nap_consistency.js",
+      "command": "node scripts/content/validate_nap_consistency.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "release",
+        "core",
+        "strict",
+        "audit",
+        "local"
+      ],
+      "tags": [
+        "pantry",
+        "workflow",
+        "authority"
+      ],
+      "risk_prevented": "Prevents pantry or workflow expansion from shipping without executable governance and data trace proof.",
+      "why_existing_checks_do_not_cover": "Existing site validators do not inspect the newly added pantry banks or workflow trace coverage.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/nap-consistency.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/content/validate_nap_consistency.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/nap-consistency.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/nap-consistency.json"
+      ],
+      "enforce_no_source_mutation": false
+    },
+    {
+      "id": "indexnow-batch-budget",
+      "title": "IndexNow batch budget safety",
+      "path": "scripts/validators/validate_indexnow_batch_budget.js",
+      "command": "node scripts/validators/validate_indexnow_batch_budget.js",
+      "status": "ON_DEMAND",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "distribution",
+        "release"
+      ],
+      "tags": [
+        "distribution",
+        "indexing",
+        "search-submission"
+      ],
+      "risk_prevented": "Prevents unsafe IndexNow submission batches from exceeding configured per-run URL limits or carrying invalid URLs.",
+      "why_existing_checks_do_not_cover": "Distribution manifest validation proves artifacts exist but does not separately bound the final IndexNow batch files consumed by submission tooling.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/indexnow-batch-budget.json",
+      "failure_action": "stop release and rebuild search submission artifacts",
+      "depends_on": [
+        "distribution-inputs"
+      ],
+      "requires_files": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/indexnow-batch-budget.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/indexnow-batch-budget.json"
       ],
       "enforce_no_source_mutation": true
     }

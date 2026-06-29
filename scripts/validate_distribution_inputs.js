@@ -52,3 +52,13 @@ if (!process.exitCode) {
 
   console.log(`Distribution input validation passed (priority=${priority.length}, batch=${batch.length})`);
 }
+
+if (!process.exitCode) {
+  const outDir = path.join(ROOT, 'artifacts', 'validation');
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(path.join(outDir, 'distribution-inputs.json'), JSON.stringify({
+    status: 'PASS',
+    validator: 'distribution-inputs',
+    generated_at: new Date().toISOString()
+  }, null, 2) + '\n');
+}

@@ -1007,14 +1007,28 @@ function writeDistributionArtifacts(siteBase, allUrls){
     .slice(0, 35)
     .map((entry) => entry.loc);
 
-  const batch = unique.map((entry) => entry.loc);
+  const rawBatch = unique.map((entry) => entry.loc);
+  const INDEXNOW_SAFE_BATCH_LIMIT = Number.parseInt(process.env.INDEXNOW_SAFE_BATCH_LIMIT || '100', 10);
+  const safeBatchLimit = Number.isFinite(INDEXNOW_SAFE_BATCH_LIMIT) && INDEXNOW_SAFE_BATCH_LIMIT > 0 ? INDEXNOW_SAFE_BATCH_LIMIT : 100;
+  const batch = [];
+  for (const url of priority) if (batch.length < safeBatchLimit && !batch.includes(url)) batch.push(url);
+  for (const entry of unique.slice().sort((a, b) => scorePriority(b) - scorePriority(a))) {
+    if (batch.length >= safeBatchLimit) break;
+    if (!batch.includes(entry.loc)) batch.push(entry.loc);
+  }
+  const deferredBatch = rawBatch.filter((url) => !batch.includes(url));
   writeUtf8(path.join(ROOT, '.build', 'indexnow-priority.txt'), priority.join('\n') + '\n');
   writeUtf8(path.join(ROOT, '.build', 'distribution-priority-urls.txt'), priority.join('\n') + '\n');
   writeUtf8(path.join(ROOT, '.build', 'indexnow-batch.txt'), batch.join('\n') + '\n');
+  writeUtf8(path.join(ROOT, '.build', 'indexnow-deferred-batch.txt'), deferredBatch.join('\n') + (deferredBatch.length ? '\n' : ''));
   writeUtf8(path.join(ROOT, '.build', 'distribution-readme.txt'), [
     'Option B distribution layer for The Industry Guides',
     '',
     `Primary sitemap: ${siteBase}/sitemap.xml`,
+    `IndexNow priority URLs: ${priority.length}`,
+    `IndexNow batch URLs: ${batch.length}`,
+    `IndexNow deferred URLs: ${deferredBatch.length}`,
+    `IndexNow safe batch limit: ${safeBatchLimit}`,
     'Use distribution_scripts/deploy_distribution.sh after each deploy.',
     'Manual GSC request-indexing should be limited to 5-10 highest-priority URLs.'
   ].join('\n') + '\n');

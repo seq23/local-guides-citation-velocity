@@ -45,3 +45,14 @@ if (!process.exitCode) {
   if (!inspection.priority_file || !inspection.output_dir) fail('inspection priority_file/output_dir must be configured');
   console.log(`Distribution contract validation passed (hosts=${idx.hosts.length}, chunk_size=${idx.chunk_size})`);
 }
+
+if (!process.exitCode) {
+  const outDir = path.join(ROOT, 'artifacts', 'validation');
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(path.join(outDir, 'distribution-contract.json'), JSON.stringify({
+    status: 'PASS',
+    validator: 'distribution-contract',
+    config_file: path.relative(ROOT, configPath).replace(/\\/g, '/'),
+    generated_at: new Date().toISOString()
+  }, null, 2) + '\n');
+}

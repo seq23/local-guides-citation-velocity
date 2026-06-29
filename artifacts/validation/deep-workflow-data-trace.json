@@ -1,0 +1,258 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-06-27T15:32:34.904Z",
+  "status": "PASS",
+  "workflow_count": 6,
+  "errors": [],
+  "warnings": [],
+  "workflows": [
+    {
+      "workflow": "deploy-distribution.yml",
+      "command_count": 1,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "node scripts/prepare_distribution_from_attestation.js",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/prepare_distribution_from_attestation.js",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "postdeploy_public_audit.yml",
+      "command_count": 1,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "npm run postdeploy:public-click-audit",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "postdeploy:public-click-audit",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "release_batch.yml",
+      "command_count": 8,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "npm ci --ignore-scripts",
+          "status": "PASS",
+          "checks": []
+        },
+        {
+          "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
+          "status": "PASS",
+          "checks": []
+        },
+        {
+          "command": "node scripts/compile_reddit_queries.js",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/compile_reddit_queries.js",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "node scripts/release_batch.js \"$BATCH_SIZE",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/release_batch.js",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "node scripts/release_batch.js \"$BATCH_SIZE\"",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/release_batch.js",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run build",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "build",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run guardrails:all",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "guardrails:all",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run release:self-healing",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "release:self-healing",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "validate.yml",
+      "command_count": 2,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "npm ci --ignore-scripts",
+          "status": "PASS",
+          "checks": []
+        },
+        {
+          "command": "npm run release:ci-validate",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "release:ci-validate",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "velocity_content_release.yml",
+      "command_count": 8,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "npm ci --ignore-scripts",
+          "status": "PASS",
+          "checks": []
+        },
+        {
+          "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
+          "status": "PASS",
+          "checks": []
+        },
+        {
+          "command": "npm run release:velocity-intake",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "release:velocity-intake",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run release:self-healing",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "release:self-healing",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run trace:agent-exact",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "trace:agent-exact",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run validate:agent-exact",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate:agent-exact",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run trace:citation-agent-fixes",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "trace:citation-agent-fixes",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run validate:citation-agent-fixes",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate:citation-agent-fixes",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "velocity_full_rebuild.yml",
+      "command_count": 2,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
+          "status": "PASS",
+          "checks": []
+        },
+        {
+          "command": "npm run release:self-healing",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "release:self-healing",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

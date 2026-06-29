@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+const fs=require('fs'), path=require('path'); const p=path.join(process.cwd(),'content-bank','nap-citation-registry.json'); const obj=JSON.parse(fs.readFileSync(p,'utf8')); const seen=new Map(), errors=[];
+for(const r of obj.records||[]){ if(!r.business_name) errors.push('NAP record missing business_name'); const key=r.business_name; const prev=seen.get(key); if(prev && JSON.stringify(prev)!==JSON.stringify(r)) errors.push(`inconsistent NAP for ${key}`); seen.set(key,r); }
+const report={status:errors.length?'FAIL':'PASS',records:(obj.records||[]).length,errors}; fs.mkdirSync('reports',{recursive:true}); fs.mkdirSync('artifacts/validation',{recursive:true}); fs.writeFileSync('reports/nap-consistency.json',JSON.stringify(report,null,2)+'\n'); fs.writeFileSync('artifacts/validation/nap-consistency.json',JSON.stringify(report,null,2)+'\n'); console[errors.length?'error':'log'](JSON.stringify(report,null,2)); if(errors.length) process.exit(1);
