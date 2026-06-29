@@ -180,6 +180,70 @@ function parsePagesToBuild(text, context) {
   return pages;
 }
 
+
+function normalizePageUrl(value) {
+  const raw = normalizeSpace(value);
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/')) return `https://theindustryguides.com${raw}`;
+  if (/^[a-z0-9][a-z0-9/_-]+(?:\.html)?$/i.test(raw)) return `https://theindustryguides.com/${raw}`;
+  return raw;
+}
+
+function jsonFixRecords(payload, context) {
+  const out = [];
+  const categories = [
+    ['free_wins', 'json_free_win'],
+    ['outperform', 'json_outperform'],
+    ['page_fixes', 'json_page_fix']
+  ];
+  for (const [key, fixType] of categories) {
+    for (const item of Array.isArray(payload[key]) ? payload[key] : []) {
+      const pageUrl = normalizePageUrl(item.file_path || item.page_url || item.url || item.target_page || '');
+      const query = cleanQuery(item.query || item.Query || '');
+      const recommendation = item.fix || item.fix_recommendation || item['Fix Recommendation'] || item.edit_instruction || '';
+      if (!pageUrl || !query || !recommendation) continue;
+      const row = {
+        ...context,
+        page_url: pageUrl,
+        query,
+        fix_type: fixType,
+        fix_recommendation: compact(recommendation, 900),
+        gap: compact(item.gap || '', 900),
+        model: item.model || '',
+        level: item.level || '',
+        source_category: key,
+        raw_text: `${query} ${pageUrl} ${recommendation}`,
+        status: 'PLANNED'
+      };
+      row.id = `html_fix_${sha(`${row.report_json_path || row.report_html_path}:${row.page_url}:${row.query}:${row.fix_recommendation}`, 16)}`;
+      out.push(row);
+    }
+  }
+  return out;
+}
+
+function jsonPagesToBuild(payload, context) {
+  const out = [];
+  for (const item of Array.isArray(payload.pages_to_build) ? payload.pages_to_build : []) {
+    const query = cleanQuery(item.query || item.Query || '');
+    if (!query || query.length < 8) continue;
+    const row = {
+      ...context,
+      query,
+      discovery_source: item.discovery_source || item.source || 'json_agent_artifact',
+      cluster: slugify(item.recommended_cluster || item.cluster || 'guide'),
+      why_worth_building: compact(item.why_worth_building || item.why || item.reason || '', 700),
+      raw_lines: [JSON.stringify(item)],
+      target_route: routeFor(context.vertical, query),
+      status: 'APPROVED'
+    };
+    row.id = `html_page_${sha(`${row.report_json_path || row.report_html_path}:${row.vertical}:${row.query}`, 16)}`;
+    out.push(row);
+  }
+  return out;
+}
+
 function walkManifests(dirRel = AGENT_ROOT) {
   const start = rel(dirRel);
   const out = [];
@@ -310,7 +374,7 @@ function approvalFromPageSpec(spec) {
     status: 'APPROVED',
     source: 'html_report_contract',
     source_run_id: `${spec.run_date}_${vertical}_html_report`,
-    source_artifacts: { manifest: spec.manifest_path, html: spec.report_html_path },
+    source_artifacts: { manifest: spec.manifest_path, html: spec.report_html_path, json: spec.report_json_path || '' },
     vertical,
     query,
     normalized_query: query,
@@ -375,15 +439,26 @@ function parseReports() {
     try { manifest = readJson(manifestPath, null); } catch (err) { errors.push(`${manifestPath}:invalid_json:${err.message}`); continue; }
     if (!manifest || !manifest.html_path) { errors.push(`${manifestPath}:missing_html_path`); continue; }
     if (!exists(manifest.html_path)) { errors.push(`${manifestPath}:html_file_missing:${manifest.html_path}`); continue; }
-    const html = readText(manifest.html_path);
     const vertical = normalizeVertical(manifest.vertical);
-    const context = { manifest_path: manifestPath, report_html_path: manifest.html_path, run_date: manifest.run_date, vertical };
-    const newFixText = htmlToText(extractSection(html, 'New Fixes'));
-    const pendingText = htmlToText(extractSection(html, 'Pending Your Action'));
-    const pagesText = htmlToText(extractSection(html, 'Pages to Build'));
-    const fixes = [...parseFixLines(newFixText, context), ...parseFixLines(pendingText, { ...context, pending_action: true })];
-    const pages = parsePagesToBuild(pagesText, context).filter(p => SUPPORTED_VERTICALS.has(p.vertical));
-    parsed.push({ manifest_path: manifestPath, html_path: manifest.html_path, vertical, run_date: manifest.run_date, new_fix_count: fixes.filter(f => !f.pending_action).length, pending_fix_count: fixes.filter(f => f.pending_action).length, page_to_build_count: pages.length });
+    const context = { manifest_path: manifestPath, report_html_path: manifest.html_path, report_json_path: manifest.json_path || '', run_date: manifest.run_date, vertical };
+    let fixes = [];
+    let pages = [];
+    let parser = 'html';
+    if (manifest.json_path && exists(manifest.json_path)) {
+      const payload = readJson(manifest.json_path, null);
+      if (!payload) { errors.push(`${manifestPath}:invalid_json_path:${manifest.json_path}`); continue; }
+      fixes = jsonFixRecords(payload, context);
+      pages = jsonPagesToBuild(payload, context).filter(p => SUPPORTED_VERTICALS.has(p.vertical));
+      parser = 'json';
+    } else {
+      const html = readText(manifest.html_path);
+      const newFixText = htmlToText(extractSection(html, 'New Fixes'));
+      const pendingText = htmlToText(extractSection(html, 'Pending Your Action'));
+      const pagesText = htmlToText(extractSection(html, 'Pages to Build'));
+      fixes = [...parseFixLines(newFixText, context), ...parseFixLines(pendingText, { ...context, pending_action: true })];
+      pages = parsePagesToBuild(pagesText, context).filter(p => SUPPORTED_VERTICALS.has(p.vertical));
+    }
+    parsed.push({ manifest_path: manifestPath, html_path: manifest.html_path, json_path: manifest.json_path || '', parser, vertical, run_date: manifest.run_date, new_fix_count: fixes.filter(f => !f.pending_action).length, pending_fix_count: fixes.filter(f => f.pending_action).length, page_to_build_count: pages.length });
     allFixes.push(...fixes);
     allPages.push(...pages);
   }

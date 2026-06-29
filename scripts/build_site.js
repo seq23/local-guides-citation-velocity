@@ -40,6 +40,7 @@ const { getPageShapeConfig } = require('./lib/page_shape_config');
 const { renderCitationVelocityArtifacts } = require('./lib/citation_velocity_artifacts');
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
+const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
 
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
@@ -201,6 +202,10 @@ function nowISODate(){
 }
 
 function loadJson(p){ return JSON.parse(readUtf8(p)); }
+function loadAgentExactLedger(){
+  const ledgerPath = path.join(ROOT, 'data', 'report_fixes', 'agent_exact_implementation_ledger.json');
+  return exists(ledgerPath) ? loadJson(ledgerPath) : { entries: [] };
+}
 
 function renderLayout({title, description, absUrl, bodyHtml, jsonld}){
   const tpl = readUtf8(LAYOUT);
@@ -1124,7 +1129,7 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
   const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
   const pagesPayload = exists(path.join(ROOT, 'content', '_live', 'pages.json')) ? JSON.parse(readUtf8(path.join(ROOT, 'content', '_live', 'pages.json'))) : { pages: [] };
-  pagesPayload.pages = normalizePageClusters(Array.isArray(pagesPayload.pages) ? pagesPayload.pages : [], clusterRegistry);
+  pagesPayload.pages = normalizePageClusters(Array.isArray(pagesPayload.pages) ? pagesPayload.pages : [], clusterRegistry).map((page) => applyAgentExactRepairsToPage(page, loadAgentExactLedger()));
   const pageRouteMap = new Map(pagesPayload.pages.map((page) => [page.slug, page]));
   const clusterBuckets = new Map();
   const verticalBuckets = new Map();
@@ -1527,7 +1532,9 @@ for (const [vertical, meta] of Object.entries(registry)) {
 
   const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
-  const atlasPages = normalizePageClusters(pagesPayload.data.pages || [], clusterRegistry).filter((page) => page && page.publication_status !== 'EVIDENCE_ONLY' && !(typeof page.path === 'string' && page.path.startsWith('/insights/')));
+  const atlasPages = normalizePageClusters(pagesPayload.data.pages || [], clusterRegistry)
+    .filter((page) => page && page.publication_status !== 'EVIDENCE_ONLY' && !(typeof page.path === 'string' && page.path.startsWith('/insights/')))
+    .map((page) => applyAgentExactRepairsToPage(page, loadAgentExactLedger()));
   pagesPayload.data.pages = atlasPages;
   const atlasInsightItems = buildMergedInsightItems();
   const clusterPages = atlasPages.filter((page) => page && page.cluster);

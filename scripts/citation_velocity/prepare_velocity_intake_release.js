@@ -121,7 +121,9 @@ function artifactErrors(manifest, manifestRel) {
   const errors = [];
   for (const key of ['source', 'run_date', 'vertical', 'csv_path', 'html_path', 'status']) if (!manifest[key]) errors.push(`${manifestRel}:missing:${key}`);
   for (const key of ['csv_path', 'html_path']) if (manifest[key] && !fs.existsSync(rel(manifest[key]))) errors.push(`${manifestRel}:missing-file:${manifest[key]}`);
+  if (manifest.json_path && !fs.existsSync(rel(manifest.json_path))) errors.push(`${manifestRel}:missing-file:${manifest.json_path}`);
   if (manifest.html_path && !String(manifest.html_path).toLowerCase().endsWith('.html')) errors.push(`${manifestRel}:html_path_must_end_html:${manifest.html_path}`);
+  if (manifest.json_path && !String(manifest.json_path).toLowerCase().endsWith('.json')) errors.push(`${manifestRel}:json_path_must_end_json:${manifest.json_path}`);
   if (manifest.status && !['READY_FOR_ABSORPTION', 'ABSORBED', 'QUARANTINED', 'IMPORTED'].includes(String(manifest.status))) errors.push(`${manifestRel}:bad-status:${manifest.status}`);
   return errors;
 }
@@ -129,7 +131,11 @@ function questionFromRow(row) {
   return row.Query || row.query || row['Target Query'] || row['query_target'] || row.Question || row['Recommendation Query'] || '';
 }
 function desiredPageFromRow(row) {
-  return row['Intended Winner Page'] || row.url || row.URL || row.page || row['Target URL'] || row.target_page || '';
+  const repoFilePath = row['Repo File Path'] || row.repo_file_path || row['File Path'] || row.file_path || '';
+  const intended = row['Intended Winner Page'] || row.url || row.URL || row.page || row['Target URL'] || row.target_page || '';
+  // New 2026-06-29 agent artifacts may place a human title in Intended Winner Page
+  // and the machine-resolvable URL in Repo File Path. Prefer the explicit path.
+  return repoFilePath || intended;
 }
 function rowNeedsPatch(row) {
   if (boolish(row['Patch Needed (Y/N)'] || row.patch_needed)) return true;
@@ -157,10 +163,16 @@ function loadPolicy() {
   });
 }
 function manifestAllowedByPolicy(manifest, policy) {
-  const statuses = new Set(policy.process_manifest_statuses || ['READY_FOR_ABSORPTION']);
-  if (!statuses.has(String(manifest.status))) return false;
   if (policy.retroactive_processing === false && manifest.run_date && policy.effective_from && manifest.run_date < policy.effective_from) return false;
-  return true;
+  const status = String(manifest.status || '');
+  const statuses = new Set(policy.process_manifest_statuses || ['READY_FOR_ABSORPTION']);
+  if (statuses.has(status)) return true;
+  // New vertical artifact bundles may arrive pre-marked ABSORBED with json_path and
+  // normalized metadata. Treat these as idempotent current-run inputs after cutover,
+  // not as retroactive historical runs. Re-importing them rewrites the same normalized
+  // path and stable IDs, so scheduled runs remain deterministic.
+  if (status === 'ABSORBED' && manifest.json_path && manifest.run_date && policy.effective_from && manifest.run_date >= policy.effective_from) return true;
+  return false;
 }
 function repoPathFromIntendedWinnerPage(url, policy = loadPolicy()) {
   const raw = String(url || '').trim();
@@ -262,7 +274,7 @@ function importAgentRuns() {
         id: `agent_${sha(sourceKey, 16)}`,
         source: 'twin_agent_artifact',
         source_run_id: runId,
-        source_artifacts: { manifest: manifestRel, csv: manifest.csv_path, html: manifest.html_path },
+        source_artifacts: { manifest: manifestRel, csv: manifest.csv_path, html: manifest.html_path, json: manifest.json_path || '' },
         run_date: manifest.run_date,
         vertical,
         query,
@@ -288,7 +300,7 @@ function importAgentRuns() {
     });
     if (records.length) {
       const normalizedRel = `${NORMALIZED_ROOT}/${manifest.run_date}_${vertical}.json`;
-      writeJson(normalizedRel, { schema_version: '1.1', run_id: runId, manifest: manifestRel, csv_path: manifest.csv_path, html_path: manifest.html_path, record_count: records.length, policy_path: POLICY_PATH, records });
+      writeJson(normalizedRel, { schema_version: '1.2', run_id: runId, manifest: manifestRel, csv_path: manifest.csv_path, html_path: manifest.html_path, json_path: manifest.json_path || '', record_count: records.length, policy_path: POLICY_PATH, records });
       normalized.push(...records);
       manifest.status = 'ABSORBED';
       manifest.absorbed_at = DATE;

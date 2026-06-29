@@ -31,9 +31,17 @@ function main(){
   const allRows=collectNormalizedRecords().filter(row=>row.source==='twin_agent_artifact');
   const selectedRows=allRows.filter(row=>selectedIds.has(row.id));
   const blockedRows=allRows.filter(row=>String(row.status||'').startsWith('BLOCKED_') || String(row.operation||'').startsWith('BLOCKED_'));
+  const selectedRepairTargets=new Set(selectedRows
+    .filter(row=>row.operation==='REPAIR_INTENDED_WINNER_PAGE' && row.intended_winner_path)
+    .map(row=>row.intended_winner_path));
+  const siblingRepairRows=allRows.filter(row=>
+    row.operation==='REPAIR_INTENDED_WINNER_PAGE'
+    && row.intended_winner_path
+    && selectedRepairTargets.has(row.intended_winner_path)
+  );
   const rows=[];
   const rowIds=new Set();
-  for(const row of [...selectedRows, ...blockedRows]){
+  for(const row of [...selectedRows, ...siblingRepairRows, ...blockedRows]){
     if(rowIds.has(row.id)) continue;
     rowIds.add(row.id);
     rows.push(row);
@@ -62,7 +70,7 @@ function main(){
     const row=group.row;
     specs.push({record_id:group.record_ids[0], record_ids:group.record_ids, run_date:row.run_date, query:group.queries[0], queries:[...new Set(group.queries)], intended_winner_page:row.intended_winner_page||'', intended_winner_path:implementationPath, target_route:row.target_route||'', implementation_path:implementationPath, supporting_route:row.supporting_route||'', operation:'REPAIR_INTENDED_WINNER_PAGE', before_hash:fileHash(implementationPath), after_hash:null, status:'PLANNED', blocked_reason:'', fix_recommendations:[...new Set(group.recommendations)]});
   }
-  const report={schema_version:'1.1', status:'PASS', generated_at:DATE, policy_path:POLICY_PATH, release_plan:'artifacts/validation/velocity-intake-release-plan.json', selected_agent_rows:selectedRows.length, considered_agent_rows:rows.length, blocked_agent_rows_carried:specs.filter(x=>x.status==='BLOCKED').length, repair_count:specs.filter(x=>x.operation==='REPAIR_INTENDED_WINNER_PAGE').length, new_page_count:specs.filter(x=>x.operation==='CREATE_NEW_TARGET_PAGE').length, blocked_count:specs.filter(x=>x.status==='BLOCKED').length, specs:specs.sort((a,b)=>String(a.implementation_path||a.target_route).localeCompare(String(b.implementation_path||b.target_route)))};
+  const report={schema_version:'1.1', status:'PASS', generated_at:DATE, policy_path:POLICY_PATH, release_plan:'artifacts/validation/velocity-intake-release-plan.json', selected_agent_rows:selectedRows.length, considered_agent_rows:rows.length, selected_repair_targets:selectedRepairTargets.size, blocked_agent_rows_carried:specs.filter(x=>x.status==='BLOCKED').length, repair_count:specs.filter(x=>x.operation==='REPAIR_INTENDED_WINNER_PAGE').length, new_page_count:specs.filter(x=>x.operation==='CREATE_NEW_TARGET_PAGE').length, blocked_count:specs.filter(x=>x.status==='BLOCKED').length, specs:specs.sort((a,b)=>String(a.implementation_path||a.target_route).localeCompare(String(b.implementation_path||b.target_route)))};
   writeJson('artifacts/validation/agent-exact-implementation-plan.json', report);
   writeJson('data/report_fixes/agent_exact_implementation_plan.json', report);
   console.log(`AGENT EXACT IMPLEMENTATION PLAN PASS: repairs=${report.repair_count}; new_pages=${report.new_page_count}; blocked=${report.blocked_count}`);

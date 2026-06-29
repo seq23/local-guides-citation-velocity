@@ -21,7 +21,9 @@ for(const manifestAbs of manifests){const manifestRel=rel(manifestAbs);let m;try
  if(m.vertical&&!allowedVerticals.has(String(m.vertical).toLowerCase()))errors.push(`${manifestRel}:unsupported_vertical:${m.vertical}`);
  if(m.status&&!allowedStatuses.has(String(m.status)))errors.push(`${manifestRel}:bad_status:${m.status}`);
  for(const k of ['csv_path','html_path']){if(m[k]){const p=path.join(ROOT,m[k]);if(!fs.existsSync(p))errors.push(`${manifestRel}:missing_${k}:${m[k]}`);}}
+ if(m.json_path){const jp=path.join(ROOT,m.json_path);if(!fs.existsSync(jp))errors.push(`${manifestRel}:missing_json_path:${m.json_path}`);else{try{const payload=readJson(jp); if(!payload || typeof payload !== 'object') errors.push(`${manifestRel}:json_artifact_not_object:${m.json_path}`);}catch(e){errors.push(`${manifestRel}:invalid_json_artifact:${e.message}`);}}}
  if(m.html_path&&!String(m.html_path).toLowerCase().endsWith('.html'))errors.push(`${manifestRel}:html_path_must_end_html:${m.html_path}`);
+ if(m.json_path&&!String(m.json_path).toLowerCase().endsWith('.json'))errors.push(`${manifestRel}:json_path_must_end_json:${m.json_path}`);
  if(m.csv_path&&fs.existsSync(path.join(ROOT,m.csv_path))){const headers=parseHeader(path.join(ROOT,m.csv_path));const requiredAny=[['Query','query','Target Query','Question'],['Patch Needed (Y/N)','Gap Found','Action Tier','Fix Recommendation']];for(const choices of requiredAny){if(!choices.some(h=>headers.includes(h)))errors.push(`${manifestRel}:csv_missing_any:${choices.join('|')}`);}}
 }
 if(!manifests.length)warnings.push('no_agent_run_manifests_present; social/backlog fallback may still release content');

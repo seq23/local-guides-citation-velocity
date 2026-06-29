@@ -10,6 +10,7 @@ function ensureMetaDescription(desc, title) {
 
 const { renderCitationVelocityArtifacts } = require('./citation_velocity_artifacts');
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, validateContentAtom } = require('./content_atom');
+const { LEDGER_PATH, applyAgentExactRepairsToInsightItem } = require('./agent_exact_repairs');
 const { mergeSchema } = require('./network_schema');
 
 const fs = require('fs');
@@ -382,6 +383,9 @@ function buildInsightInventory() {
     }
   }
 
+  const ledgerPath = path.join(ROOT, LEDGER_PATH);
+  const ledger = exists(ledgerPath) ? loadJson(ledgerPath) : { entries: [] };
+  out.forEach((item) => applyAgentExactRepairsToInsightItem(item, ledger));
   return ensureUniqueInsightMetadata(dedupeInsightAtoms(out));
 }
 

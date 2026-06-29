@@ -1,48 +1,120 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 'use strict';
+
 const fs = require('fs');
 const path = require('path');
-const ROOT=path.resolve(__dirname,'../..');
-const DATE=process.env.SOURCE_DATE||new Date().toISOString().slice(0,10);
-function rel(p){return path.join(ROOT,p)}
-function readJson(p,f=null){try{return JSON.parse(fs.readFileSync(rel(p),'utf8'))}catch{return f}}
-function writeJson(p,v){const out=rel(p);fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(v,null,2)+'\n')}
-function normalize(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
-function slugFromPath(p){return String(p||'').replace(/^insights\//,'').replace(/\.html$/,'')}
-function pagePath(route){return String(route||'').replace(/^\//,'').replace(/\/$/,'/index.html')}
-const plan=readJson('artifacts/validation/agent-exact-implementation-plan.json',{specs:[]});
-const apply=readJson('artifacts/validation/agent-exact-implementation-apply.json',{results:[]});
-const insights=readJson('content/_live/insights.json',{items:[]});
-const livePages=readJson('content/_live/pages.json',{pages:[]});
-const bySlug=new Map((insights.items||[]).map(item=>[item.slug,item]));
-const pageSlugs=new Set((livePages.pages||[]).map(p=>p.slug||p.path));
-const appliedByPath=new Map((apply.results||[]).map(r=>[r.implementation_path,r]));
-const traces=[];const errors=[];
-for(const spec of plan.specs||[]){
-  if(spec.status==='BLOCKED'){
-    const ok=Boolean(spec.blocked_reason);
-    traces.push({...spec, trace_status:ok?'PASS':'FAIL'});
-    if(!ok) errors.push(`${spec.record_id}:blocked row missing blocked_reason`);
+const ROOT = path.resolve(__dirname, '../..');
+const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
+const {
+  LEDGER_PATH,
+  normalizeImplementationPath,
+  routeToImplementationPath,
+  slugFromInsightPath,
+  targetTypeForImplementationPath
+} = require('../lib/agent_exact_repairs');
+
+function rel(p) { return path.join(ROOT, p); }
+function readJson(p, f = null) { try { return JSON.parse(fs.readFileSync(rel(p), 'utf8')); } catch { return f; } }
+function writeJson(p, v) { const out = rel(p); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, JSON.stringify(v, null, 2) + '\n'); }
+function readTextIfExists(p) { try { return fs.readFileSync(rel(p), 'utf8'); } catch { return ''; } }
+function normalize(v) { return String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+function queryNeedle(spec) { return normalize((spec.queries || [spec.query])[0]).split(' ').slice(0, 5).join(' '); }
+function routeKeysForPage(page) {
+  return new Set([
+    normalizeImplementationPath(page.slug || ''),
+    normalizeImplementationPath(page.path || ''),
+    routeToImplementationPath(page.slug || ''),
+    routeToImplementationPath(page.path || '')
+  ].filter(Boolean));
+}
+
+const plan = readJson('artifacts/validation/agent-exact-implementation-plan.json', { specs: [] });
+const apply = readJson('artifacts/validation/agent-exact-implementation-apply.json', { results: [] });
+const ledger = readJson(LEDGER_PATH, { entries: [] });
+const insights = readJson('content/_live/insights.json', { items: [] });
+const livePages = readJson('content/_live/pages.json', { pages: [] });
+const ledgerByPath = new Map((ledger.entries || []).map((entry) => [normalizeImplementationPath(entry.implementation_path), entry]));
+const appliedByPath = new Map((apply.results || []).map((result) => [normalizeImplementationPath(result.implementation_path), result]));
+const insightByPath = new Map((insights.items || []).map((item) => [normalizeImplementationPath(item.publish_path || `insights/${item.slug}.html`), item]));
+const livePageByPath = new Map();
+for (const page of livePages.pages || []) {
+  for (const key of routeKeysForPage(page)) livePageByPath.set(key, page);
+}
+
+const traces = [];
+const errors = [];
+
+for (const spec of plan.specs || []) {
+  if (spec.status === 'BLOCKED') {
+    const ok = Boolean(spec.blocked_reason);
+    traces.push({ ...spec, trace_status: ok ? 'PASS' : 'FAIL' });
+    if (!ok) errors.push(`${spec.record_id}:blocked row missing blocked_reason`);
     continue;
   }
-  if(spec.operation==='REPAIR_INTENDED_WINNER_PAGE'){
-    const item=bySlug.get(slugFromPath(spec.implementation_path));
-    const applied=appliedByPath.get(spec.implementation_path);
-    const text=JSON.stringify(item||{}).toLowerCase();
-    const query=normalize((spec.queries||[spec.query])[0]);
-    const hasQuery=query && text.includes(query.split(' ').slice(0,5).join(' '));
-    const hasMarker=Boolean(item&&item.agent_exact_repair&&item.agent_exact_repair.last_repaired_at);
-    const pass=Boolean(item&&applied&&applied.status==='APPLIED'&&hasMarker&&hasQuery);
-    traces.push({...spec, trace_status:pass?'PASS':'FAIL', item_exists:Boolean(item), applied_status:applied?.status||'', has_agent_exact_repair:hasMarker, query_marker_found:hasQuery});
-    if(!pass) errors.push(`${spec.record_id}:repair_not_proven:${spec.implementation_path}`);
-  } else if(spec.operation==='CREATE_NEW_TARGET_PAGE'){
-    const exists=pageSlugs.has(spec.target_route) || fs.existsSync(rel(pagePath(spec.target_route)));
-    traces.push({...spec, trace_status:exists?'PASS':'FAIL', rendered_path:pagePath(spec.target_route), page_exists:exists});
-    if(!exists) errors.push(`${spec.record_id}:new_page_not_proven:${spec.target_route}`);
+
+  if (spec.operation === 'REPAIR_INTENDED_WINNER_PAGE') {
+    const implementationPath = normalizeImplementationPath(spec.implementation_path || spec.intended_winner_path || routeToImplementationPath(spec.target_route));
+    const targetType = spec.target_type || targetTypeForImplementationPath(implementationPath);
+    const entry = ledgerByPath.get(implementationPath);
+    const applied = appliedByPath.get(implementationPath);
+    const marker = entry && entry.marker;
+    const needle = queryNeedle(spec);
+
+    if (targetType === 'generated_insight') {
+      const item = insightByPath.get(implementationPath) || insightByPath.get(normalizeImplementationPath(`insights/${slugFromInsightPath(implementationPath)}.html`));
+      const renderedPath = implementationPath;
+      const renderedHtml = readTextIfExists(renderedPath).toLowerCase();
+      const itemText = JSON.stringify(item || {}).toLowerCase();
+      const hasLedger = Boolean(entry && marker);
+      const hasApply = Boolean(applied && ['APPLIED_TO_LEDGER', 'APPLIED'].includes(applied.status));
+      const hasItemMarker = Boolean(item && item.agent_exact_repair && item.agent_exact_repair.marker === marker);
+      const hasRenderedMarker = Boolean(marker && renderedHtml.includes(marker.toLowerCase()));
+      const hasQuery = Boolean(needle && (itemText.includes(needle) || renderedHtml.includes(needle)));
+      const pass = Boolean(hasLedger && hasApply && item && hasItemMarker && hasRenderedMarker && hasQuery);
+      traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, item_exists: Boolean(item), applied_status: applied?.status || '', has_ledger: hasLedger, has_item_marker: hasItemMarker, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
+      if (!pass) errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
+      continue;
+    }
+
+    if (targetType === 'live_page') {
+      const page = livePageByPath.get(implementationPath);
+      const renderedPath = implementationPath;
+      const renderedHtml = readTextIfExists(renderedPath).toLowerCase();
+      const hasLedger = Boolean(entry && marker);
+      const hasApply = Boolean(applied && ['APPLIED_TO_LEDGER', 'APPLIED'].includes(applied.status));
+      const hasRenderedMarker = Boolean(marker && renderedHtml.includes(marker.toLowerCase()));
+      const hasQuery = Boolean(needle && renderedHtml.includes(needle));
+      const pass = Boolean(hasLedger && hasApply && page && hasRenderedMarker && hasQuery);
+      traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, page_exists: Boolean(page), applied_status: applied?.status || '', has_ledger: hasLedger, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
+      if (!pass) errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
+      continue;
+    }
+
+    traces.push({ ...spec, target_type: targetType, trace_status: 'FAIL', implementation_path: implementationPath });
+    errors.push(`${spec.record_id}:unsupported_repair_target:${implementationPath}`);
+  } else if (spec.operation === 'CREATE_NEW_TARGET_PAGE') {
+    const implementationPath = normalizeImplementationPath(spec.implementation_path || routeToImplementationPath(spec.target_route));
+    const exists = Boolean(livePageByPath.get(implementationPath) || fs.existsSync(rel(implementationPath)));
+    traces.push({ ...spec, trace_status: exists ? 'PASS' : 'FAIL', rendered_path: implementationPath, page_exists: exists });
+    if (!exists) errors.push(`${spec.record_id}:new_page_not_proven:${spec.target_route}`);
   }
 }
-const report={schema_version:'1.0', status:errors.length?'FAIL':'PASS', checked_at:DATE, plan_count:(plan.specs||[]).length, traces, errors};
+
+const report = {
+  schema_version: '1.1',
+  status: errors.length ? 'FAIL' : 'PASS',
+  checked_at: DATE,
+  ledger_path: LEDGER_PATH,
+  ledger_count: (ledger.entries || []).length,
+  plan_count: (plan.specs || []).length,
+  traces,
+  errors
+};
 writeJson('artifacts/validation/agent-exact-implementation-trace.json', report);
-if(errors.length){console.error('AGENT EXACT IMPLEMENTATION TRACE FAIL'); errors.forEach(e=>console.error(`- ${e}`)); process.exit(1)}
+if (errors.length) {
+  console.error('AGENT EXACT IMPLEMENTATION TRACE FAIL');
+  errors.forEach((error) => console.error(`- ${error}`));
+  process.exit(1);
+}
 console.log(`AGENT EXACT IMPLEMENTATION TRACE PASS: ${traces.length} spec(s)`);
