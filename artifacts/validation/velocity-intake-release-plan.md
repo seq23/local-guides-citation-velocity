@@ -1,13 +1,13 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-06-29
+Release date: 2026-06-30
 Target publish units: 125
 Selected units: 125
-Twin agent units: 18
-Social fallback units: 107
-Repair units: 18
-New page units: 107
+Twin agent units: 34
+Social fallback units: 91
+Repair units: 34
+New page units: 91
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
@@ -15,6 +15,7 @@ New page units: 107
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-074-what-is-the-maximum-payout-for-a-slip-and-fall-at-a-grocery-store.html | what is the maximum payout for a slip and fall at a grocery store |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/trust-red-flags/index.html | how do i avoid personal injury lawyer scams and red flags |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-043-what-to-do-after-a-car-accident-step-by-step.html | what to do after a car accident that wasn't my fault |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/index.html | how long does teeth whitening last |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-002-do-i-need-a-personal-injury-lawyer.html | do i need a personal injury lawyer after an accident |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/cost-fees/index.html | how does a contingency fee work for a personal injury lawyer |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/medical-treatment/index.html | how long do i have to see a doctor after a car accident for a claim |
@@ -25,10 +26,25 @@ New page units: 107
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-012-will-my-case-go-to-trial.html | will my personal injury case go to trial or settle |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-025-what-to-do-if-the-other-driver-is-uninsured.html | who pays my medical bills after a hit and run accident |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-016-can-a-lawyer-help-with-medical-bills.html | who pays for my medical bills after a rideshare accident |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html | how do I know if I really need the dental work my dentist is recommending |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-financing/index.html | how much do dental implants cost |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-020-how-to-ask-for-itemized-pricing.html | how to ask dentist for itemized pricing |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-013-how-long-do-cases-usually-take.html | how long does a personal injury case usually take to settle |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-072-how-much-is-my-whiplash-case-worth-in-florida.html | how much is my whiplash case worth in florida |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-073-what-is-the-average-settlement-for-a-rear-end-collision-with-a-herniat.html | what is the average settlement for a rear-end collision with a herniated disc |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html | at what age should my child first see a dentist and what should I expect |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/anxiety-trust/index.html | how do I find a dentist who is good with anxious patients |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-insurance/index.html | how much does a dental implant cost without insurance |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/choosing-a-dentist/index.html | how to choose a dentist |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html | how to confirm dental insurance coverage before appointment |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html | is sedation dentistry safe and is it worth the extra cost |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-063-is-invisalign-cheaper-than-braces.html | is invisalign cheaper than braces |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-065-average-cost-of-clear-aligners-2026.html | average cost of clear aligners 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-044-should-i-give-a-recorded-statement-to-the-insurance-company-after-an-a.html | should i give a recorded statement to the insurance adjuster |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-011-dental-scam-red-flags.html | how to spot dental scam red flags before booking |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-061-how-much-is-a-single-tooth-implant.html | how much is a single tooth implant |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-062-are-dental-implants-worth-it-after-60.html | are dental implants worth it after 60 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-064-does-insurance-cover-braces-for-adults.html | does insurance cover braces for adults |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/trt-providers-ask-us-anything-37-peptides-and-getting-summer-ready-98-month-pricing-welcom/ | TRT Providers: Ask Us Anything (#37) \| Peptides and Getting Summer-Ready \| $98/Month Pricing Welcome to AlphaMD’s weekend AMA: **Peptides, TRT, and Getting Summer-Ready** **Starts:** Saturday at 2PM EST **Runs through:** — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | uscis-medical | /uscis-medical/community-questions/1-month-since-biometrics-case-still-showing-uscis-is-processing-your-case-hi-everyone-it-h/ | 1 Month Since Biometrics – Case Still Showing “USCIS Is Processing Your Case” Hi everyone, It has been exactly one month since I completed my biometrics appointment, but my case status still shows “USCIS is processing yo — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/why-does-it-feel-like-dentists-always-defend-other-dentists-even-when-the-work-seems-quest/ | Why does it feel like dentists always defend other dentists, even when the work seems questionable? |
@@ -99,6 +115,11 @@ New page units: 107
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/how-to-avoid-pain-of-root-canal-crack-for-a-month-as-i-can-t-visit-dentist/ | How to avoid pain of root canal crack for a month as I can't visit dentist? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/should-i-be-worried-temporary-crown-fell-out-32-submitted-by-32-username-removed-link-32-c/ | Should i be worried temporary crown fell out &#32; submitted by &#32; /[username removed] [link] &#32; [comments]? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/at-this-point-there-is-no-pain-but-i-am-still-anxious-to-know-if-i-should-go-to-an-emergen/ | At this point there is no pain but I am still anxious to know if I should go to an emergency dentist or not — what should I know? |
+| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/what-is-this-swollen-gums-on-mollars-i-am-onboard-ship-no-access-to-dentist-i-am-having-ja/ | What is this swollen gums on mollars, I am onboard ship no access to dentist I am having jaw pain like always fatigue on my jaw and sometimes pain inside right ear, my gums on mollar area are swollen and on the tongue ar? |
+| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/do-i-need-emergency-visit/ | Do I need emergency visit? |
+| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-went-to-the-dentist-and-they-said-it-looked-fine-but-they-did-a-root-canal-on-it-what-sh/ | I went to the dentist and they said it looked fine but they did a root canal on it — what should I know? |
+| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/dental-nurse-not-a-dentist-29-year-old-female-what-should-i-know/ | Dental nurse, not a dentist 29 year old female — what should I know? |
+| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/he-has-a-dentist-appointment-coming-up-but-i-really-want-him-to-reschedule-it-for-asap-sin/ | He has a dentist appointment coming up but I really want him to reschedule it for ASAP since he told me just a few days ago he had a metallic taste in his mouth — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/looking-for-encouragement-in-process-of-evaluation-for-4-year-old-hi-i-ve-never-posted-bef/ | Looking for Encouragement-in process of evaluation for 4 year old Hi, I've never posted before but I'm really looking for some encouragement from parents who understand — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/does-anyone-have-any-recommendations/ | Does anyone have any recommendations? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/he-will-not-visit-a-doctor-or-therapist-what-should-i-know/ | He will not visit a doctor or therapist — what should I know? |
@@ -115,24 +136,3 @@ New page units: 107
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/would-i-need-a-lawyer-to-help-me-obtain-it/ | Would I need a lawyer to help me obtain it? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/aba-center-based-vs-at-home-has-anyone-made-the-decision-to-pursue-aba-exclusively-in-a-ce/ | ABA- Center Based vs At Home Has anyone made the decision to pursue ABA exclusively in a center-based setting instead of either only at home or a split between the two |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/we-ve-tried-a-mix-of-speech-therapy-ot-and-sensory-support-strategies-and-sometimes-i-stil/ | We’ve tried a mix of speech therapy, OT, and sensory support strategies, and sometimes I still wonder which things genuinely helped versus which just added more appointments and stress to the week |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/the-rest-is-mostly-babbling-one-thing-the-neuropsychologist-noticed-during-the-evaluation-/ | ” The rest is mostly babbling One thing the neuropsychologist noticed during the evaluation: if she took away a toy or his bottle, he became upset but did not look into her eyes — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/can-i-just-ask-for-15-instead-or-do-i-need-to-do-extra-work-to-get-that-much-more/ | Can I just ask for 15 instead or do I need to do extra work to get that much more? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/my-question-is-would-it-be-worth-it-to-hire-someone-to-fight-for-more-money-who-will-obvio/ | My question is, would it be worth it to hire someone to fight for more money who will obviously take a portion of it — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/car-insurance-past-issue-causing-price-increase-what-should-i-know/ | Car insurance, past issue causing price increase — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/any-advice-recommendations-what-should-i-know/ | Any advice/recommendations — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-should-i-approach-this/ | HOW SHOULD I APPROACH THIS? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/i-recently-started-using-zerodeduct-and-i-m-still-trying-to-see-if-it-s-actually-worth-it-/ | I recently started using ZeroDeduct and I’m still trying to see if it’s actually worth it — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/recently-my-building-sent-out-an-email-saying-that-it-wasn-t-a-valid-insurance-provider-an/ | Recently my building sent out an email saying that it wasn't a valid insurance provider anymore, and I would either need a new policy with someone or they would sign me up for a policy automatically — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/i-m-going-to-have-a-consultation-with-a-special-ed-lawyer-tomorrow-what-should-i-know/ | I m going to have a consultation with a special ed lawyer tomorrow — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/we-actually-only-uncovered-the-asd-in-a-recent-neuropsych-evaluation-because-he-is-highly-/ | We actually only uncovered the ASD in a recent neuropsych evaluation because he is highly social, though he has massive struggles with transitions and rigidity — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/we-re-based-in-sw-london-any-recommendations-what-should-i-know/ | We’re based in SW London, any recommendations — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/screen-time-how-much-screen-time-does-your-child-have-what-should-i-know/ | Screen time How much screen time does your child have — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/i-recently-became-his-provider-through-ihss-and-i-did-ask-for-protective-supervision-becau/ | I recently became his provider through IHSS and I did ask for protective supervision because his tantrums are violent and destructive and they happen all day long, but I'm still waiting to hear back on that — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/she-is-hyperactive-and-hyperlexic-and-can-read-like-an-adult-but-i-am-not-sure-how-much-sh/ | She is hyperactive and hyperlexic and can read like an adult but i am not sure how much she understands — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/my-best-estimation-is-that-she-s-around-3-years-cognitively-behind-what-should-i-know/ | My best estimation is that she's around 3 years cognitively behind — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/he-s-super-curious-and-will-ask-a-lot-of-questions-sometimes-but-i-m-nervous-about-how-muc/ | He’s super curious and will ask a lot of questions sometimes but I’m nervous about how much information to give him — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/marriage-based-case-i-130-approved-i-485-interview-completed-i-485-case-was-administrative/ | - Marriage-based case (I-130 approved) - I-485 interview completed - I-485 Case was administratively closed due to removal proceedings - Proceedings are now terminated - Lawyer sent request to reopen about a month ago 👉 — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/where-should-i-get-it-from-what-should-i-know/ | Where should I get it from — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/switching-providers-how-do-you-switch-providers-specifically-online-providers-like-petermd/ | Switching providers How do you switch providers (specifically online providers like PeterMD) when your levels are already good because you currently take TrT — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/if-so-what-dose-should-i-run-just-to-be-on-the-safe-side-what-should-i-know/ | If so what dose should I run just to be on the safe side — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/any-ideas-on-what-i-can-do-to-boost-his-motivation-and-get-his-t-levels-up-without-spendin/ | Any ideas on what I can do to boost his motivation and get his T levels up without spending a ton of money on a TRT provider only for him to give up on day 2 — what should I know? |
