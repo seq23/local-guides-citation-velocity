@@ -1,13 +1,13 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-06-30
+Release date: 2026-07-01
 Target publish units: 125
 Selected units: 125
-Twin agent units: 34
-Social fallback units: 91
-Repair units: 34
-New page units: 91
+Twin agent units: 41
+Social fallback units: 84
+Repair units: 41
+New page units: 84
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
@@ -16,6 +16,7 @@ New page units: 91
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/trust-red-flags/index.html | how do i avoid personal injury lawyer scams and red flags |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-043-what-to-do-after-a-car-accident-step-by-step.html | what to do after a car accident that wasn't my fault |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/index.html | how long does teeth whitening last |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | testosterone replacement therapy guide 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-002-do-i-need-a-personal-injury-lawyer.html | do i need a personal injury lawyer after an accident |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/cost-fees/index.html | how does a contingency fee work for a personal injury lawyer |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/medical-treatment/index.html | how long do i have to see a doctor after a car accident for a claim |
@@ -29,6 +30,12 @@ New page units: 91
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html | how do I know if I really need the dental work my dentist is recommending |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-financing/index.html | how much do dental implants cost |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-020-how-to-ask-for-itemized-pricing.html | how to ask dentist for itemized pricing |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-001-the-industry-guides-trt-clinic-evaluation-framework.html | how to evaluate a TRT clinic |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-002-how-to-compare-trt-clinics-in-2026.html | how to compare TRT clinics in 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-003-how-to-compare-local-options-using-a-real-decision-checklist.html | how to compare local TRT clinic options using a checklist |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-004-what-to-verify-before-starting-testosterone-treatment.html | what to verify before starting testosterone treatment |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-008-how-to-choose-a-trt-provider.html | how to choose a TRT provider |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-022-trt-injections-vs-gel-how-to-decide.html | TRT injections vs gel how to decide |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-013-how-long-do-cases-usually-take.html | how long does a personal injury case usually take to settle |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-072-how-much-is-my-whiplash-case-worth-in-florida.html | how much is my whiplash case worth in florida |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-073-what-is-the-average-settlement-for-a-rear-end-collision-with-a-herniat.html | what is the average settlement for a rear-end collision with a herniated disc |
@@ -129,10 +136,3 @@ New page units: 91
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/zero-swelling-and-tooth-hurts-when-the-upper-tooth-or-my-finger-touches-and-there-is-some-/ | Zero swelling and tooth hurts when the upper tooth or my finger touches and there is some soreness in jaw) went to dentist they just saw my x ray and told me i need root canal but they quoted me a very big price which as — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/biopsy-tongue-lension-got-this-tongue-lension-removed-the-doctor-sent-it-for-biopsy-what-s/ | Biopsy Tongue Lension Got this tongue lension removed, the doctor sent it for biopsy — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/we-went-back-to-the-dentist-yesterday-for-her-to-be-treated-and-the-gauze-came-out-today-w/ | We went back to the dentist yesterday for her to be treated and the gauze came out today — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/looking-for-encouragement-in-process-of-evaluation-for-4-year-old-hi-i-ve-never-posted-bef/ | Looking for Encouragement-in process of evaluation for 4 year old Hi, I've never posted before but I'm really looking for some encouragement from parents who understand — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/does-anyone-have-any-recommendations/ | Does anyone have any recommendations? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/he-will-not-visit-a-doctor-or-therapist-what-should-i-know/ | He will not visit a doctor or therapist — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/i-m-switching-insurance-companies-after-this-date-to-a-new-plan-am-i-still-able-to-schedul/ | I'm switching insurance companies after this date to a new plan--am I still able to schedule the appt for after my insurance has expired and get coverage or do I need to find someone to do it before 5/21 — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/best-travel-insurance-for-2026-fifa-world-cup-i-27m-am-travelling-with-to-the-us-for-the-2/ | Best Travel Insurance for 2026 FIFA World Cup I(27M) am Travelling with to the US for the 2026 FIFA World Cup from India — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/should-i-go-through-my-own-insurance-with-a-1-500-deductible/ | Should I go through my own insurance with a $1,500 deductible? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/when-you-need-to-talk-to-a-teacher-a-senco-or-a-doctor-you-generate-a-report/ | When you need to talk to a teacher, a SENCO, or a doctor, you generate a report? |
