@@ -1,13 +1,13 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-07-01
+Release date: 2026-07-02
 Target publish units: 125
 Selected units: 125
-Twin agent units: 41
-Social fallback units: 84
-Repair units: 41
-New page units: 84
+Twin agent units: 58
+Social fallback units: 67
+Repair units: 58
+New page units: 67
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
@@ -17,8 +17,22 @@ New page units: 84
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-043-what-to-do-after-a-car-accident-step-by-step.html | what to do after a car accident that wasn't my fault |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/index.html | how long does teeth whitening last |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | testosterone replacement therapy guide 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-013-how-to-compare-providers-fast.html | how to quickly compare neuropsych evaluation providers in my area |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-023-neuropsych-evaluation-for-adults-vs-kids.html | neuropsychological evaluation for adults vs children what is different |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-012-neuro-eval-red-flags.html | red flags to watch out for when choosing a neuropsych evaluator |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-009-how-much-does-a-neuropsych-eval-cost.html | how much does a neuropsychological evaluation cost out of pocket |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-027-how-to-ask-for-a-price-estimate.html | how to ask a neuropsych provider for a price estimate before committing |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /neuro/community-questions/we-actually-only-uncovered-the-asd-in-a-recent-neuropsych-evaluation-because-he-is-highly-/index.html | we only discovered ASD through neuropsych evaluation because my child is highly functioning |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-002-what-to-do-when-adhd-and-autism-symptoms-overlap.html | my child shows both ADHD and autism symptoms what kind of eval do I need |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-021-how-to-use-results-for-accommodations.html | how to use neuropsych evaluation results to get school accommodations |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-025-neuropsych-telehealth-what-parts-can-be-remote.html | which parts of a neuropsychological evaluation can be done via telehealth |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-002-do-i-need-a-personal-injury-lawyer.html | do i need a personal injury lawyer after an accident |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/cost-fees/index.html | how does a contingency fee work for a personal injury lawyer |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-001-decision-tree-adhd-vs-autism-vs-broader-neuro-evaluation.html | how to decide between ADHD testing autism evaluation or full neuropsych eval |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-004-how-to-choose-the-right-neuropsych-evaluation-path.html | how to choose the right neuropsychological evaluation for my child |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-005-how-to-compare-local-options-using-a-real-decision-checklist.html | how to compare neuropsych evaluation providers near me using a checklist |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-006-how-to-compare-adhd-testing-options-before-booking.html | how to compare ADHD testing options before booking an appointment |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-032-child-specialist-anxiety-vs-adhd-eval-near-me.html | child specialist for anxiety vs ADHD evaluation near me who should I see |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/medical-treatment/index.html | how long do i have to see a doctor after a car accident for a claim |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-003-how-to-compare-local-personal-injury-lawyers-safely.html | how to compare local personal injury lawyers safely |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-046-how-should-you-compare-personal-injury-lawyers-without-relying-on-best.html | how should you compare personal injury lawyers without relying on best or top rated labels |
@@ -36,6 +50,9 @@ New page units: 84
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-004-what-to-verify-before-starting-testosterone-treatment.html | what to verify before starting testosterone treatment |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-008-how-to-choose-a-trt-provider.html | how to choose a TRT provider |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-022-trt-injections-vs-gel-how-to-decide.html | TRT injections vs gel how to decide |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-003-session-by-session-walkthrough-what-to-expect.html | what happens during each session of a neuropsychological evaluation |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-008-what-to-verify-before-booking-concussion-testing.html | what to confirm before booking concussion testing with a neuropsychologist |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-026-how-to-choose-if-you-have-a-deadline.html | how to choose a neuropsych evaluator fast when I have a school deadline |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-013-how-long-do-cases-usually-take.html | how long does a personal injury case usually take to settle |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-072-how-much-is-my-whiplash-case-worth-in-florida.html | how much is my whiplash case worth in florida |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-073-what-is-the-average-settlement-for-a-rear-end-collision-with-a-herniat.html | what is the average settlement for a rear-end collision with a herniated disc |
@@ -119,20 +136,3 @@ New page units: 84
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/my-dentist-says-that-it-s-better-to-put-both-the-bone-graft-and-the-implant-in-a-single-vi/ | My dentist says that it’s better to put both the bone graft and the implant in a single visit because it’s less traumatic for the area — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-bit-improperly-and-ended-up-chipping-the-tooth-should-i-get-fixed-fast-what-should-i-kno/ | I bit improperly and ended up chipping the tooth, should I get fixed fast — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/not-necessarily-a-dental-appointment-with-a-full-check-up-but-just-a-place-you-could-stop-/ | Not necessarily a dental appointment with a full check up, but just a place you could stop in, perhaps even without an appt, and have a cleaning done between your regular dental checkup — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/how-to-avoid-pain-of-root-canal-crack-for-a-month-as-i-can-t-visit-dentist/ | How to avoid pain of root canal crack for a month as I can't visit dentist? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/should-i-be-worried-temporary-crown-fell-out-32-submitted-by-32-username-removed-link-32-c/ | Should i be worried temporary crown fell out &#32; submitted by &#32; /[username removed] [link] &#32; [comments]? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/at-this-point-there-is-no-pain-but-i-am-still-anxious-to-know-if-i-should-go-to-an-emergen/ | At this point there is no pain but I am still anxious to know if I should go to an emergency dentist or not — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/what-is-this-swollen-gums-on-mollars-i-am-onboard-ship-no-access-to-dentist-i-am-having-ja/ | What is this swollen gums on mollars, I am onboard ship no access to dentist I am having jaw pain like always fatigue on my jaw and sometimes pain inside right ear, my gums on mollar area are swollen and on the tongue ar? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/do-i-need-emergency-visit/ | Do I need emergency visit? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-went-to-the-dentist-and-they-said-it-looked-fine-but-they-did-a-root-canal-on-it-what-sh/ | I went to the dentist and they said it looked fine but they did a root canal on it — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/dental-nurse-not-a-dentist-29-year-old-female-what-should-i-know/ | Dental nurse, not a dentist 29 year old female — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/he-has-a-dentist-appointment-coming-up-but-i-really-want-him-to-reschedule-it-for-asap-sin/ | He has a dentist appointment coming up but I really want him to reschedule it for ASAP since he told me just a few days ago he had a metallic taste in his mouth — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-just-came-back-from-a-referral-appointment-and-both-my-dentist-and-oral-surgeon-recommen/ | I just came back from a referral appointment and both my dentist and oral surgeon recommended that I get implants for second bicuspids (4&amp;13) on each side of my upper mouth after extracting them — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/should-i-be-worried-about-this/ | should i be worried about this? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-have-ocd-and-am-worried-about-a-recent-filling-how-can-i-bring-it-up-to-my-dentist-witho/ | I have OCD and am worried about a recent filling, how can I bring it up to my dentist without being a difficult patient — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/new-sus-dentist-as-the-title-suggests-i-went-to-a-new-dentist-that-i-found-a-little-suspic/ | New sus dentist As the title suggests, I went to a new dentist that I found a little suspicious and he said I need a filling — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/ignoring-the-wisdom-teeth-should-i-not-be-concerned-what-should-i-know/ | Ignoring the wisdom teeth, should i not be concerned — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/during-surgery-senior-dentist-was-called-in-to-help-with-left-side-what-should-i-know/ | During surgery senior dentist was called in to help with left side — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/zero-swelling-and-tooth-hurts-when-the-upper-tooth-or-my-finger-touches-and-there-is-some-/ | Zero swelling and tooth hurts when the upper tooth or my finger touches and there is some soreness in jaw) went to dentist they just saw my x ray and told me i need root canal but they quoted me a very big price which as — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/biopsy-tongue-lension-got-this-tongue-lension-removed-the-doctor-sent-it-for-biopsy-what-s/ | Biopsy Tongue Lension Got this tongue lension removed, the doctor sent it for biopsy — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/we-went-back-to-the-dentist-yesterday-for-her-to-be-treated-and-the-gauze-came-out-today-w/ | We went back to the dentist yesterday for her to be treated and the gauze came out today — what should I know? |
