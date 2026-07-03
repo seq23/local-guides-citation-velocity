@@ -11,7 +11,8 @@ const {
   normalizeImplementationPath,
   routeToImplementationPath,
   slugFromInsightPath,
-  targetTypeForImplementationPath
+  targetTypeForImplementationPath,
+  semanticEntryForImplementationPath
 } = require('../lib/agent_exact_repairs');
 
 function rel(p) { return path.join(ROOT, p); }
@@ -20,6 +21,13 @@ function writeJson(p, v) { const out = rel(p); fs.mkdirSync(path.dirname(out), {
 function readTextIfExists(p) { try { return fs.readFileSync(rel(p), 'utf8'); } catch { return ''; } }
 function normalize(v) { return String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
 function queryNeedle(spec) { return normalize((spec.queries || [spec.query])[0]).split(' ').slice(0, 5).join(' '); }
+function semanticNeedlesFound(implementationPath, html) {
+  const semantic = semanticEntryForImplementationPath(implementationPath);
+  if (!semantic) return false;
+  const rendered = normalize(html);
+  const needles = semantic.required_strings || [];
+  return needles.length > 0 && needles.every((needle) => rendered.includes(normalize(needle)));
+}
 function routeKeysForPage(page) {
   return new Set([
     normalizeImplementationPath(page.slug || ''),
@@ -70,7 +78,7 @@ for (const spec of plan.specs || []) {
       const hasApply = Boolean(applied && ['APPLIED_TO_LEDGER', 'APPLIED'].includes(applied.status));
       const hasItemMarker = Boolean(item && item.agent_exact_repair && item.agent_exact_repair.marker === marker);
       const hasRenderedMarker = Boolean(marker && renderedHtml.includes(marker.toLowerCase()));
-      const hasQuery = Boolean(needle && (itemText.includes(needle) || renderedHtml.includes(needle)));
+      const hasQuery = Boolean((needle && (itemText.includes(needle) || renderedHtml.includes(needle))) || semanticNeedlesFound(implementationPath, renderedHtml));
       const pass = Boolean(hasLedger && hasApply && item && hasItemMarker && hasRenderedMarker && hasQuery);
       traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, item_exists: Boolean(item), applied_status: applied?.status || '', has_ledger: hasLedger, has_item_marker: hasItemMarker, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
       if (!pass) errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
@@ -84,7 +92,7 @@ for (const spec of plan.specs || []) {
       const hasLedger = Boolean(entry && marker);
       const hasApply = Boolean(applied && ['APPLIED_TO_LEDGER', 'APPLIED'].includes(applied.status));
       const hasRenderedMarker = Boolean(marker && renderedHtml.includes(marker.toLowerCase()));
-      const hasQuery = Boolean(needle && renderedHtml.includes(needle));
+      const hasQuery = Boolean((needle && renderedHtml.includes(needle)) || semanticNeedlesFound(implementationPath, renderedHtml));
       const pass = Boolean(hasLedger && hasApply && page && hasRenderedMarker && hasQuery);
       traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, page_exists: Boolean(page), applied_status: applied?.status || '', has_ledger: hasLedger, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
       if (!pass) errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);

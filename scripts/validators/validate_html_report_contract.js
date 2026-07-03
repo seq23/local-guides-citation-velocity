@@ -18,8 +18,13 @@ if(report){
   if(Number(report.blocked_fix_records||0)>0) warnings.push(`blocked_fix_records:${report.blocked_fix_records}`);
   const pageSpecs=Array.isArray(report.page_specs)?report.page_specs:[];
   for(const spec of pageSpecs){
-    if(!spec.query||!spec.target_route) errors.push(`page_spec_incomplete:${spec.id||spec.query||'unknown'}`);
-    if(!/^\/[a-z0-9-]+\/community-questions\/[a-z0-9-]+\/$/.test(String(spec.target_route||''))) errors.push(`page_spec_bad_route:${spec.target_route}`);
+    if(!spec.query) errors.push(`page_spec_missing_query:${spec.id||'unknown'}`);
+    if(spec.blocked_reason){
+      warnings.push(`page_spec_blocked:${spec.id||spec.query}:${spec.blocked_reason}`);
+    } else {
+      if(!spec.target_route) errors.push(`page_spec_incomplete:${spec.id||spec.query||'unknown'}`);
+      if(!/^\/[a-z0-9-]+\/(community-questions|guides|clusters)\/[a-z0-9-]+\/$/.test(String(spec.target_route||''))) errors.push(`page_spec_bad_route:${spec.target_route}`);
+    }
   }
   const localApplied=(report.fixes||[]).filter(x=>x.status==='APPLIED').length;
   if(localApplied!==Number(report.fixes_applied||0)) errors.push(`fix_apply_count_mismatch:${localApplied}!=${report.fixes_applied}`);

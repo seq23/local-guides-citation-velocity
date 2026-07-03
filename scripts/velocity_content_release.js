@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { deriveContentAtom } = require('./lib/content_atom');
+const { routePage, routeForFamily } = require('./lib/page_family_router');
 const ROOT = path.resolve(__dirname, '..');
 const DATE = process.env.SOURCE_DATE || '2026-06-19';
 const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
@@ -26,7 +27,9 @@ for (const rel of ['content/_staged/pages.json','content/_live/pages.json']) {
     if (!vertical || !targets[vertical]) { report.skipped.push({id:item.id,reason:'unsupported_vertical'}); continue; }
     const question=String(item.query||item.normalized_query||'').trim();
     if (question.length<20) { report.skipped.push({id:item.id,reason:'question_too_short'}); continue; }
-    const route=item.target_route || `/${vertical.replace('_','-')}/community-questions/${slugify(question)}/`;
+    const routeDecision = routePage({ ...item, vertical, query: question, operation: 'CREATE_NEW_TARGET_PAGE', recommendation: item.recommended_action || '' });
+    if (String(routeDecision.status || '').startsWith('BLOCKED_')) { report.skipped.push({id:item.id,reason:routeDecision.blocked_reason || routeDecision.status}); continue; }
+    const route=item.target_route || routeDecision.target_route || routeForFamily(vertical, question, 'CREATE_COMMUNITY_QA');
     if (existing.has(route)) continue;
     const sourceRecords=Array.isArray(item.source_records)&&item.source_records.length?item.source_records:sourceDefaults[vertical];
     const sections=[

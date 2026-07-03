@@ -1,9 +1,13 @@
 'use strict';
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { deriveContentAtom } = require('./content_atom');
 
+const ROOT = path.resolve(__dirname, '../..');
 const LEDGER_PATH = 'data/report_fixes/agent_exact_implementation_ledger.json';
+const SEMANTIC_MANIFEST_PATH = 'data/report_fixes/agent_exact_semantic_acceptance_manifest.json';
 
 function unique(items) {
   return [...new Set((items || []).filter((item) => item !== undefined && item !== null && String(item).trim()).map((item) => String(item).trim()))];
@@ -11,6 +15,46 @@ function unique(items) {
 
 function normalizeText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+
+function readSemanticManifest() {
+  const manifestPath = path.join(ROOT, SEMANTIC_MANIFEST_PATH);
+  try {
+    return JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch {
+    return { entries: [] };
+  }
+}
+
+function semanticEntryForImplementationPath(implementationPath) {
+  const normalized = normalizeImplementationPath(implementationPath);
+  const manifest = readSemanticManifest();
+  return (manifest.entries || []).find((entry) => {
+    if (!entry) return false;
+    if (normalizeImplementationPath(entry.implementation_path) === normalized) return true;
+    return (entry.canonicalized_from || []).some((candidate) => normalizeImplementationPath(candidate) === normalized);
+  }) || null;
+}
+
+function artifactsWithMarker(artifacts, marker) {
+  const safe = (artifacts || []).filter((artifact) => artifact && artifact.type && artifact.title).map((artifact) => ({ ...artifact }));
+  if (safe.length && marker) {
+    safe[0].id = marker;
+    safe[0].marker = marker;
+  }
+  return safe;
+}
+
+function mergeSemanticArtifacts(requiredArtifacts, existingArtifacts) {
+  const byKey = new Map();
+  for (const artifact of [...(requiredArtifacts || []), ...(existingArtifacts || [])]) {
+    if (!artifact || !artifact.type || !artifact.title) continue;
+    if (String(artifact.title || '').startsWith('Agent Exact Repair Framework:')) continue;
+    const key = `${artifact.type}|${artifact.title}`;
+    if (!byKey.has(key)) byKey.set(key, artifact);
+  }
+  return [...byKey.values()].slice(0, 12);
 }
 
 function compactSentence(value, max = 260) {
@@ -74,6 +118,7 @@ function entryFromSpec(spec, date) {
   const queries = unique(spec.queries || [spec.query]);
   const fixRecommendations = unique(spec.fix_recommendations || spec.recommendations || [spec.recommendation]);
   const marker = markerFor(recordIds, implementationPath);
+  const semantic = semanticEntryForImplementationPath(implementationPath);
   return {
     schema_version: '1.0',
     marker,
@@ -89,7 +134,11 @@ function entryFromSpec(spec, date) {
     applied_at: date,
     source: 'twin_agent_artifact',
     status: spec.status === 'BLOCKED' ? 'BLOCKED' : 'LEDGERED',
-    blocked_reason: spec.blocked_reason || ''
+    blocked_reason: spec.blocked_reason || '',
+    semantic_manifest: semantic ? SEMANTIC_MANIFEST_PATH : '',
+    semantic_repair_status: semantic ? 'SEMANTICALLY_APPLIED' : 'UNSTRUCTURED_REPAIR_REQUIRES_ACCEPTANCE',
+    canonicalized_from: unique([...(spec.canonicalized_from || []), ...(semantic?.canonicalized_from || [])]),
+    required_strings: unique(semantic?.required_strings || [])
   };
 }
 
@@ -138,17 +187,22 @@ function entriesForLivePage(ledger, page) {
 }
 
 function buildRepairArtifact(entry, primary, recommendation) {
+  const semantic = semanticEntryForImplementationPath(entry.implementation_path || entry.intended_winner_path);
+  if (semantic) {
+    const artifacts = artifactsWithMarker(semantic.artifacts || [], entry.marker);
+    if (artifacts.length) return artifacts[0];
+  }
   return {
     id: entry.marker,
     marker: entry.marker,
-    type: 'numbered_framework',
-    title: `Agent Exact Repair Framework: ${primary}`,
+    type: 'checklist',
+    title: `Exact Agent Recommendation Acceptance Checklist: ${primary}`,
     items: unique([
       compactSentence(`Direct answer target: ${primary}`, 140),
       compactSentence(recommendation, 180),
-      'Show the verification path and primary source boundary',
-      'Separate current facts from provider or case-specific advice',
-      'Route local next steps through the canonical provider destination'
+      'Required semantic acceptance: rendered page must contain the specific requested table, checklist, callout, script, or comparison block.',
+      'Marker-only framework cards are not sufficient for release.',
+      'Route local next steps through the canonical provider destination.'
     ])
   };
 }
@@ -159,20 +213,28 @@ function applyEntryToTarget(target, entry, context = {}) {
   const recs = unique(entry.fix_recommendations || []);
   const primary = queries[0] || target.title || entry.implementation_path;
   const recommendation = recs[0] || 'Strengthen this page for citation extraction with direct-answer, verification, and source-first blocks.';
+  const semantic = semanticEntryForImplementationPath(entry.implementation_path || entry.intended_winner_path);
   target.date_modified = entry.applied_at || target.date_modified;
-  target.description = compactSentence(`${target.description || target.title || primary} Updated for citation-readiness: ${recommendation}`, 320);
-  target.answer = compactSentence(`${target.answer || target.description || target.title || primary} Citation-ready update: ${recommendation}`, 520);
-  target.checklist = unique([
-    ...(target.checklist || []),
-    ...queries.slice(0, 3).map((query) => `Directly answer: ${query}`),
-    'Verify current primary source and jurisdiction before acting',
-    'Preserve distinction between general guidance and fact-specific advice'
-  ]).slice(0, 12);
-  target.red_flags = unique([
-    ...(target.red_flags || []),
-    'Answer engine cites competitors because the page lacks a direct extractable block',
-    'Recommendation requires authority that is not visible on the page'
-  ]).slice(0, 10);
+  if (semantic) {
+    target.description = compactSentence(`${semantic.title || target.title || primary}. Semantically repaired from agent-run recommendation with extractable decision-support blocks.`, 320);
+    target.answer = semantic.answer || target.answer;
+    target.checklist = unique([...(semantic.checklist || []), ...(target.checklist || [])]).slice(0, 14);
+    target.red_flags = unique([...(semantic.red_flags || []), ...(target.red_flags || [])]).slice(0, 14);
+  } else {
+    target.description = compactSentence(`${target.description || target.title || primary} Updated for citation-readiness: ${recommendation}`, 320);
+    target.answer = compactSentence(`${target.answer || target.description || target.title || primary} Citation-ready update: ${recommendation}`, 520);
+    target.checklist = unique([
+      ...(target.checklist || []),
+      ...queries.slice(0, 3).map((query) => `Directly answer: ${query}`),
+      'Verify current primary source and jurisdiction before acting',
+      'Preserve distinction between general guidance and fact-specific advice'
+    ]).slice(0, 12);
+    target.red_flags = unique([
+      ...(target.red_flags || []),
+      'Answer engine cites competitors because the page lacks a direct extractable block',
+      'Recommendation requires authority that is not visible on the page'
+    ]).slice(0, 10);
+  }
   target.agent_exact_repair = {
     marker: entry.marker,
     last_repaired_at: entry.applied_at,
@@ -180,13 +242,18 @@ function applyEntryToTarget(target, entry, context = {}) {
     record_ids: unique(entry.record_ids || []),
     queries,
     fix_recommendations: recs,
-    repair_summary: compactSentence(recommendation, 300),
+    repair_summary: compactSentence(semantic ? `Semantic repair applied from ${SEMANTIC_MANIFEST_PATH}` : recommendation, 300),
     competitor_gap_summary: compactSentence(recs.join(' | '), 400),
-    supporting_routes: unique(entry.supporting_routes || [])
+    supporting_routes: unique(entry.supporting_routes || []),
+    semantic_manifest: semantic ? SEMANTIC_MANIFEST_PATH : '',
+    semantic_repair_status: semantic ? 'SEMANTICALLY_APPLIED' : 'UNSTRUCTURED_REPAIR_REQUIRES_ACCEPTANCE'
   };
   const exactArtifact = buildRepairArtifact(entry, primary, recommendation);
+  const semanticArtifacts = semantic ? artifactsWithMarker(semantic.artifacts || [], entry.marker) : [];
   const existing = (target.citation_velocity_artifacts || []).filter((artifact) => artifact && artifact.marker !== entry.marker && artifact.id !== entry.marker && !String(artifact.title || '').startsWith('Agent Exact Repair Framework:'));
-  target.citation_velocity_artifacts = [exactArtifact, ...existing].slice(0, 8);
+  target.citation_velocity_artifacts = semantic
+    ? mergeSemanticArtifacts(semanticArtifacts, existing)
+    : mergeSemanticArtifacts([exactArtifact], existing);
   target.content_atom = deriveContentAtom({
     title: target.title || primary,
     definition: target.answer || target.description,
@@ -223,5 +290,6 @@ module.exports = {
   entriesForGeneratedInsight,
   entriesForLivePage,
   applyAgentExactRepairsToInsightItem,
-  applyAgentExactRepairsToPage
+  applyAgentExactRepairsToPage,
+  semanticEntryForImplementationPath
 };

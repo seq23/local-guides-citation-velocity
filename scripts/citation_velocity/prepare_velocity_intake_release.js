@@ -5,6 +5,8 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { routePage, routeForFamily } = require('../lib/page_family_router');
+const { resolveTargetPath, routeFromPath } = require('../lib/citation_route_resolver');
 
 const ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_TARGET = 125;
@@ -148,7 +150,7 @@ function fixType(row) {
   return String(row['Primary Fix Type'] || row['Gap Type'] || row.fix_type || 'citation_gap').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'citation_gap';
 }
 function routeFor(vertical, question) {
-  return `/${String(vertical).replace(/_/g, '-')}/community-questions/${slugify(question)}/`;
+  return routeForFamily(vertical, question, 'CREATE_COMMUNITY_QA');
 }
 function loadPolicy() {
   return readJson(POLICY_PATH, {
@@ -205,17 +207,19 @@ function chooseAgentOperation(row, vertical, query, policy) {
   const desired = desiredPageFromRow(row);
   const patch = rowNeedsPatch(row);
   const intendedPath = repoPathFromIntendedWinnerPage(desired, policy);
-  const supportingRoute = routeFor(vertical, query);
+  const supportDecision = routePage({ vertical, query, recommendation: row['Fix Recommendation'] || row.recommendation || '', operation: 'CREATE_NEW_TARGET_PAGE' });
+  const supportingRoute = supportDecision.target_route || routeFor(vertical, query);
   if (patch && desired && !allowedHostFromUrl(desired, policy)) {
     return { operation: 'BLOCKED_EXTERNAL_DOMAIN', intended_winner_path: '', target_route: supportingRoute, renderedPath: '', supporting_route: '', blocked_reason: 'intended_winner_page_not_on_allowed_host', status: 'BLOCKED_EXTERNAL_DOMAIN' };
   }
-  if (patch && intendedPath && fs.existsSync(rel(intendedPath))) {
-    return { operation: 'REPAIR_INTENDED_WINNER_PAGE', intended_winner_path: intendedPath, target_route: routeFromRepoPath(intendedPath), renderedPath: intendedPath, supporting_route: supportingRoute, blocked_reason: '', status: 'READY_TO_RELEASE' };
+  if (patch && intendedPath) {
+    const resolved = resolveTargetPath(intendedPath);
+    if (!resolved.block_reason) return { operation: 'REPAIR_INTENDED_WINNER_PAGE', intended_winner_path: resolved.implementation_path, target_route: routeFromPath(resolved.implementation_path), renderedPath: resolved.implementation_path, supporting_route: supportingRoute, blocked_reason: '', status: 'READY_TO_RELEASE', target_resolution_status: resolved.status, canonicalized_from: resolved.canonicalized_from || [] };
+    return { operation: 'BLOCKED_MISSING_TARGET', intended_winner_path: intendedPath, target_route: routeFromRepoPath(intendedPath), renderedPath: intendedPath, supporting_route: supportingRoute, blocked_reason: resolved.block_reason || 'intended_winner_page_not_found_in_repo', status: 'BLOCKED_MISSING_TARGET', target_resolution_status: resolved.status };
   }
-  if (patch && intendedPath && !fs.existsSync(rel(intendedPath))) {
-    return { operation: 'BLOCKED_MISSING_TARGET', intended_winner_path: intendedPath, target_route: routeFromRepoPath(intendedPath), renderedPath: intendedPath, supporting_route: supportingRoute, blocked_reason: 'intended_winner_page_not_found_in_repo', status: 'BLOCKED_MISSING_TARGET' };
-  }
-  return { operation: 'CREATE_NEW_TARGET_PAGE', intended_winner_path: intendedPath || '', target_route: supportingRoute, renderedPath: supportingRoute.replace(/^\//, '').replace(/\/$/, '/index.html'), supporting_route: '', blocked_reason: '', status: 'READY_TO_RELEASE' };
+  const routeDecision = routePage({ vertical, query, recommendation: row['Fix Recommendation'] || row.recommendation || '', operation: 'CREATE_NEW_TARGET_PAGE' });
+  if (String(routeDecision.status || '').startsWith('BLOCKED_')) return { operation: routeDecision.status, intended_winner_path: intendedPath || '', target_route: '', renderedPath: '', supporting_route: '', blocked_reason: routeDecision.blocked_reason || routeDecision.status, status: routeDecision.status, route_family: routeDecision.family };
+  return { operation: 'CREATE_NEW_TARGET_PAGE', intended_winner_path: intendedPath || '', target_route: routeDecision.target_route, renderedPath: routeDecision.renderedPath, supporting_route: '', blocked_reason: '', status: 'READY_TO_RELEASE', route_family: routeDecision.family, route_reason: routeDecision.reason };
 }
 function toApproval(record) {
   return {
@@ -292,6 +296,10 @@ function importAgentRuns() {
         supporting_route: decision.supporting_route || '',
         renderedPath: decision.renderedPath || '',
         blocked_reason: decision.blocked_reason || '',
+        target_resolution_status: decision.target_resolution_status || '',
+        canonicalized_from: decision.canonicalized_from || [],
+        route_family: decision.route_family || '',
+        route_reason: decision.route_reason || '',
         priority_score: priority,
         source_signal_ids: [`${runId}_${index}`],
         source_records: vertical === 'dentistry' ? ['SRC-ADA-MOUTHHEALTHY'] : [],
@@ -335,7 +343,7 @@ function socialFallbackRecords(limit, existingIds) {
         action_tier: 'social_backlog_fill',
         recommendation: row.recommended_action || 'Create citation-ready exact-answer page from public/social backlog signal.',
         priority_score: Number(row.signal_score || 0) * 10,
-        target_route: routeFor(vertical, query),
+        target_route: routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }).target_route || routeFor(vertical, query),
         source_signal_ids: row.source_signal_ids || [row.id].filter(Boolean),
         source_records: [],
         status: 'READY_TO_RELEASE',

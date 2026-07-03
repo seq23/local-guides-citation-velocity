@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { deriveContentAtom } = require('../lib/content_atom');
+const { routePage, routeForFamily } = require('../lib/page_family_router');
 
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
@@ -40,7 +41,7 @@ function writeJson(p, value) { writeText(p, JSON.stringify(value, null, 2) + '\n
 function sha(value, len = 12) { return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, len); }
 function normalizeVertical(value) { const key = String(value || '').trim().toLowerCase().replace(/_/g, '-'); return verticalMap[key] || verticalMap[key.replace(/-/g, ' ')] || key; }
 function slugify(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 90) || 'citation-question'; }
-function routeFor(vertical, question) { return `/${String(vertical).replace(/_/g, '-')}/community-questions/${slugify(question)}/`; }
+function routeFor(vertical, question) { return routeForFamily(vertical, question, 'CREATE_COMMUNITY_QA'); }
 function normalizeSpace(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 function titleNorm(value) { return normalizeSpace(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
 function compact(value, max = 340) { const v = normalizeSpace(value); return v.length <= max ? v : v.slice(0, max - 1).replace(/\s+\S*$/, '') + '…'; }
@@ -146,9 +147,13 @@ function parsePagesToBuild(text, context) {
     current.query = cleanQuery(current.query);
     if (current.query && current.query.length >= 8) {
       current.cluster = current.cluster || 'guide';
-      current.target_route = routeFor(current.vertical, current.query);
+      const routeDecision = routePage({ ...current, operation: 'CREATE_NEW_TARGET_PAGE', recommendation: current.why_worth_building || '' });
+      current.route_family = routeDecision.family;
+      current.route_reason = routeDecision.reason;
+      current.blocked_reason = routeDecision.blocked_reason || '';
+      current.target_route = routeDecision.target_route || routeFor(current.vertical, current.query);
+      current.status = routeDecision.status || 'APPROVED';
       current.id = `html_page_${sha(`${current.report_html_path}:${current.vertical}:${current.query}`, 16)}`;
-      current.status = 'APPROVED';
       pages.push(current);
     }
     current = null;
@@ -235,9 +240,17 @@ function jsonPagesToBuild(payload, context) {
       cluster: slugify(item.recommended_cluster || item.cluster || 'guide'),
       why_worth_building: compact(item.why_worth_building || item.why || item.reason || '', 700),
       raw_lines: [JSON.stringify(item)],
-      target_route: routeFor(context.vertical, query),
+      target_route: '',
+      route_family: '',
+      blocked_reason: '',
       status: 'APPROVED'
     };
+    const routeDecision = routePage({ ...row, operation: 'CREATE_NEW_TARGET_PAGE', recommendation: row.why_worth_building || '' });
+    row.target_route = routeDecision.target_route || routeFor(context.vertical, query);
+    row.route_family = routeDecision.family;
+    row.route_reason = routeDecision.reason;
+    row.blocked_reason = routeDecision.blocked_reason || '';
+    row.status = routeDecision.status || 'APPROVED';
     row.id = `html_page_${sha(`${row.report_json_path || row.report_html_path}:${row.vertical}:${row.query}`, 16)}`;
     out.push(row);
   }
@@ -415,6 +428,7 @@ function updateApprovalQueue(pageSpecs) {
   for (const spec of pageSpecs) {
     const approval = approvalFromPageSpec(spec);
     const titleKey = titleNorm(approval.query);
+    if (String(approval.status || '').startsWith('BLOCKED_') || approval.blocked_reason) { skipped.push({ ...approval, skipped_reason: approval.blocked_reason || approval.status }); continue; }
     if (existingTitles.has(titleKey)) {
       skipped.push({ ...approval, skipped_reason: 'exact_title_already_exists', existing_route: existingTitles.get(titleKey) });
       continue;

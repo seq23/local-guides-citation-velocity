@@ -5,13 +5,17 @@
   "validator_ids": [
     "agent-run-artifact-intake",
     "agent-exact-implementation-plan",
+    "html-fix-acceptance-compiler",
     "agent-exact-implementation-trace",
+    "agent-exact-acceptance-manifest",
     "agent-exact-implementation"
   ],
   "execution_order": [
     "agent-run-artifact-intake",
     "agent-exact-implementation-plan",
+    "html-fix-acceptance-compiler",
     "agent-exact-implementation-trace",
+    "agent-exact-acceptance-manifest",
     "agent-exact-implementation"
   ],
   "collect_all": false,
@@ -19,7 +23,7 @@
   "include_local": false,
   "status": "PASS",
   "counts": {
-    "PASS": 4
+    "PASS": 6
   },
   "results": [
     {
@@ -33,7 +37,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 106,
+      "duration_ms": 213,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -41,7 +45,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-run-artifact-intake.json",
-      "log": "artifacts/validation/runtime/2026-06-23-5268/agent-run-artifact-intake.log"
+      "log": "artifacts/validation/runtime/2026-06-23-12391/agent-run-artifact-intake.log"
     },
     {
       "id": "agent-exact-implementation-plan",
@@ -56,7 +60,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 93,
+      "duration_ms": 224,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -64,7 +68,30 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-implementation-plan.json",
-      "log": "artifacts/validation/runtime/2026-06-23-5268/agent-exact-implementation-plan.log"
+      "log": "artifacts/validation/runtime/2026-06-23-12391/agent-exact-implementation-plan.log"
+    },
+    {
+      "id": "html-fix-acceptance-compiler",
+      "title": "HTML FIX acceptance compiler",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [
+        "agent-exact-implementation-plan"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 290,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-06-23-12391/html-fix-acceptance-compiler.log"
     },
     {
       "id": "agent-exact-implementation-trace",
@@ -79,7 +106,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 286,
+      "duration_ms": 554,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -87,7 +114,31 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-implementation-trace.json",
-      "log": "artifacts/validation/runtime/2026-06-23-5268/agent-exact-implementation-trace.log"
+      "log": "artifacts/validation/runtime/2026-06-23-12391/agent-exact-implementation-trace.log"
+    },
+    {
+      "id": "agent-exact-acceptance-manifest",
+      "title": "Exact agent semantic acceptance manifest validator",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 4",
+      "depends_on": [
+        "agent-exact-implementation-trace",
+        "html-fix-acceptance-compiler"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 921,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/agent-exact-acceptance-manifest.json",
+      "log": "artifacts/validation/runtime/2026-06-23-12391/agent-exact-acceptance-manifest.log"
     },
     {
       "id": "agent-exact-implementation",
@@ -97,12 +148,13 @@
       "scope": "CONTAINER",
       "tier": "Tier 4",
       "depends_on": [
+        "agent-exact-acceptance-manifest",
         "agent-exact-implementation-trace"
       ],
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 99,
+      "duration_ms": 196,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -110,7 +162,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-implementation.json",
-      "log": "artifacts/validation/runtime/2026-06-23-5268/agent-exact-implementation.log"
+      "log": "artifacts/validation/runtime/2026-06-23-12391/agent-exact-implementation.log"
     }
   ]
 }

@@ -137,7 +137,7 @@
     "validate:page-release-law": "node scripts/validation/run_validation_registry.js --id page-release-law",
     "validate:agent-run-intake": "node scripts/validation/run_validation_registry.js --id agent-run-artifact-intake",
     "citation:prepare-velocity-intake": "node scripts/citation_velocity/prepare_velocity_intake_release.js",
-    "release:velocity-intake": "npm run validate:agent-run-intake && npm run signals:collect && npm run signals:process && npm run citation:prepare-velocity-intake && npm run citation:apply-html-report-contract && npm run validate:html-report-contract && npm run citation:plan-agent-exact && npm run release:velocity-content && npm run citation:apply-agent-exact && npm run build && npm run release:self-healing && npm run trace:agent-exact && npm run validate:agent-exact && npm run trace:citation-agent-fixes && npm run validate:citation-agent-fixes && npm run validate:velocity-intake-workflow && npm run trace:agent-artifact-data-flow",
+    "release:velocity-intake": "npm run validate:agent-run-intake && npm run signals:collect && npm run signals:process && npm run citation:prepare-velocity-intake && npm run citation:apply-html-report-contract && npm run validate:html-report-contract && npm run validate:page-family-contract && npm run citation:plan-agent-exact && npm run citation:compile-html-fix-acceptance && npm run release:velocity-content && npm run citation:apply-agent-exact && npm run build && npm run release:self-healing && npm run trace:agent-exact && npm run validate:agent-exact && npm run trace:citation-agent-fixes && npm run validate:citation-agent-fixes && npm run validate:velocity-intake-workflow && npm run trace:agent-artifact-data-flow",
     "validate:velocity-intake-workflow": "node scripts/validation/run_validation_registry.js --id velocity-intake-workflow",
     "release:batch50": "node scripts/release_batch.js 50",
     "release:batch100": "node scripts/release_batch.js 100",
@@ -155,7 +155,14 @@
     "validate:indexnow-batch-budget": "node scripts/validation/run_validation_registry.js --id indexnow-batch-budget",
     "citation:apply-html-report-contract": "node scripts/citation_velocity/apply_html_report_contract.js",
     "validate:html-report-contract": "node scripts/validation/run_validation_registry.js --id html-report-contract",
-    "trace:agent-artifact-data-flow": "node scripts/validators/trace_agent_artifact_data_flow.js"
+    "trace:agent-artifact-data-flow": "node scripts/validators/trace_agent_artifact_data_flow.js",
+    "validate:agent-exact-acceptance": "node scripts/validation/run_validation_registry.js --id agent-exact-acceptance-manifest",
+    "citation:remediate-neuro-2026-07-02": "node scripts/citation_velocity/apply_neuro_2026_07_02_remediation.js",
+    "citation:compile-html-fix-acceptance": "node scripts/citation_velocity/compile_html_fix_acceptance_manifest.js",
+    "validate:content-release": "node scripts/validation/run_validation_registry.js --profile content-release",
+    "validate:agent-run": "node scripts/validation/run_validation_registry.js --profile agent-run",
+    "validate:full-audit": "node scripts/validation/run_validation_registry.js --profile full-audit --collect-all",
+    "validate:page-family-contract": "node scripts/validation/run_validation_registry.js --id page-family-contract"
   },
   "engines": {
     "node": "24.x"

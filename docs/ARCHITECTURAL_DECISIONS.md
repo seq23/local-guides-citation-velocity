@@ -11,3 +11,15 @@ Every generated page requires a defensible atom, direct answer, visible source p
 
 ## External actions
 GSC, Bing, and disavow uploads are manual owner actions. Deployed browser proof and local Node 24 validation remain separate proof layers.
+
+### Decision ID: ADM-2026-07-02-HTML-FIX-DETERMINISM
+* **Date:** 2026-07-02
+* **Status:** Accepted
+* **Context:** Citation Velocity agent artifacts were able to pass with marker-level or category-level repairs even when the HTML/PDF requested exact headings, tables, scripts, checklists, and callouts.
+* **Decision:** Add a generated HTML FIX acceptance compiler, page-family router, shared route resolver, semantic rendered validator, and lean validation profiles.
+* **Alternatives Considered:** Continue using hand-authored vertical manifests; continue routing all new pages to community questions; add more hard-fail validators without profile discipline.
+* **Reasoning:** A compiler turns each source FIX row into deterministic acceptance criteria and scales across verticals. Page-family routing prevents off-vertical or foundational content from being blindly published as community Q&A. Lean profiles reduce validation drag.
+* **Tradeoffs:** The generated parser is conservative and may block ambiguous instructions that require human review.
+* **Risks Accepted:** Some nuanced source instructions may require parser expansion instead of manual one-off manifests.
+* **Validation Impact:** `validate:agent-run`, `validate:content-release`, `validate:core`, and `validate:release` must prove the new gates.
+* **Future Reversal Conditions:** Replace the regex-based parser with a stricter structured artifact schema if incoming HTML/PDF artifacts expose machine-readable FIX blocks.
