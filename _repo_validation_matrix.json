@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "4ca3d45544d92d6383ab6cb29a933132343e900d8e44686320ca5aea2972aef9",
+  "registry_sha256": "93e258495be4c5545f00f2d2ec27c95dc6a15140cca679a361eb1d93bf2a385c",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 86,
-    "active": 60,
+    "total": 87,
+    "active": 61,
     "on_demand": 11,
     "retired": 15,
     "local_only": 1,
-    "hard_fail": 58,
+    "hard_fail": 59,
     "strong_warning": 11,
     "soft_warning": 2,
     "info": 15
@@ -210,7 +210,8 @@
         "local-pantry-trace",
         "nap-consistency",
         "indexnow-batch-budget",
-        "page-family-contract"
+        "page-family-contract",
+        "validator-authority-contract"
       ],
       "execution_order": [
         "authority-contracts",
@@ -219,6 +220,7 @@
         "nap-consistency",
         "validation-policy",
         "validation-registry",
+        "validator-authority-contract",
         "workflow-yaml-syntax",
         "canonical-data-immutability",
         "canonical-data-static-writes",
@@ -334,7 +336,8 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
-        "page-family-contract"
+        "page-family-contract",
+        "validator-authority-contract"
       ],
       "execution_order": [
         "authority-contracts",
@@ -343,6 +346,7 @@
         "nap-consistency",
         "validation-policy",
         "validation-registry",
+        "validator-authority-contract",
         "workflow-yaml-syntax",
         "canonical-data-immutability",
         "canonical-data-static-writes",
@@ -492,7 +496,8 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
-        "page-family-contract"
+        "page-family-contract",
+        "validator-authority-contract"
       ],
       "execution_order": [
         "authority-contracts",
@@ -501,6 +506,7 @@
         "nap-consistency",
         "validation-policy",
         "validation-registry",
+        "validator-authority-contract",
         "workflow-yaml-syntax",
         "canonical-data-immutability",
         "canonical-data-static-writes",
@@ -624,7 +630,8 @@
         "local-pantry-trace",
         "nap-consistency",
         "html-fix-acceptance-compiler",
-        "page-family-contract"
+        "page-family-contract",
+        "validator-authority-contract"
       ],
       "execution_order": [
         "authority-contracts",
@@ -633,6 +640,7 @@
         "nap-consistency",
         "validation-policy",
         "validation-registry",
+        "validator-authority-contract",
         "workflow-yaml-syntax",
         "canonical-data-immutability",
         "canonical-data-static-writes",
@@ -927,9 +935,11 @@
         "page-release-law",
         "html-report-contract",
         "velocity-intake-workflow",
-        "page-family-contract"
+        "page-family-contract",
+        "validator-authority-contract"
       ],
       "execution_order": [
+        "validator-authority-contract",
         "workflow-yaml-syntax",
         "agent-run-artifact-intake",
         "html-report-contract",
@@ -957,9 +967,11 @@
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
         "html-fix-acceptance-compiler",
-        "page-family-contract"
+        "page-family-contract",
+        "validator-authority-contract"
       ],
       "execution_order": [
+        "validator-authority-contract",
         "workflow-yaml-syntax",
         "agent-run-artifact-intake",
         "agent-exact-implementation-plan",
@@ -993,12 +1005,14 @@
         "local-pantry-trace",
         "nap-consistency",
         "html-fix-acceptance-compiler",
-        "page-family-contract"
+        "page-family-contract",
+        "validator-authority-contract"
       ],
       "execution_order": [
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "validator-authority-contract",
         "workflow-yaml-syntax",
         "monitor-ledger",
         "monitor-future-append-self-test",
@@ -1168,6 +1182,10 @@
     },
     {
       "from": "html-report-contract",
+      "to": "page-family-contract"
+    },
+    {
+      "from": "validator-authority-contract",
       "to": "page-family-contract"
     }
   ],
@@ -2976,21 +2994,9 @@
         "requires_files": [
           "data/report_fixes/agent_runs"
         ],
-        "prepare_commands": [
-          "npm run citation:apply-html-report-contract"
-        ],
-        "prepare_produces_files": [
-          "artifacts/validation/html-report-contract.json",
-          "data/report_fixes/html_report_contract.generated.json"
-        ],
-        "prepare_mutates_files": [
-          "artifacts/validation/html-report-contract.json",
-          "data/report_fixes/html_report_contract.generated.json",
-          "data/community/approval_queue.json",
-          "content/_live/insights.json",
-          "content/_live/pages.json",
-          "content/_staged/pages.json"
-        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
         "produces_files": [
           "artifacts/validation/html-report-contract-validation.json"
         ],
@@ -2998,7 +3004,7 @@
           "artifacts/validation/html-report-contract-validation.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Twin Agent HTML summaries could be attached but ignored, causing page-fix sections and pages-to-build recommendations to be lost.",
+        "risk_prevented": "Twin Agent HTML summaries could be validated without proof that the explicit report ingestion step produced durable page-fix and pages-to-build evidence.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -3323,7 +3329,7 @@
       },
       {
         "id": "page-family-contract",
-        "title": "Page-family routing contract",
+        "title": "Dynamic page-family routing contract",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 1",
@@ -3340,10 +3346,12 @@
         "path": "scripts/validators/validate_page_family_contract.js",
         "command": "node scripts/validators/validate_page_family_contract.js",
         "depends_on": [
-          "html-report-contract"
+          "html-report-contract",
+          "validator-authority-contract"
         ],
         "requires_files": [
-          "data/report_fixes/page_family_routing_policy.json"
+          "data/report_fixes/page_family_routing_policy.json",
+          "scripts/lib/page_family_authority.js"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
@@ -3351,9 +3359,51 @@
         "produces_files": [
           "artifacts/validation/page-family-contract.json"
         ],
-        "mutates_files": [],
+        "mutates_files": [
+          "artifacts/validation/page-family-contract.json"
+        ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Prevents all new-page opportunities from blindly publishing to community-question pages and blocks off-vertical expansion topics.",
+        "risk_prevented": "Artifact-admitted routes could be malformed, duplicate, vertically mismatched, rendered from blocked rows, or missing route-family proof while stale validator topic policy incorrectly overrides approved fixes.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "validator-authority-contract",
+        "title": "Validator authority contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "content-release",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_validator_authority_contract.js",
+        "command": "node scripts/validators/validate_validator_authority_contract.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/validators/validate_validator_authority_contract.js",
+          "scripts/lib/page_family_authority.js",
+          "scripts/lib/vertical_authority.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/validator-authority-contract.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/validator-authority-contract.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Release validators could reintroduce stale topic-policy blockers, hard-coded vertical scope assumptions, or validator-driven content authority after artifact admission has already approved a route.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -4586,7 +4636,7 @@
       },
       {
         "id": "page-family-contract",
-        "title": "Page-family routing contract",
+        "title": "Dynamic page-family routing contract",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 1",
@@ -4603,10 +4653,12 @@
         "path": "scripts/validators/validate_page_family_contract.js",
         "command": "node scripts/validators/validate_page_family_contract.js",
         "depends_on": [
-          "html-report-contract"
+          "html-report-contract",
+          "validator-authority-contract"
         ],
         "requires_files": [
-          "data/report_fixes/page_family_routing_policy.json"
+          "data/report_fixes/page_family_routing_policy.json",
+          "scripts/lib/page_family_authority.js"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
@@ -4614,9 +4666,51 @@
         "produces_files": [
           "artifacts/validation/page-family-contract.json"
         ],
-        "mutates_files": [],
+        "mutates_files": [
+          "artifacts/validation/page-family-contract.json"
+        ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Prevents all new-page opportunities from blindly publishing to community-question pages and blocks off-vertical expansion topics.",
+        "risk_prevented": "Artifact-admitted routes could be malformed, duplicate, vertically mismatched, rendered from blocked rows, or missing route-family proof while stale validator topic policy incorrectly overrides approved fixes.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "validator-authority-contract",
+        "title": "Validator authority contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "content-release",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_validator_authority_contract.js",
+        "command": "node scripts/validators/validate_validator_authority_contract.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/validators/validate_validator_authority_contract.js",
+          "scripts/lib/page_family_authority.js",
+          "scripts/lib/vertical_authority.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/validator-authority-contract.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/validator-authority-contract.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Release validators could reintroduce stale topic-policy blockers, hard-coded vertical scope assumptions, or validator-driven content authority after artifact admission has already approved a route.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -5804,21 +5898,9 @@
         "requires_files": [
           "data/report_fixes/agent_runs"
         ],
-        "prepare_commands": [
-          "npm run citation:apply-html-report-contract"
-        ],
-        "prepare_produces_files": [
-          "artifacts/validation/html-report-contract.json",
-          "data/report_fixes/html_report_contract.generated.json"
-        ],
-        "prepare_mutates_files": [
-          "artifacts/validation/html-report-contract.json",
-          "data/report_fixes/html_report_contract.generated.json",
-          "data/community/approval_queue.json",
-          "content/_live/insights.json",
-          "content/_live/pages.json",
-          "content/_staged/pages.json"
-        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
         "produces_files": [
           "artifacts/validation/html-report-contract-validation.json"
         ],
@@ -5826,7 +5908,7 @@
           "artifacts/validation/html-report-contract-validation.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Twin Agent HTML summaries could be attached but ignored, causing page-fix sections and pages-to-build recommendations to be lost.",
+        "risk_prevented": "Twin Agent HTML summaries could be validated without proof that the explicit report ingestion step produced durable page-fix and pages-to-build evidence.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

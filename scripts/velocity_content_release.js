@@ -3,7 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const { deriveContentAtom } = require('./lib/content_atom');
-const { routePage, routeForFamily } = require('./lib/page_family_router');
+const { routeForFamily } = require('./lib/page_family_router');
+const { routeShape, renderedPathForRoute } = require('./lib/page_family_authority');
 const ROOT = path.resolve(__dirname, '..');
 const DATE = process.env.SOURCE_DATE || '2026-06-19';
 const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
@@ -27,9 +28,9 @@ for (const rel of ['content/_staged/pages.json','content/_live/pages.json']) {
     if (!vertical || !targets[vertical]) { report.skipped.push({id:item.id,reason:'unsupported_vertical'}); continue; }
     const question=String(item.query||item.normalized_query||'').trim();
     if (question.length<20) { report.skipped.push({id:item.id,reason:'question_too_short'}); continue; }
-    const routeDecision = routePage({ ...item, vertical, query: question, operation: 'CREATE_NEW_TARGET_PAGE', recommendation: item.recommended_action || '' });
-    if (String(routeDecision.status || '').startsWith('BLOCKED_')) { report.skipped.push({id:item.id,reason:routeDecision.blocked_reason || routeDecision.status}); continue; }
-    const route=item.target_route || routeDecision.target_route || routeForFamily(vertical, question, 'CREATE_COMMUNITY_QA');
+    const route=item.target_route || routeForFamily(vertical, question, item.route_family || 'CREATE_COMMUNITY_QA');
+    const shape=item.route_shape || routeShape(route);
+    if(!route || shape==='unknown') { report.skipped.push({id:item.id,reason:'invalid_admitted_route_shape'}); continue; }
     if (existing.has(route)) continue;
     const sourceRecords=Array.isArray(item.source_records)&&item.source_records.length?item.source_records:sourceDefaults[vertical];
     const sections=[
@@ -39,8 +40,8 @@ for (const rel of ['content/_staged/pages.json','content/_live/pages.json']) {
       {q:`What are the red flags for ${question}?`,a:'Pause when a claim is undated, unsourced, outside the right jurisdiction, or presented with pressure.'},
       {q:`Where can I find a provider for ${question}?`,a:'Use Find a Provider to continue to the matching provider destination.'}
     ].map((s,i)=>({...s,visible_q:s.q,checklist:['Verify the current source','Get costs or fees in writing','Use Find a Provider for local help'],red_flags:['No current source','No written explanation','Pressure before questions are answered'],content_atom:deriveContentAtom({...s,checklist:['Verify the current source','Get costs or fees in writing','Use Find a Provider for local help'],red_flags:['No current source']},{sourceRoute:`${route}#faq-${i+1}`,title:s.q}),date_modified:DATE}));
-    const page={slug:route,path:route,vertical,title:question,description:`${question} A source-first decision guide with five visible FAQs and a direct Find a Provider route.`,sections,canonical_target_url:targets[vertical],source_records:sourceRecords,content_atom:deriveContentAtom({title:question,checklist:['Define the exact decision','Verify the current primary source','Compare written terms','Find a provider'],red_flags:['No source or date']},{sourceRoute:route,title:question}),date_modified:DATE,publication_status:'ADMITTED',velocity_only_program:'AUTOMATIC_PUBLIC_SIGNAL_RELEASE',dated_primary_fact:`Primary-source set reviewed ${DATE}.`};
-    pages.push(page); existing.add(route); report.created.push({id:item.id,route});
+    const page={slug:route,path:route,renderedPath:item.renderedPath||renderedPathForRoute(route),vertical,title:question,description:`${question} A source-first decision guide with five visible FAQs and a direct Find a Provider route.`,sections,canonical_target_url:targets[vertical],source_records:sourceRecords,page_family:item.route_family||'CREATE_COMMUNITY_QA',route_shape:shape,route_authority:item.route_authority||'artifact_admitted',admission_basis:item.admission_basis||'approval_queue',content_atom:deriveContentAtom({title:question,checklist:['Define the exact decision','Verify the current primary source','Compare written terms','Find a provider'],red_flags:['No source or date']},{sourceRoute:route,title:question}),date_modified:DATE,publication_status:'ADMITTED',velocity_only_program:'AUTOMATIC_PUBLIC_SIGNAL_RELEASE',dated_primary_fact:`Primary-source set reviewed ${DATE}.`};
+    pages.push(page); existing.add(route); report.created.push({id:item.id,route,route_shape:shape,admission_basis:item.admission_basis||'approval_queue'});
   }
   payload.pages=pages; write(rel,payload);
 }

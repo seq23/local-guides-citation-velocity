@@ -3135,33 +3135,21 @@
         "content",
         "html-report"
       ],
-      "risk_prevented": "Twin Agent HTML summaries could be attached but ignored, causing page-fix sections and pages-to-build recommendations to be lost.",
+      "risk_prevented": "Twin Agent HTML summaries could be validated without proof that the explicit report ingestion step produced durable page-fix and pages-to-build evidence.",
       "why_existing_checks_do_not_cover": "CSV artifact intake validates tabular rows, but not the human-readable HTML report sections that contain explicit New Fixes, Pending Action, and Pages to Build items.",
       "estimated_runtime_seconds": 30,
       "timeout_seconds": 300,
       "evidence_file": "artifacts/validation/html-report-contract-validation.json",
-      "failure_action": "stop release and repair HTML report contract ingestion",
+      "failure_action": "stop release and run/repair the explicit HTML report ingestion step before validation",
       "depends_on": [
         "agent-run-artifact-intake"
       ],
       "requires_files": [
         "data/report_fixes/agent_runs"
       ],
-      "prepare_commands": [
-        "npm run citation:apply-html-report-contract"
-      ],
-      "prepare_produces_files": [
-        "artifacts/validation/html-report-contract.json",
-        "data/report_fixes/html_report_contract.generated.json"
-      ],
-      "prepare_mutates_files": [
-        "artifacts/validation/html-report-contract.json",
-        "data/report_fixes/html_report_contract.generated.json",
-        "data/community/approval_queue.json",
-        "content/_live/insights.json",
-        "content/_live/pages.json",
-        "content/_staged/pages.json"
-      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
       "produces_files": [
         "artifacts/validation/html-report-contract-validation.json"
       ],
@@ -3658,7 +3646,7 @@
     },
     {
       "id": "page-family-contract",
-      "title": "Page-family routing contract",
+      "title": "Dynamic page-family routing contract",
       "path": "scripts/validators/validate_page_family_contract.js",
       "command": "node scripts/validators/validate_page_family_contract.js",
       "status": "ACTIVE",
@@ -3675,21 +3663,72 @@
         "strict"
       ],
       "depends_on": [
-        "html-report-contract"
+        "html-report-contract",
+        "validator-authority-contract"
       ],
       "requires_files": [
-        "data/report_fixes/page_family_routing_policy.json"
+        "data/report_fixes/page_family_routing_policy.json",
+        "scripts/lib/page_family_authority.js"
       ],
       "produces_files": [
         "artifacts/validation/page-family-contract.json"
       ],
-      "risk_prevented": "Prevents all new-page opportunities from blindly publishing to community-question pages and blocks off-vertical expansion topics.",
+      "risk_prevented": "Artifact-admitted routes could be malformed, duplicate, vertically mismatched, rendered from blocked rows, or missing route-family proof while stale validator topic policy incorrectly overrides approved fixes.",
       "timeout_seconds": 300,
-      "why_existing_checks_do_not_cover": "Existing checks could prove markers and routing artifacts but could not prove exact HTML FIX semantic acceptance or page-family routing intent.",
+      "why_existing_checks_do_not_cover": "Page-release law proves admitted public route release at large scale, but this validator proves the smaller current artifact-admitted route-family authority universe and prevents validators from inventing topic policy.",
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
-      "mutates_files": []
+      "mutates_files": [
+        "artifacts/validation/page-family-contract.json"
+      ]
+    },
+    {
+      "id": "validator-authority-contract",
+      "title": "Validator authority contract",
+      "path": "scripts/validators/validate_validator_authority_contract.js",
+      "command": "node scripts/validators/validate_validator_authority_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "validation",
+        "citation-velocity",
+        "authority",
+        "anti-overbearing-validator"
+      ],
+      "risk_prevented": "Release validators could reintroduce stale topic-policy blockers, hard-coded vertical scope assumptions, or validator-driven content authority after artifact admission has already approved a route.",
+      "why_existing_checks_do_not_cover": "Registry and page-family checks prove execution shape, but not that validators avoid forbidden topic-policy authority and do not override artifact admission.",
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/validator-authority-contract.json",
+      "failure_action": "remove stale topic-policy authority from validators/routers/release scripts before release",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/validators/validate_validator_authority_contract.js",
+        "scripts/lib/page_family_authority.js",
+        "scripts/lib/vertical_authority.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/validator-authority-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/validator-authority-contract.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

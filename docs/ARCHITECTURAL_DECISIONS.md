@@ -23,3 +23,9 @@ GSC, Bing, and disavow uploads are manual owner actions. Deployed browser proof 
 * **Risks Accepted:** Some nuanced source instructions may require parser expansion instead of manual one-off manifests.
 * **Validation Impact:** `validate:agent-run`, `validate:content-release`, `validate:core`, and `validate:release` must prove the new gates.
 * **Future Reversal Conditions:** Replace the regex-based parser with a stricter structured artifact schema if incoming HTML/PDF artifacts expose machine-readable FIX blocks.
+
+## ADR 2026-07-03 — Dynamic Page-Family Authority
+
+Artifact admission is the source of truth for whether a citation-velocity page is allowed. The page-family router resolves route shape and metadata; the release engine obeys admitted routes; validators verify source evidence, route shape, vertical consistency, duplicate safety, blocked-row exclusion, and rendered-path determinism.
+
+Validators must not invent topic policy. Static topic blockers, vertical scope regexes, and “new topic should not autopublish” assumptions are prohibited in release validators. New approved topics across personal injury, dentistry, TRT, neuro, USCIS medical, and future verticals are valid when admitted by the current artifact/fix universe and structurally routed.

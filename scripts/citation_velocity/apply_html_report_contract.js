@@ -7,6 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { deriveContentAtom } = require('../lib/content_atom');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
+const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
 
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
@@ -150,8 +151,12 @@ function parsePagesToBuild(text, context) {
       const routeDecision = routePage({ ...current, operation: 'CREATE_NEW_TARGET_PAGE', recommendation: current.why_worth_building || '' });
       current.route_family = routeDecision.family;
       current.route_reason = routeDecision.reason;
+      current.route_shape = routeDecision.route_shape || routeShape(routeDecision.target_route);
+      current.route_authority = routeDecision.route_authority || 'artifact_admitted';
+      current.admission_basis = 'HTML_REPORT_CONTRACT_PAGE_TO_BUILD';
       current.blocked_reason = routeDecision.blocked_reason || '';
       current.target_route = routeDecision.target_route || routeFor(current.vertical, current.query);
+      current.renderedPath = routeDecision.renderedPath || renderedPathForRoute(current.target_route);
       current.status = routeDecision.status || 'APPROVED';
       current.id = `html_page_${sha(`${current.report_html_path}:${current.vertical}:${current.query}`, 16)}`;
       pages.push(current);
@@ -249,6 +254,10 @@ function jsonPagesToBuild(payload, context) {
     row.target_route = routeDecision.target_route || routeFor(context.vertical, query);
     row.route_family = routeDecision.family;
     row.route_reason = routeDecision.reason;
+    row.route_shape = routeDecision.route_shape || routeShape(row.target_route);
+    row.route_authority = routeDecision.route_authority || 'artifact_admitted';
+    row.admission_basis = 'HTML_REPORT_CONTRACT_PAGE_TO_BUILD';
+    row.renderedPath = routeDecision.renderedPath || renderedPathForRoute(row.target_route);
     row.blocked_reason = routeDecision.blocked_reason || '';
     row.status = routeDecision.status || 'APPROVED';
     row.id = `html_page_${sha(`${row.report_json_path || row.report_html_path}:${row.vertical}:${row.query}`, 16)}`;
@@ -336,6 +345,16 @@ function patchJsonFile(jsonPath, mutate) {
 function applyFixes(fixes) {
   const results = [];
   let applied = 0;
+  const insights = readJson('content/_live/insights.json', { items: [] });
+  const livePages = readJson('content/_live/pages.json', { pages: [] });
+  const stagedPages = readJson('content/_staged/pages.json', { pages: [] });
+  const insightBySlug = new Map((insights.items || []).map((item) => [item.slug, item]));
+  const liveByRoute = new Map((livePages.pages || []).flatMap((item) => [[item.slug, item], [item.path, item]].filter(([k]) => k)));
+  const stagedByRoute = new Map((stagedPages.pages || []).flatMap((item) => [[item.slug, item], [item.path, item]].filter(([k]) => k)));
+  let insightsChanged = false;
+  let liveChanged = false;
+  let stagedChanged = false;
+
   for (const fix of fixes) {
     const resolved = repoPathFromUrl(fix.page_url);
     const result = { ...fix, resolved };
@@ -353,30 +372,28 @@ function applyFixes(fixes) {
     let changed = false;
     if (resolved.path.startsWith('insights/') && resolved.path.endsWith('.html')) {
       const slug = path.basename(resolved.path, '.html');
-      changed = patchJsonFile('content/_live/insights.json', (payload) => {
-        const item = (payload.items || []).find(x => x.slug === slug);
-        if (!item) return false;
+      const item = insightBySlug.get(slug);
+      if (item) {
         applyArtifact(item, fix);
-        return true;
-      });
+        changed = true;
+        insightsChanged = true;
+      }
       result.source_file = 'content/_live/insights.json';
     } else {
       const route = routeFromPath(resolved.pathname);
-      for (const sourceFile of ['content/_staged/pages.json', 'content/_live/pages.json']) {
-        const fileChanged = patchJsonFile(sourceFile, (payload) => {
-          const item = (payload.pages || []).find(x => x.slug === route || x.path === route);
-          if (!item) return false;
-          applyArtifact(item, fix);
-          return true;
-        });
-        changed = fileChanged || changed;
-      }
+      const liveItem = liveByRoute.get(route);
+      const stagedItem = stagedByRoute.get(route);
+      if (liveItem) { applyArtifact(liveItem, fix); changed = true; liveChanged = true; }
+      if (stagedItem) { applyArtifact(stagedItem, fix); changed = true; stagedChanged = true; }
       result.source_file = 'content/_staged/pages.json + content/_live/pages.json';
     }
     result.status = changed ? 'APPLIED' : 'BLOCKED_MISSING_SOURCE_ITEM';
     if (changed) applied += 1;
     results.push(result);
   }
+  if (insightsChanged) writeJson('content/_live/insights.json', insights);
+  if (liveChanged) writeJson('content/_live/pages.json', livePages);
+  if (stagedChanged) writeJson('content/_staged/pages.json', stagedPages);
   return { results, applied };
 }
 function approvalFromPageSpec(spec) {
@@ -404,6 +421,12 @@ function approvalFromPageSpec(spec) {
     recommended_action: spec.why_worth_building || `Build a citation-ready answer page for ${query}.`,
     status_reason: 'selected_from_html_report_pages_to_build',
     target_route: spec.target_route || routeFor(vertical, query),
+    renderedPath: spec.renderedPath || renderedPathForRoute(spec.target_route || routeFor(vertical, query)),
+    route_family: spec.route_family || 'CREATE_COMMUNITY_QA',
+    route_reason: spec.route_reason || '',
+    route_shape: spec.route_shape || routeShape(spec.target_route || routeFor(vertical, query)),
+    route_authority: spec.route_authority || 'artifact_admitted',
+    admission_basis: spec.admission_basis || 'HTML_REPORT_CONTRACT_PAGE_TO_BUILD',
     canonical_target_url: targetFor(vertical)
   };
 }
@@ -505,7 +528,7 @@ function main() {
     approval_queue_skipped_existing: queue.skipped_count,
     fixes: fixed.results,
     page_specs: discovered.pages,
-    approval_records_added: queue.added.map(row => ({ id: row.id, vertical: row.vertical, query: row.query, target_route: row.target_route })),
+    approval_records_added: queue.added.map(row => ({ id: row.id, vertical: row.vertical, query: row.query, target_route: row.target_route, renderedPath: row.renderedPath || renderedPathForRoute(row.target_route), route_family: row.route_family || '', route_shape: row.route_shape || routeShape(row.target_route), route_authority: row.route_authority || '', admission_basis: row.admission_basis || '' })),
     approval_records_skipped: queue.skipped.map(row => ({ id: row.id, vertical: row.vertical, query: row.query, target_route: row.target_route, skipped_reason: row.skipped_reason, existing_route: row.existing_route || '' }))
   };
   writeJson(REPORT_DATA, report);

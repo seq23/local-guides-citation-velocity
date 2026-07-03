@@ -1,16 +1,18 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-07-02
+Release date: 2026-07-03
 Target publish units: 125
 Selected units: 125
-Twin agent units: 58
-Social fallback units: 67
-Repair units: 58
-New page units: 67
+Twin agent units: 65
+Social fallback units: 60
+Repair units: 65
+New page units: 60
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-015-endocrinologist-for-trt-when-to-choose.html | TRT clinic red flags to avoid |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-007-what-to-verify-before-booking-child-neuropsych-testing.html | what should I verify before booking a neuropsych evaluation for my child |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-007-what-should-i-ask-in-a-free-consultation.html | what should i ask a personal injury lawyer in a free consultation |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-074-what-is-the-maximum-payout-for-a-slip-and-fall-at-a-grocery-store.html | what is the maximum payout for a slip and fall at a grocery store |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/trust-red-flags/index.html | how do i avoid personal injury lawyer scams and red flags |
@@ -49,7 +51,12 @@ New page units: 67
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-003-how-to-compare-local-options-using-a-real-decision-checklist.html | how to compare local TRT clinic options using a checklist |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-004-what-to-verify-before-starting-testosterone-treatment.html | what to verify before starting testosterone treatment |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-008-how-to-choose-a-trt-provider.html | how to choose a TRT provider |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-012-how-much-does-trt-cost.html | what questions should I ask a TRT clinic at the first consultation |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-020-trt-and-sleep-apnea-what-to-ask.html | is it safe to buy testosterone online |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-022-trt-injections-vs-gel-how-to-decide.html | TRT injections vs gel how to decide |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-025-hair-loss-trt-what-to-ask-your-provider.html | how to manage TRT costs and insurance coverage |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-028-peptide-clinic-near-me-what-matters-before-you-book.html | TRT and fertility how to preserve sperm count |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-030-peptide-clinics-how-to-spot-the-good-fit-versus-the-bad-fit.html | what labs matter for monitoring TRT |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-003-session-by-session-walkthrough-what-to-expect.html | what happens during each session of a neuropsychological evaluation |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-008-what-to-verify-before-booking-concussion-testing.html | what to confirm before booking concussion testing with a neuropsychologist |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-026-how-to-choose-if-you-have-a-deadline.html | how to choose a neuropsych evaluator fast when I have a school deadline |
@@ -129,10 +136,3 @@ New page units: 67
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/dentist-filed-down-my-teeth-too-much-now-i-have-an-ugly-gap-could-this-be-fixed-with-edge-/ | Dentist filed down my teeth too much, now I have an ugly gap, could this be fixed with edge bonding — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/please-let-me-know-what-this-is-dentists-what-should-i-know/ | 😭 please let me know what this is dentists — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/found-huge-hole-in-my-gums-i-haven-t-been-to-the-dentist-in-years-obviously-due-to-a-phobi/ | Found huge hole in my gums I haven't been to the dentist in years obviously due to a phobia of it but I'm going to have to — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/should-i-get-4-premolars-extracted-for-braces/ | Should I get 4 premolars extracted for braces? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/should-i-get-implants/ | Should I get implants? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/i-went-to-the-doctor-two-times-but-they-seemed-reluctant-and-said-its-probably-only-herpes/ | I went to the doctor two times, but they seemed reluctant and said its probably only herpes and gave me medicine — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/on-11th-i-observed-this-thing-and-got-it-checked-by-the-dentist-on-12th-he-said-it-was-a-b/ | On 11th i observed this thing and got it checked by the dentist on 12th , he said it was a bite related ulcer and advised kenacort but i haven't used the medicine yet as it wasn't available anywhere and thought it would — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/my-dentist-says-that-it-s-better-to-put-both-the-bone-graft-and-the-implant-in-a-single-vi/ | My dentist says that it’s better to put both the bone graft and the implant in a single visit because it’s less traumatic for the area — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-bit-improperly-and-ended-up-chipping-the-tooth-should-i-get-fixed-fast-what-should-i-kno/ | I bit improperly and ended up chipping the tooth, should I get fixed fast — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/not-necessarily-a-dental-appointment-with-a-full-check-up-but-just-a-place-you-could-stop-/ | Not necessarily a dental appointment with a full check up, but just a place you could stop in, perhaps even without an appt, and have a cleaning done between your regular dental checkup — what should I know? |

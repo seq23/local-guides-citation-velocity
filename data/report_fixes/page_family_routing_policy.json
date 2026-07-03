@@ -1,17 +1,32 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "status": "ACTIVE",
-  "purpose": "Prevent every new citation opportunity from being blindly published as a community-question page.",
-  "default_allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE"],
+  "purpose": "Define allowed route-family shapes for artifact-admitted citation velocity pages. This policy is not a topic allowlist and must not decide whether a newly admitted topic is allowed.",
+  "authority_law": "Artifact admission decides what is allowed. Router resolves shape. Release obeys admitted route. Validator verifies proof and route structure. Validator never invents topic policy.",
+  "default_allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE", "CREATE_CLUSTER", "REPAIR_EXISTING", "STATE_PAGE"],
+  "route_shapes": [
+    "community_question",
+    "guide",
+    "cluster",
+    "state_family",
+    "insight_html",
+    "legacy_index_html",
+    "vertical_hub"
+  ],
+  "route_patterns": [
+    "/{vertical}/community-questions/{slug}/",
+    "/{vertical}/guides/{slug}/",
+    "/{vertical}/clusters/{slug}/",
+    "/{vertical}/states/{state}/{family}/",
+    "/insights/{slug}.html",
+    "/{vertical}/{slug}/"
+  ],
   "verticals": {
-    "personal-injury": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE"] },
-    "personal_injury": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE"] },
-    "dentistry": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE"] },
-    "trt": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE"] },
-    "neuro": {
-      "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE"],
-      "expansion_topics_require_review": ["migraine", "headache", "CGRP", "ibuprofen", "vitamin b2", "magnesium", "neuromodulation"]
-    },
-    "uscis-medical": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE"] }
+    "personal-injury": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE", "CREATE_CLUSTER", "REPAIR_EXISTING", "STATE_PAGE"] },
+    "personal_injury": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE", "CREATE_CLUSTER", "REPAIR_EXISTING", "STATE_PAGE"] },
+    "dentistry": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE", "CREATE_CLUSTER", "REPAIR_EXISTING", "STATE_PAGE"] },
+    "trt": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE", "CREATE_CLUSTER", "REPAIR_EXISTING", "STATE_PAGE"] },
+    "neuro": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE", "CREATE_CLUSTER", "REPAIR_EXISTING", "STATE_PAGE"] },
+    "uscis-medical": { "allowed_families": ["CREATE_COMMUNITY_QA", "CREATE_GUIDE", "CREATE_CLUSTER", "REPAIR_EXISTING", "STATE_PAGE"] }
   }
 }

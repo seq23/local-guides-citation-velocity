@@ -45,3 +45,16 @@ Production semantic manifests must be generated from the source artifact rows. A
 - `SOURCE_CONTENT_REQUIRED_BUT_MISSING`
 - `ROUTE_COLLISION`
 - `VALIDATION_FAILED`
+
+## 2026-07-03 Dynamic Page-Family Contract Update
+
+The HTML report and agent-artifact pipeline now carries route-family evidence forward as first-class admission metadata:
+
+- `target_route`
+- `renderedPath`
+- `route_family`
+- `route_shape`
+- `route_authority`
+- `admission_basis`
+
+The release engine must use admitted routes from the approval/intake artifacts. It must not re-run topic policy after admission. The page-family validator is blocking only for structural/proof failures: missing admission evidence, malformed route shape, vertical mismatch, duplicate route, blocked row rendered, or fallback counted as exact implementation.

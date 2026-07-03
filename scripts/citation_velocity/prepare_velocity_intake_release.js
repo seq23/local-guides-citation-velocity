@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
+const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
 const { resolveTargetPath, routeFromPath } = require('../lib/citation_route_resolver');
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -214,12 +215,12 @@ function chooseAgentOperation(row, vertical, query, policy) {
   }
   if (patch && intendedPath) {
     const resolved = resolveTargetPath(intendedPath);
-    if (!resolved.block_reason) return { operation: 'REPAIR_INTENDED_WINNER_PAGE', intended_winner_path: resolved.implementation_path, target_route: routeFromPath(resolved.implementation_path), renderedPath: resolved.implementation_path, supporting_route: supportingRoute, blocked_reason: '', status: 'READY_TO_RELEASE', target_resolution_status: resolved.status, canonicalized_from: resolved.canonicalized_from || [] };
+    if (!resolved.block_reason) return { operation: 'REPAIR_INTENDED_WINNER_PAGE', intended_winner_path: resolved.implementation_path, target_route: routeFromPath(resolved.implementation_path), renderedPath: resolved.implementation_path, supporting_route: supportingRoute, blocked_reason: '', status: 'READY_TO_RELEASE', target_resolution_status: resolved.status, canonicalized_from: resolved.canonicalized_from || [], route_family: 'REPAIR_EXISTING', route_reason: 'existing_target_repair', route_shape: routeShape(routeFromPath(resolved.implementation_path)), route_authority: 'artifact_admitted', admission_basis: 'AGENT_EXACT_REPAIR_TARGET' };
     return { operation: 'BLOCKED_MISSING_TARGET', intended_winner_path: intendedPath, target_route: routeFromRepoPath(intendedPath), renderedPath: intendedPath, supporting_route: supportingRoute, blocked_reason: resolved.block_reason || 'intended_winner_page_not_found_in_repo', status: 'BLOCKED_MISSING_TARGET', target_resolution_status: resolved.status };
   }
   const routeDecision = routePage({ vertical, query, recommendation: row['Fix Recommendation'] || row.recommendation || '', operation: 'CREATE_NEW_TARGET_PAGE' });
   if (String(routeDecision.status || '').startsWith('BLOCKED_')) return { operation: routeDecision.status, intended_winner_path: intendedPath || '', target_route: '', renderedPath: '', supporting_route: '', blocked_reason: routeDecision.blocked_reason || routeDecision.status, status: routeDecision.status, route_family: routeDecision.family };
-  return { operation: 'CREATE_NEW_TARGET_PAGE', intended_winner_path: intendedPath || '', target_route: routeDecision.target_route, renderedPath: routeDecision.renderedPath, supporting_route: '', blocked_reason: '', status: 'READY_TO_RELEASE', route_family: routeDecision.family, route_reason: routeDecision.reason };
+  return { operation: 'CREATE_NEW_TARGET_PAGE', intended_winner_path: intendedPath || '', target_route: routeDecision.target_route, renderedPath: routeDecision.renderedPath || renderedPathForRoute(routeDecision.target_route), supporting_route: '', blocked_reason: '', status: 'READY_TO_RELEASE', route_family: routeDecision.family, route_reason: routeDecision.reason, route_shape: routeDecision.route_shape || routeShape(routeDecision.target_route), route_authority: routeDecision.route_authority || 'artifact_admitted', admission_basis: 'AGENT_ARTIFACT_NEW_PAGE' };
 }
 function toApproval(record) {
   return {
@@ -244,7 +245,13 @@ function toApproval(record) {
     citation_velocity: true,
     recommended_action: record.recommendation,
     status_reason: record.status_reason || 'selected_for_velocity_intake_release',
-    target_route: record.target_route
+    target_route: record.target_route,
+    renderedPath: record.renderedPath || renderedPathForRoute(record.target_route),
+    route_family: record.route_family || '',
+    route_reason: record.route_reason || '',
+    route_shape: record.route_shape || routeShape(record.target_route),
+    route_authority: record.route_authority || 'artifact_admitted',
+    admission_basis: record.admission_basis || (record.source === 'social_public_backlog' ? 'SOCIAL_BACKLOG_APPROVED_FALLBACK' : 'VELOCITY_INTAKE_SELECTED')
   };
 }
 function importAgentRuns() {
@@ -343,7 +350,12 @@ function socialFallbackRecords(limit, existingIds) {
         action_tier: 'social_backlog_fill',
         recommendation: row.recommended_action || 'Create citation-ready exact-answer page from public/social backlog signal.',
         priority_score: Number(row.signal_score || 0) * 10,
-        target_route: routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }).target_route || routeFor(vertical, query),
+        target_route: (() => { const d = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }); return d.target_route || routeFor(vertical, query); })(),
+        renderedPath: (() => { const d = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }); return d.renderedPath || renderedPathForRoute(d.target_route || routeFor(vertical, query)); })(),
+        route_family: (() => { const d = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }); return d.family || 'CREATE_COMMUNITY_QA'; })(),
+        route_shape: (() => { const d = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }); return d.route_shape || routeShape(d.target_route || routeFor(vertical, query)); })(),
+        route_authority: 'artifact_admitted',
+        admission_basis: 'SOCIAL_BACKLOG_APPROVED_FALLBACK',
         source_signal_ids: row.source_signal_ids || [row.id].filter(Boolean),
         source_records: [],
         status: 'READY_TO_RELEASE',
@@ -433,7 +445,7 @@ function main() {
     skipped_by_policy: agent.skipped_by_policy,
     blocked_agent_rows: blockedAgent.map((r) => ({ id: r.id, query: r.query, operation: r.operation, intended_winner_page: r.intended_winner_page, blocked_reason: r.blocked_reason })),
     selected_ids: selected.map((r) => r.id),
-    selected_units: selected.map((r) => ({ id: r.id, source: r.source, operation: r.operation || 'CREATE_NEW_TARGET_PAGE', vertical: r.vertical, query: r.query, intended_winner_page: r.intended_winner_page || '', intended_winner_path: r.intended_winner_path || '', target_route: r.target_route, supporting_route: r.supporting_route || '', priority_score: r.priority_score }))
+    selected_units: selected.map((r) => ({ id: r.id, source: r.source, operation: r.operation || 'CREATE_NEW_TARGET_PAGE', vertical: r.vertical, query: r.query, intended_winner_page: r.intended_winner_page || '', intended_winner_path: r.intended_winner_path || '', target_route: r.target_route, renderedPath: r.renderedPath || renderedPathForRoute(r.target_route), supporting_route: r.supporting_route || '', route_family: r.route_family || '', route_shape: r.route_shape || routeShape(r.target_route), route_authority: r.route_authority || 'artifact_admitted', admission_basis: r.admission_basis || 'VELOCITY_INTAKE_SELECTED', priority_score: r.priority_score }))
   };
   updateLedger(agent.normalized, plan);
   writeJson('artifacts/validation/velocity-intake-release-plan.json', plan);

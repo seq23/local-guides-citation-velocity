@@ -8,4 +8,4 @@ Evidence date: 2026-06-20
 - Citation monitor weekly runs: 45
 - Citation wins: 9
 - June 19 USCIS run: preserved
-- Validation registry entries: 86
+- Validation registry entries: 87

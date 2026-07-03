@@ -2,11 +2,16 @@
   "schema_version": "3.0",
   "generated_at": "2026-06-23T00:00:00.000Z",
   "profiles": [
-    "agent-run"
+    "full-audit"
   ],
   "validator_ids": [
+    "local-pantry",
+    "local-pantry-trace",
+    "nap-consistency",
     "validator-authority-contract",
     "workflow-yaml-syntax",
+    "monitor-ledger",
+    "monitor-future-append-self-test",
     "agent-run-artifact-intake",
     "agent-exact-implementation-plan",
     "html-fix-acceptance-compiler",
@@ -15,13 +20,19 @@
     "agent-exact-implementation",
     "html-report-contract",
     "page-family-contract",
+    "search-quality-basics",
     "workflow-data-trace",
     "workflow-contract",
     "velocity-intake-workflow"
   ],
   "execution_order": [
+    "local-pantry",
+    "local-pantry-trace",
+    "nap-consistency",
     "validator-authority-contract",
     "workflow-yaml-syntax",
+    "monitor-ledger",
+    "monitor-future-append-self-test",
     "agent-run-artifact-intake",
     "agent-exact-implementation-plan",
     "html-fix-acceptance-compiler",
@@ -30,18 +41,82 @@
     "agent-exact-implementation",
     "html-report-contract",
     "page-family-contract",
+    "search-quality-basics",
     "workflow-data-trace",
     "workflow-contract",
     "velocity-intake-workflow"
   ],
-  "collect_all": false,
+  "collect_all": true,
   "strict_warnings": false,
   "include_local": false,
   "status": "PASS",
   "counts": {
-    "PASS": 13
+    "PASS": 19
   },
   "results": [
+    {
+      "id": "local-pantry",
+      "title": "Local pantry expansion validation",
+      "status": "PASS",
+      "severity": "STRONG_WARNING",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 86,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/local-pantry.json",
+      "log": "artifacts/validation/runtime/2026-06-23-10324/local-pantry.log"
+    },
+    {
+      "id": "local-pantry-trace",
+      "title": "Local pantry usage trace",
+      "status": "PASS",
+      "severity": "STRONG_WARNING",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 79,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/local-pantry-trace.json",
+      "log": "artifacts/validation/runtime/2026-06-23-10324/local-pantry-trace.log"
+    },
+    {
+      "id": "nap-consistency",
+      "title": "NAP citation registry consistency",
+      "status": "PASS",
+      "severity": "STRONG_WARNING",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 76,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/nap-consistency.json",
+      "log": "artifacts/validation/runtime/2026-06-23-10324/nap-consistency.log"
+    },
     {
       "id": "validator-authority-contract",
       "title": "Validator authority contract",
@@ -53,7 +128,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 185,
+      "duration_ms": 183,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -61,7 +136,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/validator-authority-contract.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/validator-authority-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/validator-authority-contract.log"
     },
     {
       "id": "workflow-yaml-syntax",
@@ -74,7 +149,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 1344,
+      "duration_ms": 1255,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -82,7 +157,51 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-yaml-syntax.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/workflow-yaml-syntax.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/workflow-yaml-syntax.log"
+    },
+    {
+      "id": "monitor-ledger",
+      "title": "Append-only Citation Velocity monitor ledger integrity",
+      "status": "PASS",
+      "severity": "STRONG_WARNING",
+      "scope": "CONTAINER",
+      "tier": "Tier 2",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 178,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/monitor-ledger.json",
+      "log": "artifacts/validation/runtime/2026-06-23-10324/monitor-ledger.log"
+    },
+    {
+      "id": "monitor-future-append-self-test",
+      "title": "Future monitor run append compatibility self-test",
+      "status": "PASS",
+      "severity": "STRONG_WARNING",
+      "scope": "CONTAINER",
+      "tier": "Tier 2",
+      "depends_on": [
+        "monitor-ledger"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 262,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/monitor-future-append-self-test.json",
+      "log": "artifacts/validation/runtime/2026-06-23-10324/monitor-future-append-self-test.log"
     },
     {
       "id": "agent-run-artifact-intake",
@@ -95,7 +214,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 178,
+      "duration_ms": 165,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -103,7 +222,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-run-artifact-intake.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/agent-run-artifact-intake.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/agent-run-artifact-intake.log"
     },
     {
       "id": "agent-exact-implementation-plan",
@@ -118,7 +237,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 205,
+      "duration_ms": 197,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -126,7 +245,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-implementation-plan.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/agent-exact-implementation-plan.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/agent-exact-implementation-plan.log"
     },
     {
       "id": "html-fix-acceptance-compiler",
@@ -141,7 +260,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 316,
+      "duration_ms": 300,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -149,7 +268,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-10107/html-fix-acceptance-compiler.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/html-fix-acceptance-compiler.log"
     },
     {
       "id": "agent-exact-implementation-trace",
@@ -164,7 +283,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 517,
+      "duration_ms": 503,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -172,7 +291,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-implementation-trace.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/agent-exact-implementation-trace.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/agent-exact-implementation-trace.log"
     },
     {
       "id": "agent-exact-acceptance-manifest",
@@ -188,7 +307,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 779,
+      "duration_ms": 782,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -196,7 +315,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-acceptance-manifest.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/agent-exact-acceptance-manifest.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/agent-exact-acceptance-manifest.log"
     },
     {
       "id": "agent-exact-implementation",
@@ -212,7 +331,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 166,
+      "duration_ms": 167,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -220,7 +339,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-implementation.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/agent-exact-implementation.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/agent-exact-implementation.log"
     },
     {
       "id": "html-report-contract",
@@ -235,7 +354,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 168,
+      "duration_ms": 161,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -243,7 +362,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/html-report-contract-validation.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/html-report-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/html-report-contract.log"
     },
     {
       "id": "page-family-contract",
@@ -259,7 +378,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 203,
+      "duration_ms": 191,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -267,7 +386,28 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-10107/page-family-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/page-family-contract.log"
+    },
+    {
+      "id": "search-quality-basics",
+      "title": "Indexable HTML search-quality fundamentals",
+      "status": "PASS",
+      "severity": "STRONG_WARNING",
+      "scope": "CONTAINER",
+      "tier": "Tier 5",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 1456,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/search-quality-basics.json",
+      "log": "artifacts/validation/runtime/2026-06-23-10324/search-quality-basics.log"
     },
     {
       "id": "workflow-data-trace",
@@ -282,7 +422,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 186,
+      "duration_ms": 156,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -290,7 +430,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-data-trace.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/workflow-data-trace.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/workflow-data-trace.log"
     },
     {
       "id": "workflow-contract",
@@ -305,7 +445,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 189,
+      "duration_ms": 162,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -313,7 +453,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/workflow-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/workflow-contract.log"
     },
     {
       "id": "velocity-intake-workflow",
@@ -328,7 +468,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 181,
+      "duration_ms": 156,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -336,7 +476,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/velocity-intake-workflow.json",
-      "log": "artifacts/validation/runtime/2026-06-23-10107/velocity-intake-workflow.log"
+      "log": "artifacts/validation/runtime/2026-06-23-10324/velocity-intake-workflow.log"
     }
   ]
 }
