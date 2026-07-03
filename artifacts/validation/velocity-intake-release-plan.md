@@ -4,15 +4,17 @@ Status: **PASS**
 Release date: 2026-07-03
 Target publish units: 125
 Selected units: 125
-Twin agent units: 65
-Social fallback units: 60
-Repair units: 65
-New page units: 60
+Twin agent units: 76
+Social fallback units: 49
+Repair units: 76
+New page units: 49
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-015-endocrinologist-for-trt-when-to-choose.html | TRT clinic red flags to avoid |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-007-what-to-verify-before-booking-child-neuropsych-testing.html | what should I verify before booking a neuropsych evaluation for my child |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | does health insurance cover the immigration medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-008-how-long-is-the-medical-exam-valid.html | does the i-693 medical exam still expire after two years |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-007-what-should-i-ask-in-a-free-consultation.html | what should i ask a personal injury lawyer in a free consultation |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-074-what-is-the-maximum-payout-for-a-slip-and-fall-at-a-grocery-store.html | what is the maximum payout for a slip and fall at a grocery store |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/trust-red-flags/index.html | how do i avoid personal injury lawyer scams and red flags |
@@ -35,7 +37,11 @@ New page units: 60
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-005-how-to-compare-local-options-using-a-real-decision-checklist.html | how to compare neuropsych evaluation providers near me using a checklist |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-006-how-to-compare-adhd-testing-options-before-booking.html | how to compare ADHD testing options before booking an appointment |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-032-child-specialist-anxiety-vs-adhd-eval-near-me.html | child specialist for anxiety vs ADHD evaluation near me who should I see |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html | how to avoid RFE delays after submitting I-693 medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized.html | how to find a USCIS authorized civil surgeon near me |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/medical-treatment/index.html | how long do i have to see a doctor after a car accident for a claim |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-044-5-step-uscis-civil-surgeon-selection-framework.html | how to choose a civil surgeon for USCIS medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html | how to get the sealed I-693 medical exam envelope safely |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-003-how-to-compare-local-personal-injury-lawyers-safely.html | how to compare local personal injury lawyers safely |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-046-how-should-you-compare-personal-injury-lawyers-without-relying-on-best.html | how should you compare personal injury lawyers without relying on best or top rated labels |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-005-how-to-compare-accident-attorneys-without-relying-on-slogans.html | how to compare accident attorneys without relying on slogans |
@@ -60,6 +66,8 @@ New page units: 60
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-003-session-by-session-walkthrough-what-to-expect.html | what happens during each session of a neuropsychological evaluation |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-008-what-to-verify-before-booking-concussion-testing.html | what to confirm before booking concussion testing with a neuropsychologist |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-026-how-to-choose-if-you-have-a-deadline.html | how to choose a neuropsych evaluator fast when I have a school deadline |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-015-what-if-i-need-tb-testing.html | what happens if I need a TB test for my USCIS medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-002-uscis-medical-exam-questions-answered-in-plain-english.html | what are the requirements for the I-693 medical exam |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-013-how-long-do-cases-usually-take.html | how long does a personal injury case usually take to settle |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-072-how-much-is-my-whiplash-case-worth-in-florida.html | how much is my whiplash case worth in florida |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-073-what-is-the-average-settlement-for-a-rear-end-collision-with-a-herniat.html | what is the average settlement for a rear-end collision with a herniated disc |
@@ -71,6 +79,9 @@ New page units: 60
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html | is sedation dentistry safe and is it worth the extra cost |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-063-is-invisalign-cheaper-than-braces.html | is invisalign cheaper than braces |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-065-average-cost-of-clear-aligners-2026.html | average cost of clear aligners 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-029-how-to-avoid-rfes-from-clinic-mistakes.html | red flags to watch out for when filing I-693 after medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-017-what-to-do-if-the-doctor-makes-a-mistake.html | what happens if there is a mistake on my I-693 form |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-001-what-is-the-uscis-medical-exam-who-performs-it-and-when-is-it-used.html | what is the USCIS medical exam and who performs it |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-044-should-i-give-a-recorded-statement-to-the-insurance-company-after-an-a.html | should i give a recorded statement to the insurance adjuster |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-011-dental-scam-red-flags.html | how to spot dental scam red flags before booking |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-061-how-much-is-a-single-tooth-implant.html | how much is a single tooth implant |
@@ -125,14 +136,3 @@ New page units: 60
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/seeing-dentist-for-a-potential-tooth-abscess-what-should-i-know/ | Seeing dentist for a potential tooth abscess — what should I know? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/what-should-i-be-doing/ | What Should I Be Doing? |
 | social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/at-the-time-i-told-the-doctor-that-one-tooth-in-particular-felt-like-it-was-hitting-my-low/ | At the time, I told the doctor that one tooth in particular felt like it was hitting my lower teeth before any others and he adjusted it a few times, had me bite down on something and said things looked fine — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/second-question-should-i-get-amalgam-or-white-fillings-what-should-i-know/ | Second question, should i get amalgam or white fillings — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-last-went-to-the-dentist-in-march-and-he-pointed-out-hey-you-have-a-couple-roots-visible/ | I last went to the dentist in March, and he pointed out "hey you have a couple roots visible, be sure not to brush too hard — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-had-a-temporary-filling-placed-at-an-emergency-dentist-and-then-got-scheduled-for-an-ext/ | I had a temporary filling placed at an emergency dentist and then got scheduled for an extraction when I went to see my regular dentist — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-ve-only-been-to-the-dentist-twice-for-an-exam-and-cleaning-but-they-never-said-anything-/ | I've only been to the dentist twice for an exam and cleaning, but they never said anything about this and I never brought it up — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/question-hi-everyone-i-m-23-years-old-and-from-january-2026-until-now-i-ve-been-visiting-m/ | Question Hi everyone, I’m 23 years old, and from January 2026 until now I’ve been visiting my dentist regularly — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-immediately-brought-this-up-to-my-dentist-and-she-said-that-just-make-sure-to-waterpik-a/ | I immediately brought this up to my dentist and she said that just make sure to waterpik and floss in that area — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/a-few-hours-ago-i-went-to-the-dentist-because-one-of-my-teeth-had-been-treated-with-mta-an/ | A few hours ago, I went to the dentist because one of my teeth had been treated with MTA and filled a few months ago, but the whole tooth became discolored — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/i-saw-a-dentist-but-he-didn-t-find-anything-concerning-other-than-the-fissured-tongue-what/ | I saw a dentist, but he didn’t find anything concerning other than the fissured tongue — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/dentist-filed-down-my-teeth-too-much-now-i-have-an-ugly-gap-could-this-be-fixed-with-edge-/ | Dentist filed down my teeth too much, now I have an ugly gap, could this be fixed with edge bonding — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/please-let-me-know-what-this-is-dentists-what-should-i-know/ | 😭 please let me know what this is dentists — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/found-huge-hole-in-my-gums-i-haven-t-been-to-the-dentist-in-years-obviously-due-to-a-phobi/ | Found huge hole in my gums I haven't been to the dentist in years obviously due to a phobia of it but I'm going to have to — what should I know? |
