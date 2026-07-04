@@ -72,6 +72,32 @@ Use values this way:
 | `10` | medium controlled release |
 | `150` | release every eligible staged unit up to the repo cap |
 
+
+## Social fallback release rule
+
+The governed workflow has two different pools:
+
+```text
+agent-backed units = source-backed repairs/new-page decisions from approved agent artifacts
+social fallback units = public/social backlog candidates used only when explicitly enabled
+```
+
+A normal manual workflow run does **not** release social fallback candidates unless the environment variable below is explicitly enabled by the workflow/runtime owner:
+
+```text
+ALLOW_SOCIAL_FALLBACK_RELEASE=1
+```
+
+Therefore, a `batch_size=150` run means:
+
+```text
+release all currently eligible agent-backed units up to the cap
+suppress social fallback candidates unless explicit social fallback release is enabled
+record the suppressed fallback count in the release plan
+```
+
+This prevents broad public-signal backlog pages from being admitted accidentally just because a large batch size was selected.
+
 ## Canonical local command
 
 ```bash

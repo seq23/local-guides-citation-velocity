@@ -64,6 +64,13 @@ The trace must report, at minimum:
 - recommendation-driven output validation status;
 - any warnings where one artifact format has fewer rows than the unified normalized source model.
 
+
+## Social fallback trace rule
+
+Social fallback candidates are not treated as live-route obligations unless `artifacts/validation/velocity-content-release.json` shows that the candidate was actually created. If fallback release is suppressed by the missing `ALLOW_SOCIAL_FALLBACK_RELEASE=1` guard, the trace records a warning instead of failing on missing live/staged routes.
+
+Agent-backed repairs and created pages remain hard-traced.
+
 ## Hard-fail conditions
 
 The trace must fail when:

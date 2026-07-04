@@ -445,7 +445,22 @@ function importAgentRuns() {
   }
   return { manifests, normalized, invalid, absorbed, skipped_by_policy };
 }
+function countSocialFallbackCandidates(limit, existingIds) {
+  if (limit <= 0) return 0;
+  const queue = readJson('data/community/publish_queue.json', []);
+  if (!Array.isArray(queue)) return 0;
+  let count = 0;
+  for (const row of queue) {
+    if (!row || !row.query || existingIds.has(row.id)) continue;
+    const vertical = normalizeVertical(row.vertical || row.target_vertical || '');
+    const query = String(row.query || row.normalized_query || '').trim();
+    if (query.length >= 20 && ['personal_injury', 'dentistry', 'trt', 'neuro', 'uscis-medical'].includes(vertical)) count += 1;
+    if (count >= limit) return count;
+  }
+  return count;
+}
 function socialFallbackRecords(limit, existingIds) {
+  if (limit <= 0) return [];
   const queue = readJson('data/community/publish_queue.json', []);
   if (!Array.isArray(queue)) return [];
   return queue
@@ -558,12 +573,15 @@ function main() {
     if (seenRoutes.has(routeKey)) { record.status = 'SKIPPED_DUPLICATE_WITH_PROOF'; record.status_reason = 'canonical_route_already_selected'; continue; }
     selected.push(record); seenRoutes.add(routeKey); seenIds.add(record.id);
   }
-  const social = socialFallbackRecords(TARGET - selected.length, seenIds);
+  const allowSocialFallbackRelease = process.env.ALLOW_SOCIAL_FALLBACK_RELEASE === '1';
+  const socialCapacity = allowSocialFallbackRelease ? TARGET - selected.length : 0;
+  const social = socialFallbackRecords(socialCapacity, seenIds);
   for (const record of social) {
     if (selected.length >= TARGET) break;
     if (seenRoutes.has(record.target_route)) continue;
     selected.push(record); seenRoutes.add(record.target_route); seenIds.add(record.id);
   }
+  const suppressedSocialFallbackCount = allowSocialFallbackRelease ? 0 : countSocialFallbackCandidates(TARGET - selected.length, seenIds);
   const approvals = selected.map(toApproval);
   writeJson('data/community/approval_queue.json', approvals);
   const plan = {
@@ -574,6 +592,9 @@ function main() {
     selected_count: selected.length,
     agent_selected_count: selected.filter((r) => r.source === 'twin_agent_artifact').length,
     social_fallback_selected_count: selected.filter((r) => r.source === 'social_public_backlog').length,
+    social_fallback_release_allowed: allowSocialFallbackRelease,
+    social_fallback_suppressed_count: suppressedSocialFallbackCount,
+    social_fallback_suppressed_reason: allowSocialFallbackRelease ? '' : 'ALLOW_SOCIAL_FALLBACK_RELEASE is not enabled for the governed release workflow',
     repair_count: selected.filter((r) => r.operation === 'REPAIR_INTENDED_WINNER_PAGE').length,
     new_page_count: selected.filter((r) => r.operation === 'CREATE_NEW_TARGET_PAGE').length,
     blocked_count: blockedAgent.length,
@@ -595,13 +616,15 @@ function main() {
     `Selected units: ${plan.selected_count}`,
     `Twin agent units: ${plan.agent_selected_count}`,
     `Social fallback units: ${plan.social_fallback_selected_count}`,
+    `Social fallback allowed: ${plan.social_fallback_release_allowed}`,
+    `Social fallback suppressed: ${plan.social_fallback_suppressed_count}`,
     `Repair units: ${plan.repair_count}`,
     `New page units: ${plan.new_page_count}`,
     '', '| Source | Operation | Vertical | Target route | Query |', '|---|---|---|---|---|',
     ...plan.selected_units.map((u) => `| ${u.source} | ${u.operation} | ${u.vertical} | ${u.target_route} | ${String(u.query).replace(/\|/g, '\\|')} |`)
   ].join('\n') + '\n');
   writeJson('artifacts/validation/agent-run-intake.json', { schema_version: '1.1', status: 'PASS', manifests_seen: agent.manifests.length, absorbed: agent.absorbed, skipped_by_policy: agent.skipped_by_policy, blocked_count: blockedAgent.length, invalid: [], checked_at: DATE });
-  console.log(`VELOCITY INTAKE PREP PASS: ${plan.selected_count} units (${plan.agent_selected_count} agent, ${plan.social_fallback_selected_count} social fallback, ${plan.repair_count} repairs).`);
+  console.log(`VELOCITY INTAKE PREP PASS: ${plan.selected_count} units (${plan.agent_selected_count} agent, ${plan.social_fallback_selected_count} social fallback, ${plan.repair_count} repairs; suppressed_social_fallback=${plan.social_fallback_suppressed_count}).`);
 }
 
 if (require.main === module) main();

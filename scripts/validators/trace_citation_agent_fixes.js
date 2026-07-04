@@ -97,11 +97,23 @@ for (const fix of selected) {
 }
 
 const plan = readJson('artifacts/validation/velocity-intake-release-plan.json', null);
+const velocityContentRelease = readJson('artifacts/validation/velocity-content-release.json', { created: [], skipped: [] });
+const createdReleaseIds = new Set((velocityContentRelease.created || []).map((row) => row.id).filter(Boolean));
+const skippedReleaseById = new Map((velocityContentRelease.skipped || []).map((row) => [row.id, row]));
+function isSocialFallbackUnit(unit) {
+  return String(unit && unit.source || '') === 'social_public_backlog' || String(unit && unit.admission_basis || '').includes('SOCIAL_BACKLOG_APPROVED_FALLBACK');
+}
 if (plan && plan.selected_count > 0) {
   for (const unit of plan.selected_units || []) {
     const id = unit.id || unit.query;
     if (isRenderedRepair(unit)) {
       traceRenderedTarget(id, unit.target_route || unit.intended_winner_path, [unit.query].filter(Boolean), String(unit.target_route || '').startsWith('/insights/'));
+      continue;
+    }
+    if (isSocialFallbackUnit(unit) && !createdReleaseIds.has(id)) {
+      const skipped = skippedReleaseById.get(id);
+      const reason = skipped && skipped.reason || (process.env.ALLOW_SOCIAL_FALLBACK_RELEASE === '1' ? 'not_created_by_velocity_content_release' : 'social_fallback_requires_explicit_env');
+      warnings.push(`${id}:social_fallback_not_traced_as_live_route:${reason}`);
       continue;
     }
     const liveExists = pageExists(livePages, unit.target_route);
@@ -113,7 +125,7 @@ if (plan && plan.selected_count > 0) {
   }
 }
 if (!plan) warnings.push('velocity_intake_release_plan_missing; no current intake release to trace');
-const report = { schema_version: '1.1', validator: 'citation-agent-fix-trace', status: errors.length ? 'FAIL' : 'PASS', selected_trace_count: selected.length, release_plan_count: plan && plan.selected_count || 0, errors, warnings, checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10) };
+const report = { schema_version: '1.2', validator: 'citation-agent-fix-trace', status: errors.length ? 'FAIL' : 'PASS', selected_trace_count: selected.length, release_plan_count: plan && plan.selected_count || 0, errors, warnings, checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10) };
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'artifacts/validation/citation-agent-fix-trace.json'), JSON.stringify(report, null, 2) + '\n');
 if (errors.length) { console.error('CITATION AGENT FIX TRACE FAIL'); errors.forEach((e) => console.error(`- ${e}`)); process.exit(1); }
