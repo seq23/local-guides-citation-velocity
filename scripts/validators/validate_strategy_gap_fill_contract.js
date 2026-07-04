@@ -22,9 +22,16 @@ for (const [index, row] of (backlog.candidates || []).entries()) {
   if (!/^\/[a-z0-9-]+\/(guides|clusters)\/[a-z0-9-]+\/$/.test(String(row.target_route || ''))) errors.push(`candidate_${index}_bad_route:${row.target_route}`);
   if (index > 50 && errors.length) break;
 }
+const policy = contract.release_gap_policy || {};
+if (policy.social_fallback_release_required_when_agent_shortfall !== true) errors.push('social_fallback_release_required_policy_missing');
+if (policy.social_fallback_must_materialize_and_validate !== true) errors.push('social_fallback_materialization_policy_missing');
+if (policy.suppression_default_for_social_fallback !== false) errors.push('social_fallback_must_not_be_suppressed_by_default');
+const workflowTextPath = path.join(ROOT, '.github/workflows/velocity-content-release.yml');
+const workflowText = fs.existsSync(workflowTextPath) ? fs.readFileSync(workflowTextPath, 'utf8') : '';
+if (!workflowText.includes('ALLOW_SOCIAL_FALLBACK_RELEASE: "1"')) errors.push('velocity_workflow_missing_social_fallback_release_env');
 const pkg = read('package.json', {scripts:{}});
 for (const s of ['strategy:gap-fill:backlog','strategy:gap-fill:release-gap']) if (!pkg.scripts?.[s]) errors.push(`missing_script:${s}`);
-const report = {schema_version:'1.0', validator:'strategy-gap-fill-contract', status:errors.length?'FAIL':'PASS', daily_target_units:dailyTarget, time_horizon_days:horizon, minimum_units:minimum, candidate_count:(backlog.candidates || []).length, errors};
+const report = {schema_version:'1.1', validator:'strategy-gap-fill-contract', status:errors.length?'FAIL':'PASS', daily_target_units:dailyTarget, time_horizon_days:horizon, minimum_units:minimum, candidate_count:(backlog.candidates || []).length, errors};
 fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'artifacts/validation/strategy-gap-fill-contract.json'), JSON.stringify(report,null,2)+'\n');
 if (errors.length) { console.error(JSON.stringify(report,null,2)); process.exit(1); }

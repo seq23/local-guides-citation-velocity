@@ -11,7 +11,7 @@ const workflowRel = '.github/workflows/velocity-content-release.yml';
 const wf = read(workflowRel);
 const pkg = JSON.parse(read('package.json'));
 const registry = JSON.parse(read('data/workflows/workflow_contract_registry.json'));
-for (const token of ['data/report_fixes/agent_runs/**/agent_run_manifest.json', 'npm run release:daily-citation-intelligence:preview', 'npm run release:velocity-intake', 'git push origin HEAD:main', 'contents: write', 'node-version: "24"']) if (!has(wf, token)) errors.push(`${workflowRel}:missing:${token}`);
+for (const token of ['data/report_fixes/agent_runs/**/agent_run_manifest.json', 'npm run release:daily-citation-intelligence:preview', 'npm run release:velocity-intake', 'git push origin HEAD:main', 'contents: write', 'node-version: "24"', 'ALLOW_SOCIAL_FALLBACK_RELEASE: "1"']) if (!has(wf, token)) errors.push(`${workflowRel}:missing:${token}`);
 if (fs.existsSync(path.join(ROOT, '.github/workflows/agent_run_absorption.yml'))) errors.push('separate_agent_run_absorption_workflow_present; use consolidated velocity-content-release.yml');
 for (const script of ['validate:agent-run-intake','citation:prepare-velocity-intake','citation:apply-html-report-contract','validate:html-report-contract','release:velocity-intake','validate:velocity-intake-workflow']) if (!pkg.scripts || !pkg.scripts[script]) errors.push(`package_missing_script:${script}`);
 const entry = (registry.workflows || []).find((w) => w.file === 'velocity-content-release.yml');

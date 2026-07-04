@@ -28,7 +28,7 @@ Release units can be:
 
 - agent-backed repairs to existing pages;
 - eligible new staged pages;
-- social/public-signal fallback units;
+- validated social/public-signal fallback units used to fill the strategy release gap;
 - supporting source-backed content updates.
 
 ## Manual workflow input
@@ -70,33 +70,36 @@ Use values this way:
 | `1` | conservative proof run after a repair |
 | `5` | small controlled release |
 | `10` | medium controlled release |
-| `150` | release every eligible staged unit up to the repo cap |
+| `150` | release every eligible staged unit up to the repo cap, including validated social fallback needed to fill the target |
 
 
-## Social fallback release rule
+## Social fallback and strategy gap-fill rule
 
-The governed workflow has two different pools:
+The governed workflow has two release pools:
 
 ```text
 agent-backed units = source-backed repairs/new-page decisions from approved agent artifacts
-social fallback units = public/social backlog candidates used only when explicitly enabled
+social fallback units = validated public/social backlog candidates used to fill the daily strategy gap
 ```
 
-A normal manual workflow run does **not** release social fallback candidates unless the environment variable below is explicitly enabled by the workflow/runtime owner:
+Social fallback is **not optional by default**. The active strategy contract says the six-month growth spine cannot depend only on agent-run volume. When the agent-backed queue is below the selected release target and validated fallback candidates exist, the workflow must materialize those fallback candidates as source-backed pages or fail with a repairable validation error.
+
+Normal workflow env:
 
 ```text
 ALLOW_SOCIAL_FALLBACK_RELEASE=1
 ```
 
-Therefore, a `batch_size=150` run means:
+A `batch_size=150` run means:
 
 ```text
 release all currently eligible agent-backed units up to the cap
-suppress social fallback candidates unless explicit social fallback release is enabled
-record the suppressed fallback count in the release plan
+fill the remaining target with validated social fallback units
+create/stage/live fallback pages with route authority and source records
+hard-trace selected fallback routes just like other created pages
 ```
 
-This prevents broad public-signal backlog pages from being admitted accidentally just because a large batch size was selected.
+Do **not** suppress social fallback just to make a large batch pass. If social fallback fails, repair the fallback materialization, route authority, source records, or trace layer.
 
 ## Canonical local command
 
@@ -179,7 +182,7 @@ If those ledgers are unavailable, the trace layer may fall back to parsed agent 
 
 | Failure | Meaning | Correct repair surface |
 |---|---|---|
-| `missing_source_artifact` | route/admission record lost source authority | implementation plan or page-family authority adapter |
+| `missing_source_artifact` | route/admission record lost source authority | implementation plan, social fallback source-artifact tagging, or page-family authority adapter |
 | `BLOCKED_AMBIGUOUS_FUZZY_ROUTE` | target route cannot be resolved safely | route resolver / source artifact target data |
 | `sourceRecords is not defined` | trace script bug; source records were not loaded before summary | `scripts/validators/trace_agent_artifact_data_flow.js` |
 | recommendation-driven output failure | rendered/ledgered output cannot prove it came from the recommendation | implementation planner, acceptance compiler, or rendered marker application |

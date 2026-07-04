@@ -11,3 +11,5 @@
 - `REPOSITORY_UPDATE_RUNBOOK.md` — local snapshot installation and Node 24 validation.
 
 No LKG export, canonical candidate, cross-repository pull request, or canonical backlink workflow is permitted.
+
+- `STRATEGY_GAP_FILL_SOCIAL_FALLBACK_CONTRACT.md` — explains the daily target, strategy gap-fill, and social fallback materialization contract.

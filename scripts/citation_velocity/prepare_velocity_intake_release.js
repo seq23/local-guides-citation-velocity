@@ -459,7 +459,7 @@ function countSocialFallbackCandidates(limit, existingIds) {
   }
   return count;
 }
-function socialFallbackRecords(limit, existingIds) {
+function socialFallbackRecords(limit, existingIds, existingTitles = new Set(), existingRoutes = new Set()) {
   if (limit <= 0) return [];
   const queue = readJson('data/community/publish_queue.json', []);
   if (!Array.isArray(queue)) return [];
@@ -468,6 +468,9 @@ function socialFallbackRecords(limit, existingIds) {
     .map((row) => {
       const vertical = normalizeVertical(row.vertical || row.target_vertical || '');
       const query = String(row.query || row.normalized_query || '').trim();
+      const routeDecision = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' });
+      const targetRoute = routeDecision.target_route || routeFor(vertical, query);
+      if (existingTitles.has(query.toLowerCase()) || existingRoutes.has(targetRoute)) return null;
       return {
         id: `social_${sha(row.id || query, 16)}`,
         source: 'social_public_backlog',
@@ -482,19 +485,24 @@ function socialFallbackRecords(limit, existingIds) {
         action_tier: 'social_backlog_fill',
         recommendation: row.recommended_action || 'Create citation-ready exact-answer page from public/social backlog signal.',
         priority_score: Number(row.signal_score || 0) * 10,
-        target_route: (() => { const d = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }); return d.target_route || routeFor(vertical, query); })(),
-        renderedPath: (() => { const d = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }); return d.renderedPath || renderedPathForRoute(d.target_route || routeFor(vertical, query)); })(),
-        route_family: (() => { const d = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }); return d.family || 'CREATE_COMMUNITY_QA'; })(),
-        route_shape: (() => { const d = routePage({ vertical, query, recommendation: row.recommended_action || '', operation: 'CREATE_NEW_TARGET_PAGE' }); return d.route_shape || routeShape(d.target_route || routeFor(vertical, query)); })(),
-        route_authority: 'artifact_admitted',
+        target_route: targetRoute,
+        renderedPath: routeDecision.renderedPath || renderedPathForRoute(targetRoute),
+        route_family: routeDecision.family || 'CREATE_COMMUNITY_QA',
+        route_shape: routeDecision.route_shape || routeShape(targetRoute),
+        route_authority: 'strategy_gap_fill_admitted',
         admission_basis: 'SOCIAL_BACKLOG_APPROVED_FALLBACK',
+        source_artifacts: {
+          strategy_gap_fill_backlog: 'data/strategy/strategy_gap_fill_backlog.json',
+          approval_queue: 'data/community/approval_queue.json',
+          live_signal_queries: 'content/_staged/live_signal_queries.json'
+        },
         source_signal_ids: row.source_signal_ids || [row.id].filter(Boolean),
-        source_records: [],
+        source_records: sourceRecordsFor(vertical),
         status: 'READY_TO_RELEASE',
         status_reason: 'fallback_from_social_backlog'
       };
     })
-    .filter((row) => row.query.length >= 20 && ['personal_injury', 'dentistry', 'trt', 'neuro', 'uscis-medical'].includes(row.vertical))
+    .filter((row) => row && row.query.length >= 20 && ['personal_injury', 'dentistry', 'trt', 'neuro', 'uscis-medical'].includes(row.vertical))
     .sort((a, b) => b.priority_score - a.priority_score)
     .slice(0, limit);
 }
@@ -508,6 +516,19 @@ function existingTitleSet() {
     }
   }
   return titles;
+}
+function existingRouteSet() {
+  const routes = new Set();
+  for (const file of ['content/_live/pages.json', 'content/_staged/pages.json', 'content/_live/insights.json']) {
+    const payload = readJson(file, {});
+    for (const item of [...(payload.pages || []), ...(payload.items || [])]) {
+      const route = item.slug || item.path || item.publish_path || '';
+      if (route) routes.add(routeFromPath(renderedPathForRoute(route)).replace(/\/index\.html$/, '/'));
+      const rendered = item.renderedPath || item.path || item.publish_path || '';
+      if (rendered) routes.add(routeFromPath(rendered).replace(/\/index\.html$/, '/'));
+    }
+  }
+  return routes;
 }
 function updateLedger(agentRecords, plan) {
   const current = readJson(LEDGER_PATH, { schema_version: '1.0', ledger_type: 'cumulative_agent_fix_ledger', fixes: [] });
@@ -560,6 +581,7 @@ function main() {
   const seenRoutes = new Set();
   const seenIds = new Set();
   const existingTitles = existingTitleSet();
+  const existingRoutes = existingRouteSet();
   const blockedAgent = agent.normalized.filter((r) => String(r.status || '').startsWith('BLOCKED_'));
   const orderedAgent = agent.normalized.filter((r) => r.status === 'READY_TO_RELEASE').sort((a, b) => b.priority_score - a.priority_score);
   for (const record of orderedAgent) {
@@ -573,19 +595,23 @@ function main() {
     if (seenRoutes.has(routeKey)) { record.status = 'SKIPPED_DUPLICATE_WITH_PROOF'; record.status_reason = 'canonical_route_already_selected'; continue; }
     selected.push(record); seenRoutes.add(routeKey); seenIds.add(record.id);
   }
-  const allowSocialFallbackRelease = process.env.ALLOW_SOCIAL_FALLBACK_RELEASE === '1';
-  const socialCapacity = allowSocialFallbackRelease ? TARGET - selected.length : 0;
-  const social = socialFallbackRecords(socialCapacity, seenIds);
+  const allowSocialFallbackRelease = process.env.ALLOW_SOCIAL_FALLBACK_RELEASE !== '0';
+  const socialCapacity = TARGET - selected.length;
+  const social = socialFallbackRecords(socialCapacity, seenIds, existingTitles, existingRoutes);
   for (const record of social) {
     if (selected.length >= TARGET) break;
     if (seenRoutes.has(record.target_route)) continue;
     selected.push(record); seenRoutes.add(record.target_route); seenIds.add(record.id);
   }
   const suppressedSocialFallbackCount = allowSocialFallbackRelease ? 0 : countSocialFallbackCandidates(TARGET - selected.length, seenIds);
+  if (!allowSocialFallbackRelease && TARGET > selected.length && suppressedSocialFallbackCount > 0) {
+    console.error('SOCIAL FALLBACK RELEASE DISABLED: strategy gap-fill requires validated fallback release when agent-backed units are below target. Set ALLOW_SOCIAL_FALLBACK_RELEASE=1 or omit the variable.');
+    process.exit(1);
+  }
   const approvals = selected.map(toApproval);
   writeJson('data/community/approval_queue.json', approvals);
   const plan = {
-    schema_version: '1.1',
+    schema_version: '1.2',
     status: 'PASS',
     release_date: DATE,
     target_publish_units: TARGET,
@@ -593,8 +619,11 @@ function main() {
     agent_selected_count: selected.filter((r) => r.source === 'twin_agent_artifact').length,
     social_fallback_selected_count: selected.filter((r) => r.source === 'social_public_backlog').length,
     social_fallback_release_allowed: allowSocialFallbackRelease,
+    social_fallback_release_required: true,
+    social_fallback_release_policy: 'REQUIRED_WHEN_AGENT_QUEUE_SHORTFALL_AND_VALIDATED',
+    strategy_gap_fill_required: true,
     social_fallback_suppressed_count: suppressedSocialFallbackCount,
-    social_fallback_suppressed_reason: allowSocialFallbackRelease ? '' : 'ALLOW_SOCIAL_FALLBACK_RELEASE is not enabled for the governed release workflow',
+    social_fallback_suppressed_reason: allowSocialFallbackRelease ? '' : 'explicit opt-out only; violates normal strategy gap-fill release lane',
     repair_count: selected.filter((r) => r.operation === 'REPAIR_INTENDED_WINNER_PAGE').length,
     new_page_count: selected.filter((r) => r.operation === 'CREATE_NEW_TARGET_PAGE').length,
     blocked_count: blockedAgent.length,
@@ -624,7 +653,7 @@ function main() {
     ...plan.selected_units.map((u) => `| ${u.source} | ${u.operation} | ${u.vertical} | ${u.target_route} | ${String(u.query).replace(/\|/g, '\\|')} |`)
   ].join('\n') + '\n');
   writeJson('artifacts/validation/agent-run-intake.json', { schema_version: '1.1', status: 'PASS', manifests_seen: agent.manifests.length, absorbed: agent.absorbed, skipped_by_policy: agent.skipped_by_policy, blocked_count: blockedAgent.length, invalid: [], checked_at: DATE });
-  console.log(`VELOCITY INTAKE PREP PASS: ${plan.selected_count} units (${plan.agent_selected_count} agent, ${plan.social_fallback_selected_count} social fallback, ${plan.repair_count} repairs; suppressed_social_fallback=${plan.social_fallback_suppressed_count}).`);
+  console.log(`VELOCITY INTAKE PREP PASS: ${plan.selected_count} units (${plan.agent_selected_count} agent, ${plan.social_fallback_selected_count} social fallback, ${plan.repair_count} repairs; social_fallback_policy=${plan.social_fallback_release_policy}).`);
 }
 
 if (require.main === module) main();

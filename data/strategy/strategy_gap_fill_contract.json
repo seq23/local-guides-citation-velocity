@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "repo": "local-guides-citation-velocity",
-  "contract": "The six-month growth spine cannot depend on agent-run volume. When admitted agent artifacts and approved signal backlog do not supply the daily release-unit floor, deterministic strategy gap-fill candidates must be generated from the active strategy profile.",
+  "contract": "The six-month growth spine cannot depend on agent-run volume. When admitted agent artifacts and approved signal backlog do not supply the daily release-unit floor, deterministic strategy gap-fill candidates must be generated from the active strategy profile. Social/public fallback is not an optional bypass: when agent-backed units do not meet the target and validated fallback candidates exist, they must be materialized as source-backed pages or the workflow must fail with a repairable reason.",
   "time_horizon_days": 180,
   "source_strategy_profile": "data/strategy/citation_strategy_profile.json",
   "minimum_backlog_multiplier": 1,
@@ -10,7 +10,11 @@
     "respect_max_new_pages_per_day": true,
     "agent_artifacts_priority": true,
     "gap_fill_only_after_shortfall": true,
-    "gap_fill_admission_basis": "STRATEGY_GAP_FILL_NON_AGENT"
+    "gap_fill_admission_basis": "STRATEGY_GAP_FILL_NON_AGENT",
+    "social_fallback_release_required_when_agent_shortfall": true,
+    "social_fallback_must_materialize_and_validate": true,
+    "suppression_default_for_social_fallback": false,
+    "social_fallback_admission_basis": "SOCIAL_BACKLOG_APPROVED_FALLBACK"
   },
   "required_candidate_fields": [
     "id",

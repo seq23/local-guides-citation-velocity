@@ -53,10 +53,16 @@ function walkHtml(dir, prefix='', out=[]) {
   return out;
 }
 function titleOf(file) { try { const text=fs.readFileSync(rel(file),'utf8'); return (text.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)||text.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)||[])[1]?.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim() || ''; } catch { return ''; } }
+let ROUTE_REGISTRY_CACHE = null;
 function buildRouteRegistry() {
+  if (ROUTE_REGISTRY_CACHE) return ROUTE_REGISTRY_CACHE;
   const files = [...walkHtml('insights'), ...walkHtml('guides'), ...walkHtml('compare'), ...walkHtml('near-me'), ...walkHtml('')]
     .filter((f, i, arr) => f && !f.includes('node_modules/') && arr.indexOf(f) === i && fs.existsSync(rel(f)));
-  return files.map(file => ({ implementation_path: normalizeImplementationPath(file), comparable_path: normalizeSlugComparable(file), title: titleOf(file), comparable_title: normalizeSlugComparable(titleOf(file)) }));
+  ROUTE_REGISTRY_CACHE = files.map(file => {
+    const title = titleOf(file);
+    return { implementation_path: normalizeImplementationPath(file), comparable_path: normalizeSlugComparable(file), title, comparable_title: normalizeSlugComparable(title) };
+  });
+  return ROUTE_REGISTRY_CACHE;
 }
 function routeFamilyForPath(value) {
   const p = normalizeImplementationPath(value);

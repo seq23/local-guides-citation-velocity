@@ -67,9 +67,9 @@ The trace must report, at minimum:
 
 ## Social fallback trace rule
 
-Social fallback candidates are not treated as live-route obligations unless `artifacts/validation/velocity-content-release.json` shows that the candidate was actually created. If fallback release is suppressed by the missing `ALLOW_SOCIAL_FALLBACK_RELEASE=1` guard, the trace records a warning instead of failing on missing live/staged routes.
+Social fallback is part of the governed strategy gap-fill lane. If a fallback unit is selected in `artifacts/validation/velocity-intake-release-plan.json`, it must either be created by `artifacts/validation/velocity-content-release.json` and exist in both staged/live page manifests, or the workflow must fail.
 
-Agent-backed repairs and created pages remain hard-traced.
+A selected social fallback page is a hard live-route obligation. Do not downgrade missing social fallback routes to warnings. Repair the fallback page materialization, route authority, source records, or release trace.
 
 ## Hard-fail conditions
 

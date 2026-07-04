@@ -112,8 +112,8 @@ if (plan && plan.selected_count > 0) {
     }
     if (isSocialFallbackUnit(unit) && !createdReleaseIds.has(id)) {
       const skipped = skippedReleaseById.get(id);
-      const reason = skipped && skipped.reason || (process.env.ALLOW_SOCIAL_FALLBACK_RELEASE === '1' ? 'not_created_by_velocity_content_release' : 'social_fallback_requires_explicit_env');
-      warnings.push(`${id}:social_fallback_not_traced_as_live_route:${reason}`);
+      const reason = skipped && skipped.reason || 'not_created_by_velocity_content_release';
+      errors.push(`${id}:social_fallback_selected_but_not_created:${reason}:${unit.target_route}`);
       continue;
     }
     const liveExists = pageExists(livePages, unit.target_route);
@@ -125,7 +125,7 @@ if (plan && plan.selected_count > 0) {
   }
 }
 if (!plan) warnings.push('velocity_intake_release_plan_missing; no current intake release to trace');
-const report = { schema_version: '1.2', validator: 'citation-agent-fix-trace', status: errors.length ? 'FAIL' : 'PASS', selected_trace_count: selected.length, release_plan_count: plan && plan.selected_count || 0, errors, warnings, checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10) };
+const report = { schema_version: '1.3', validator: 'citation-agent-fix-trace', status: errors.length ? 'FAIL' : 'PASS', selected_trace_count: selected.length, release_plan_count: plan && plan.selected_count || 0, errors, warnings, checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10) };
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'artifacts/validation/citation-agent-fix-trace.json'), JSON.stringify(report, null, 2) + '\n');
 if (errors.length) { console.error('CITATION AGENT FIX TRACE FAIL'); errors.forEach((e) => console.error(`- ${e}`)); process.exit(1); }
