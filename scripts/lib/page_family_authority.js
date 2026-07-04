@@ -63,6 +63,10 @@ function opAdmits(row) {
 function sourcePresent(row) {
   if (row.source || row.source_run_id || row.admission_basis || row.route_authority) return true;
   if (row.source_artifacts && Object.values(row.source_artifacts).some(Boolean)) return true;
+  if (row.source_record_id) return true;
+  if (Array.isArray(row.source_record_ids) && row.source_record_ids.some(Boolean)) return true;
+  if (Array.isArray(row.agent_source_record_ids) && row.agent_source_record_ids.some(Boolean)) return true;
+  if (Array.isArray(row.record_ids) && row.record_ids.some((id) => String(id || '').startsWith('agent_'))) return true;
   return false;
 }
 function makeRecord(source, row, routeField = 'target_route') {
