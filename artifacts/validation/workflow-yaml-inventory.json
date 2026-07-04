@@ -1,0 +1,269 @@
+{
+  "schema_version": "1.4",
+  "repo": "local-guides-citation-velocity",
+  "generated_at": "2026-07-03T21:52:33.446Z",
+  "workflow_count": 6,
+  "workflows": [
+    {
+      "path": ".github/workflows/daily-citation-intelligence.yml",
+      "name": "Daily Citation Intelligence",
+      "trigger": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "primary_command": "npm run release:daily-citation-intelligence",
+      "repo_lane": "signal-intelligence",
+      "current_status": "add",
+      "reason": "Daily traffic-qualified citation intelligence shadow/proof lane.",
+      "allowed_runtime_mutations": [
+        "data/signals/**",
+        "artifacts/validation/**",
+        "reports/**"
+      ],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        "data/signals/**",
+        "artifacts/validation/**",
+        "reports/**"
+      ],
+      "validation_owner": "citation-intelligence validators"
+    },
+    {
+      "path": ".github/workflows/deploy-distribution.yml",
+      "name": "Deploy Distribution",
+      "trigger": [
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "primary_command": "node scripts/prepare_distribution_from_attestation.js",
+      "repo_lane": "deploy",
+      "current_status": "modify",
+      "reason": "Deploy lane consumes exact validated artifact and does not perform release mutation.",
+      "allowed_runtime_mutations": [
+        ".build/**",
+        "reports/indexnow-*.json"
+      ],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        ".build/**",
+        "reports/indexnow-*.json",
+        "artifacts/validation/**"
+      ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/postdeploy-public-audit.yml",
+      "name": "Postdeploy Public Audit",
+      "trigger": [
+        "workflow_dispatch"
+      ],
+      "primary_command": "npm run postdeploy:public-click-audit",
+      "repo_lane": "postdeploy-audit",
+      "current_status": "replace",
+      "reason": "Canonical postdeploy audit lane replacing postdeploy_public_audit.yml.",
+      "allowed_runtime_mutations": [
+        "artifacts/diagnostics/**"
+      ],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        "artifacts/diagnostics/click-audit/**"
+      ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/validate-repo.yml",
+      "name": "Validate Repo",
+      "trigger": [
+        "workflow_dispatch",
+        "push",
+        "pull_request"
+      ],
+      "primary_command": "npm run release:ci-validate",
+      "repo_lane": "validate",
+      "current_status": "replace",
+      "reason": "Canonical validation lane replacing validate.yml.",
+      "allowed_runtime_mutations": [],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        ".",
+        "!.git/**",
+        "!node_modules/**",
+        "!dist/**",
+        "!reports/**",
+        "!logs/**",
+        "!artifacts/diagnostics/**",
+        "-",
+        "logs/**",
+        "artifacts/validation/**",
+        "reports/**"
+      ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/velocity-content-release.yml",
+      "name": "Velocity Content Release",
+      "trigger": [
+        "workflow_dispatch",
+        "push"
+      ],
+      "primary_command": "npm run release:velocity-intake",
+      "repo_lane": "content-release",
+      "current_status": "replace",
+      "reason": "Canonical manual controlled content-release lane; release_batch.yml merged here.",
+      "allowed_runtime_mutations": [
+        "content/_live/**",
+        "data/report_fixes/**",
+        "artifacts/validation/**",
+        "reports/**",
+        "llms*.txt",
+        "sitemap*.xml"
+      ],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        "logs/**",
+        "artifacts/validation/**",
+        "reports/**",
+        "data/report_fixes/normalized_agent_runs/**",
+        "data/report_fixes/agent_exact_implementation_policy.json",
+        "data/report_fixes/agent_exact_implementation_plan.json",
+        "data/report_fixes/agent_exact_implementation_ledger.json"
+      ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/velocity-full-rebuild.yml",
+      "name": "Velocity Full Rebuild",
+      "trigger": [
+        "workflow_dispatch"
+      ],
+      "primary_command": "npm run release:self-healing",
+      "repo_lane": "full-rebuild",
+      "current_status": "replace",
+      "reason": "Canonical full rebuild lane replacing velocity_full_rebuild.yml.",
+      "allowed_runtime_mutations": [
+        "content/_live/**",
+        "artifacts/validation/**",
+        "reports/**",
+        "llms*.txt",
+        "sitemap*.xml"
+      ],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        "logs/**",
+        "artifacts/validation/**",
+        "reports/**"
+      ],
+      "validation_owner": "validation registry and workflow topology validators"
+    }
+  ],
+  "retired_or_replaced_workflows": [
+    {
+      "path": ".github/workflows/validate.yml",
+      "action": "REPLACE",
+      "replacement": ".github/workflows/validate-repo.yml"
+    },
+    {
+      "path": ".github/workflows/velocity_content_release.yml",
+      "action": "REPLACE",
+      "replacement": ".github/workflows/velocity-content-release.yml"
+    },
+    {
+      "path": ".github/workflows/release_batch.yml",
+      "action": "DELETE",
+      "replacement": ".github/workflows/velocity-content-release.yml"
+    },
+    {
+      "path": ".github/workflows/velocity_full_rebuild.yml",
+      "action": "REPLACE",
+      "replacement": ".github/workflows/velocity-full-rebuild.yml"
+    },
+    {
+      "path": ".github/workflows/postdeploy_public_audit.yml",
+      "action": "REPLACE",
+      "replacement": ".github/workflows/postdeploy-public-audit.yml"
+    }
+  ],
+  "canonical_lanes": [
+    "validate",
+    "build",
+    "content-release",
+    "signal-intelligence",
+    "deploy",
+    "postdeploy-audit",
+    "full-rebuild",
+    "manual-maintenance",
+    "retired"
+  ]
+}

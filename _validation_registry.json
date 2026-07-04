@@ -107,6 +107,16 @@
       "description": "Hostile collect-all review of all active validators without pretending every advisory check belongs in core.",
       "collect_all": true,
       "promote_strong_warnings": false
+    },
+    "citation-intelligence": {
+      "description": "Traffic-qualified citation intelligence, proof packet, atom, structural graph, and workflow topology gates.",
+      "collect_all": false,
+      "promote_strong_warnings": false
+    },
+    "deep-isolated": {
+      "description": "Isolated deep container validation: workflow data trace, browserless mock backup, and traffic-qualified citation intelligence only. No real browser claim.",
+      "collect_all": false,
+      "promote_strong_warnings": false
     }
   },
   "validators": [
@@ -1070,7 +1080,12 @@
       "depends_on": [
         "workflow-data-trace"
       ],
-      "requires_files": [],
+      "requires_files": [
+        ".github/workflows/validate-repo.yml",
+        ".github/workflows/velocity-content-release.yml",
+        ".github/workflows/deploy-distribution.yml",
+        ".github/workflows/postdeploy-public-audit.yml"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
@@ -1097,7 +1112,8 @@
         "local",
         "postrelease",
         "release",
-        "strict"
+        "strict",
+        "deep-isolated"
       ],
       "tags": [
         "browser",
@@ -1119,6 +1135,57 @@
       ],
       "mutates_files": [
         "artifacts/validation/browser-contract.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "browserless-mock-backup",
+      "title": "Browserless mock backup audit",
+      "path": "scripts/validators/validate_browserless_mock_backup.js",
+      "command": "node scripts/validators/validate_browserless_mock_backup.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 2",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "browserless",
+        "mock-backup",
+        "structural-render-fallback"
+      ],
+      "risk_prevented": "Prevents falsely treating an unavailable browser as passed by requiring a deterministic mock-backed structural audit and explicit local-browser boundary evidence.",
+      "why_existing_checks_do_not_cover": "The public click audit is LOCAL_ONLY and requires Playwright/deployed base URL; browser-contract checks only suite declaration, not route files or fallback artifacts.",
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/browserless-mock-audit.json",
+      "failure_action": "repair browserless fallback fixtures or route structure before release; do not claim local browser proof until the local audit runs.",
+      "depends_on": [
+        "browser-contract"
+      ],
+      "requires_files": [
+        "_browser_suite_contract.json",
+        "_public_route_manifest.json",
+        "data/mocks/browserless-route-audit-fixtures.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/browserless-mock-audit.json",
+        "artifacts/validation/mock-browser-backup.json",
+        "reports/browserless-mock-audit.md"
+      ],
+      "mutates_files": [
+        "artifacts/validation/browserless-mock-audit.json",
+        "artifacts/validation/mock-browser-backup.json",
+        "reports/browserless-mock-audit.md"
       ],
       "enforce_no_source_mutation": true
     },
@@ -2596,7 +2663,8 @@
         "workflow-yaml-syntax"
       ],
       "requires_files": [
-        "data/workflows/workflow_contract_registry.json"
+        "data/workflows/workflow_contract_registry.json",
+        ".github/workflows/validate-repo.yml"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -3226,7 +3294,7 @@
         "agent-runs",
         "social-backlog"
       ],
-      "risk_prevented": "Twin Agent artifact absorption could be split into an untracked workflow, miss the after-noon Central fallback, or stop filling from social backlog.",
+      "risk_prevented": "Prevents the controlled Velocity content-release lane from drifting away from the traffic-qualified preview, consolidated intake, self-healing, and exact-agent validation gates.",
       "why_existing_checks_do_not_cover": "The generic workflow contract checks workflow safety but not the consolidated Twin-artifact plus social-backlog release lane.",
       "estimated_runtime_seconds": 30,
       "timeout_seconds": 300,
@@ -3236,7 +3304,7 @@
         "workflow-contract"
       ],
       "requires_files": [
-        ".github/workflows/velocity_content_release.yml",
+        ".github/workflows/velocity-content-release.yml",
         "data/workflows/workflow_contract_registry.json",
         "package.json"
       ],
@@ -3729,6 +3797,1032 @@
         "artifacts/validation/validator-authority-contract.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "strategy-gate",
+      "title": "Traffic-qualified citation strategy gate",
+      "path": "scripts/validators/validate_strategy_gate.js",
+      "command": "node scripts/validators/validate_strategy_gate.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "strategy",
+        "citation-intelligence"
+      ],
+      "risk_prevented": "Prevents the repository from adopting a traffic-growth objective without telemetry boundaries, strategy profile, and safe shadow-mode contracts.",
+      "why_existing_checks_do_not_cover": "Existing build and content validators do not evaluate growth-strategy authority, primary KPI claim boundaries, or firehose enablement state.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/strategy-gate.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [],
+      "requires_files": [
+        "data/strategy/citation_strategy_profile.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "artifacts/validation/citation-strategy-gate.json"
+      ],
+      "prepare_commands": [
+        "npm run strategy:gate"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/strategy-gate.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/strategy-gate.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "firehose-source-contract",
+      "title": "Firehose source compliance contract",
+      "path": "scripts/validators/validate_firehose_source_contract.js",
+      "command": "node scripts/validators/validate_firehose_source_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "firehose",
+        "source-compliance"
+      ],
+      "risk_prevented": "Prevents fake active source ingestion, unauthorized live firehose claims, credential-gated collection, and missing adapter interfaces.",
+      "why_existing_checks_do_not_cover": "Existing ingestion validators target legacy community signals and do not enforce v1.4 adapter terms, live-source blocking, or shadow ledger truthfulness.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/firehose-source-contract.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [],
+      "requires_files": [
+        "data/signals/source_registry.json",
+        "data/signals/firehose_ledger.json"
+      ],
+      "prepare_commands": [
+        "npm run firehose:collect"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/firehose-source-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/firehose-source-contract.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "signal-normalization",
+      "title": "Traffic-qualified signal normalization",
+      "path": "scripts/validators/validate_signal_normalization.js",
+      "command": "node scripts/validators/validate_signal_normalization.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "signals",
+        "normalization"
+      ],
+      "risk_prevented": "Prevents raw signal records from bypassing normalization, source basis, route-owner, risk, and release-candidate classification.",
+      "why_existing_checks_do_not_cover": "Existing signal scripts normalize legacy community data but do not enforce the new v1.4 fixture-to-planner normalized schema.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/signal-normalization.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [
+        "firehose-source-contract"
+      ],
+      "requires_files": [
+        "data/signals/raw/latest.json",
+        "data/signals/normalized/latest.json"
+      ],
+      "prepare_commands": [
+        "npm run firehose:collect && npm run firehose:normalize"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/signal-normalization.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/signal-normalization.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "release-plan-integrity",
+      "title": "Daily citation release plan integrity",
+      "path": "scripts/validators/validate_release_plan_integrity.js",
+      "command": "node scripts/validators/validate_release_plan_integrity.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "release-plan",
+        "citation-intelligence"
+      ],
+      "risk_prevented": "Prevents release planners that approve everything, block nothing, omit source basis, or fail to produce required create repair atom link and block cases.",
+      "why_existing_checks_do_not_cover": "Existing release validators cover Velocity content releases but not v1.4 traffic-qualified planner preview semantics.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/release-plan-integrity.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [
+        "signal-normalization"
+      ],
+      "requires_files": [
+        "artifacts/validation/daily-citation-release-plan.json"
+      ],
+      "prepare_commands": [
+        "npm run trace:traffic-qualified-pipeline"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/release-plan-integrity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/release-plan-integrity.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "daily-proof-packet",
+      "title": "Daily citation proof packet",
+      "path": "scripts/validators/validate_daily_proof_packet.js",
+      "command": "node scripts/validators/validate_daily_proof_packet.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "proof-packet",
+        "telemetry-boundary"
+      ],
+      "risk_prevented": "Prevents hardcoded or outcome-claiming proof packets and verifies telemetry absence, signal counts, blocked units, and shadow structural pass status.",
+      "why_existing_checks_do_not_cover": "Existing evidence builders do not enforce the v1.4 daily proof packet fields or external telemetry boundaries.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/daily-proof-packet-validation.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [
+        "release-plan-integrity"
+      ],
+      "requires_files": [
+        "artifacts/validation/daily-proof-packet.json"
+      ],
+      "prepare_commands": [
+        "npm run trace:traffic-qualified-pipeline"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/daily-proof-packet-validation.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/daily-proof-packet-validation.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "citation-surface-ledger",
+      "title": "Citation surface ledger and fixture trace",
+      "path": "scripts/validators/validate_citation_surface_ledger.js",
+      "command": "node scripts/validators/validate_citation_surface_ledger.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "citation-surfaces",
+        "fixture-trace"
+      ],
+      "risk_prevented": "Prevents shipping a citation-intelligence spine without fixture trace, surface counts, sitemap counts, and llms coverage counts.",
+      "why_existing_checks_do_not_cover": "Existing sitemap and llms validators do not bind those counts to the daily proof packet and fixture trace.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/citation-surface-ledger.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [
+        "daily-proof-packet"
+      ],
+      "requires_files": [
+        "artifacts/validation/fixture-signal-trace.json",
+        "artifacts/validation/daily-proof-packet.json"
+      ],
+      "prepare_commands": [
+        "npm run trace:traffic-qualified-pipeline"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/citation-surface-ledger.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/citation-surface-ledger.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "structural-graph-live-policy",
+      "title": "Structural graph live policy",
+      "path": "scripts/validators/validate_structural_graph_live_policy.js",
+      "command": "node scripts/validators/validate_structural_graph_live_policy.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "structural-graph",
+        "runtime-mutation"
+      ],
+      "risk_prevented": "Prevents cadence logic from hiding graph-critical structural pages, degrading atlas support, or allowing scheduled governance mutation.",
+      "why_existing_checks_do_not_cover": "Existing route and sitemap validators do not enforce the explicit v1.4 structural graph live law or workflow mutation boundary.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/structural-graph-live-policy.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [],
+      "requires_files": [
+        "docs/runbooks/STRUCTURAL_GRAPH_LIVE_POLICY.md",
+        "_content_release_contract.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/structural-graph-live-policy.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/structural-graph-live-policy.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "atom-contract",
+      "title": "Content atom contract",
+      "path": "scripts/validators/validate_atom_contract.js",
+      "command": "node scripts/validators/validate_atom_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "content-atoms",
+        "aeo-geo"
+      ],
+      "risk_prevented": "Prevents traffic-qualified pages from shipping without defensible content atoms, atom type constraints, source basis, route owners, and forbidden contexts.",
+      "why_existing_checks_do_not_cover": "Existing content atom primitives are library-level and do not enforce a machine-readable repo-wide atom registry contract.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/atom-contract.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [],
+      "requires_files": [
+        "data/content/atom_type_contract.json",
+        "data/content/atom_registry.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/atom-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/atom-contract.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "workflow-yaml-inventory",
+      "title": "Workflow YAML inventory",
+      "path": "scripts/validators/validate_workflow_yaml_inventory.js",
+      "command": "node scripts/validators/validate_workflow_yaml_inventory.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "workflow",
+        "inventory"
+      ],
+      "risk_prevented": "Prevents orphan workflows, unmapped workflow files, missing lane classification, and undocumented workflow mutation/artifact contracts.",
+      "why_existing_checks_do_not_cover": "Existing YAML syntax validation parses files but does not inventory every workflow with lane, action, mutation, artifact, and owner metadata.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/workflow-yaml-inventory-validation.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [],
+      "requires_files": [
+        "artifacts/validation/workflow-yaml-inventory.json",
+        "reports/workflow-yaml-inventory.md"
+      ],
+      "prepare_commands": [
+        "npm run workflow:inventory"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/workflow-yaml-inventory-validation.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/workflow-yaml-inventory-validation.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "workflow-topology",
+      "title": "Workflow topology lane mapping",
+      "path": "scripts/validators/validate_workflow_topology.js",
+      "command": "node scripts/validators/validate_workflow_topology.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "workflow",
+        "topology"
+      ],
+      "risk_prevented": "Prevents duplicated or stale GitHub Actions lanes, uncanonical filenames, missing canonical lanes, and ungoverned schedule placement.",
+      "why_existing_checks_do_not_cover": "Existing workflow contract validation is not a full topology map and does not enforce keep modify delete replace lane consolidation.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/workflow-topology.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [
+        "workflow-yaml-inventory"
+      ],
+      "requires_files": [
+        "artifacts/validation/workflow-yaml-inventory.json"
+      ],
+      "prepare_commands": [
+        "npm run workflow:inventory"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/workflow-topology.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/workflow-topology.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "workflow-runtime-mutations",
+      "title": "Workflow runtime mutation boundary",
+      "path": "scripts/validators/validate_workflow_runtime_mutations.js",
+      "command": "node scripts/validators/validate_workflow_runtime_mutations.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "workflow",
+        "runtime-mutations"
+      ],
+      "risk_prevented": "Prevents scheduled or release workflows from mutating governance files, scripts, docs, package files, or validation contracts at runtime.",
+      "why_existing_checks_do_not_cover": "Existing validation-matrix checks do not inspect workflow-level allowed and forbidden runtime mutation declarations.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/workflow-runtime-mutations.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [
+        "workflow-yaml-inventory"
+      ],
+      "requires_files": [
+        "artifacts/validation/workflow-yaml-inventory.json",
+        "_content_release_contract.json"
+      ],
+      "prepare_commands": [
+        "npm run workflow:inventory"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/workflow-runtime-mutations.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/workflow-runtime-mutations.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "workflow-artifacts",
+      "title": "Workflow artifact contract",
+      "path": "scripts/validators/validate_workflow_artifacts.js",
+      "command": "node scripts/validators/validate_workflow_artifacts.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "workflow",
+        "artifacts"
+      ],
+      "risk_prevented": "Prevents workflows from running commands not admitted in package scripts or omitting required diagnostic artifact upload contracts.",
+      "why_existing_checks_do_not_cover": "Existing YAML syntax checks do not bind workflow commands to package scripts or proof artifact outputs.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/workflow-artifacts.json",
+      "failure_action": "repair the traffic-qualified citation intelligence implementation before release",
+      "depends_on": [
+        "workflow-yaml-inventory"
+      ],
+      "requires_files": [
+        "artifacts/validation/workflow-yaml-inventory.json",
+        "package.json"
+      ],
+      "prepare_commands": [
+        "npm run workflow:inventory"
+      ],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/workflow-artifacts.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/workflow-artifacts.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "deep-workflow-data-trace",
+      "title": "Deep workflow command/data trace",
+      "path": "scripts/validators/validate_deep_workflow_data_trace.js",
+      "command": "node scripts/validators/validate_deep_workflow_data_trace.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 2",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "deep-isolated"
+      ],
+      "tags": [
+        "workflow",
+        "deep-trace",
+        "isolated-validation"
+      ],
+      "risk_prevented": "Prevents workflow YAML commands from pointing at missing package scripts or missing command files during deep isolated validation.",
+      "why_existing_checks_do_not_cover": "Workflow syntax checks validate YAML shape but do not trace command references through package.json and script file existence.",
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/deep-workflow-data-trace.json",
+      "failure_action": "repair workflow command mapping before release",
+      "depends_on": [
+        "workflow-yaml-syntax"
+      ],
+      "requires_files": [
+        ".github/workflows/validate-repo.yml",
+        "package.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/deep-workflow-data-trace.json",
+        "reports/deep-workflow-data-trace.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/deep-workflow-data-trace.json",
+        "reports/deep-workflow-data-trace.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "batch-d",
+        "batch-e",
+        "controlled-release"
+      ],
+      "why_existing_checks_do_not_cover": "Existing fixture, workflow, and proof validators do not bind Batch D controlled cadence and Batch E completion into one release readiness decision.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "failure_action": "repair Batch D/E controlled release completion before release",
+      "warning_patterns": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "mutates_files": [],
+      "id": "controlled-release-readiness",
+      "title": "Controlled release readiness",
+      "path": "scripts/validators/validate_controlled_release_readiness.js",
+      "command": "node scripts/validators/validate_controlled_release_readiness.js",
+      "risk_prevented": "Prevents scheduled citation intelligence from running before cadence caps, shadow apply boundaries, fixture trace, proof packet, and fallback proof are structurally ready.",
+      "evidence_file": "artifacts/validation/controlled-release-readiness.json",
+      "depends_on": [
+        "strategy-gate",
+        "release-plan-integrity",
+        "daily-proof-packet",
+        "workflow-yaml-inventory",
+        "workflow-runtime-mutations",
+        "workflow-artifacts",
+        "browserless-mock-backup"
+      ],
+      "requires_files": [
+        "data/strategy/citation_strategy_profile.json",
+        "_content_release_contract.json",
+        "artifacts/validation/fixture-signal-trace.json",
+        "artifacts/validation/daily-proof-packet.json",
+        ".github/workflows/daily-citation-intelligence.yml"
+      ],
+      "produces_files": [
+        "artifacts/validation/controlled-release-readiness.json",
+        "reports/controlled-release-readiness.md"
+      ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local",
+        "citation-intelligence",
+        "deep-isolated"
+      ],
+      "tags": [
+        "batch-d",
+        "batch-e",
+        "controlled-release"
+      ],
+      "why_existing_checks_do_not_cover": "Existing fixture, workflow, and proof validators do not bind Batch D controlled cadence and Batch E completion into one release readiness decision.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "failure_action": "repair Batch D/E controlled release completion before release",
+      "warning_patterns": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "mutates_files": [],
+      "id": "batch-de-completion",
+      "title": "Batch D/E implementation completion",
+      "path": "scripts/validators/validate_batch_de_completion.js",
+      "command": "node scripts/validators/validate_batch_de_completion.js",
+      "risk_prevented": "Prevents handoff without a completed checklist tying every implementation-plan requirement to repo evidence and current workflow inventory.",
+      "evidence_file": "artifacts/validation/batch-de-completion.json",
+      "depends_on": [
+        "controlled-release-readiness",
+        "workflow-topology",
+        "workflow-runtime-mutations",
+        "workflow-artifacts"
+      ],
+      "requires_files": [
+        "artifacts/release/IMPLEMENTATION_COMPLETION_CHECKLIST_2026-07-03.json",
+        "artifacts/validation/controlled-release-readiness.json",
+        "artifacts/validation/workflow-yaml-inventory.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/batch-de-completion.json"
+      ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "agent-artifact-continuity",
+      "title": "Agent artifact continuity contract",
+      "path": "scripts/validators/validate_agent_artifact_continuity.js",
+      "command": "node scripts/validators/validate_agent_artifact_continuity.js",
+      "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+      "requires_files": [
+        "data/report_fixes/agent_runs",
+        "data/report_fixes/agent_exact_implementation_policy.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-artifact-continuity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-artifact-continuity.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
+      "estimated_runtime_seconds": 20
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "dynamic-page-contract-cross-vertical",
+      "title": "Dynamic page contract cross-vertical fixture",
+      "path": "scripts/validators/validate_dynamic_page_contract_cross_vertical.js",
+      "command": "node scripts/validators/validate_dynamic_page_contract_cross_vertical.js",
+      "risk_prevented": "Prevents any Local Guides vertical from being blocked by stale topic allowlists when artifact admission and route shape are valid.",
+      "requires_files": [
+        "scripts/lib/page_family_router.js",
+        "scripts/lib/page_family_authority.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/dynamic-page-contract-cross-vertical.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/dynamic-page-contract-cross-vertical.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
+      "estimated_runtime_seconds": 20
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "rich-new-page-contract",
+      "title": "Rich new page build contract",
+      "path": "scripts/validators/validate_rich_new_page_contract.js",
+      "command": "node scripts/validators/validate_rich_new_page_contract.js",
+      "risk_prevented": "Prevents Pages to Build recommendations from being downgraded into thin generic community-question pages when the artifact calls for a guide, checklist, comparison, timeline, process, edge-case, or source reference page.",
+      "requires_files": [
+        "scripts/lib/rich_new_page_classifier.js",
+        "scripts/lib/rich_new_page_blocks.js",
+        "content/_live/pages.json",
+        "content/_staged/pages.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/rich-new-page-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/rich-new-page-contract.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
+      "estimated_runtime_seconds": 20
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "agent-artifact-priority",
+      "title": "Agent exact priority over shadow intelligence",
+      "path": "scripts/validators/validate_agent_artifact_priority.js",
+      "command": "node scripts/validators/validate_agent_artifact_priority.js",
+      "risk_prevented": "Prevents daily shadow citation-intelligence workflows from replacing, rerouting, or overwriting agent-exact content mutation lanes.",
+      "requires_files": [
+        "_agent_artifact_priority_contract.json",
+        ".github/workflows/velocity-content-release.yml",
+        ".github/workflows/daily-citation-intelligence.yml"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-artifact-priority.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-artifact-priority.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
+      "estimated_runtime_seconds": 20
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "agent-improvement-capability",
+      "title": "Agent improvement capability contract",
+      "path": "scripts/validators/validate_agent_improvement_capability.js",
+      "command": "node scripts/validators/validate_agent_improvement_capability.js",
+      "risk_prevented": "Prevents rigid contracts from silently rejecting legitimate artifact-admitted improvements while still blocking unsafe claims, invalid page zones, and unsupported primitives.",
+      "requires_files": [
+        "_agent_improvement_capability_contract.json",
+        "scripts/lib/rich_new_page_classifier.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-improvement-capability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-improvement-capability.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
+      "estimated_runtime_seconds": 20
+    },
+    {
+      "id": "generated-content-finalization-contract",
+      "title": "Generated content self-heal and prevalidation finish gate",
+      "path": "scripts/validators/validate_generated_content_finalization_contract.js",
+      "command": "node scripts/validators/validate_generated_content_finalization_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "generated-content",
+        "self-healing",
+        "strategy-gap"
+      ],
+      "risk_prevented": "Generated or gap-fill content could finish without self-healing, prevalidation, or enough six-month backlog to meet the active strategy when agent artifacts under-supply the queue.",
+      "why_existing_checks_do_not_cover": "Existing validators prove page-level quality after the fact; this contract proves generation workflows require self-healing/prevalidation and non-agent gap-fill capacity before release can finish.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/generated-content-finalization-contract.json",
+      "depends_on": [],
+      "requires_files": [
+        "package.json",
+        "data/strategy/citation_strategy_profile.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/generated-content-finalization-contract.json"
+      ],
+      "failure_action": "repair release workflow or gap-fill backlog before applying the ZIP",
+      "mutates_files": [
+        "artifacts/validation/generated-content-finalization-contract.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "strategy-gap-fill-contract",
+      "title": "Six-month strategy gap-fill contract",
+      "path": "scripts/validators/validate_strategy_gap_fill_contract.js",
+      "command": "node scripts/validators/validate_strategy_gap_fill_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "generated-content",
+        "self-healing",
+        "strategy-gap"
+      ],
+      "risk_prevented": "Generated or gap-fill content could finish without self-healing, prevalidation, or enough six-month backlog to meet the active strategy when agent artifacts under-supply the queue.",
+      "why_existing_checks_do_not_cover": "Existing validators prove page-level quality after the fact; this contract proves generation workflows require self-healing/prevalidation and non-agent gap-fill capacity before release can finish.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/strategy-gap-fill-contract.json",
+      "depends_on": [],
+      "requires_files": [
+        "package.json",
+        "data/strategy/citation_strategy_profile.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/strategy-gap-fill-contract.json"
+      ],
+      "failure_action": "repair release workflow or gap-fill backlog before applying the ZIP",
+      "mutates_files": [
+        "artifacts/validation/strategy-gap-fill-contract.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "batch-g-continuity-contract",
+      "title": "Batch G generated-content and strategy gap-fill continuity contract",
+      "path": "scripts/validators/validate_batch_g_continuity.js",
+      "command": "node scripts/validators/validate_batch_g_continuity.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "generated-content",
+        "self-healing",
+        "strategy-gap"
+      ],
+      "risk_prevented": "Generated or gap-fill content could finish without self-healing, prevalidation, or enough six-month backlog to meet the active strategy when agent artifacts under-supply the queue.",
+      "why_existing_checks_do_not_cover": "Existing validators prove page-level quality after the fact; this contract proves generation workflows require self-healing/prevalidation and non-agent gap-fill capacity before release can finish.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/batch-g-continuity-contract.json",
+      "depends_on": [],
+      "requires_files": [
+        "package.json",
+        "data/strategy/citation_strategy_profile.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/batch-g-continuity-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/batch-g-continuity-contract.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "failure_action": "repair release workflow or gap-fill backlog before applying the ZIP"
     }
   ],
   "legacy_policy": {

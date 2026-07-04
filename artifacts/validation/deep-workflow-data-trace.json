@@ -1,11 +1,29 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-06-27T15:32:34.904Z",
+  "generated_at": "2026-07-04T12:40:06.281Z",
   "status": "PASS",
   "workflow_count": 6,
   "errors": [],
   "warnings": [],
   "workflows": [
+    {
+      "workflow": "daily-citation-intelligence.yml",
+      "command_count": 1,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "npm run release:daily-citation-intelligence",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "release:daily-citation-intelligence",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "workflow": "deploy-distribution.yml",
       "command_count": 1,
@@ -25,7 +43,7 @@
       ]
     },
     {
-      "workflow": "postdeploy_public_audit.yml",
+      "workflow": "postdeploy-public-audit.yml",
       "command_count": 1,
       "status": "PASS",
       "commands": [
@@ -43,8 +61,8 @@
       ]
     },
     {
-      "workflow": "release_batch.yml",
-      "command_count": 8,
+      "workflow": "validate-repo.yml",
+      "command_count": 4,
       "status": "PASS",
       "commands": [
         {
@@ -53,87 +71,26 @@
           "checks": []
         },
         {
-          "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
-          "status": "PASS",
-          "checks": []
-        },
-        {
-          "command": "node scripts/compile_reddit_queries.js",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "file",
-              "path": "scripts/compile_reddit_queries.js",
-              "ok": true
-            }
-          ]
-        },
-        {
-          "command": "node scripts/release_batch.js \"$BATCH_SIZE",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "file",
-              "path": "scripts/release_batch.js",
-              "ok": true
-            }
-          ]
-        },
-        {
-          "command": "node scripts/release_batch.js \"$BATCH_SIZE\"",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "file",
-              "path": "scripts/release_batch.js",
-              "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run build",
+          "command": "npm run strategy:gate",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "build",
+              "name": "strategy:gate",
               "ok": true
             }
           ]
         },
         {
-          "command": "npm run guardrails:all",
+          "command": "npm run release:daily-citation-intelligence:preview",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "guardrails:all",
+              "name": "release:daily-citation-intelligence:preview",
               "ok": true
             }
           ]
-        },
-        {
-          "command": "npm run release:self-healing",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "npm_script",
-              "name": "release:self-healing",
-              "ok": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "workflow": "validate.yml",
-      "command_count": 2,
-      "status": "PASS",
-      "commands": [
-        {
-          "command": "npm ci --ignore-scripts",
-          "status": "PASS",
-          "checks": []
         },
         {
           "command": "npm run release:ci-validate",
@@ -149,8 +106,8 @@
       ]
     },
     {
-      "workflow": "velocity_content_release.yml",
-      "command_count": 8,
+      "workflow": "velocity-content-release.yml",
+      "command_count": 9,
       "status": "PASS",
       "commands": [
         {
@@ -162,6 +119,17 @@
           "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
           "status": "PASS",
           "checks": []
+        },
+        {
+          "command": "npm run release:daily-citation-intelligence:preview",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "release:daily-citation-intelligence:preview",
+              "ok": true
+            }
+          ]
         },
         {
           "command": "npm run release:velocity-intake",
@@ -232,14 +200,25 @@
       ]
     },
     {
-      "workflow": "velocity_full_rebuild.yml",
-      "command_count": 2,
+      "workflow": "velocity-full-rebuild.yml",
+      "command_count": 3,
       "status": "PASS",
       "commands": [
         {
           "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
           "status": "PASS",
           "checks": []
+        },
+        {
+          "command": "npm run strategy:gate",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "strategy:gate",
+              "ok": true
+            }
+          ]
         },
         {
           "command": "npm run release:self-healing",

@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.4",
+  "repo": "local-guides-citation-velocity",
+  "default_release_mode": "planner_preview_then_controlled_shadow_apply",
+  "allowed_release_unit_types": [
+    "create",
+    "repair",
+    "atom_update",
+    "answer_block_update",
+    "entity_context_update",
+    "internal_link_update",
+    "schema_update",
+    "source_update",
+    "distribution_update",
+    "block",
+    "quarantine"
+  ],
+  "allowed_runtime_mutations": [
+    "data/signals/**",
+    "artifacts/validation/**",
+    "reports/**",
+    "content/generated/**",
+    "public/generated/**",
+    "sitemaps/**",
+    "sitemap*.xml",
+    "llms*.txt"
+  ],
+  "forbidden_runtime_mutations": [
+    ".github/**",
+    "package.json",
+    "package-lock.json",
+    "scripts/**",
+    "docs/**",
+    "_repo*.json",
+    "_validation_registry.json",
+    "_repo_validation_matrix.json",
+    "_citation_intelligence_contract.json",
+    "_content_release_contract.json",
+    "data/strategy/**"
+  ],
+  "publication_boundary": "signals never publish directly; release plan governs publication; shadow apply may record generated-state no-op ledgers only",
+  "structural_graph_live_policy": "All staged structural pages remain live when needed to preserve atlas, cluster, route, sitemap, and internal-link graph integrity.",
+  "controlled_apply": {
+    "public_content_mutation_enabled": false,
+    "reason": "Container implementation is shadow/fixture validated. Local updater and later owner-approved controlled release perform publication."
+  },
+  "batch_d_controlled_release": {
+    "status": "enabled_structural_shadow",
+    "cadence_class": "CADENCE_DAILY_LIGHT",
+    "manual_command": "npm run release:controlled-citation-intelligence",
+    "scheduled_workflow": ".github/workflows/daily-citation-intelligence.yml",
+    "public_content_mutation_enabled": false,
+    "max_release_units_per_day": 10,
+    "target_release_units_per_day": 5,
+    "proof_required": [
+      "fixture trace",
+      "release planner",
+      "shadow apply ledger",
+      "daily proof packet",
+      "browserless mock backup",
+      "workflow validators"
+    ],
+    "local_validation_required_before_complete": true
+  }
+}

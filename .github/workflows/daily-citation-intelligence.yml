@@ -1,0 +1,40 @@
+name: Daily Citation Intelligence
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 13 * * *"
+
+permissions:
+  contents: read
+
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
+concurrency:
+  group: daily-citation-intelligence-main
+  cancel-in-progress: false
+
+jobs:
+  daily-citation-intelligence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Run shadow citation intelligence proof lane
+        run: npm run release:daily-citation-intelligence
+      - name: Upload citation intelligence proof artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velocity-daily-citation-intelligence-${{ github.run_id }}
+          if-no-files-found: error
+          path: |
+            data/signals/**
+            artifacts/validation/**
+            reports/**

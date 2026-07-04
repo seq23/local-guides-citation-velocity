@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.4",
+  "generated_at": "2026-07-03T00:00:00.000Z",
+  "repo": "local-guides-citation-velocity",
+  "sources": [
+    {
+      "source_key": "fixture_raw_signals",
+      "adapter": "manual_import",
+      "source": "offline_fixture",
+      "mode": "fixture",
+      "terms_status": "allowed",
+      "status": "active",
+      "verticals": [
+        "dentistry",
+        "personal-injury",
+        "neuro",
+        "uscis"
+      ],
+      "notes": "Deterministic offline fixture source for end-to-end trace."
+    },
+    {
+      "source_key": "manual_import",
+      "adapter": "manual_import",
+      "source": "operator_manual_exports",
+      "mode": "manual",
+      "terms_status": "allowed",
+      "status": "active",
+      "verticals": [
+        "all"
+      ],
+      "notes": "Human-supplied public/owned signal snippets only."
+    },
+    {
+      "source_key": "agent_artifacts",
+      "adapter": "agent_artifacts",
+      "source": "repo_agent_run_manifests",
+      "mode": "export",
+      "terms_status": "allowed",
+      "status": "active",
+      "verticals": [
+        "all"
+      ],
+      "notes": "Repo-local agent artifacts; no external fetch."
+    },
+    {
+      "source_key": "forums_rss",
+      "adapter": "forums_rss",
+      "source": "public_rss_when_permitted",
+      "mode": "rss",
+      "terms_status": "requires_review",
+      "status": "shadow",
+      "notes": "Disabled until feed-level terms authority is recorded."
+    },
+    {
+      "source_key": "reddit_api",
+      "adapter": "reddit",
+      "source": "reddit_api_or_manual_export",
+      "mode": "api",
+      "terms_status": "requires_credentials",
+      "status": "shadow",
+      "notes": "No unauthorized scraping. API/manual exports only after terms and credentials approval."
+    },
+    {
+      "source_key": "bluesky_firehose",
+      "adapter": "bluesky",
+      "source": "atproto_firehose",
+      "mode": "firehose",
+      "terms_status": "requires_review",
+      "status": "shadow",
+      "notes": "Disabled until ATProto firehose policy and collection scope are approved."
+    },
+    {
+      "source_key": "x_filtered_stream",
+      "adapter": "x",
+      "source": "x_api_filtered_stream",
+      "mode": "api",
+      "terms_status": "requires_credentials",
+      "status": "shadow",
+      "notes": "Disabled until paid/API credentials and terms authority exist."
+    },
+    {
+      "source_key": "youtube_api",
+      "adapter": "youtube",
+      "source": "youtube_api_search",
+      "mode": "api",
+      "terms_status": "requires_credentials",
+      "status": "shadow",
+      "notes": "Disabled until API key and quota policy exist."
+    },
+    {
+      "source_key": "search_console_export",
+      "adapter": "search_console",
+      "source": "owned_gsc_export",
+      "mode": "export",
+      "terms_status": "requires_credentials",
+      "status": "shadow",
+      "notes": "Owned telemetry only. External traffic claims remain false until export present."
+    }
+  ]
+}

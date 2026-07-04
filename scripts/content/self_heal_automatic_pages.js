@@ -54,6 +54,12 @@ function answerSet(page,rows){
       a:`Use Find a Provider after you have identified the exact issue in “${topic},” reviewed the visible authority links, and written down the facts that still require professional interpretation. Take the source URL, dates, questions, costs, and exceptions with you. The provider conversation should resolve the remaining local or fact-specific issues rather than repeat basic information the page already verifies.`,
       checklist:['Finish the source check first','Write down unresolved fact-specific questions','Bring dates, records, and written terms','Use the nearest matching canonical provider destination'],
       red_flags:['A provider is selected before the issue is defined','No questions or records are prepared','The destination does not match the page vertical']
+    },
+    {
+      q:`What source-ready summary should I keep for ${topic}?`,
+      a:`For “${topic},” keep a short source-ready summary that names the question, lists the authority links reviewed, records the date ${reviewed}, and separates verified source facts from questions that still need professional review. This prevents the page from becoming a generic answer and gives each future update a concrete comparison point before publication.`,
+      checklist:['Name the exact user decision','List the source links reviewed','Record the review date','Separate verified facts from professional questions'],
+      red_flags:['The summary can be reused unchanged on another page','The review date is missing','The source facts and provider advice are mixed together']
     }
   ];
 }

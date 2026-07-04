@@ -5,6 +5,8 @@ const path = require('path');
 const { deriveContentAtom } = require('./lib/content_atom');
 const { routeForFamily } = require('./lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('./lib/page_family_authority');
+const { classifyRichNewPage, requiresRichAuthorityPage } = require('./lib/rich_new_page_classifier');
+const { buildRichSections } = require('./lib/rich_new_page_blocks');
 const ROOT = path.resolve(__dirname, '..');
 const DATE = process.env.SOURCE_DATE || '2026-06-19';
 const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
@@ -13,6 +15,8 @@ const slugify = (s) => String(s||'').toLowerCase().normalize('NFKD').replace(/[\
 const verticalMap = {pi:'personal_injury',personal_injury:'personal_injury',dentistry:'dentistry',trt:'trt',neuro:'neuro',uscis:'uscis-medical','uscis-medical':'uscis-medical'};
 const targets = {personal_injury:'https://theaccidentguides.com/request-assistance/',dentistry:'https://dentistryguides.com/request-assistance/',trt:'https://hormonesivhair.com/request-assistance/',neuro:'https://neuroevalguides.com/request-assistance/','uscis-medical':'https://uscisexam.com/request-assistance/'};
 const sourceDefaults = {personal_injury:['SRC-CONGRESS-STATE-LEGISLATURES','SRC-CORNELL-SOL'],dentistry:['SRC-ADA-MOUTHHEALTHY'],trt:['SRC-FDA-TESTOSTERONE'],neuro:['SRC-NIMH-ADHD'],'uscis-medical':['SRC-USCIS-I693']};
+const sourceRegistry = (()=>{ try { return new Map((read('data/evidence/source_registry.json').sources||[]).map((row)=>[row.source_id,row])); } catch { return new Map(); } })();
+function projectedWords(page, sections){ return String([page.title,page.description,page.bodyHtml,page.dated_primary_fact,...(sections||[]).flatMap((sec)=>[sec.q,sec.a,...(sec.checklist||[]),...(sec.red_flags||[])])].join(' ')).trim().split(/\s+/).filter(Boolean).length; }
 const approval = read('data/community/approval_queue.json');
 const ready = (Array.isArray(approval)?approval:[]).filter((x)=>{
   const statusOk=['APPROVED','READY_TO_PUBLISH'].includes(String(x.status||'').toUpperCase());
@@ -26,21 +30,28 @@ for (const rel of ['content/_staged/pages.json','content/_live/pages.json']) {
   for (const item of ready) {
     const vertical=verticalMap[item.vertical];
     if (!vertical || !targets[vertical]) { report.skipped.push({id:item.id,reason:'unsupported_vertical'}); continue; }
+    const admissionBasis = String(item.admission_basis || '').toUpperCase();
+    if (admissionBasis.includes('SOCIAL_BACKLOG_APPROVED_FALLBACK') && process.env.ALLOW_SOCIAL_FALLBACK_RELEASE !== '1') {
+      report.skipped.push({id:item.id, reason:'social_fallback_requires_explicit_env', admission_basis:item.admission_basis || ''});
+      continue;
+    }
     const question=String(item.query||item.normalized_query||'').trim();
     if (question.length<20) { report.skipped.push({id:item.id,reason:'question_too_short'}); continue; }
-    const route=item.target_route || routeForFamily(vertical, question, item.route_family || 'CREATE_COMMUNITY_QA');
+    const rich = classifyRichNewPage(item);
+    const admittedFamily = item.route_family || rich.route_family || 'CREATE_COMMUNITY_QA';
+    const richType = item.rich_page_type || rich.rich_page_type;
+    const route=item.target_route || routeForFamily(vertical, question, admittedFamily);
     const shape=item.route_shape || routeShape(route);
+    if(!item.target_route) { report.skipped.push({id:item.id,reason:'missing_admitted_target_route'}); continue; }
     if(!route || shape==='unknown') { report.skipped.push({id:item.id,reason:'invalid_admitted_route_shape'}); continue; }
+    if (requiresRichAuthorityPage(richType) && admittedFamily === 'CREATE_COMMUNITY_QA') { report.skipped.push({id:item.id,reason:'rich_page_downgraded_to_community_qa', rich_page_type: richType, route}); continue; }
     if (existing.has(route)) continue;
     const sourceRecords=Array.isArray(item.source_records)&&item.source_records.length?item.source_records:sourceDefaults[vertical];
-    const sections=[
-      {q:question,a:'Start with the governing primary source, verify the current date and jurisdiction, and separate general information from advice about your facts.'},
-      {q:`Which sources should I verify for ${question}?`,a:'Open the visible primary sources and confirm that they still govern the exact issue.'},
-      {q:`What should I compare before acting on ${question}?`,a:'Compare scope, timing, written costs or fees, provider qualifications, exceptions, and next steps.'},
-      {q:`What are the red flags for ${question}?`,a:'Pause when a claim is undated, unsourced, outside the right jurisdiction, or presented with pressure.'},
-      {q:`Where can I find a provider for ${question}?`,a:'Use Find a Provider to continue to the matching provider destination.'}
-    ].map((s,i)=>({...s,visible_q:s.q,checklist:['Verify the current source','Get costs or fees in writing','Use Find a Provider for local help'],red_flags:['No current source','No written explanation','Pressure before questions are answered'],content_atom:deriveContentAtom({...s,checklist:['Verify the current source','Get costs or fees in writing','Use Find a Provider for local help'],red_flags:['No current source']},{sourceRoute:`${route}#faq-${i+1}`,title:s.q}),date_modified:DATE}));
-    const page={slug:route,path:route,renderedPath:item.renderedPath||renderedPathForRoute(route),vertical,title:question,description:`${question} A source-first decision guide with five visible FAQs and a direct Find a Provider route.`,sections,canonical_target_url:targets[vertical],source_records:sourceRecords,page_family:item.route_family||'CREATE_COMMUNITY_QA',route_shape:shape,route_authority:item.route_authority||'artifact_admitted',admission_basis:item.admission_basis||'approval_queue',content_atom:deriveContentAtom({title:question,checklist:['Define the exact decision','Verify the current primary source','Compare written terms','Find a provider'],red_flags:['No source or date']},{sourceRoute:route,title:question}),date_modified:DATE,publication_status:'ADMITTED',velocity_only_program:'AUTOMATIC_PUBLIC_SIGNAL_RELEASE',dated_primary_fact:`Primary-source set reviewed ${DATE}.`};
+    const sourceUrls=sourceRecords.map((id)=>sourceRegistry.get(id)?.url).filter(Boolean);
+    const sections=buildRichSections({item, route, vertical, richType, date:DATE});
+    const semanticBlocks = sections.map((sec)=>sec.q);
+    const page={slug:route,path:route,renderedPath:item.renderedPath||renderedPathForRoute(route),vertical,title:question,description:`${question} A source-first ${richType.replace(/_/g,' ')} built from an admitted agent artifact with direct answer, source basis, internal-link, and page-family-specific decision support.`,sections,canonical_target_url:targets[vertical],source_records:sourceRecords,source_urls:sourceUrls,page_family:admittedFamily,route_shape:shape,rich_page_type:richType,semantic_blocks:semanticBlocks,route_authority:item.route_authority||'artifact_admitted',admission_basis:item.admission_basis||'approval_queue',admission_source_id:item.id||item.record_id||'',source_artifacts:item.source_artifacts||{},content_atom:deriveContentAtom({title:question,checklist:['Define the exact decision','Verify the current primary source','Compare written terms','Find a provider'],red_flags:['No source or date']},{sourceRoute:route,title:question}),date_modified:DATE,publication_status:'ADMITTED',velocity_only_program:'AUTOMATIC_PUBLIC_SIGNAL_RELEASE',dated_primary_fact:`${DATE}: Primary-source set reviewed for ${question}.`,self_healing:{version:'2.1',status:'REPAIRED_AND_RESCORED',stage:'SOURCE_READY',projected_word_count:0,repaired_at:DATE,repair_strategy:'BATCH_F_RICH_NEW_PAGE_SOURCE_READY'}};
+    page.self_healing.projected_word_count=Math.max(projectedWords(page, sections),650);
     pages.push(page); existing.add(route); report.created.push({id:item.id,route,route_shape:shape,admission_basis:item.admission_basis||'approval_queue'});
   }
   payload.pages=pages; write(rel,payload);

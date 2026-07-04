@@ -31,7 +31,10 @@ function checkDir(dir){
 checkDir(ROOT);
 const contract=JSON.parse(fs.readFileSync(path.join(ROOT,'_baseline_packaging_contract.json'),'utf8'));
 const excluded=new Set(contract.excluded||[]);
-for(const required of ['.git','node_modules','dist','reports','.build','logs','artifacts/validation/runtime','*.log','*.zip']) if(!excluded.has(required)) violations.push({type:'packaging_exclusion_missing',path:required});
+const reportProofRequired=(contract.required||[]).some(x=>String(x).startsWith('reports/'));
+const requiredExclusions=['.git','node_modules','dist','.build','logs','artifacts/validation/runtime','*.log','*.zip'];
+if(!reportProofRequired) requiredExclusions.push('reports');
+for(const required of requiredExclusions) if(!excluded.has(required)) violations.push({type:'packaging_exclusion_missing',path:required});
 const ignoreText=fs.readFileSync(path.join(ROOT,'.gitignore'),'utf8');
 for(const required of ['.build/','dist/','reports/','logs/','artifacts/validation/runtime/','*.log','*.zip']) if(!ignoreText.split(/\r?\n/).includes(required)) violations.push({type:'gitignore_missing',path:required});
 const report={validator:'repo-hygiene',ok:violations.length===0,generated_runtime_directories_allowed_when_excluded:true,violations};

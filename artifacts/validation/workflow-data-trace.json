@@ -5,10 +5,32 @@
   "manual_ready_count": 6,
   "scheduled_count": 1,
   "push_count": 2,
-  "scheduled_mutation_count": 1,
+  "scheduled_mutation_count": 0,
   "lineage": [
     {
-      "file": "validate.yml",
+      "file": "daily-citation-intelligence.yml",
+      "lane": "signal-intelligence",
+      "triggers": [
+        "schedule:17-13-utc",
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "traffic-qualified fixtures",
+        "source registry",
+        "strategy contract"
+      ],
+      "produces": [
+        "data/signals/**",
+        "artifacts/validation/**",
+        "reports/**"
+      ],
+      "upstream": [],
+      "downstream": [],
+      "failure_boundary": "Signal intelligence may update generated state but must not commit governance or source authority files."
+    },
+    {
+      "file": "validate-repo.yml",
+      "lane": "validate",
       "triggers": [
         "push:main",
         "pull_request",
@@ -30,7 +52,52 @@
       "failure_boundary": "No artifact is uploaded as validated unless the staged container release passes."
     },
     {
+      "file": "velocity-content-release.yml",
+      "lane": "content-release",
+      "triggers": [
+        "push:agent_run_manifest",
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "Twin Agent ready manifests",
+        "traffic-qualified preview proof",
+        "staged Velocity source"
+      ],
+      "produces": [
+        "validated Velocity release commit",
+        "release diagnostics"
+      ],
+      "upstream": [
+        "validate-repo.yml"
+      ],
+      "downstream": [
+        "deploy-distribution.yml"
+      ],
+      "failure_boundary": "Push only after self-healing, exact-agent validation, and citation-fix validation pass."
+    },
+    {
+      "file": "velocity-full-rebuild.yml",
+      "lane": "full-rebuild",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "repository source",
+        "strategy gate"
+      ],
+      "produces": [
+        "validated rebuild commit",
+        "rebuild diagnostics"
+      ],
+      "upstream": [],
+      "downstream": [
+        "deploy-distribution.yml"
+      ],
+      "failure_boundary": "Push only after self-healing validates the rebuilt source."
+    },
+    {
       "file": "deploy-distribution.yml",
+      "lane": "deploy",
       "triggers": [
         "workflow_run:Validate Repo",
         "workflow_dispatch"
@@ -45,104 +112,33 @@
         "distribution evidence"
       ],
       "upstream": [
-        "validate.yml"
+        "validate-repo.yml"
       ],
-      "downstream": [],
+      "downstream": [
+        "postdeploy-public-audit.yml"
+      ],
       "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
     },
     {
-      "file": "postdeploy_public_audit.yml",
+      "file": "postdeploy-public-audit.yml",
+      "lane": "postdeploy-audit",
       "triggers": [
         "workflow_dispatch"
       ],
       "consumes": [
-        "deployed HTTPS base URL",
-        "_browser_suite_contract.json",
-        "_public_route_manifest.json"
+        "deployed Velocity base URL"
       ],
       "produces": [
-        "artifacts/diagnostics/click-audit/summary.json"
+        "artifacts/diagnostics/click-audit/**"
       ],
       "upstream": [
-        "deployed site"
+        "deploy-distribution.yml"
       ],
       "downstream": [],
-      "failure_boundary": "Browser runtime is installed in-workflow and every declared route/device case must pass."
-    },
-    {
-      "file": "velocity_content_release.yml",
-      "triggers": [
-        "push:agent_run_manifest",
-        "schedule:weekday-after-noon-ct",
-        "workflow_dispatch"
-      ],
-      "consumes": [
-        "Twin Agent ready manifests in data/report_fixes/agent_runs/**/agent_run_manifest.json",
-        "social/public backlog",
-        "Velocity source queue",
-        "monitor ledgers",
-        "Twin Agent HTML report files",
-        "HTML report pages-to-build and page-fix sections"
-      ],
-      "produces": [
-        "validated commit on main",
-        "normalized agent run records",
-        "content source updates",
-        "rendered Velocity content",
-        "release diagnostics",
-        "html report contract evidence",
-        "HTML report-derived approval queue records"
-      ],
-      "upstream": [
-        "Twin Agent ready manifest push",
-        "scheduled fallback"
-      ],
-      "downstream": [
-        "validate.yml"
-      ],
-      "failure_boundary": "Twin artifacts are absorbed first; social/public backlog fills the batch if artifacts are absent or insufficient. No commit or push occurs unless content generation, self-heal, agent trace, and release validation pass before commit and again after rebase."
-    },
-    {
-      "file": "release_batch.yml",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "consumes": [
-        "staged content",
-        "query clusters"
-      ],
-      "produces": [
-        "validated commit on main",
-        "release diagnostics"
-      ],
-      "upstream": [],
-      "downstream": [
-        "validate.yml"
-      ],
-      "failure_boundary": "The requested batch is never pushed unless the bounded self-healing release passes after mutation and rebase."
-    },
-    {
-      "file": "velocity_full_rebuild.yml",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "consumes": [
-        "Velocity durable source",
-        "monitor ledgers",
-        "page-family data"
-      ],
-      "produces": [
-        "validated commit on main",
-        "rebuild diagnostics"
-      ],
-      "upstream": [],
-      "downstream": [
-        "validate.yml"
-      ],
-      "failure_boundary": "A rebuild cannot commit or push until source repair, word-count scoring, render, and full validation pass."
+      "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
     }
   ],
   "errors": [],
   "warnings": [],
-  "checked_at": "2026-07-03"
+  "checked_at": "2026-07-02"
 }

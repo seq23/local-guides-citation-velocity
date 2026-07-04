@@ -46,3 +46,8 @@ The four-layer strategy remains the operating model, but several tactics are exp
 The simplification pass was correct: the generic fallback fanout injector was removed, the governed fanout renderer became idempotent, and repeated builds no longer strip unrelated navigation or accumulate duplicate blocks. The release system now favors one durable generator path over layered repair markup.
 
 Formatting-only checks are excluded from release blocking. Trailing whitespace, blank lines, indentation, and exact prose are normalized or ignored. Broken links, whitespace inside URLs, malformed metadata, duplicate indexable content, missing evidence, unsafe claims, and nondeterministic output remain consequential failures.
+
+
+## 2026-07-03 Traffic-Qualified Citation Intelligence Patch
+
+Velocity now treats citation dominance as traffic-qualified citation intelligence. The repo must preserve its structured local / vertical editorial reference role while adding source-compliant signal intake, offline fixture trace, release planner preview, proof packets, source health, workflow topology validation, and explicit telemetry boundaries. No workflow, validator, report, or proof packet may claim external traffic, indexing, ranking, backlinks, or LLM citations unless external telemetry is present and cited. Live firehose sources remain disabled, shadowed, credential-gated, or terms-gated until the source registry grants authority.

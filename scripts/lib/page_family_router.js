@@ -25,7 +25,7 @@ function routePage(row) {
   if (decision.family === 'REPAIR_EXISTING') {
     const target = row.target_route || '';
     const renderedPath = row.renderedPath || renderedPathForRoute(target);
-    return { ...decision, status: 'REPAIR_EXISTING', target_route: target, renderedPath, route_shape: target ? routeShape(target) : 'repair_existing', route_authority: 'artifact_admitted', admission_basis: 'existing_target_repair' };
+    return { ...decision, status: 'REPAIR_EXISTING', target_route: target, renderedPath, route_shape: target ? routeShape(target) : 'repair_existing', route_authority: 'artifact_admitted', admission_basis: 'existing_target_repair', rich_page_type: decision.rich_page_type || 'repair_existing' };
   }
   let family = decision.family;
   let reason = decision.reason;
@@ -38,6 +38,6 @@ function routePage(row) {
     }
   }
   const route = routeForFamily(vertical, row.query || row.normalized_query, family);
-  return { family, reason, status: 'READY_TO_RELEASE', target_route: route, renderedPath: renderedPathForRoute(route), route_shape: routeShape(route), route_authority: 'artifact_admitted', admission_basis: 'route_resolver' };
+  return { family, reason, status: 'READY_TO_RELEASE', target_route: route, renderedPath: renderedPathForRoute(route), route_shape: routeShape(route), route_authority: 'artifact_admitted', admission_basis: 'route_resolver', rich_page_type: decision.rich_page_type || (family === 'CREATE_GUIDE' ? 'checklist_guide' : family === 'CREATE_CLUSTER' ? 'cluster_page' : 'community_qa') };
 }
 module.exports = { routePage, routeForFamily, slugify };

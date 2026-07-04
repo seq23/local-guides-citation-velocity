@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "repo": "local-guides-citation-velocity",
+  "contract": "The six-month growth spine cannot depend on agent-run volume. When admitted agent artifacts and approved signal backlog do not supply the daily release-unit floor, deterministic strategy gap-fill candidates must be generated from the active strategy profile.",
+  "time_horizon_days": 180,
+  "source_strategy_profile": "data/strategy/citation_strategy_profile.json",
+  "minimum_backlog_multiplier": 1,
+  "release_gap_policy": {
+    "daily_target_units_from_profile": true,
+    "respect_max_new_pages_per_day": true,
+    "agent_artifacts_priority": true,
+    "gap_fill_only_after_shortfall": true,
+    "gap_fill_admission_basis": "STRATEGY_GAP_FILL_NON_AGENT"
+  },
+  "required_candidate_fields": [
+    "id",
+    "source",
+    "admission_basis",
+    "vertical",
+    "query_family",
+    "operation",
+    "query",
+    "status",
+    "route_family",
+    "target_route",
+    "rich_page_type",
+    "prevalidation_required",
+    "self_healing_required",
+    "strategy_role"
+  ],
+  "evidence_files": [
+    "data/strategy/strategy_gap_fill_backlog.json",
+    "artifacts/validation/strategy-gap-fill-contract.json"
+  ],
+  "release_blocking": true
+}

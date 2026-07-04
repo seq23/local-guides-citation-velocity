@@ -55,3 +55,8 @@ Trailing whitespace, blank lines, indentation, cosmetic HTML formatting, and exa
 - Google Search documentation update: FAQ rich-result documentation removed June 2026; Google states llms.txt is ignored for ranking and visibility.
 - IndexNow official protocol documentation.
 - OpenAI official crawler documentation for OAI-SearchBot and GPTBot.
+
+
+## 2026-07-03 Traffic-Qualified Citation Intelligence Patch
+
+Velocity now treats citation dominance as traffic-qualified citation intelligence. The repo must preserve its structured local / vertical editorial reference role while adding source-compliant signal intake, offline fixture trace, release planner preview, proof packets, source health, workflow topology validation, and explicit telemetry boundaries. No workflow, validator, report, or proof packet may claim external traffic, indexing, ranking, backlinks, or LLM citations unless external telemetry is present and cited. Live firehose sources remain disabled, shadowed, credential-gated, or terms-gated until the source registry grants authority.

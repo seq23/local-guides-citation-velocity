@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.4",
+  "repo": "local-guides-citation-velocity",
+  "mode": "SHADOW_MODE",
+  "live_firehose_enabled": false,
+  "external_telemetry_present": false,
+  "telemetry_claims_allowed": false,
+  "source_compliance_law": "No unauthorized scraping, no fake credentials, no live source claims without source authority.",
+  "adapter_contract": {
+    "required_fields": [
+      "adapter",
+      "source",
+      "mode",
+      "terms_status",
+      "collected_at",
+      "records",
+      "errors",
+      "warnings",
+      "status"
+    ],
+    "allowed_status": [
+      "PASS",
+      "WARN",
+      "BLOCKED",
+      "FAIL"
+    ],
+    "allowed_terms_status": [
+      "allowed",
+      "requires_review",
+      "requires_credentials",
+      "blocked"
+    ]
+  },
+  "required_outputs": [
+    "data/signals/raw/latest.json",
+    "data/signals/normalized/latest.json",
+    "data/signals/source_health.json",
+    "data/signals/firehose_ledger.json",
+    "artifacts/validation/fixture-signal-trace.json",
+    "artifacts/validation/daily-citation-release-plan.json",
+    "artifacts/validation/daily-proof-packet.json"
+  ],
+  "forbidden_claims": [
+    "actual traffic",
+    "actual rankings",
+    "actual indexing",
+    "actual LLM citations",
+    "actual third-party backlinks",
+    "actual conversions"
+  ],
+  "promotion_gates": [
+    "strategy_patched",
+    "contracts_installed",
+    "offline_fixture_trace_passes",
+    "shadow_signal_run_passes",
+    "release_planner_preview_passes",
+    "controlled_release_or_valid_noop",
+    "build_and_validators_pass",
+    "proof_packet_passes",
+    "postdeploy_or_browser_fallback_passes",
+    "scheduled_cadence_enabled"
+  ]
+}
