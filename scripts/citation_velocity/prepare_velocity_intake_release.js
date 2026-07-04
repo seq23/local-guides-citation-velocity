@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
 const { resolveTargetPath, routeFromPath } = require('../lib/citation_route_resolver');
+const { parseManifestBundle, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
 
 const ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_TARGET = 125;
@@ -16,6 +17,7 @@ const TARGET = clampInt(process.env.VELOCITY_RELEASE_TARGET || process.argv[2] |
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const AGENT_ROOT = 'data/report_fixes/agent_runs';
 const NORMALIZED_ROOT = 'data/report_fixes/normalized_agent_runs';
+const SOURCE_LEDGER_ROOT = 'data/report_fixes/source_record_ledgers';
 const LEDGER_PATH = 'data/report_fixes/agent_fix_ledger.json';
 const POLICY_PATH = 'data/report_fixes/agent_exact_implementation_policy.json';
 
@@ -153,6 +155,9 @@ function fixType(row) {
 function routeFor(vertical, question) {
   return routeForFamily(vertical, question, 'CREATE_COMMUNITY_QA');
 }
+function sourceRecordsFor(vertical) {
+  return { personal_injury: ['SRC-CONGRESS-STATE-LEGISLATURES', 'SRC-CORNELL-SOL'], dentistry: ['SRC-ADA-MOUTHHEALTHY'], trt: ['SRC-FDA-TESTOSTERONE'], neuro: ['SRC-NIMH-ADHD'], 'uscis-medical': ['SRC-USCIS-I693'] }[vertical] || [];
+}
 function loadPolicy() {
   return readJson(POLICY_PATH, {
     schema_version: '1.0',
@@ -254,6 +259,98 @@ function toApproval(record) {
     admission_basis: record.admission_basis || (record.source === 'social_public_backlog' ? 'SOCIAL_BACKLOG_APPROVED_FALLBACK' : 'VELOCITY_INTAKE_SELECTED')
   };
 }
+
+function sourceRecordMatchesRecord(record, sourceRecord) {
+  const queryA = String(record.query || '').trim().toLowerCase();
+  const queryB = String(sourceRecord.query || '').trim().toLowerCase();
+  if (!queryA || !queryB || queryA !== queryB) return false;
+  const targetA = String(record.intended_winner_path || record.intended_winner_page || record.target_route || '').replace(/^https?:\/\/[^/]+\//, '').replace(/^\//, '').toLowerCase();
+  const targetB = String(sourceRecord.repo_file_path || sourceRecord.target_url || '').replace(/^https?:\/\/[^/]+\//, '').replace(/^\//, '').toLowerCase();
+  return !targetB || !targetA || targetA.includes(targetB) || targetB.includes(targetA);
+}
+function writeSourceRecordLedger(manifestRel, manifest, sourceBundle) {
+  const vertical = normalizeVertical(manifest.vertical);
+  const records = sourceBundle.records || [];
+  const byKey = new Map();
+  for (const record of records) {
+    const key = record.canonical_key || canonicalDedupeKey(record);
+    if (!byKey.has(key)) byKey.set(key, []);
+    byKey.get(key).push(record.source_record_id);
+  }
+  const duplicateGroups = [...byKey.entries()].filter(([, ids]) => ids.length > 1).map(([canonical_key, source_record_ids]) => ({ canonical_key, source_record_ids, source_record_count: source_record_ids.length }));
+  const ledger = {
+    schema_version: '1.0',
+    manifest: manifestRel,
+    run_date: manifest.run_date,
+    vertical,
+    source_record_count: records.length,
+    recommendation_record_count: records.filter(r => r.recommendation_text).length,
+    new_page_opportunity_count: records.filter(r => r.recommendation_type === 'new_page_opportunity').length,
+    existing_page_fix_count: records.filter(r => r.recommendation_type === 'existing_page_fix').length,
+    records,
+    dedupe_groups: duplicateGroups,
+    errors: sourceBundle.errors || []
+  };
+  const ledgerRel = `${SOURCE_LEDGER_ROOT}/${manifest.run_date}_${vertical}.json`;
+  writeJson(ledgerRel, ledger);
+  writeJson(`${SOURCE_LEDGER_ROOT}/latest.json`, { ...ledger, latest_ledger: ledgerRel });
+  return ledger;
+}
+function recordFromSourceRecord(sourceRecord, manifest, manifestRel, runId, sourceIndex, policy) {
+  const vertical = normalizeVertical(sourceRecord.vertical || manifest.vertical);
+  const query = sourceRecord.query;
+  const fake = {
+    Query: query,
+    'Repo File Path': sourceRecord.repo_file_path || sourceRecord.target_url || '',
+    'Intended Winner Page': sourceRecord.target_url || sourceRecord.repo_file_path || '',
+    'Action Tier': sourceRecord.action_tier || (sourceRecord.recommendation_type === 'new_page_opportunity' ? 'free win' : 'page fix'),
+    'Gap Type': sourceRecord.gap_type || sourceRecord.recommendation_type,
+    'Fix Recommendation': sourceRecord.recommendation_text,
+    patch_needed: sourceRecord.recommendation_type === 'existing_page_fix' ? 'Y' : ''
+  };
+  const decision = sourceRecord.recommendation_type === 'new_page_opportunity'
+    ? chooseAgentOperation({ ...fake, 'Repo File Path': '', 'Intended Winner Page': '' }, vertical, query, policy)
+    : chooseAgentOperation(fake, vertical, query, policy);
+  const priority = scoreActionTier(fake['Action Tier']) + (sourceRecord.recommendation_text ? 8 : 0);
+  return {
+    id: `agent_${sha(sourceRecord.source_record_id, 16)}`,
+    source: 'twin_agent_artifact',
+    source_run_id: runId,
+    source_artifacts: { manifest: manifestRel, csv: manifest.csv_path, html: manifest.html_path, json: manifest.json_path || '' },
+    source_record_id: sourceRecord.source_record_id,
+    source_record_ids: [sourceRecord.source_record_id],
+    source_record_canonical_key: sourceRecord.canonical_key,
+    source_section: sourceRecord.source_section,
+    source_file: sourceRecord.source_file,
+    recommendation_fields: sourceRecord.recommendation_fields || {},
+    run_date: manifest.run_date,
+    vertical,
+    query,
+    intended_winner_page: sourceRecord.target_url || sourceRecord.repo_file_path || '',
+    intended_winner_path: decision.intended_winner_path || '',
+    cited_sources: '',
+    answer_shape: '',
+    gap_type: sourceRecord.gap_type || sourceRecord.recommendation_type,
+    fix_type: sourceRecord.recommendation_type === 'existing_page_fix' ? 'agent_source_page_fix' : 'agent_source_new_page',
+    action_tier: sourceRecord.action_tier || '',
+    recommendation: sourceRecord.recommendation_text || `Build a citation-ready answer page for ${query}.`,
+    patch_needed: sourceRecord.recommendation_type === 'existing_page_fix',
+    operation: sourceRecord.recommendation_type === 'existing_page_fix' ? decision.operation : 'CREATE_NEW_TARGET_PAGE',
+    target_route: decision.target_route,
+    supporting_route: decision.supporting_route || '',
+    renderedPath: decision.renderedPath || '',
+    blocked_reason: decision.blocked_reason || '',
+    target_resolution_status: decision.target_resolution_status || '',
+    canonicalized_from: decision.canonicalized_from || [],
+    route_family: decision.route_family || '',
+    route_reason: decision.route_reason || '',
+    priority_score: priority,
+    source_signal_ids: [`${runId}_source_${sourceIndex}`],
+    source_records: sourceRecordsFor(vertical),
+    status: decision.status || 'READY_TO_RELEASE'
+  };
+}
+
 function importAgentRuns() {
   const policy = loadPolicy();
   const manifests = walkManifests();
@@ -270,6 +367,9 @@ function importAgentRuns() {
       if (String(manifest.status) === 'READY_FOR_ABSORPTION') skipped_by_policy.push({ manifest: manifestRel, run_date: manifest.run_date, reason: 'before_exact_implementation_cutover' });
       continue;
     }
+    const sourceBundle = parseManifestBundle({ manifestPath: manifestRel, root: ROOT });
+    const sourceLedger = writeSourceRecordLedger(manifestRel, manifest, sourceBundle);
+    const sourceRecords = sourceLedger.records || [];
     const rows = parseCsv(readText(manifest.csv_path));
     const vertical = normalizeVertical(manifest.vertical);
     const runId = `${manifest.run_date}_${vertical}_${sha(manifest.csv_path)}`;
@@ -281,11 +381,19 @@ function importAgentRuns() {
       const sourceKey = `${manifest.csv_path}:${index}:${query}:${desired}`;
       const priority = scoreActionTier(row['Action Tier']) + Math.max(0, 5 - Number(row['Progress Level (1-4)'] || 4)) * 5;
       const decision = chooseAgentOperation(row, vertical, query, policy);
+      const matchedSourceRecords = sourceRecords.filter((sourceRecord) => sourceRecordMatchesRecord({ query, intended_winner_page: desired, target_route: decision.target_route, intended_winner_path: decision.intended_winner_path }, sourceRecord));
+      const primarySourceRecord = matchedSourceRecords[0] || null;
       records.push({
         id: `agent_${sha(sourceKey, 16)}`,
         source: 'twin_agent_artifact',
         source_run_id: runId,
         source_artifacts: { manifest: manifestRel, csv: manifest.csv_path, html: manifest.html_path, json: manifest.json_path || '' },
+        source_record_id: primarySourceRecord ? primarySourceRecord.source_record_id : '',
+        source_record_ids: matchedSourceRecords.map((sourceRecord) => sourceRecord.source_record_id),
+        source_record_canonical_key: primarySourceRecord ? primarySourceRecord.canonical_key : '',
+        source_section: primarySourceRecord ? primarySourceRecord.source_section : 'csv',
+        source_file: primarySourceRecord ? primarySourceRecord.source_file : manifest.csv_path,
+        recommendation_fields: primarySourceRecord ? (primarySourceRecord.recommendation_fields || {}) : {},
         run_date: manifest.run_date,
         vertical,
         query,
@@ -309,13 +417,22 @@ function importAgentRuns() {
         route_reason: decision.route_reason || '',
         priority_score: priority,
         source_signal_ids: [`${runId}_${index}`],
-        source_records: vertical === 'dentistry' ? ['SRC-ADA-MOUTHHEALTHY'] : [],
+        source_records: sourceRecordsFor(vertical),
         status: decision.status || 'READY_TO_RELEASE'
       });
     });
+    const representedSourceIds = new Set(records.flatMap((record) => record.source_record_ids || []).filter(Boolean));
+    sourceRecords.forEach((sourceRecord, sourceIndex) => {
+      if (!sourceRecord.query || representedSourceIds.has(sourceRecord.source_record_id)) return;
+      if (!['existing_page_fix', 'new_page_opportunity', 'outperform', 'authority'].includes(sourceRecord.recommendation_type)) return;
+      const extra = recordFromSourceRecord(sourceRecord, manifest, manifestRel, runId, sourceIndex, policy);
+      if (!extra.query || !extra.target_route && !String(extra.status || '').startsWith('BLOCKED_')) return;
+      records.push(extra);
+      representedSourceIds.add(sourceRecord.source_record_id);
+    });
     if (records.length) {
       const normalizedRel = `${NORMALIZED_ROOT}/${manifest.run_date}_${vertical}.json`;
-      writeJson(normalizedRel, { schema_version: '1.2', run_id: runId, manifest: manifestRel, csv_path: manifest.csv_path, html_path: manifest.html_path, json_path: manifest.json_path || '', record_count: records.length, policy_path: POLICY_PATH, records });
+      writeJson(normalizedRel, { schema_version: '1.3', source_ledger_path: `${SOURCE_LEDGER_ROOT}/${manifest.run_date}_${vertical}.json`, run_id: runId, manifest: manifestRel, csv_path: manifest.csv_path, html_path: manifest.html_path, json_path: manifest.json_path || '', record_count: records.length, policy_path: POLICY_PATH, records });
       normalized.push(...records);
       manifest.status = 'ABSORBED';
       manifest.absorbed_at = DATE;
@@ -366,6 +483,17 @@ function socialFallbackRecords(limit, existingIds) {
     .sort((a, b) => b.priority_score - a.priority_score)
     .slice(0, limit);
 }
+function existingTitleSet() {
+  const titles = new Set();
+  for (const file of ['content/_live/pages.json', 'content/_staged/pages.json', 'content/_live/insights.json']) {
+    const payload = readJson(file, {});
+    for (const item of [...(payload.pages || []), ...(payload.items || [])]) {
+      const title = String(item.title || item.visible_q || item.query || '').trim().toLowerCase();
+      if (title) titles.add(title);
+    }
+  }
+  return titles;
+}
 function updateLedger(agentRecords, plan) {
   const current = readJson(LEDGER_PATH, { schema_version: '1.0', ledger_type: 'cumulative_agent_fix_ledger', fixes: [] });
   const byId = new Map((current.fixes || []).map((fix) => [fix.id, fix]));
@@ -386,7 +514,11 @@ function updateLedger(agentRecords, plan) {
       fix_type: record.fix_type,
       action_tier: record.action_tier,
       source_artifacts: record.source_artifacts,
-      implementation_status: selectedForRelease ? (record.operation || 'SELECTED_FOR_RELEASE') : (String(record.status || '').startsWith('BLOCKED_') ? record.status : 'IMPORTED_NOT_SELECTED'),
+      source_record_id: record.source_record_id || '',
+      source_record_ids: record.source_record_ids || [],
+      source_record_canonical_key: record.source_record_canonical_key || '',
+      recommendation_fields: record.recommendation_fields || {},
+      implementation_status: selectedForRelease ? (record.operation || 'SELECTED_FOR_RELEASE') : (String(record.status || '').startsWith('BLOCKED_') || String(record.status || '').startsWith('SKIPPED_') ? record.status : 'QUEUED_FOR_FUTURE_RELEASE'),
       trace_required: selectedForRelease,
       sourceFiles: record.operation === 'REPAIR_INTENDED_WINNER_PAGE' ? ['content/_live/insights.json'] : ['content/_staged/pages.json', 'content/_live/pages.json'],
       liveManifestPath: record.operation === 'REPAIR_INTENDED_WINNER_PAGE' ? 'content/_live/insights.json' : 'content/_live/pages.json',
@@ -412,12 +544,18 @@ function main() {
   const selected = [];
   const seenRoutes = new Set();
   const seenIds = new Set();
+  const existingTitles = existingTitleSet();
   const blockedAgent = agent.normalized.filter((r) => String(r.status || '').startsWith('BLOCKED_'));
   const orderedAgent = agent.normalized.filter((r) => r.status === 'READY_TO_RELEASE').sort((a, b) => b.priority_score - a.priority_score);
   for (const record of orderedAgent) {
     if (selected.length >= TARGET) break;
+    if (record.operation === 'CREATE_NEW_TARGET_PAGE' && existingTitles.has(String(record.query || '').trim().toLowerCase())) {
+      record.status = 'SKIPPED_EXISTING_WITH_PROOF';
+      record.status_reason = 'exact_title_already_exists_in_pages';
+      continue;
+    }
     const routeKey = record.operation === 'REPAIR_INTENDED_WINNER_PAGE' ? `repair:${record.intended_winner_path}` : record.target_route;
-    if (seenRoutes.has(routeKey)) continue;
+    if (seenRoutes.has(routeKey)) { record.status = 'SKIPPED_DUPLICATE_WITH_PROOF'; record.status_reason = 'canonical_route_already_selected'; continue; }
     selected.push(record); seenRoutes.add(routeKey); seenIds.add(record.id);
   }
   const social = socialFallbackRecords(TARGET - selected.length, seenIds);

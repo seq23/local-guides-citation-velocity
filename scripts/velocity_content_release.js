@@ -26,7 +26,7 @@ const ready = (Array.isArray(approval)?approval:[]).filter((x)=>{
 const report = {schema_version:'1.0',run_date:DATE,approved:ready.length,created:[],skipped:[]};
 if (!ready.length) { write('artifacts/validation/velocity-content-release.json',report); console.log('No approved public-signal pages to release.'); process.exit(0); }
 for (const rel of ['content/_staged/pages.json','content/_live/pages.json']) {
-  const payload=read(rel); const pages=payload.pages||[]; const existing=new Set(pages.map((p)=>p.slug));
+  const payload=read(rel); const pages=payload.pages||[]; const existing=new Set(pages.map((p)=>p.slug)); const existingTitles=new Set(pages.map((p)=>String(p.title||p.visible_q||'').trim().toLowerCase()).filter(Boolean));
   for (const item of ready) {
     const vertical=verticalMap[item.vertical];
     if (!vertical || !targets[vertical]) { report.skipped.push({id:item.id,reason:'unsupported_vertical'}); continue; }
@@ -46,13 +46,15 @@ for (const rel of ['content/_staged/pages.json','content/_live/pages.json']) {
     if(!route || shape==='unknown') { report.skipped.push({id:item.id,reason:'invalid_admitted_route_shape'}); continue; }
     if (requiresRichAuthorityPage(richType) && admittedFamily === 'CREATE_COMMUNITY_QA') { report.skipped.push({id:item.id,reason:'rich_page_downgraded_to_community_qa', rich_page_type: richType, route}); continue; }
     if (existing.has(route)) continue;
-    const sourceRecords=Array.isArray(item.source_records)&&item.source_records.length?item.source_records:sourceDefaults[vertical];
+    if (existingTitles.has(question.toLowerCase())) { report.skipped.push({id:item.id, reason:'exact_title_already_exists_in_pages', route}); continue; }
+    const agentSourceRecordIds=[...new Set([...(Array.isArray(item.source_record_ids)?item.source_record_ids:[]), ...(Array.isArray(item.source_records)?item.source_records.filter((id)=>String(id).startsWith('velocity_src_')):[])])];
+    const sourceRecords=[...new Set([...(Array.isArray(item.source_records)?item.source_records.filter((id)=>sourceRegistry.has(id)):[]), ...(sourceDefaults[vertical]||[])])];
     const sourceUrls=sourceRecords.map((id)=>sourceRegistry.get(id)?.url).filter(Boolean);
     const sections=buildRichSections({item, route, vertical, richType, date:DATE});
     const semanticBlocks = sections.map((sec)=>sec.q);
-    const page={slug:route,path:route,renderedPath:item.renderedPath||renderedPathForRoute(route),vertical,title:question,description:`${question} A source-first ${richType.replace(/_/g,' ')} built from an admitted agent artifact with direct answer, source basis, internal-link, and page-family-specific decision support.`,sections,canonical_target_url:targets[vertical],source_records:sourceRecords,source_urls:sourceUrls,page_family:admittedFamily,route_shape:shape,rich_page_type:richType,semantic_blocks:semanticBlocks,route_authority:item.route_authority||'artifact_admitted',admission_basis:item.admission_basis||'approval_queue',admission_source_id:item.id||item.record_id||'',source_artifacts:item.source_artifacts||{},content_atom:deriveContentAtom({title:question,checklist:['Define the exact decision','Verify the current primary source','Compare written terms','Find a provider'],red_flags:['No source or date']},{sourceRoute:route,title:question}),date_modified:DATE,publication_status:'ADMITTED',velocity_only_program:'AUTOMATIC_PUBLIC_SIGNAL_RELEASE',dated_primary_fact:`${DATE}: Primary-source set reviewed for ${question}.`,self_healing:{version:'2.1',status:'REPAIRED_AND_RESCORED',stage:'SOURCE_READY',projected_word_count:0,repaired_at:DATE,repair_strategy:'BATCH_F_RICH_NEW_PAGE_SOURCE_READY'}};
+    const page={slug:route,path:route,renderedPath:item.renderedPath||renderedPathForRoute(route),vertical,title:question,description:`${question} A source-first ${richType.replace(/_/g,' ')} built from an admitted agent artifact with direct answer, source basis, internal-link, and page-family-specific decision support.`,sections,canonical_target_url:targets[vertical],source_records:sourceRecords,source_urls:sourceUrls,page_family:admittedFamily,route_shape:shape,rich_page_type:richType,semantic_blocks:semanticBlocks,route_authority:item.route_authority||'artifact_admitted',admission_basis:item.admission_basis||'approval_queue',admission_source_id:item.id||item.record_id||'',source_artifacts:item.source_artifacts||{},agent_source_record_ids:agentSourceRecordIds,content_atom:deriveContentAtom({title:question,checklist:['Define the exact decision','Verify the current primary source','Compare written terms','Find a provider'],red_flags:['No source or date']},{sourceRoute:route,title:question}),date_modified:DATE,publication_status:'ADMITTED',velocity_only_program:'AUTOMATIC_PUBLIC_SIGNAL_RELEASE',dated_primary_fact:`${DATE}: Primary-source set reviewed for ${question}.`,self_healing:{version:'2.1',status:'REPAIRED_AND_RESCORED',stage:'SOURCE_READY',projected_word_count:0,repaired_at:DATE,repair_strategy:'BATCH_F_RICH_NEW_PAGE_SOURCE_READY'}};
     page.self_healing.projected_word_count=Math.max(projectedWords(page, sections),650);
-    pages.push(page); existing.add(route); report.created.push({id:item.id,route,route_shape:shape,admission_basis:item.admission_basis||'approval_queue'});
+    pages.push(page); existing.add(route); existingTitles.add(question.toLowerCase()); report.created.push({id:item.id,route,route_shape:shape,admission_basis:item.admission_basis||'approval_queue'});
   }
   payload.pages=pages; write(rel,payload);
 }

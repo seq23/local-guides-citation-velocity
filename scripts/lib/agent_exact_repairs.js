@@ -113,7 +113,7 @@ function markerFor(recordIds, implementationPath) {
 
 function entryFromSpec(spec, date) {
   const implementationPath = normalizeImplementationPath(spec.implementation_path || spec.intended_winner_path || routeToImplementationPath(spec.target_route));
-  const recordIds = unique(spec.record_ids || [spec.record_id]);
+  const recordIds = unique([...(spec.record_ids || [spec.record_id]), ...(spec.source_record_ids || [])]);
   const targetType = spec.target_type || targetTypeForImplementationPath(implementationPath);
   const queries = unique(spec.queries || [spec.query]);
   const fixRecommendations = unique(spec.fix_recommendations || spec.recommendations || [spec.recommendation]);
@@ -129,6 +129,7 @@ function entryFromSpec(spec, date) {
     intended_winner_path: spec.intended_winner_path || implementationPath,
     supporting_routes: unique([spec.supporting_route]),
     record_ids: recordIds,
+    source_record_ids: unique(spec.source_record_ids || []),
     queries,
     fix_recommendations: fixRecommendations,
     applied_at: date,
@@ -240,6 +241,7 @@ function applyEntryToTarget(target, entry, context = {}) {
     last_repaired_at: entry.applied_at,
     source: entry.source || 'twin_agent_artifact',
     record_ids: unique(entry.record_ids || []),
+    source_record_ids: unique(entry.source_record_ids || []),
     queries,
     fix_recommendations: recs,
     repair_summary: compactSentence(semantic ? `Semantic repair applied from ${SEMANTIC_MANIFEST_PATH}` : recommendation, 300),

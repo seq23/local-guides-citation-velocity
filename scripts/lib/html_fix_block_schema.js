@@ -13,7 +13,8 @@ const ALLOWED_BLOCK_TYPES = Object.freeze([
   'script',
   'severity_matrix',
   'source_block',
-  'callout'
+  'callout',
+  'agent_directive'
 ]);
 
 const BLOCK_TYPE_ALIASES = Object.freeze({
@@ -38,7 +39,10 @@ const BLOCK_TYPE_ALIASES = Object.freeze({
   red: 'severity_matrix',
   source: 'source_block',
   legal: 'source_block',
-  callout: 'callout'
+  callout: 'callout',
+  directive: 'agent_directive',
+  'agent directive': 'agent_directive',
+  agent: 'agent_directive'
 });
 
 const DEFAULT_HEADERS = Object.freeze({
@@ -48,7 +52,8 @@ const DEFAULT_HEADERS = Object.freeze({
   timeline_table: ['Timeline factor', 'Typical range', 'What to ask'],
   severity_matrix: ['Severity', 'Red flag', 'Action'],
   scorecard: ['Criterion', 'What to check', 'Red flag'],
-  worksheet: ['Step', 'Question', 'Output']
+  worksheet: ['Step', 'Question', 'Output'],
+  agent_directive: ['Requirement', 'How the page implements it', 'Proof']
 });
 
 function canonicalBlockType(value) {

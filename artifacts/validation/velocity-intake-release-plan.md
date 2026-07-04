@@ -1,7 +1,7 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-07-03
+Release date: 2026-07-04
 Target publish units: 125
 Selected units: 125
 Twin agent units: 76

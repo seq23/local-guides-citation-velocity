@@ -88,6 +88,8 @@ function main(){
       const key=normalizeImplementationPath(effectiveRow.intended_winner_path);
       const current=groupedRepairs.get(key)||{record_ids:[], queries:[], recommendations:[], canonicalized_from:[], target_resolution_status:'', row:effectiveRow};
       current.record_ids.push(effectiveRow.id);
+      current.source_record_ids = current.source_record_ids || [];
+      current.source_record_ids.push(...(effectiveRow.source_record_ids || [effectiveRow.source_record_id]).filter(Boolean));
       if(effectiveRow.query) current.queries.push(effectiveRow.query);
       if(effectiveRow.recommendation) current.recommendations.push(effectiveRow.recommendation);
       current.canonicalized_from.push(...(effectiveRow.canonicalized_from || []));
@@ -100,12 +102,12 @@ function main(){
         continue;
       }
       const targetPath=String(routeDecision.renderedPath||row.target_route||'').replace(/^\//,'').replace(/\/$/,'/index.html');
-      specs.push({record_id:row.id, run_date:row.run_date, query:row.query, intended_winner_page:row.intended_winner_page||'', intended_winner_path:row.intended_winner_path||'', target_route:routeDecision.target_route||row.target_route||'', implementation_path:targetPath, operation:'CREATE_NEW_TARGET_PAGE', before_hash:fileHash(targetPath), after_hash:null, status:'PLANNED', blocked_reason:'', route_family:routeDecision.family, route_reason:routeDecision.reason});
+      specs.push({record_id:row.id, run_date:row.run_date, query:row.query, intended_winner_page:row.intended_winner_page||'', intended_winner_path:row.intended_winner_path||'', target_route:routeDecision.target_route||row.target_route||'', implementation_path:targetPath, operation:'CREATE_NEW_TARGET_PAGE', source_record_ids: row.source_record_ids || [row.source_record_id].filter(Boolean), before_hash:fileHash(targetPath), after_hash:null, status:'PLANNED', blocked_reason:'', route_family:routeDecision.family, route_reason:routeDecision.reason});
     }
   }
   for(const [implementationPath, group] of groupedRepairs){
     const row=group.row;
-    specs.push({record_id:group.record_ids[0], record_ids:group.record_ids, run_date:row.run_date, query:group.queries[0], queries:[...new Set(group.queries)], intended_winner_page:row.intended_winner_page||'', intended_winner_path:implementationPath, target_route:row.target_route||`/${implementationPath}`, implementation_path:implementationPath, supporting_route:row.supporting_route||'', operation:'REPAIR_INTENDED_WINNER_PAGE', before_hash:fileHash(implementationPath), after_hash:null, status:'PLANNED', blocked_reason:'', target_resolution_status:group.target_resolution_status || 'EXACT_EXISTS', route_family: routeFamilyForPath(implementationPath), canonicalized_from:[...new Set(group.canonicalized_from || [])], fix_recommendations:[...new Set(group.recommendations)]});
+    specs.push({record_id:group.record_ids[0], record_ids:group.record_ids, run_date:row.run_date, query:group.queries[0], queries:[...new Set(group.queries)], intended_winner_page:row.intended_winner_page||'', intended_winner_path:implementationPath, target_route:row.target_route||`/${implementationPath}`, implementation_path:implementationPath, supporting_route:row.supporting_route||'', operation:'REPAIR_INTENDED_WINNER_PAGE', before_hash:fileHash(implementationPath), after_hash:null, status:'PLANNED', blocked_reason:'', target_resolution_status:group.target_resolution_status || 'EXACT_EXISTS', route_family: routeFamilyForPath(implementationPath), canonicalized_from:[...new Set(group.canonicalized_from || [])], fix_recommendations:[...new Set(group.recommendations)], source_record_ids:[...new Set(group.source_record_ids || [])]});
   }
   const report={schema_version:'1.1', status:'PASS', generated_at:DATE, policy_path:POLICY_PATH, release_plan:'artifacts/validation/velocity-intake-release-plan.json', selected_agent_rows:selectedRows.length, considered_agent_rows:rows.length, selected_repair_targets:selectedRepairTargets.size, blocked_agent_rows_carried:specs.filter(x=>x.status==='BLOCKED').length, repair_count:specs.filter(x=>x.operation==='REPAIR_INTENDED_WINNER_PAGE').length, new_page_count:specs.filter(x=>x.operation==='CREATE_NEW_TARGET_PAGE').length, blocked_count:specs.filter(x=>x.status==='BLOCKED').length, specs:specs.sort((a,b)=>String(a.implementation_path||a.target_route).localeCompare(String(b.implementation_path||b.target_route)))};
   writeJson('artifacts/validation/agent-exact-implementation-plan.json', report);

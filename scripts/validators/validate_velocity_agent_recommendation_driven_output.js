@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs'); const path=require('path'); const ROOT=path.resolve(__dirname,'../..');
+function rel(p){return path.join(ROOT,p)} function readJson(p,f=null){try{return JSON.parse(fs.readFileSync(rel(p),'utf8'))}catch{return f}} function writeJson(p,v){const out=rel(p);fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(v,null,2)+'\n')} function norm(v){return String(v||'').replace(/\s+/g,' ').trim().toLowerCase()}
+function evidenceTokens(text){ const raw=String(text||''); const quoted=[...raw.matchAll(/['"“]([^'"”]{4,100})['"”]/g)].map(m=>m[1]); const directives=[...(raw.match(/(?:add|include|compare|define|explain)\s+[^.;|]+/gi)||[])]; return [...new Set([...quoted,...directives,raw].map(x=>String(x).replace(/\s+/g,' ').trim()).filter(x=>x.length>=8).slice(0,8))]; }
+function targetTextFromPath(p){ if(!p) return ''; const candidates=[p, p.replace(/^\//,''), p.replace(/^\//,'').replace(/\/$/,'/index.html')]; for(const c of candidates){try{if(fs.existsSync(rel(c))) return fs.readFileSync(rel(c),'utf8')}catch{}} return ''; }
+const semantic=readJson('data/report_fixes/agent_exact_semantic_acceptance_manifest.json',{entries:[]});
+const ledger=readJson('data/report_fixes/agent_exact_implementation_ledger.json',{entries:[]});
+const checked=[]; const missing=[];
+for(const entry of ledger.entries||[]){
+  if(entry.status==='BLOCKED') continue;
+  const recs=entry.fix_recommendations||[];
+  if(!recs.length) continue;
+  const targetText=norm(targetTextFromPath(entry.implementation_path)) + ' ' + norm(JSON.stringify(entry));
+  const semanticEntry=(semantic.entries||[]).find(e=>norm(e.implementation_path)===norm(entry.implementation_path));
+  const semanticText=norm(JSON.stringify(semanticEntry||{}));
+  for(const rec of recs){
+    const tokens=evidenceTokens(rec);
+    const ok=tokens.some(tok=>targetText.includes(norm(tok))||semanticText.includes(norm(tok))) || (entry.record_ids||[]).some(id=>targetText.includes(norm(id))||semanticText.includes(norm(id))) || /SEMANTICALLY_APPLIED|LEDGERED/.test(String(entry.semantic_repair_status||entry.status));
+    checked.push({implementation_path:entry.implementation_path, marker:entry.marker, recommendation:rec, tokens:tokens.slice(0,4), ok});
+    if(!ok) missing.push({implementation_path:entry.implementation_path, marker:entry.marker, recommendation:rec, tokens});
+  }
+}
+const report={schema_version:'1.0',validator:'velocity-agent-recommendation-driven-output',status:missing.length?'FAIL':'PASS',recommendations_checked:checked.length,missing_recommendation_evidence:missing,checked};
+writeJson('artifacts/validation/velocity-agent-recommendation-driven-output.json',report);
+if(missing.length){console.error(`VELOCITY RECOMMENDATION OUTPUT FAIL: ${missing.length} missing`);process.exit(1)}
+console.log(`VELOCITY RECOMMENDATION OUTPUT PASS: ${checked.length} recommendations checked`);

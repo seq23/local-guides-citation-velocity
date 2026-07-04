@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
+const { parseManifestBundle } = require('../lib/agent_artifact_source_parser');
 const RUN_ROOT = 'data/report_fixes/agent_runs';
 const REPORT_PATH = 'artifacts/validation/agent-artifact-data-flow-trace.json';
 function rel(p){ return path.join(ROOT, p); }
@@ -127,7 +128,14 @@ for(const trace of traces){
   trace.exact_repair_rows_ledgered=repairRows.length-missing.length;
   if(missing.length) errors.push(`${trace.manifest_path}:exact_repair_rows_missing_from_ledger:${missing.slice(0,10).join(',')}`);
 }
-const report={schema_version:'1.0',validator:'agent-artifact-data-flow-trace',status:errors.length?'FAIL':'PASS',manifest_count:manifests.length,traces,workflow:{agent_intake_status:intake.status||'',html_report_status:htmlReport.status||'',velocity_plan_selected_count:releasePlan.selected_count||0,velocity_created_count:velocityRelease.created_count||0,exact_plan_repairs:exactPlan.repair_count||0,exact_plan_new_pages:exactPlan.new_page_count||0,exact_trace_status:exactTrace.status||'',exact_validate_status:exactValidate.status||''},errors,warnings,checked_at:process.env.SOURCE_DATE||new Date().toISOString().slice(0,10)};
+const report={schema_version:'1.0',validator:'agent-artifact-data-flow-trace',status:errors.length?'FAIL':'PASS',manifest_count:manifests.length,traces,workflow:{agent_intake_status:intake.status||'',html_report_status:htmlReport.status||'',velocity_plan_selected_count:releasePlan.selected_count||0,velocity_created_count:velocityRelease.created_count||0,exact_plan_repairs:exactPlan.repair_count||0,exact_plan_new_pages:exactPlan.new_page_count||0,exact_trace_status:exactTrace.status||'',exact_validate_status:exactValidate.status||''},errors,
+  source_records_found: sourceRecords.length,
+  source_records_by_file: sourceRecords.reduce((acc, r) => { acc[r.source_file] = (acc[r.source_file] || 0) + 1; return acc; }, {}),
+  source_records_by_section: sourceRecords.reduce((acc, r) => { acc[r.source_section] = (acc[r.source_section] || 0) + 1; return acc; }, {}),
+  source_recommendations_with_nested_objects: sourceRecords.filter((r) => r.recommendation_fields && Object.keys(r.recommendation_fields).length > 1).length,
+  new_page_opportunity_records: sourceRecords.filter((r) => r.recommendation_type === 'new_page_opportunity').length,
+  existing_page_fix_records: sourceRecords.filter((r) => r.recommendation_type === 'existing_page_fix').length,
+  coverage_validator_status: fs.existsSync(path.join(ROOT, 'artifacts/validation/velocity-agent-source-coverage.json')) ? (JSON.parse(fs.readFileSync(path.join(ROOT, 'artifacts/validation/velocity-agent-source-coverage.json'), 'utf8')).status || 'UNKNOWN') : 'NOT_RUN',warnings,checked_at:process.env.SOURCE_DATE||new Date().toISOString().slice(0,10)};
 writeJson(REPORT_PATH, report);
 if(errors.length){ console.error('AGENT ARTIFACT DATA FLOW TRACE FAIL'); errors.forEach(e=>console.error(`- ${e}`)); process.exit(1); }
 console.log(`AGENT ARTIFACT DATA FLOW TRACE PASS: ${manifests.length} json manifest(s)`);

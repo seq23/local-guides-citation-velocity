@@ -26,6 +26,19 @@ function quotedPhrases(value) {
   while ((m = re.exec(String(value || '')))) out.push(normalizeSpace(m[1]));
   return unique(out);
 }
+
+function extractInstructionRequirements(edit) {
+  const raw = String(edit || '');
+  return unique([
+    ...quotedPhrases(raw),
+    ...(raw.match(/add\s+[^.;]+/gi) || []),
+    ...(raw.match(/include\s+[^.;]+/gi) || []),
+    ...(raw.match(/compare\s+[^.;]+/gi) || []),
+    ...(raw.match(/explain\s+[^.;]+/gi) || []),
+    ...(raw.match(/define\s+[^.;]+/gi) || [])
+  ]).slice(0, 12);
+}
+
 function titleFromFix(edit, query, index = 0) {
   const titled = String(edit || '').match(/(?:h2|h3|section|block|callout|table|checklist|part [ab])[^.;]{0,80}?titled\s+['"“]([^'"”]{4,100})['"”]/i) || String(edit || '').match(/titled\s+['"“]([^'"”]{4,100})['"”]/i);
   if (titled) return normalizeSpace(titled[1]);
@@ -49,7 +62,8 @@ function typeFromFix(edit) {
   if (/checklist|checkbox|bullets|bullet/.test(v) && !/table/.test(v)) return 'checklist';
   if (/matrix|decision/.test(v) && /table/.test(v)) return 'decision_matrix';
   if (/table|columns?|rows?|mapping/.test(v)) return 'comparison_table';
-  return canonicalBlockType(edit);
+  const canonical = canonicalBlockType(edit);
+  return canonical && canonical !== 'checklist' ? canonical : 'agent_directive';
 }
 function parseNumberWord(value) {
   const words = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12 };
@@ -140,7 +154,17 @@ function artifactFromFix({ recommendation, query, recordId, index = 0 }) {
     title,
     intro: compact(edit, 260)
   };
-  if (['comparison_table','decision_matrix','cost_table','timeline_table','scorecard','worksheet','severity_matrix'].includes(type)) {
+  if (type === 'agent_directive') {
+    artifact.source_instruction = edit;
+    artifact.query_target = query || '';
+    artifact.extracted_requirements = extractInstructionRequirements(edit);
+    artifact.items = unique([
+      ...artifact.extracted_requirements,
+      query ? `Answer the query directly: ${query}` : '',
+      'Use the exact source artifact recommendation as the implementation authority.',
+      'Preserve source boundaries and jurisdiction/provider limitations.'
+    ]).slice(0, Math.max(minRows, 4));
+  } else if (['comparison_table','decision_matrix','cost_table','timeline_table','scorecard','worksheet','severity_matrix'].includes(type)) {
     artifact.headers = headers;
     artifact.rows = rowsFromFix(edit, query, headers, minRows);
   } else if (type === 'script') {
@@ -154,9 +178,12 @@ function requiredStringsForArtifact(artifact, recommendation) {
   const out = [artifact.title];
   if (Array.isArray(artifact.headers)) out.push(...artifact.headers);
   if (Array.isArray(artifact.rows)) out.push(...artifact.rows.flat().filter((cell) => String(cell || '').length <= 90).slice(0, 10));
+  if (artifact.source_instruction) out.push(compact(artifact.source_instruction, 90));
+  if (artifact.query_target) out.push(compact(artifact.query_target, 90));
+  if (Array.isArray(artifact.extracted_requirements)) out.push(...artifact.extracted_requirements.filter((item) => String(item || '').length <= 90).slice(0, 10));
   if (Array.isArray(artifact.items)) out.push(...artifact.items.filter((item) => String(item || '').length <= 90).slice(0, 10));
   if (Array.isArray(artifact.lines)) out.push(...artifact.lines.filter((line) => String(line || '').length <= 90).slice(0, 10));
-  return unique(out).slice(0, 24);
+  return unique(out).slice(0, 30);
 }
 function rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index = 0 }) {
   const artifact = artifactFromFix({ recommendation, query, recordId, index });
@@ -224,6 +251,7 @@ function compileEntryFromSpec(spec) {
 }
 
 module.exports = {
+  extractInstructionRequirements,
   normalizeSpace,
   compact,
   unique,

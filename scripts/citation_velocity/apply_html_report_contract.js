@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const { deriveContentAtom } = require('../lib/content_atom');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
+const { parseManifestBundle, flattenRecommendation, canonicalSourceRecordId, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
 
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
@@ -105,6 +106,8 @@ function parseFixLines(text, context) {
     if (!current) return;
     current.fix_recommendation = compact(current.fix_recommendation || current.raw_text || 'Strengthen this page for direct citation extraction.', 650);
     current.fix_type = current.fix_type || 'citation_readiness';
+    current.source_record_id = current.source_record_id || canonicalSourceRecordId([current.report_html_path, current.query, current.page_url, current.fix_recommendation]);
+    current.source_record_ids = current.source_record_ids || [current.source_record_id];
     current.id = `html_fix_${sha(`${current.report_html_path}:${current.page_url}:${current.query}:${current.fix_recommendation}`, 16)}`;
     fixes.push(current);
     current = null;
@@ -158,6 +161,9 @@ function parsePagesToBuild(text, context) {
       current.target_route = routeDecision.target_route || routeFor(current.vertical, current.query);
       current.renderedPath = routeDecision.renderedPath || renderedPathForRoute(current.target_route);
       current.status = routeDecision.status || 'APPROVED';
+      current.source_record_id = current.source_record_id || canonicalSourceRecordId([current.report_html_path, current.vertical, current.query, current.why_worth_building]);
+      current.source_record_ids = current.source_record_ids || [current.source_record_id];
+      current.canonical_new_page_key = current.canonical_new_page_key || `new_page|${current.vertical}|${slugify(current.query)}`;
       current.id = `html_page_${sha(`${current.report_html_path}:${current.vertical}:${current.query}`, 16)}`;
       pages.push(current);
     }
@@ -211,7 +217,8 @@ function jsonFixRecords(payload, context) {
     for (const item of Array.isArray(payload[key]) ? payload[key] : []) {
       const pageUrl = normalizePageUrl(item.file_path || item.page_url || item.url || item.target_page || '');
       const query = cleanQuery(item.query || item.Query || '');
-      const recommendation = item.fix || item.fix_recommendation || item['Fix Recommendation'] || item.edit_instruction || '';
+      const flattened = flattenRecommendation(item.fix_recommendation || item.fix || item['Fix Recommendation'] || item.edit_instruction || item.recommendation || '');
+      const recommendation = flattened.text;
       if (!pageUrl || !query || !recommendation) continue;
       const row = {
         ...context,
@@ -219,7 +226,12 @@ function jsonFixRecords(payload, context) {
         query,
         fix_type: fixType,
         fix_recommendation: compact(recommendation, 900),
-        gap: compact(item.gap || '', 900),
+        recommendation_fields: flattened.fields || {},
+        source_record_id: item.source_record_id || canonicalSourceRecordId([context.report_json_path || context.report_html_path, `json.${key}`, query, pageUrl, recommendation]),
+        source_record_ids: item.source_record_ids || [item.source_record_id || canonicalSourceRecordId([context.report_json_path || context.report_html_path, `json.${key}`, query, pageUrl, recommendation])],
+        source_section: `json.${key}`,
+        source_file: context.report_json_path || context.report_html_path,
+        gap: compact(item.gap || flattened.fields.gap || '', 900),
         model: item.model || '',
         level: item.level || '',
         source_category: key,
@@ -243,7 +255,12 @@ function jsonPagesToBuild(payload, context) {
       query,
       discovery_source: item.discovery_source || item.source || 'json_agent_artifact',
       cluster: slugify(item.recommended_cluster || item.cluster || 'guide'),
-      why_worth_building: compact(item.why_worth_building || item.why || item.reason || '', 700),
+      why_worth_building: compact(item.why_worth_building || item.why_build || item.why || item.reason || '', 700),
+      source_record_id: item.source_record_id || canonicalSourceRecordId([context.report_json_path || context.report_html_path, 'json.pages_to_build', query, item.why_worth_building || item.why || item.reason || '']),
+      source_record_ids: item.source_record_ids || [item.source_record_id || canonicalSourceRecordId([context.report_json_path || context.report_html_path, 'json.pages_to_build', query, item.why_worth_building || item.why || item.reason || ''])],
+      source_section: 'json.pages_to_build',
+      source_file: context.report_json_path || context.report_html_path,
+      canonical_new_page_key: `new_page|${normalizeVertical(context.vertical)}|${slugify(query)}`,
       raw_lines: [JSON.stringify(item)],
       target_route: '',
       route_family: '',
@@ -306,9 +323,12 @@ function artifactForFix(fix) {
   return {
     id: `html-report-${fix.id}`,
     marker: `html-report-${fix.id}`,
-    type: 'checklist',
-    title: `Citation report fix: ${fix.query || fix.fix_type || 'page clarity'}`,
+    type: 'agent_directive',
+    title: `Agent-directed report fix: ${fix.query || fix.fix_type || 'page clarity'}`,
     intro: compact(fix.fix_recommendation, 240),
+    source_instruction: fix.fix_recommendation || '',
+    query_target: fix.query || '',
+    extracted_requirements: unique([fix.fix_recommendation, ...(Object.values(fix.recommendation_fields || {}))]).slice(0, 8),
     items: unique([
       fix.query ? `Directly answer: ${fix.query}` : '',
       fix.fix_recommendation,
@@ -321,6 +341,7 @@ function applyArtifact(item, fix) {
   const marker = `html-report-${fix.id}`;
   const existing = Array.isArray(item.citation_velocity_artifacts) ? item.citation_velocity_artifacts.filter(a => a && a.marker !== marker && a.id !== marker) : [];
   item.citation_velocity_artifacts = [artifactForFix(fix), ...existing].slice(0, 10);
+  item.agent_source_record_ids = unique([...(item.agent_source_record_ids || []), ...(fix.source_record_ids || [fix.source_record_id]).filter(Boolean)]);
   item.date_modified = DATE;
   item.description = compact(`${item.description || item.title} Citation report update: ${fix.fix_recommendation}`, 320);
     // Report page fixes are rendered through citation_velocity_artifacts. Do not insert
@@ -416,7 +437,10 @@ function approvalFromPageSpec(spec) {
     action_tier: 'html_report_pages_to_build',
     priority_score: 90,
     source_signal_ids: [`${spec.id}_html_report`],
-    source_records: sourceRecordsFor(vertical),
+    source_records: unique([...(spec.source_record_ids || [spec.source_record_id]).filter(Boolean), ...sourceRecordsFor(vertical)]),
+    source_record_id: spec.source_record_id || '',
+    source_record_ids: spec.source_record_ids || [spec.source_record_id].filter(Boolean),
+    canonical_new_page_key: spec.canonical_new_page_key || `new_page|${vertical}|${slugify(query)}`, 
     citation_velocity: true,
     recommended_action: spec.why_worth_building || `Build a citation-ready answer page for ${query}.`,
     status_reason: 'selected_from_html_report_pages_to_build',
@@ -453,11 +477,11 @@ function updateApprovalQueue(pageSpecs) {
     const titleKey = titleNorm(approval.query);
     if (String(approval.status || '').startsWith('BLOCKED_') || approval.blocked_reason) { skipped.push({ ...approval, skipped_reason: approval.blocked_reason || approval.status }); continue; }
     if (existingTitles.has(titleKey)) {
-      skipped.push({ ...approval, skipped_reason: 'exact_title_already_exists', existing_route: existingTitles.get(titleKey) });
+      skipped.push({ ...approval, skipped_reason: 'exact_title_already_exists', existing_route: existingTitles.get(titleKey), source_record_ids: approval.source_record_ids || [approval.source_record_id].filter(Boolean), canonical_status: 'SKIPPED_EXISTING_WITH_PROOF' });
       continue;
     }
     const key = approval.target_route;
-    if (seen.has(key)) { skipped.push({ ...approval, skipped_reason: 'approval_route_already_present' }); continue; }
+    if (seen.has(key)) { skipped.push({ ...approval, skipped_reason: 'approval_route_already_present', source_record_ids: approval.source_record_ids || [approval.source_record_id].filter(Boolean), canonical_status: 'SKIPPED_DUPLICATE_WITH_PROOF' }); continue; }
     kept.push(approval);
     added.push(approval);
     seen.add(key);
@@ -478,6 +502,7 @@ function parseReports() {
     if (!exists(manifest.html_path)) { errors.push(`${manifestPath}:html_file_missing:${manifest.html_path}`); continue; }
     const vertical = normalizeVertical(manifest.vertical);
     const context = { manifest_path: manifestPath, report_html_path: manifest.html_path, report_json_path: manifest.json_path || '', run_date: manifest.run_date, vertical };
+    const sourceBundle = parseManifestBundle({ manifestPath, root: ROOT });
     let fixes = [];
     let pages = [];
     let parser = 'html';
@@ -494,6 +519,26 @@ function parseReports() {
       const pagesText = htmlToText(extractSection(html, 'Pages to Build'));
       fixes = [...parseFixLines(newFixText, context), ...parseFixLines(pendingText, { ...context, pending_action: true })];
       pages = parsePagesToBuild(pagesText, context).filter(p => SUPPORTED_VERTICALS.has(p.vertical));
+    }
+    const representedFixKeys = new Set(fixes.map((fix) => `${String(fix.query || '').toLowerCase()}|${String(fix.page_url || '').toLowerCase()}`));
+    const representedPageKeys = new Set(pages.map((page) => `${String(page.vertical || '').toLowerCase()}|${String(page.query || '').toLowerCase()}`));
+    for (const sourceRecord of sourceBundle.records || []) {
+      if (sourceRecord.recommendation_type === 'existing_page_fix' && sourceRecord.recommendation_text) {
+        const pageUrl = normalizePageUrl(sourceRecord.target_url || sourceRecord.repo_file_path || '');
+        const key = `${String(sourceRecord.query || '').toLowerCase()}|${String(pageUrl || '').toLowerCase()}`;
+        if (pageUrl && !representedFixKeys.has(key)) {
+          fixes.push({ ...context, page_url: pageUrl, query: sourceRecord.query, fix_type: sourceRecord.gap_type || 'agent_source_page_fix', fix_recommendation: compact(sourceRecord.recommendation_text, 900), recommendation_fields: sourceRecord.recommendation_fields || {}, source_record_id: sourceRecord.source_record_id, source_record_ids: [sourceRecord.source_record_id], source_section: sourceRecord.source_section, source_file: sourceRecord.source_file, source_category: sourceRecord.source_section, raw_text: sourceRecord.recommendation_text, status: 'PLANNED', id: `html_fix_${sha(`${sourceRecord.source_record_id}:${pageUrl}`, 16)}` });
+          representedFixKeys.add(key);
+        }
+      } else if (sourceRecord.recommendation_type === 'new_page_opportunity') {
+        const key = `${String(sourceRecord.vertical || vertical || '').toLowerCase()}|${String(sourceRecord.query || '').toLowerCase()}`;
+        if (sourceRecord.query && !representedPageKeys.has(key)) {
+          const row = { ...context, query: sourceRecord.query, discovery_source: sourceRecord.source_section, cluster: 'guide', why_worth_building: compact(sourceRecord.recommendation_text || sourceRecord.recommendation_fields?.why_build || '', 700), source_record_id: sourceRecord.source_record_id, source_record_ids: [sourceRecord.source_record_id], source_section: sourceRecord.source_section, source_file: sourceRecord.source_file, canonical_new_page_key: sourceRecord.canonical_key, raw_lines: [sourceRecord.recommendation_text || sourceRecord.query], status: 'APPROVED' };
+          const routeDecision = routePage({ ...row, operation: 'CREATE_NEW_TARGET_PAGE', recommendation: row.why_worth_building || '' });
+          row.target_route = routeDecision.target_route || routeFor(vertical, row.query); row.route_family = routeDecision.family; row.route_reason = routeDecision.reason; row.route_shape = routeDecision.route_shape || routeShape(row.target_route); row.route_authority = routeDecision.route_authority || 'artifact_admitted'; row.admission_basis = 'HTML_REPORT_CONTRACT_PAGE_TO_BUILD'; row.renderedPath = routeDecision.renderedPath || renderedPathForRoute(row.target_route); row.blocked_reason = routeDecision.blocked_reason || ''; row.status = routeDecision.status || 'APPROVED'; row.id = `html_page_${sha(`${sourceRecord.source_record_id}:${row.query}`, 16)}`;
+          if (SUPPORTED_VERTICALS.has(row.vertical)) { pages.push(row); representedPageKeys.add(key); }
+        }
+      }
     }
     parsed.push({ manifest_path: manifestPath, html_path: manifest.html_path, json_path: manifest.json_path || '', parser, vertical, run_date: manifest.run_date, new_fix_count: fixes.filter(f => !f.pending_action).length, pending_fix_count: fixes.filter(f => f.pending_action).length, page_to_build_count: pages.length });
     allFixes.push(...fixes);
@@ -533,6 +578,7 @@ function main() {
   };
   writeJson(REPORT_DATA, report);
   writeJson(REPORT_ARTIFACT, report);
+  writeJson('artifacts/validation/velocity-agent-duplicate-resolution.json', { schema_version: '1.0', status: 'PASS', source_record_count: [...discovered.fixes, ...discovered.pages].flatMap((x) => x.source_record_ids || [x.source_record_id]).filter(Boolean).length, canonical_target_count: new Set([...discovered.fixes.map(f => f.page_url), ...discovered.pages.map(p => p.target_route)]).size, deduped_record_count: Math.max(0, [...discovered.fixes, ...discovered.pages].length - new Set([...discovered.fixes.map(f => `${f.page_url}|${f.query}`), ...discovered.pages.map(p => `${p.vertical}|${p.query}`)]).size), duplicate_groups: queue.skipped.filter(x => x.source_record_ids && x.source_record_ids.length).map(x => ({ canonical_key: x.canonical_new_page_key || x.target_route || x.query, canonical_target: x.existing_route || x.target_route || '', source_record_ids: x.source_record_ids || [], status: x.canonical_status || 'SKIPPED_WITH_PROOF' })) });
   console.log(`HTML REPORT CONTRACT PASS: fixes=${report.fixes_discovered}; applied=${report.fixes_applied}; external=${report.external_fix_records}; pages=${report.pages_to_build_discovered}; queued=${report.approval_queue_added}`);
 }
 

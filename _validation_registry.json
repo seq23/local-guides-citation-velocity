@@ -4823,6 +4823,191 @@
       "prepare_mutates_files": [],
       "enforce_no_source_mutation": true,
       "failure_action": "repair release workflow or gap-fill backlog before applying the ZIP"
+    },
+    {
+      "id": "velocity-agent-source-coverage",
+      "title": "Velocity agent source coverage contract",
+      "path": "scripts/validators/validate_velocity_agent_source_coverage.js",
+      "command": "node scripts/validators/validate_velocity_agent_source_coverage.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "source-coverage"
+      ],
+      "risk_prevented": "Agent artifact recommendations and new-page opportunities could disappear between source CSV, HTML, JSON files, normalized records, queues, built pages, skips, and blocks.",
+      "why_existing_checks_do_not_cover": "Existing intake, HTML report, and exact implementation validators inspect parts of the lane but do not prove every source record is accounted for across all artifact shapes.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/velocity-agent-source-coverage.json",
+      "failure_action": "stop release and repair source coverage before content mutation",
+      "depends_on": [
+        "agent-run-artifact-intake",
+        "html-report-contract"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_runs",
+        "data/report_fixes/source_record_ledgers"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/velocity-agent-source-coverage.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/velocity-agent-source-coverage.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "velocity-agent-recommendation-driven-output",
+      "title": "Velocity agent recommendation-driven output contract",
+      "path": "scripts/validators/validate_velocity_agent_recommendation_driven_output.js",
+      "command": "node scripts/validators/validate_velocity_agent_recommendation_driven_output.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "semantic-output"
+      ],
+      "risk_prevented": "A page could pass because it mentions the query while ignoring the source artifact recommendation that should drive the repair or new page.",
+      "why_existing_checks_do_not_cover": "Existing exact acceptance validates generated block structures but does not require recommendation-derived evidence for every source recommendation.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/velocity-agent-recommendation-driven-output.json",
+      "failure_action": "stop release and render source-directed implementation evidence",
+      "depends_on": [
+        "velocity-agent-source-coverage",
+        "agent-exact-acceptance-manifest"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/velocity-agent-recommendation-driven-output.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/velocity-agent-recommendation-driven-output.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "velocity-agent-duplicate-resolution",
+      "title": "Velocity agent duplicate resolution contract",
+      "path": "scripts/validators/validate_velocity_agent_duplicate_resolution.js",
+      "command": "node scripts/validators/validate_velocity_agent_duplicate_resolution.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "dedupe"
+      ],
+      "risk_prevented": "Duplicate source records could either create duplicate public pages or be deduped away without source lineage proof.",
+      "why_existing_checks_do_not_cover": "Current dedupe checks are local to page and fix queues and do not emit a cross-artifact duplicate source ledger.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/velocity-agent-duplicate-resolution.json",
+      "failure_action": "stop release and repair duplicate source lineage",
+      "depends_on": [
+        "velocity-agent-source-coverage"
+      ],
+      "requires_files": [
+        "data/report_fixes/source_record_ledgers"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/velocity-agent-duplicate-resolution.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/velocity-agent-duplicate-resolution.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "velocity-route-resolution-self-test",
+      "title": "Velocity typo-safe route resolution self-test",
+      "path": "scripts/validators/validate_velocity_route_resolution_self_test.js",
+      "command": "node scripts/validators/validate_velocity_route_resolution_self_test.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "routing"
+      ],
+      "risk_prevented": "A typo in an agent target page, slug, or title could create a duplicate page or miss the intended repair.",
+      "why_existing_checks_do_not_cover": "Existing route checks support exact and numbered insight matching but not high-confidence fuzzy route repair, ambiguity blocking, and new-page guards.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/velocity-route-resolution-self-test.json",
+      "failure_action": "stop release and repair route resolver behavior",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/lib/citation_route_resolver.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/velocity-route-resolution-self-test.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/velocity-route-resolution-self-test.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {
