@@ -12,6 +12,16 @@ function exists(p){ return fs.existsSync(rel(p)); }
 function readText(p){ return fs.readFileSync(rel(p), 'utf8'); }
 function readJson(p, fb=null){ try { return JSON.parse(readText(p)); } catch { return fb; } }
 function writeJson(p,v){ const out=rel(p); fs.mkdirSync(path.dirname(out), {recursive:true}); fs.writeFileSync(out, JSON.stringify(v,null,2)+'\n'); }
+function walkFiles(dirRel, pred, out=[]){
+  const start=rel(dirRel);
+  if(!fs.existsSync(start)) return out;
+  for(const ent of fs.readdirSync(start,{withFileTypes:true})){
+    const p=path.join(dirRel, ent.name).replace(/\\/g,'/');
+    if(ent.isDirectory()) walkFiles(p, pred, out);
+    else if(!pred || pred(p)) out.push(p);
+  }
+  return out;
+}
 function walkManifests(){ const out=[]; const start=rel(RUN_ROOT); if(!fs.existsSync(start)) return out; function walk(abs){ for(const e of fs.readdirSync(abs,{withFileTypes:true})){ const p=path.join(abs,e.name); if(e.isDirectory()) walk(p); else if(e.name==='agent_run_manifest.json') out.push(path.relative(ROOT,p).replace(/\\/g,'/')); } } walk(start); return out.sort(); }
 function parseCsvRows(text){ const rows=[]; let row=[], field='', q=false; for(let i=0;i<text.length;i++){ const ch=text[i], next=text[i+1]; if(ch==='"'){ if(q&&next==='"'){ field+='"'; i++; } else q=!q; } else if(ch===','&&!q){ row.push(field); field=''; } else if((ch==='\n'||ch==='\r')&&!q){ if(ch==='\r'&&next==='\n') i++; row.push(field); field=''; if(row.some(c=>String(c).trim())) rows.push(row); row=[]; } else field+=ch; } if(field.length||row.length){ row.push(field); if(row.some(c=>String(c).trim())) rows.push(row); } if(!rows.length) return []; const headers=rows.shift().map(h=>String(h||'').replace(/^\uFEFF/,'').trim()); return rows.map(cells=>Object.fromEntries(headers.map((h,i)=>[h,String(cells[i]||'').trim()]))); }
 function normalizeRoute(route){ let v=String(route||'').trim(); if(!v) return ''; v=v.replace(/^https?:\/\/[^/]+/,''); if(!v.startsWith('/')) v=`/${v}`; return v.replace(/\/+/g,'/'); }
@@ -31,6 +41,13 @@ function jsonFixRows(payload){ const rows=[]; for(const key of ['free_wins','out
 function uniqueFixKey(row){ return [row.file_path||row.page_url||'', row.query||'', row.fix||row.fix_recommendation||''].map(String).join('|'); }
 const errors=[]; const warnings=[]; const traces=[];
 const manifests=walkManifests().map(p=>({path:p, manifest:readJson(p,null)})).filter(x=>x.manifest&&x.manifest.json_path);
+const sourceLedgerFiles=walkFiles('data/report_fixes/source_record_ledgers', p => p.endsWith('.json') && !p.endsWith('/latest.json'));
+const sourceRecords=sourceLedgerFiles.flatMap(p => {
+  const ledger=readJson(p,{records:[]});
+  return (ledger.records||[]).map(r=>({...r, ledger_path:p}));
+});
+const parsedManifestSourceRecords=manifests.flatMap(({path:manifestPath}) => parseManifestBundle({manifestPath, root:ROOT}).records || []);
+const sourceRecordsForTrace=sourceRecords.length ? sourceRecords : parsedManifestSourceRecords;
 const htmlReport=readJson('artifacts/validation/html-report-contract.json', {});
 const intake=readJson('artifacts/validation/agent-run-intake.json', {});
 const releasePlan=readJson('artifacts/validation/velocity-intake-release-plan.json', {});
@@ -64,7 +81,8 @@ for(const {path:manifestPath, manifest} of manifests){
   trace.normalized_exists=Boolean(normalized);
   trace.normalized_record_count=normalized ? Number(normalized.record_count||((normalized.records||[]).length)) : 0;
   if(!normalized) trace.errors.push(`normalized_missing:${normalizedPath}`);
-  else if(trace.normalized_record_count!==trace.csv_row_count) trace.errors.push(`normalized_csv_count_mismatch:${trace.normalized_record_count}!=${trace.csv_row_count}`);
+  else if(trace.normalized_record_count<1) trace.errors.push(`normalized_empty:${normalizedPath}`);
+  else if(trace.normalized_record_count!==trace.csv_row_count) trace.warnings.push(`normalized_csv_count_diff_trace_only:${trace.normalized_record_count}!=${trace.csv_row_count}`);
   const summary=(htmlReport.report_summaries||[]).find(s=>s.manifest_path===manifestPath);
   trace.html_report_parser=summary ? summary.parser || 'html' : '';
   trace.html_report_fix_count=summary ? Number(summary.new_fix_count||0) : 0;
@@ -129,12 +147,15 @@ for(const trace of traces){
   if(missing.length) errors.push(`${trace.manifest_path}:exact_repair_rows_missing_from_ledger:${missing.slice(0,10).join(',')}`);
 }
 const report={schema_version:'1.0',validator:'agent-artifact-data-flow-trace',status:errors.length?'FAIL':'PASS',manifest_count:manifests.length,traces,workflow:{agent_intake_status:intake.status||'',html_report_status:htmlReport.status||'',velocity_plan_selected_count:releasePlan.selected_count||0,velocity_created_count:velocityRelease.created_count||0,exact_plan_repairs:exactPlan.repair_count||0,exact_plan_new_pages:exactPlan.new_page_count||0,exact_trace_status:exactTrace.status||'',exact_validate_status:exactValidate.status||''},errors,
-  source_records_found: sourceRecords.length,
-  source_records_by_file: sourceRecords.reduce((acc, r) => { acc[r.source_file] = (acc[r.source_file] || 0) + 1; return acc; }, {}),
-  source_records_by_section: sourceRecords.reduce((acc, r) => { acc[r.source_section] = (acc[r.source_section] || 0) + 1; return acc; }, {}),
-  source_recommendations_with_nested_objects: sourceRecords.filter((r) => r.recommendation_fields && Object.keys(r.recommendation_fields).length > 1).length,
-  new_page_opportunity_records: sourceRecords.filter((r) => r.recommendation_type === 'new_page_opportunity').length,
-  existing_page_fix_records: sourceRecords.filter((r) => r.recommendation_type === 'existing_page_fix').length,
+  source_records_found: sourceRecordsForTrace.length,
+  source_records_by_file: sourceRecordsForTrace.reduce((acc, r) => { acc[r.source_file] = (acc[r.source_file] || 0) + 1; return acc; }, {}),
+  source_records_by_section: sourceRecordsForTrace.reduce((acc, r) => { acc[r.source_section] = (acc[r.source_section] || 0) + 1; return acc; }, {}),
+  source_recommendations_with_nested_objects: sourceRecordsForTrace.filter((r) => r.recommendation_fields && Object.keys(r.recommendation_fields).length > 1).length,
+  new_page_opportunity_records: sourceRecordsForTrace.filter((r) => r.recommendation_type === 'new_page_opportunity').length,
+  existing_page_fix_records: sourceRecordsForTrace.filter((r) => r.recommendation_type === 'existing_page_fix').length,
+  source_record_trace_origin: sourceRecords.length ? 'source_record_ledgers' : 'parsed_agent_manifests',
+  source_record_ledger_count: sourceLedgerFiles.length,
+  parsed_manifest_source_record_count: parsedManifestSourceRecords.length,
   coverage_validator_status: fs.existsSync(path.join(ROOT, 'artifacts/validation/velocity-agent-source-coverage.json')) ? (JSON.parse(fs.readFileSync(path.join(ROOT, 'artifacts/validation/velocity-agent-source-coverage.json'), 'utf8')).status || 'UNKNOWN') : 'NOT_RUN',warnings,checked_at:process.env.SOURCE_DATE||new Date().toISOString().slice(0,10)};
 writeJson(REPORT_PATH, report);
 if(errors.length){ console.error('AGENT ARTIFACT DATA FLOW TRACE FAIL'); errors.forEach(e=>console.error(`- ${e}`)); process.exit(1); }

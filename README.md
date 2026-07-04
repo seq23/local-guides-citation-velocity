@@ -165,3 +165,16 @@ After each deploy, submit `sitemap.xml`, push the priority and batch URL files t
 ## Full-Scope Network Overhaul
 
 The June 19 full-scope implementation adds 20 Velocity disambiguators, 200 literal-question pages, 412 canonical LKG candidate specifications, explicit network crawler identity, source/claim governance, aggressive Velocity-to-canonical routing, disavow/search-submission tooling, and a fixed 100-prompt citation panel. Run `npm run overhaul:apply` to regenerate the governed source and release artifacts.
+
+
+## New Operator Map
+
+Start here before running Velocity content operations:
+
+- `REPO_IDENTITY.md` — repo identity, source-of-truth boundaries, updater pattern.
+- `docs/runbooks/VELOCITY_CONTENT_WORKFLOW_OPERATOR_GUIDE.md` — what the Velocity Content Release workflow does, batch-size meaning, source lineage, and common failures.
+- `docs/runbooks/AGENT_ARTIFACT_DATA_FLOW_TRACE_CONTRACT.md` — final source-to-output trace contract for agent artifacts.
+- `docs/runbooks/ZIP_APPLY_CHEAT_GUIDE.md` — local updater command template and safe-delete expectations.
+- `.github/workflows/velocity-content-release.yml` — governed manual/push workflow for content admission.
+
+Manual `batch_size` is an admission cap for staged/eligible publish units. It is not a request to create that number of new pages.

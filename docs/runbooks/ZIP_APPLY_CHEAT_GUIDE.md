@@ -8,7 +8,7 @@ Fast path for applying a full baseline snapshot ZIP to `local-guides-citation-ve
 REPO_PATH="$HOME/Documents/GitHub/local-guides-citation-velocity"
 REPO_NAME="local-guides-citation-velocity"
 MODE="snapshot"
-UPDATER="$HOME/update_repo_from_zip_generic_v3_1.sh"
+UPDATER="$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh"
 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev"
 ```
 
@@ -40,18 +40,49 @@ node -e "try{console.log(require.resolve('playwright'))}catch(e){console.error('
 
 Expected: a local `node_modules/playwright/...` path. If it prints `NO_LOCAL_PLAYWRIGHT`, do not run the updater; the ZIP/dependency contract is not ready.
 
+
+## Quick apply command template — repo-tools active updater
+
+Use this template for the governed local updater path. Replace `<ZIP_FILENAME>` with the exact downloaded baseline ZIP filename.
+
+```bash
+ALLOW_LARGE_DELETE=1 \
+POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
+PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
+bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
+"$HOME/Downloads/<ZIP_FILENAME>" \
+"$HOME/Documents/GitHub/local-guides-citation-velocity" \
+snapshot \
+local-guides-citation-velocity
+```
+
+Current repair example for the 2026-07-04 trace-data-flow fix:
+
+```bash
+ALLOW_LARGE_DELETE=1 \
+POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
+PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
+bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
+"$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_07-04-26_ae24f7c2bbbd.zip" \
+"$HOME/Documents/GitHub/local-guides-citation-velocity" \
+snapshot \
+local-guides-citation-velocity
+```
+
+Legacy example from the prior 2026-07-04 page-family repair used `local-guides-citation-velocity-main_BASELINE_07-04-26_6892fb34475c.zip`; do not use that older ZIP after the trace-data-flow fix unless intentionally reproducing that prior state.
+
 ## Apply command
 
 Replace `ZIP_PATH` with the downloaded baseline ZIP path.
 
 ```bash
-NODE_OPTIONS="--max-old-space-size=3072" ALLOW_LARGE_DELETE=1 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" COMMIT_MSG="Velocity citation update 2026-06-23" "$HOME/update_repo_from_zip_generic_v3_1.sh" "ZIP_PATH" "$HOME/Documents/GitHub/local-guides-citation-velocity" snapshot local-guides-citation-velocity
+ALLOW_LARGE_DELETE=1 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" "ZIP_PATH" "$HOME/Documents/GitHub/local-guides-citation-velocity" snapshot local-guides-citation-velocity
 ```
 
 Example:
 
 ```bash
-NODE_OPTIONS="--max-old-space-size=3072" ALLOW_LARGE_DELETE=1 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" COMMIT_MSG="Velocity citation update 2026-06-23" "$HOME/update_repo_from_zip_generic_v3_1.sh" "$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_06-23-26_<sha>.zip" "$HOME/Documents/GitHub/local-guides-citation-velocity" snapshot local-guides-citation-velocity
+ALLOW_LARGE_DELETE=1 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" "$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_MM-DD-YY_<sha>.zip" "$HOME/Documents/GitHub/local-guides-citation-velocity" snapshot local-guides-citation-velocity
 ```
 
 ## Safe delete pattern

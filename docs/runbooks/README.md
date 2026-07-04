@@ -1,5 +1,7 @@
 # Runbooks
 
+- `VELOCITY_CONTENT_WORKFLOW_OPERATOR_GUIDE.md` — new-operator map for Velocity intake, manual batch size, source lineage, workflow proof, and common failures.
+- `AGENT_ARTIFACT_DATA_FLOW_TRACE_CONTRACT.md` — final source-to-output trace contract for CSV/HTML/JSON/manifest agent artifacts.
 - `velocity_content_release_runbook.md` — automatic Velocity-only content release.
 - `phase4_query_compiler_system.md` — converts approved queries into Velocity source rows.
 - `phase4_daily_release_operator_sop.md` — operator workflow for deterministic Velocity releases.

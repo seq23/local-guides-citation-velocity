@@ -14,7 +14,7 @@ The latest supplied baseline ZIP is the starting source of truth. Inside the rep
 6. Rendered public files, which are generated and must not be hand-edited.
 
 ## CANONICAL UPDATER
-`~/update_repo_from_zip_generic_v3_1.sh`
+`$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh`
 
 ## SNAPSHOT ZIP PATTERN
 `local-guides-citation-velocity-main_BASELINE_MM-DD-YY_<sha>.zip`

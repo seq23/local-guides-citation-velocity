@@ -22,8 +22,8 @@
 
 ## Local updater
 
-Canonical updater target: `~/update_repo_from_zip_generic_v3_1.sh` when present.  
-Fallback: `~/update_repo_from_zip_generic_v3.sh`.
+Canonical active updater target: `$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh`.  
+Do not infer a different path from memory. If the active tool is relocated, discover and inspect it before use.
 
 Arguments, in order:
 
@@ -33,6 +33,35 @@ Arguments, in order:
 4. `REPO_NAME`
 
 The updater owns local validation, commit, and push. A failed local validator returns the exact failure for a narrow source correction and a new full baseline ZIP.
+
+
+## Quick apply command template
+
+Replace `<ZIP_FILENAME>` with the exact downloaded baseline ZIP filename.
+
+```bash
+ALLOW_LARGE_DELETE=1 \
+POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
+PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
+bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
+"$HOME/Downloads/<ZIP_FILENAME>" \
+"$HOME/Documents/GitHub/local-guides-citation-velocity" \
+snapshot \
+local-guides-citation-velocity
+```
+
+Current repair example:
+
+```bash
+ALLOW_LARGE_DELETE=1 \
+POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
+PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
+bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
+"$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_07-04-26_ae24f7c2bbbd.zip" \
+"$HOME/Documents/GitHub/local-guides-citation-velocity" \
+snapshot \
+local-guides-citation-velocity
+```
 
 ## Prohibited shortcuts
 
