@@ -56,20 +56,22 @@ snapshot \
 local-guides-citation-velocity
 ```
 
-Current repair example for the 2026-07-04 trace-data-flow fix:
+Current repair example for the 2026-07-06 agent-normalization and workflow-reentry fix:
 
 ```bash
 ALLOW_LARGE_DELETE=1 \
 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
 PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
 bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
-"$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_07-04-26_ae24f7c2bbbd.zip" \
+"$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_07-06-26_170700bb4.zip" \
 "$HOME/Documents/GitHub/local-guides-citation-velocity" \
 snapshot \
 local-guides-citation-velocity
 ```
 
-Legacy example from the prior 2026-07-04 page-family repair used `local-guides-citation-velocity-main_BASELINE_07-04-26_6892fb34475c.zip`; do not use that older ZIP after the trace-data-flow fix unless intentionally reproducing that prior state.
+Legacy examples from prior 2026-07-04 repairs used `local-guides-citation-velocity-main_BASELINE_07-04-26_6892fb34475c.zip` and `local-guides-citation-velocity-main_BASELINE_07-04-26_ae24f7c2bbbd.zip`; do not use those older ZIPs after the 2026-07-06 agent-normalization and workflow-reentry fix unless intentionally reproducing that prior state.
+
+The SHA in the filename is the starting source commit for the snapshot. For the 2026-07-06 reentry fix, the source commit is `170700bb4`.
 
 ## Apply command
 
@@ -113,5 +115,7 @@ Key pass lines:
 - `PUBLIC CLICK AUDIT PASS`
 - commit created
 - push completed
+
+After a snapshot that contains agent-run files lands, a push-triggered `velocity-content-release` run may appear in GitHub. For commits named `snapshot update from baseline ZIP`, that workflow should be skipped by the repo reentry guard. A manual proof run can still be started with `workflow_dispatch`.
 
 If the updater fails, restore using the printed `repo_pre_update_*` safety tag, then rerun only after the exact blocker is fixed.

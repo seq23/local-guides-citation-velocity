@@ -64,6 +64,8 @@ Valid statuses:
 
 ## Required CSV Columns
 
+Twin Agent output is treated as untrusted input evidence. CSV, HTML, JSON, and manifest fields may be incomplete, renamed, duplicated, or internally inconsistent. The repo must not let raw artifact shape leak directly into release decisions.
+
 The importer accepts the current Twin Agent CSV shape and requires at least:
 
 - query field: `Query`, `query`, `Target Query`, or `Question`
@@ -105,6 +107,36 @@ validate agent artifacts
 → push
 ```
 
+## Normalization Law
+
+Raw agent output is input evidence, not release authority.
+
+The release authority chain is:
+
+```text
+raw agent run artifacts
+→ normalized agent run
+→ source record ledger
+→ artifact disposition ledger
+→ exact implementation plan
+→ semantic acceptance manifest
+→ rendered page or repair ledger
+→ validation and data-flow trace
+```
+
+Downstream scripts must consume the normalized ledgers and implementation artifacts, not raw CSV/HTML rows directly. If raw artifacts disagree, the normalization and disposition layers must preserve the conflict, canonicalize duplicates, or block the row with a reason.
+
+Every source record must end in one of these accounted states:
+
+- implemented
+- merged into a canonical duplicate group
+- canonicalized to an existing route
+- blocked with a reason
+- external/non-owned
+- preserved for future release
+
+Silent drops are hard failures.
+
 ## Fallback Rule
 
 Agent artifacts are priority input. If no Twin artifacts arrive, or if the agent run produces fewer than the target number of release units, the repo fills the batch from the existing social/public backlog.
@@ -123,5 +155,7 @@ artifacts/validation/velocity-intake-release-plan.md
 artifacts/validation/citation-agent-fix-trace.json
 artifacts/validation/citation-agent-fixes.json
 data/report_fixes/normalized_agent_runs/**
+data/report_fixes/source_record_ledgers/**
+data/report_fixes/agent_artifact_disposition_ledger.json
 data/report_fixes/agent_fix_ledger.json
 ```

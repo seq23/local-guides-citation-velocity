@@ -6,8 +6,22 @@ function evidenceTokens(text){ const raw=String(text||''); const quoted=[...raw.
 function targetTextFromPath(p){ if(!p) return ''; const candidates=[p, p.replace(/^\//,''), p.replace(/^\//,'').replace(/\/$/,'/index.html')]; for(const c of candidates){try{if(fs.existsSync(rel(c))) return fs.readFileSync(rel(c),'utf8')}catch{}} return ''; }
 const semantic=readJson('data/report_fixes/agent_exact_semantic_acceptance_manifest.json',{entries:[]});
 const ledger=readJson('data/report_fixes/agent_exact_implementation_ledger.json',{entries:[]});
+const plan=readJson('artifacts/validation/agent-exact-implementation-plan.json',{specs:[]});
+const activePlanPaths=new Set((plan.specs||[])
+  .filter(spec=>spec.status!=='BLOCKED')
+  .map(spec=>norm(spec.implementation_path||spec.intended_winner_path||''))
+  .filter(Boolean));
+const scopedLedgerEntries=activePlanPaths.size
+  ? (ledger.entries||[]).filter(entry=>activePlanPaths.has(norm(entry.implementation_path)))
+  : (ledger.entries||[]);
 const checked=[]; const missing=[];
+const skipped=[];
 for(const entry of ledger.entries||[]){
+  if(activePlanPaths.size && !activePlanPaths.has(norm(entry.implementation_path))){
+    skipped.push({implementation_path:entry.implementation_path, reason:'outside_active_agent_exact_plan'});
+  }
+}
+for(const entry of scopedLedgerEntries){
   if(entry.status==='BLOCKED') continue;
   const recs=entry.fix_recommendations||[];
   if(!recs.length) continue;
@@ -24,7 +38,7 @@ for(const entry of ledger.entries||[]){
     if(!ok) missing.push({implementation_path:entry.implementation_path, marker:entry.marker, recommendation:rec, tokens});
   }
 }
-const report={schema_version:'1.0',validator:'velocity-agent-recommendation-driven-output',status:missing.length?'FAIL':'PASS',recommendations_checked:checked.length,missing_recommendation_evidence:missing,checked};
+const report={schema_version:'1.1',validator:'velocity-agent-recommendation-driven-output',status:missing.length?'FAIL':'PASS',scope:activePlanPaths.size?'active_agent_exact_plan':'cumulative_ledger',plan_specs:(plan.specs||[]).length,ledger_entries_total:(ledger.entries||[]).length,ledger_entries_considered:scopedLedgerEntries.length,ledger_entries_skipped:skipped.length,recommendations_checked:checked.length,missing_recommendation_evidence:missing,skipped,checked};
 writeJson('artifacts/validation/velocity-agent-recommendation-driven-output.json',report);
 if(missing.length){console.error(`VELOCITY RECOMMENDATION OUTPUT FAIL: ${missing.length} missing`);process.exit(1)}
-console.log(`VELOCITY RECOMMENDATION OUTPUT PASS: ${checked.length} recommendations checked`);
+console.log(`VELOCITY RECOMMENDATION OUTPUT PASS: ${checked.length} recommendations checked; scope=${report.scope}; considered=${scopedLedgerEntries.length}; skipped=${skipped.length}`);

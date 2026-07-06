@@ -1,11 +1,13 @@
 # Citation Velocity HTML FIX Runbook
 
 Status: ACTIVE  
-Date: 2026-07-02
+Date: 2026-07-06
 
 ## Purpose
 
 Every agent HTML/PDF row is treated as an executable implementation instruction, not generic guidance.
+
+Agent HTML/PDF may include instruction scaffolding, editorial notes, target-page hints, or row-level FIX language. Those strings are not reader-facing content by default. The compiler must convert them into acceptance requirements and semantic evidence, then the renderer must produce clean public copy.
 
 ## Required pipeline
 
@@ -32,6 +34,10 @@ npm run validate:agent-exact
 ## Non-negotiable law
 
 Production semantic manifests must be generated from the source artifact rows. A hand-authored vertical-specific manifest may be used only as a temporary incident fixture or regression fixture.
+
+Scaffold and instruction text must not be rendered as the answer. Phrases such as `Add H2`, `Use the source FIX instruction`, or framework labels belong in acceptance requirements, not public HTML. The rendered validator must hard-fail scaffold leakage.
+
+If an agent row is ambiguous, block or preserve the source record with a reason. Do not silently drop it and do not invent a rendered repair that cannot be traced to the normalized source record.
 
 ## Blocking reasons
 

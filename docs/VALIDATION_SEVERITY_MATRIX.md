@@ -17,15 +17,17 @@ Execution engine: `scripts/validation/run_validation_registry.js`
 
 ## Current admitted totals
 
-- 54 registered validator/preflight/audit executables
-- 30 active
+- 115 registered validator/preflight/audit executables
+- 89 active
 - 11 on-demand
-- 13 retired with explicit replacements
-- 36 hard-fail registrations
-- 4 strong-warning registrations
-- 1 soft-warning registration
-- 13 info/retired registrations
+- 15 retired with explicit replacements
+- 87 hard-fail registrations
+- 11 strong-warning registrations
+- 2 soft-warning registrations
+- 15 info/retired registrations
 - 1 local-only browser proof
+
+Regenerate `_repo_validation_matrix.json` from `_validation_registry.json` after editing the registry. Do not hand-edit the matrix counts.
 
 ## Profiles
 
@@ -52,3 +54,25 @@ Execution engine: `scripts/validation/run_validation_registry.js`
 6. `validate:release` is the full container release profile.
 7. `validate:strict` promotes strong warnings to blocking failures.
 8. Mutation, deployment, commit, push, and signal collection are not validation operations.
+
+## Non-petty blocking policy
+
+Hard failures are reserved for real release threats:
+
+- unsafe or unsupported content;
+- missing source provenance;
+- silent source-record drops;
+- broken route, canonical, sitemap, or rendered file integrity;
+- scaffold/instruction text leaking into public HTML;
+- invalid ZIP/package/update state;
+- workflow bypass or nondeterministic release behavior.
+
+Warnings remain visible but do not block the default release profile:
+
+- duplicate or weak meta descriptions;
+- minor metadata uniqueness advisories;
+- optional internal-link opportunities;
+- non-critical crawl/discoverability improvements;
+- advisory public-signal ingestion degradation.
+
+Duplicate `<title>` and duplicate H1 findings may still block when they indicate route/template collapse. Duplicate meta descriptions alone are metadata hygiene and must not block default release.

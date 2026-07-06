@@ -2,7 +2,7 @@
 
 Status: ACTIVE RUNBOOK  
 Repo: local-guides-citation-velocity  
-Updated: 2026-07-04
+Updated: 2026-07-06
 
 ## Purpose
 
@@ -17,6 +17,25 @@ It exists because the repo supports multiple source artifact types:
 - durable parsed source ledgers.
 
 CSV is not the only source of truth after normalization.
+
+## Authority boundary
+
+Raw agent artifacts are never release authority by themselves. They are evidence that must be normalized into durable repo-owned records before downstream build, release, and validation code may rely on them.
+
+The durable authority order is:
+
+```text
+data/report_fixes/agent_runs/**
+→ data/report_fixes/normalized_agent_runs/**
+→ data/report_fixes/source_record_ledgers/**
+→ data/report_fixes/agent_artifact_disposition_ledger.json
+→ artifacts/validation/agent-exact-implementation-plan.json
+→ data/report_fixes/agent_exact_semantic_acceptance_manifest.json
+→ data/report_fixes/agent_exact_implementation_ledger.json
+→ rendered HTML / content manifests
+```
+
+Validators may inspect raw artifacts for traceability, but they must judge release completeness from normalized source records, disposition records, implementation plans, semantic manifests, rendered output, and ledgers.
 
 ## Canonical command
 
@@ -80,6 +99,7 @@ The trace must fail when:
 - source coverage reports silent drops;
 - duplicate resolution reports unsafe public-route collisions;
 - recommendation-driven output cannot link outputs back to agent recommendations;
+- a source record is neither implemented, merged, canonicalized, blocked, external, nor preserved;
 - the trace script throws a runtime exception.
 
 ## Warning conditions
@@ -89,8 +109,20 @@ The trace may warn, but should not fail, when:
 - CSV row count differs from unified normalized source-record count;
 - some source records came from HTML or JSON rather than CSV;
 - duplicate source rows map to the same public canonical route intentionally.
+- recommendation-driven output uses active-batch scope while cumulative ledgers remain larger than the active plan.
 
 Those conditions are expected in the current multi-artifact intake model.
+
+## Batch scope rule
+
+Velocity content release can run in small batches after a full baseline snapshot has already absorbed historical artifacts. In that case:
+
+- the cumulative ledgers remain historical authority;
+- the active `agent-exact-implementation-plan.json` defines the batch validation scope;
+- recommendation-driven output validation must consider entries in the active plan and report skipped cumulative entries;
+- a small batch must not fail merely because older cumulative ledger rows are outside the active plan.
+
+This prevents a five-unit workflow reentry from comparing batch-scoped semantic evidence against all historical source recommendations.
 
 ## Output expectation
 

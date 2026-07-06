@@ -20,6 +20,49 @@
 8. Reopen the ZIP, test integrity, verify required files, and compare release-critical hashes.
 9. Deliver the ZIP and SHA-256 sidecar with status `STRUCTURALLY CHECKED — LOCAL VALIDATION REQUIRED` until the local updater completes.
 
+## Agent-run snapshot checks
+
+When a snapshot includes agent-run absorption, confirm these files are present before delivery:
+
+```text
+data/report_fixes/normalized_agent_runs/**
+data/report_fixes/source_record_ledgers/**
+data/report_fixes/agent_artifact_disposition_ledger.json
+data/report_fixes/agent_fix_ledger.json
+data/report_fixes/agent_exact_implementation_ledger.json
+data/report_fixes/agent_exact_semantic_manifests/**
+```
+
+The snapshot must prove that raw agent artifacts were normalized and accounted for. It is not enough for rendered pages to exist.
+
+Run and preserve evidence for:
+
+```bash
+npm run validate:velocity-agent-source-coverage
+npm run validate:velocity-agent-duplicate-resolution
+npm run validate:velocity-agent-recommendation-driven-output
+npm run trace:agent-artifact-data-flow
+```
+
+Expected policy:
+
+```text
+silent source drops = hard fail
+duplicate/canonical groups = preserved and traceable
+external/non-owned artifacts = explicitly classified
+blocked rows = reason recorded
+```
+
+## Snapshot reentry rule
+
+The local updater commits snapshots with a message like:
+
+```text
+snapshot update from baseline ZIP
+```
+
+That commit may contain `data/report_fixes/agent_runs/**/agent_run_manifest.json` paths. The GitHub content-release workflow must skip push-triggered reentry for that snapshot commit, because the snapshot has already absorbed and validated the agent artifacts. Manual `workflow_dispatch` remains the correct way to run a fresh post-repair proof.
+
 ## Local updater
 
 Canonical active updater target: `$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh`.  
@@ -57,7 +100,7 @@ ALLOW_LARGE_DELETE=1 \
 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
 PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
 bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
-"$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_07-04-26_ae24f7c2bbbd.zip" \
+"$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_07-06-26_170700bb4.zip" \
 "$HOME/Documents/GitHub/local-guides-citation-velocity" \
 snapshot \
 local-guides-citation-velocity

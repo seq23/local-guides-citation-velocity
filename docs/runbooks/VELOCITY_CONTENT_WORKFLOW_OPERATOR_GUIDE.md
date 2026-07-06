@@ -2,7 +2,7 @@
 
 Status: ACTIVE RUNBOOK  
 Repo: local-guides-citation-velocity  
-Updated: 2026-07-04
+Updated: 2026-07-06
 
 ## Purpose
 
@@ -38,6 +38,20 @@ Workflow file:
 ```text
 .github/workflows/velocity-content-release.yml
 ```
+
+Push trigger:
+
+```text
+data/report_fixes/agent_runs/**/agent_run_manifest.json
+```
+
+Snapshot reentry guard:
+
+```text
+push commits whose message contains "snapshot update from baseline ZIP" must not re-run release:velocity-intake
+```
+
+Manual `workflow_dispatch` remains allowed. This prevents a full baseline snapshot that already absorbed agent artifacts from triggering a second batch-sized reprocessing run against the same manifest paths.
 
 Manual input:
 
@@ -155,6 +169,29 @@ agent artifact
 
 A page, repair, or release unit is invalid if it loses the source record, source artifact, route authority, or admission basis before validation.
 
+## Raw artifact normalization rule
+
+Agent artifacts are allowed to be imperfect. They may contain inconsistent CSV labels, HTML report rows, JSON structures, duplicate recommendations, stale target paths, or scaffold-like instructions. The repo must normalize those inputs before release.
+
+Operators should not edit raw agent artifacts to make downstream scripts pass. Repairs belong in these layers:
+
+- artifact intake parser;
+- normalized agent run generation;
+- source record ledger;
+- duplicate/canonical disposition ledger;
+- route resolver;
+- exact implementation plan;
+- HTML FIX acceptance compiler;
+- rendered semantic acceptance validator.
+
+The permanent rule is:
+
+```text
+raw agent output is input evidence
+normalized ledgers are release authority
+rendered pages must prove source-directed implementation
+```
+
 ## Durable source ledgers
 
 The source-to-output proof layer reads from:
@@ -186,6 +223,7 @@ If those ledgers are unavailable, the trace layer may fall back to parsed agent 
 | `BLOCKED_AMBIGUOUS_FUZZY_ROUTE` | target route cannot be resolved safely | route resolver / source artifact target data |
 | `sourceRecords is not defined` | trace script bug; source records were not loaded before summary | `scripts/validators/trace_agent_artifact_data_flow.js` |
 | recommendation-driven output failure | rendered/ledgered output cannot prove it came from the recommendation | implementation planner, acceptance compiler, or rendered marker application |
+| recommendation-driven output failure after snapshot push | batch-scoped evidence was compared against cumulative ledgers, or the snapshot reentry guard is missing | workflow reentry guard and active-plan-scoped recommendation validator |
 | duplicate-resolution failure | duplicate source records were not preserved or were collapsed unsafely | duplicate/canonical mapping layer |
 
 ## What not to do
@@ -194,6 +232,7 @@ If those ledgers are unavailable, the trace layer may fall back to parsed agent 
 - Do not rerun an old failed workflow as proof of a fixed commit.
 - Do not lower validators to make a run green.
 - Do not treat CSV as the only normalized truth; agent input may be CSV, HTML, JSON, and manifest data.
+- Do not manually rerun a failed push-triggered content workflow after a full snapshot has already landed the agent fixes; first check whether the snapshot reentry guard and active-plan scope are present.
 - Do not publish pages without source record coverage and page-family authority.
 - Do not assume `batch_size` means new-page count.
 
