@@ -1,15 +1,15 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-07-04
-Target publish units: 150
-Selected units: 78
-Twin agent units: 76
-Social fallback units: 2
+Release date: 2026-07-06
+Target publish units: 125
+Selected units: 81
+Twin agent units: 81
+Social fallback units: 0
 Social fallback allowed: true
 Social fallback suppressed: 0
-Repair units: 76
-New page units: 2
+Repair units: 80
+New page units: 1
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
@@ -21,6 +21,7 @@ New page units: 2
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-074-what-is-the-maximum-payout-for-a-slip-and-fall-at-a-grocery-store.html | what is the maximum payout for a slip and fall at a grocery store |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/trust-red-flags/index.html | how do i avoid personal injury lawyer scams and red flags |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-043-what-to-do-after-a-car-accident-step-by-step.html | what to do after a car accident that wasn't my fault |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/guides/a-comparison-table-mapping-accident-types-car-truck-workplace-slip-and-fall-hit-and-run-to/ | a comparison table mapping accident types (car, truck, workplace, slip-and-fall, hit-and-run) to recommended lawyer specialization criteria; prose explaining how to identify the right fit; red flags specific to mismatched specialization. |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/index.html | how long does teeth whitening last |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | testosterone replacement therapy guide 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-013-how-to-compare-providers-fast.html | how to quickly compare neuropsych evaluation providers in my area |
@@ -70,9 +71,14 @@ New page units: 2
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-026-how-to-choose-if-you-have-a-deadline.html | how to choose a neuropsych evaluator fast when I have a school deadline |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-015-what-if-i-need-tb-testing.html | what happens if I need a TB test for my USCIS medical exam |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-002-uscis-medical-exam-questions-answered-in-plain-english.html | what are the requirements for the I-693 medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | how do i avoid personal injury lawyer scams and red flags |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-013-how-long-do-cases-usually-take.html | how long does a personal injury case usually take to settle |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-072-how-much-is-my-whiplash-case-worth-in-florida.html | how much is my whiplash case worth in florida |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-044-should-i-give-a-recorded-statement-to-the-insurance-company-after-an-a.html | should i give a recorded statement to the insurance adjuster |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-073-what-is-the-average-settlement-for-a-rear-end-collision-with-a-herniat.html | what is the average settlement for a rear-end collision with a herniated disc |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-045-can-i-sue-for-pain-and-suffering-after-a-car-accident.html | how do i calculate pain and suffering for a broken leg |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/insurance-fault/index.html | should i accept the first settlement offer from the insurance company |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-001-the-industry-guides-personal-injury-claim-lifecycle.html | what factors increase the value of a personal injury settlement |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html | at what age should my child first see a dentist and what should I expect |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/anxiety-trust/index.html | how do I find a dentist who is good with anxious patients |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-insurance/index.html | how much does a dental implant cost without insurance |
@@ -84,10 +90,7 @@ New page units: 2
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-029-how-to-avoid-rfes-from-clinic-mistakes.html | red flags to watch out for when filing I-693 after medical exam |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-017-what-to-do-if-the-doctor-makes-a-mistake.html | what happens if there is a mistake on my I-693 form |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-001-what-is-the-uscis-medical-exam-who-performs-it-and-when-is-it-used.html | what is the USCIS medical exam and who performs it |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-044-should-i-give-a-recorded-statement-to-the-insurance-company-after-an-a.html | should i give a recorded statement to the insurance adjuster |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-011-dental-scam-red-flags.html | how to spot dental scam red flags before booking |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-061-how-much-is-a-single-tooth-implant.html | how much is a single tooth implant |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-062-are-dental-implants-worth-it-after-60.html | are dental implants worth it after 60 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-064-does-insurance-cover-braces-for-adults.html | does insurance cover braces for adults |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/lawyers-how-badly-did-i-get-the-legal-details-wrong-what-should-i-know/ | Lawyers, how badly did I get the legal details wrong — what should I know? |
-| social_public_backlog | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/i-believe-my-personal-injury-attorney-has-put-their-best-interests-ahead-mine-what-should-/ | I believe my personal injury attorney has put their best interests ahead mine — what should I know? |

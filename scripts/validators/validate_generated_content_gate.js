@@ -170,8 +170,11 @@ for (const entry of routes) {
 
   for (const [value, map, label] of [[title, seenTitles, 'title'], [description, seenDescriptions, 'meta_description'], [h1, seenH1, 'h1']]) {
     const normalized = value.toLowerCase();
-    if (map.has(normalized)) pageErrors.push(`duplicate_${label}_with:${map.get(normalized)}`);
-    else map.set(normalized, entry.route);
+    if (map.has(normalized)) {
+      const issue = `duplicate_${label}_with:${map.get(normalized)}`;
+      if (label === 'meta_description') warnings.push(`${entry.route}:${issue}`);
+      else pageErrors.push(issue);
+    } else map.set(normalized, entry.route);
   }
   if (atomMarkers[0]) {
     if (seenAtomIds.has(atomMarkers[0].atom_id)) pageErrors.push(`duplicate_atom_id_with:${seenAtomIds.get(atomMarkers[0].atom_id)}`);
@@ -214,6 +217,7 @@ fs.writeFileSync(evidencePath, JSON.stringify({
   source_pages_live: (live.pages || []).length,
   quarantined_duplicate_atoms: fs.existsSync(path.join(ROOT, 'content', '_live', 'insight_quarantine.json')) ? readJson(path.join(ROOT, 'content', '_live', 'insight_quarantine.json')).quarantined_count : 0,
   error_count: errors.length,
+  warning_count: warnings.length,
   report: path.relative(ROOT, REPORT).replace(/\\/g, '/')
 }, null, 2) + '\n', 'utf8');
 

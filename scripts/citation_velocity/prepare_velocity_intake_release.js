@@ -569,6 +569,48 @@ function updateLedger(agentRecords, plan) {
   current.fixes = Array.from(byId.values()).sort((a, b) => String(a.id).localeCompare(String(b.id)));
   writeJson(LEDGER_PATH, current);
 }
+function writeDispositionLedger(agentRecords, plan) {
+  const selected = new Set(plan.selected_ids || []);
+  const entries = (agentRecords || []).map((record) => {
+    let disposition = 'QUEUED_FOR_FUTURE_RELEASE';
+    if (selected.has(record.id)) disposition = 'SELECTED_FOR_RELEASE';
+    else if (String(record.status || '').startsWith('BLOCKED_') || String(record.operation || '').startsWith('BLOCKED_')) disposition = 'BLOCKED';
+    else if (String(record.status || '').startsWith('SKIPPED_')) disposition = 'SKIPPED';
+    return {
+      id: record.id,
+      source_record_id: record.source_record_id || '',
+      source_record_ids: record.source_record_ids || [],
+      source_record_canonical_key: record.source_record_canonical_key || '',
+      run_date: record.run_date,
+      vertical: record.vertical,
+      query: record.query,
+      operation: record.operation || '',
+      target_route: record.target_route || '',
+      intended_winner_path: record.intended_winner_path || '',
+      supporting_route: record.supporting_route || '',
+      disposition,
+      status: record.status || '',
+      status_reason: record.status_reason || '',
+      blocked_reason: record.blocked_reason || '',
+      source_section: record.source_section || '',
+      source_file: record.source_file || '',
+      selected_for_release: selected.has(record.id)
+    };
+  }).sort((a, b) => String(a.run_date).localeCompare(String(b.run_date)) || String(a.vertical).localeCompare(String(b.vertical)) || String(a.id).localeCompare(String(b.id)));
+  const counts = entries.reduce((acc, entry) => {
+    acc[entry.disposition] = (acc[entry.disposition] || 0) + 1;
+    return acc;
+  }, {});
+  writeJson('data/report_fixes/agent_artifact_disposition_ledger.json', {
+    schema_version: '1.0',
+    status: 'PASS',
+    updated_at: DATE,
+    source: 'prepare_velocity_intake_release',
+    entry_count: entries.length,
+    counts,
+    entries
+  });
+}
 function main() {
   const agent = importAgentRuns();
   if (agent.invalid.length) {
@@ -636,6 +678,7 @@ function main() {
     selected_units: selected.map((r) => ({ id: r.id, source: r.source, operation: r.operation || 'CREATE_NEW_TARGET_PAGE', vertical: r.vertical, query: r.query, intended_winner_page: r.intended_winner_page || '', intended_winner_path: r.intended_winner_path || '', target_route: r.target_route, renderedPath: r.renderedPath || renderedPathForRoute(r.target_route), supporting_route: r.supporting_route || '', route_family: r.route_family || '', route_shape: r.route_shape || routeShape(r.target_route), route_authority: r.route_authority || 'artifact_admitted', admission_basis: r.admission_basis || 'VELOCITY_INTAKE_SELECTED', priority_score: r.priority_score }))
   };
   updateLedger(agent.normalized, plan);
+  writeDispositionLedger(agent.normalized, plan);
   writeJson('artifacts/validation/velocity-intake-release-plan.json', plan);
   writeText('artifacts/validation/velocity-intake-release-plan.md', [
     '# Velocity Intake Release Plan', '',

@@ -23,14 +23,37 @@ function artifactTypesFromHtml(html) {
 }
 function countRowsNearHeading(html, heading) {
   const raw = String(html || '');
-  const lower = raw.toLowerCase();
-  const h = String(heading || '').toLowerCase();
-  const idx = h ? lower.indexOf(h.replace(/&/g, '&amp;')) >= 0 ? lower.indexOf(h.replace(/&/g, '&amp;')) : lower.indexOf(h) : -1;
-  if (idx < 0) return 0;
-  const after = raw.slice(idx);
-  const end = after.search(/<\/section>/i);
-  const section = end >= 0 ? after.slice(0, end) : after.slice(0, 12000);
-  return Math.max(0, (section.match(/<tr\b/gi) || []).length - (section.match(/<thead[\s\S]*?<\/thead>/i)?.[0]?.match(/<tr\b/gi) || []).length);
+  const h = normalizeText(heading);
+  if (!h) return 0;
+  const sections = raw.match(/<section\b[\s\S]*?<\/section>/gi) || [raw];
+  let maxRows = 0;
+  for (const section of sections) {
+    if (!normalizeText(section).includes(h)) continue;
+    const total = (section.match(/<tr\b/gi) || []).length;
+    const head = section.match(/<thead[\s\S]*?<\/thead>/i)?.[0] || '';
+    const headerRows = (head.match(/<tr\b/gi) || []).length;
+    maxRows = Math.max(maxRows, Math.max(0, total - headerRows));
+  }
+  return maxRows;
+}
+function forbiddenScaffoldMatches(html) {
+  const raw = String(html || '');
+  const patterns = [
+    /\bUse the source FIX instruction\b/i,
+    /\bsource artifact FIX instruction\b/i,
+    /\bexact agent FIX instruction\b/i,
+    /\brepaired from the exact agent FIX instruction\b/i,
+    /\bVerify item \d+ from the source FIX instruction\b/i,
+    /\bSource FIX requirement\b/i,
+    /\bChoose when this condition matches the user intent\b/i,
+    /\binternal FIX instruction\b/i,
+    /\bAdd H2\b/i,
+    /\bAdd standalone H2\b/i,
+    /\badd to (?:the )?cluster question index\b/i,
+    /\bUse the exact source artifact recommendation as the implementation authority\b/i,
+    /\bPreserve source boundaries and jurisdiction\/provider limitations\b/i
+  ];
+  return patterns.filter((pattern) => pattern.test(raw)).map((pattern) => `forbidden_scaffold_text:${pattern.source}`);
 }
 function validateEntryAgainstHtml(entry, html) {
   const errors = [];
@@ -48,7 +71,8 @@ function validateEntryAgainstHtml(entry, html) {
     }
   }
   if (String(html || '').includes('Agent Exact Repair Framework:')) errors.push('generic_agent_exact_framework_still_rendered');
+  errors.push(...forbiddenScaffoldMatches(html));
   return errors;
 }
 
-module.exports = { normalizeText, includesNormalized, artifactTypesFromHtml, validateEntryAgainstHtml };
+module.exports = { normalizeText, includesNormalized, artifactTypesFromHtml, validateEntryAgainstHtml, forbiddenScaffoldMatches };

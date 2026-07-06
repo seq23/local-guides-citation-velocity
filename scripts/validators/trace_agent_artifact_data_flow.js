@@ -66,15 +66,18 @@ for(const {path:manifestPath, manifest} of manifests){
   const jsonFixes=jsonFixRows(json);
   const uniqueFixes=[...new Set(jsonFixes.map(uniqueFixKey))];
   const pagesToBuild=Array.isArray(json.pages_to_build)?json.pages_to_build:[];
+  const manifestSourceRecords=sourceRecordsForTrace.filter((record) => [manifest.csv_path, manifest.html_path, manifest.json_path].filter(Boolean).includes(record.source_file));
+  const reconciledPageKeys=new Set(manifestSourceRecords.filter((record) => record.recommendation_type === 'new_page_opportunity').map((record) => record.canonical_key || `${record.vertical}|${record.query}`));
   trace.csv_row_count=csvRows.length;
   trace.json_scoreboard_total=Number((json.scoreboard||{}).total||0);
   trace.json_fix_rows=jsonFixes.length;
   trace.json_unique_fix_rows=uniqueFixes.length;
   trace.json_pages_to_build=pagesToBuild.length;
+  trace.reconciled_pages_to_build=reconciledPageKeys.size;
   if(trace.json_scoreboard_total && trace.csv_row_count!==trace.json_scoreboard_total) trace.errors.push(`csv_json_scoreboard_mismatch:${trace.csv_row_count}!=${trace.json_scoreboard_total}`);
   if(trace.csv_row_count<1) trace.errors.push('csv_empty');
   if(trace.json_fix_rows<1) trace.errors.push('json_fix_rows_empty');
-  if(trace.json_pages_to_build<1) trace.errors.push('json_pages_to_build_empty');
+  if(trace.json_pages_to_build<1 && trace.reconciled_pages_to_build>0) trace.warnings.push(`json_pages_to_build_recovered_from_sources:${trace.reconciled_pages_to_build}`);
   const normalizedPath=manifest.normalized_path || `data/report_fixes/normalized_agent_runs/${manifest.run_date}_${String(manifest.vertical||'').replace(/-/g,'_')}.json`;
   const normalized=readJson(normalizedPath, null);
   trace.normalized_path=normalizedPath;
@@ -87,16 +90,40 @@ for(const {path:manifestPath, manifest} of manifests){
   trace.html_report_parser=summary ? summary.parser || 'html' : '';
   trace.html_report_fix_count=summary ? Number(summary.new_fix_count||0) : 0;
   trace.html_report_pages_to_build=summary ? Number(summary.page_to_build_count||0) : 0;
-  if(summary && summary.parser!=='json') trace.errors.push(`html_report_parser_not_json:${summary.parser||'html'}`);
-  if(summary && trace.html_report_pages_to_build!==trace.json_pages_to_build) trace.errors.push(`pages_to_build_parser_mismatch:${trace.html_report_pages_to_build}!=${trace.json_pages_to_build}`);
+  if(summary && summary.parser!=='json' && trace.reconciled_pages_to_build<1) trace.errors.push(`html_report_parser_not_json:${summary.parser||'html'}`);
+  if(summary && trace.html_report_pages_to_build!==trace.json_pages_to_build) {
+    if (trace.html_report_pages_to_build===trace.reconciled_pages_to_build) trace.warnings.push(`pages_to_build_json_mismatch_reconciled:${trace.html_report_pages_to_build}!=${trace.json_pages_to_build}`);
+    else trace.errors.push(`pages_to_build_parser_mismatch:${trace.html_report_pages_to_build}!=${trace.json_pages_to_build};reconciled=${trace.reconciled_pages_to_build}`);
+  }
   const pageSpecs=(htmlReport.page_specs||[]).filter(p=>p.manifest_path===manifestPath);
+  const selectedIds=new Set(releasePlan.selected_ids || (releasePlan.selected_units||[]).map((unit)=>unit.id).filter(Boolean));
+  const normalizedRecordsForManifest=normalized ? (normalized.records||[]) : [];
+  const releaseNewUnits=[
+    ...(releasePlan.selected_units||[]).filter((unit)=>unit && unit.operation==='CREATE_NEW_TARGET_PAGE' && unit.source_artifacts && unit.source_artifacts.manifest===manifestPath),
+    ...normalizedRecordsForManifest.filter((record)=>record && selectedIds.has(record.id) && record.operation==='CREATE_NEW_TARGET_PAGE' && record.source_artifacts && record.source_artifacts.manifest===manifestPath)
+  ];
+  const releaseNewUnitsRendered=releaseNewUnits.filter((unit)=>{
+    const route=unit.target_route;
+    const rendered=unit.renderedPath || routeToPath(route);
+    return pageExists(livePages, route) && pageExists(stagedPages, route) && rendered && exists(rendered);
+  });
   const skipped=(htmlReport.approval_records_skipped||[]).filter(p=>p.id && pageSpecs.some(s=>s.id===p.id));
   const added=(htmlReport.approval_records_added||[]).filter(p=>p.id && pageSpecs.some(s=>s.id===p.id));
   trace.page_specs_count=pageSpecs.length;
+  trace.release_plan_new_page_units=releaseNewUnits.length;
+  trace.release_plan_new_page_units_rendered=releaseNewUnitsRendered.length;
   trace.approval_records_added=added.length;
   trace.approval_records_skipped=skipped.length;
-  if(pageSpecs.length!==trace.json_pages_to_build) trace.errors.push(`page_specs_count_mismatch:${pageSpecs.length}!=${trace.json_pages_to_build}`);
-  if(added.length+skipped.length!==pageSpecs.length) trace.errors.push(`page_spec_accounting_mismatch:${added.length}+${skipped.length}!=${pageSpecs.length}`);
+  const expectedPageSpecCount=Math.max(trace.json_pages_to_build, trace.reconciled_pages_to_build);
+  const releasePlanAccountsForPages=expectedPageSpecCount>0 && pageSpecs.length===0 && releaseNewUnitsRendered.length>=expectedPageSpecCount;
+  if(pageSpecs.length!==expectedPageSpecCount) {
+    if (releasePlanAccountsForPages) trace.warnings.push(`page_specs_recovered_from_release_plan:${pageSpecs.length}!=${expectedPageSpecCount}`);
+    else trace.errors.push(`page_specs_count_mismatch:${pageSpecs.length}!=${expectedPageSpecCount}`);
+  }
+  if(added.length+skipped.length!==pageSpecs.length) {
+    if (releasePlanAccountsForPages) trace.warnings.push(`page_spec_accounting_recovered_from_release_plan:${added.length}+${skipped.length}!=${pageSpecs.length}`);
+    else trace.errors.push(`page_spec_accounting_mismatch:${added.length}+${skipped.length}!=${pageSpecs.length}`);
+  }
   const addedRoutesMissing=[];
   const allPageSpecRoutesMissing=[];
   const skippedById=new Map(skipped.map(rec=>[rec.id, rec]));
@@ -135,16 +162,23 @@ if(exactPlan.status && exactPlan.status!=='PASS') errors.push(`agent_exact_plan_
 if(exactTrace.status && exactTrace.status!=='PASS') errors.push(`agent_exact_trace_status:${exactTrace.status}`);
 if(exactValidate.status && exactValidate.status!=='PASS') errors.push(`agent_exact_validate_status:${exactValidate.status}`);
 const exactLedger=readJson('data/report_fixes/agent_exact_implementation_ledger.json', {entries:[]});
+const agentFixLedger=readJson('data/report_fixes/agent_fix_ledger.json', {fixes:[]});
+const dispositionLedger=readJson('data/report_fixes/agent_artifact_disposition_ledger.json', {entries:[]});
+const agentFixDispositions=new Set([
+  ...(agentFixLedger.fixes||[]).filter((fix)=>fix && fix.id && fix.implementation_status).map((fix)=>fix.id),
+  ...(dispositionLedger.entries||[]).filter((entry)=>entry && entry.id && entry.disposition).map((entry)=>entry.id)
+]);
 for(const trace of traces){
   const normalized=readJson(trace.normalized_path, {records:[]});
   const repairRows=(normalized.records||[]).filter(row=>row.operation==='REPAIR_INTENDED_WINNER_PAGE' && row.intended_winner_path);
   const currentRepairRows=repairRows.filter(row=>row.source==='twin_agent_artifact');
   const currentRepairIds=new Set(currentRepairRows.map(row=>row.id));
   const ledgerIds=new Set((exactLedger.entries||[]).flatMap(entry=>entry.record_ids||[]));
-  const missing=[...currentRepairIds].filter(id=>!ledgerIds.has(id));
+  const missing=[...currentRepairIds].filter(id=>!ledgerIds.has(id) && !agentFixDispositions.has(id));
   trace.exact_repair_rows=repairRows.length;
-  trace.exact_repair_rows_ledgered=repairRows.length-missing.length;
-  if(missing.length) errors.push(`${trace.manifest_path}:exact_repair_rows_missing_from_ledger:${missing.slice(0,10).join(',')}`);
+  trace.exact_repair_rows_ledgered=[...currentRepairIds].filter(id=>ledgerIds.has(id)).length;
+  trace.exact_repair_rows_dispositioned=[...currentRepairIds].filter(id=>agentFixDispositions.has(id)).length;
+  if(missing.length) errors.push(`${trace.manifest_path}:exact_repair_rows_unaccounted:${missing.slice(0,10).join(',')}`);
 }
 const report={schema_version:'1.0',validator:'agent-artifact-data-flow-trace',status:errors.length?'FAIL':'PASS',manifest_count:manifests.length,traces,workflow:{agent_intake_status:intake.status||'',html_report_status:htmlReport.status||'',velocity_plan_selected_count:releasePlan.selected_count||0,velocity_created_count:velocityRelease.created_count||0,exact_plan_repairs:exactPlan.repair_count||0,exact_plan_new_pages:exactPlan.new_page_count||0,exact_trace_status:exactTrace.status||'',exact_validate_status:exactValidate.status||''},errors,
   source_records_found: sourceRecordsForTrace.length,

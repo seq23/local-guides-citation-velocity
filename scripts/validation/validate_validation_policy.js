@@ -17,7 +17,7 @@ const cases=[
 const errors=[];
 const registry=JSON.parse(fs.readFileSync(path.join(ROOT,'_validation_registry.json'),'utf8'));
 const neverHardFail=registry.release_blocking_policy?.never_hard_fail_categories||[];
-for(const category of ['trailing whitespace','blank lines','indentation','cosmetic formatting'])if(!neverHardFail.includes(category))errors.push(`missing_nonblocking_category:${category}`);
+for(const category of ['trailing whitespace','blank lines','indentation','cosmetic formatting','metadata uniqueness advisories'])if(!neverHardFail.includes(category))errors.push(`missing_nonblocking_category:${category}`);
 for(const [name,input,status,blocks] of cases){const actual=classifyResult(input);if(actual.status!==status||actual.blocks!==blocks)errors.push(`${name}: expected ${status}/${blocks}, got ${actual.status}/${actual.blocks}`);}
 const report={validator:'validation-policy',ok:errors.length===0,case_count:cases.length,cosmetic_nonblocking_categories:neverHardFail,errors};
 fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});

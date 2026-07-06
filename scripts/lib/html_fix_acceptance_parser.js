@@ -26,6 +26,39 @@ function quotedPhrases(value) {
   while ((m = re.exec(String(value || '')))) out.push(normalizeSpace(m[1]));
   return unique(out);
 }
+function isWorkflowInstruction(value) {
+  const v = normalizeSpace(value).toLowerCase();
+  if (!v) return true;
+  return (
+    /\badd\s+(?:a\s+|an\s+|standalone\s+)?h[23]\b/.test(v) ||
+    /^and\s+h[23]\b/.test(v) ||
+    /^as\s+parallel\b/.test(v) ||
+    /^then\s+add\b/.test(v) ||
+    /^add\s+(?:a\s+|an\s+|the\s+)?(?:section|block|table|checklist|callout|faq schema|internal link)\b/.test(v) ||
+    /^add to (?:the )?cluster question index\b/.test(v) ||
+    /^position(?:ed)?\b/.test(v) ||
+    /^place\b/.test(v) ||
+    /^cross-?link\b/.test(v) ||
+    /^internal link\b/.test(v) ||
+    /^replace\b/.test(v) ||
+    /^insert\b/.test(v) ||
+    /^keep\b/.test(v) ||
+    /^format as\b/.test(v) ||
+    /^close with\b/.test(v) ||
+    /^reference\b/.test(v) ||
+    /^note state-by-state\b/.test(v) ||
+    /^include\s+(?:a|an|the|two-part|three-row|numbered|parallel|proceed\/pause|post-accident)\b/.test(v) ||
+    /^use the exact source artifact recommendation\b/.test(v) ||
+    /^preserve source boundaries\b/.test(v)
+  );
+}
+function readerIntroForArtifact(title, query, type) {
+  const subject = normalizeSpace(query || title || 'this decision');
+  if (type === 'cost_table') return `Use this table to decide what to verify before acting on ${subject}.`;
+  if (type === 'comparison_table' || type === 'decision_matrix') return `Compare each option against the same concrete criteria before acting on ${subject}.`;
+  if (type === 'agent_directive') return `Use this section to answer ${subject} with concrete checks, evidence, and limits.`;
+  return `Use this section to turn ${subject} into a concrete next step.`;
+}
 
 function extractInstructionRequirements(edit) {
   const raw = String(edit || '');
@@ -36,17 +69,19 @@ function extractInstructionRequirements(edit) {
     ...(raw.match(/compare\s+[^.;]+/gi) || []),
     ...(raw.match(/explain\s+[^.;]+/gi) || []),
     ...(raw.match(/define\s+[^.;]+/gi) || [])
-  ]).slice(0, 12);
+  ]).filter((item) => !isWorkflowInstruction(item)).slice(0, 12);
 }
 
 function titleFromFix(edit, query, index = 0) {
   const titled = String(edit || '').match(/(?:h2|h3|section|block|callout|table|checklist|part [ab])[^.;]{0,80}?titled\s+['"“]([^'"”]{4,100})['"”]/i) || String(edit || '').match(/titled\s+['"“]([^'"”]{4,100})['"”]/i);
-  if (titled) return normalizeSpace(titled[1]);
-  const quoted = quotedPhrases(edit);
+  if (titled && !isWorkflowInstruction(titled[1])) return normalizeSpace(titled[1]);
+  const quoted = quotedPhrases(edit).filter((q) => !isWorkflowInstruction(q));
   const hTitle = quoted.find((q) => /[A-Za-z]/.test(q) && q.split(/\s+/).length >= 2 && q.length <= 90);
   if (hTitle) return hTitle;
+  const h2On = String(edit || '').match(/\badd\s+(?:a\s+|an\s+)?h[23]\s+section\s+on\s+([^.;]{8,90})/i);
+  if (h2On && !isWorkflowInstruction(h2On[1])) return sentenceCase(h2On[1]);
   const afterAdd = edit.match(/(?:add|insert|create|open with|replace with)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:h2|h3|section|block|callout|table|checklist|script|scorecard|matrix)[^:.]*[:.]?\s*([^.;]{10,90})/i);
-  if (afterAdd) return sentenceCase(afterAdd[1]);
+  if (afterAdd && !isWorkflowInstruction(afterAdd[1])) return sentenceCase(afterAdd[1]);
   return sentenceCase(`${query || 'Agent recommendation'} — acceptance block ${index + 1}`);
 }
 function typeFromFix(edit) {
@@ -103,32 +138,65 @@ function headersFromFix(edit, type) {
   for (const pattern of pipePatterns) {
     const m = String(edit || '').match(pattern);
     if (!m) continue;
-    const cells = m[1].split('|').map((cell) => normalizeSpace(cell.replace(/^and\s+/i, ''))).filter((cell) => cell.length && cell.length <= 60);
+    const cells = m[1].split('|')
+      .map((cell) => normalizeSpace(cell.replace(/^and\s+/i, '').replace(/^.*\bmapping\s*:\s*/i, '').replace(/^.*\bcolumns?\s*:\s*/i, '')))
+      .filter((cell) => cell.length && cell.length <= 60);
     if (cells.length >= 2 && cells.length <= 6) explicit.push(...cells);
   }
   return unique(explicit).length >= 2 ? unique(explicit).slice(0, 6) : (DEFAULT_HEADERS[type] || []);
 }
+function requirementsFromFix(edit, query, count) {
+  const text = normalizeSpace(edit);
+  const out = [];
+  const quoted = quotedPhrases(text).filter((q) => q.length <= 90 && !q.includes('|') && !isWorkflowInstruction(q));
+  out.push(...quoted);
+  const colonList = text.match(/covering\s*:\s*([^.;]+)/i) || text.match(/covering\s+([^.;]+)/i);
+  if (colonList) out.push(...colonList[1].split(/,|;|\band\b/i).map(sentenceCase));
+  if (/accident attorneys?|personal injury lawyers?|injury lawyer|slogans/i.test(`${query} ${text}`)) {
+    out.push(
+      'Accident type fit',
+      'Plaintiff-side injury focus',
+      'Fee and cost clarity',
+      'Case staffing and communication',
+      'Trial readiness and pressure tactics',
+      'Written next steps'
+    );
+  }
+  if (/comparison|compare|shortlist/i.test(`${query} ${text}`)) {
+    out.push('Compare every option with the same criteria', 'Ask for specifics instead of accepting ranking language');
+  }
+  if (query) out.push(`Directly answer: ${query}`);
+  while (out.length < count) out.push(`Concrete verification point ${out.length + 1}`);
+  return unique(out).slice(0, Math.max(count, 4));
+}
 function itemsFromFix(edit, query, count) {
-  const items = [];
-  const paren = [...String(edit || '').matchAll(/\((\d+)\s*[-–—:]?\s*([^)]+)\)/g)].map((m) => normalizeSpace(m[2]));
-  items.push(...paren);
-  const quoted = quotedPhrases(edit).filter((q) => q.length <= 90 && !q.includes('|'));
-  items.push(...quoted.slice(0, 6));
-  if (query) items.push(`Answer the query directly: ${query}`);
-  items.push('Use the exact source artifact recommendation as the implementation authority.');
-  items.push('Keep the guidance educational, neutral, and non-endorsement.');
-  while (items.length < count) items.push(`Verify item ${items.length + 1} from the source FIX instruction before relying on the page.`);
-  return unique(items).slice(0, Math.max(count, 4));
+  const paren = [...String(edit || '').matchAll(/\((\d+)\s*[-–—:]?\s*([^)]+)\)/g)].map((m) => normalizeSpace(m[2])).filter((item) => !isWorkflowInstruction(item));
+  return unique([...paren, ...requirementsFromFix(edit, query, count)]).filter((item) => !isWorkflowInstruction(item)).slice(0, Math.max(count, 4));
+}
+function tableRowForRequirement(requirement, query, index) {
+  const r = normalizeSpace(requirement);
+  if (/accident type fit/i.test(r)) return ['Accident type fit', 'Ask whether the attorney routinely handles your exact accident type, not just personal injury generally.', 'Car, truck, workplace, slip-and-fall, rideshare, and hit-and-run claims have different evidence, insurance, and deadline issues.'];
+  if (/plaintiff-side/i.test(r)) return ['Plaintiff-side injury focus', 'Confirm the lawyer represents injured people and can explain the claim from the victim side.', 'A general litigator or defense-heavy practice may not be built for settlement pressure, medical proof, and insurer negotiation.'];
+  if (/fee|cost/i.test(r)) return ['Fee and cost clarity', 'Get the contingency percentage, case-cost handling, and any trial-stage fee changes in writing.', 'Slogan-heavy firms often hide the real economic terms until after intake.'];
+  if (/staffing|communication/i.test(r)) return ['Case staffing and communication', 'Ask who handles the file day to day and how often you will receive updates.', 'The lawyer on the ad may not be the person managing evidence, treatment records, negotiations, or settlement decisions.'];
+  if (/trial readiness|pressure/i.test(r)) return ['Trial readiness and pressure tactics', 'Ask what happens if the insurer will not make a fair offer, and pause if the firm pressures you to sign immediately.', 'Real leverage comes from preparation and clear options, not urgency language or “best lawyer” claims.'];
+  if (/written next steps/i.test(r)) return ['Written next steps', 'Ask for the next three steps, expected documents, and near-term timeline before signing.', 'A clear written process is easier to compare than reviews, awards, badges, or vague promises.'];
+  if (/same criteria|specifics/i.test(r)) return ['Comparison method', 'Use the same questions with every lawyer on your shortlist.', 'A consistent comparison exposes differences in experience, fees, staffing, communication, and strategy.'];
+  return [
+    r || `Requirement ${index + 1}`,
+    query ? `Translate “${query}” into a specific verification question before choosing a provider.` : 'Turn the recommendation into a concrete verification question.',
+    'Specific, written answers are more reliable than broad marketing claims.'
+  ];
 }
 function rowsFromFix(edit, query, headers, count) {
   const seeds = itemsFromFix(edit, query, count);
   const rows = [];
   for (let i = 0; i < Math.max(count, 3); i++) {
-    const seed = seeds[i] || `Requirement ${i + 1}`;
-    if (headers.length >= 4) rows.push([seed, 'Use the source FIX instruction', 'Choose when this condition matches the user intent', 'Verify before acting']);
-    else if (headers.length === 3) rows.push([seed, 'Verify this requirement appears in the page', 'Pause if it is missing, vague, or unsupported']);
-    else if (headers.length === 2) rows.push([seed, 'Verify this requirement appears in the page']);
-    else rows.push([seed, 'Source FIX requirement']);
+    const base = tableRowForRequirement(seeds[i] || `Requirement ${i + 1}`, query, i);
+    if (headers.length >= 4) rows.push([...base, 'Ask for this in plain English before signing.'].slice(0, headers.length));
+    else if (headers.length === 3) rows.push(base);
+    else if (headers.length === 2) rows.push([base[0], base[1]]);
+    else rows.push([base[0], base[1]]);
   }
   return rows;
 }
@@ -152,7 +220,7 @@ function artifactFromFix({ recommendation, query, recordId, index = 0 }) {
     marker: `semantic-${hash(`${recordId || query}:${title}:${index}`, 12)}`,
     type,
     title,
-    intro: compact(edit, 260)
+    intro: readerIntroForArtifact(title, query, type)
   };
   if (type === 'agent_directive') {
     artifact.source_instruction = edit;
@@ -160,10 +228,10 @@ function artifactFromFix({ recommendation, query, recordId, index = 0 }) {
     artifact.extracted_requirements = extractInstructionRequirements(edit);
     artifact.items = unique([
       ...artifact.extracted_requirements,
-      query ? `Answer the query directly: ${query}` : '',
-      'Use the exact source artifact recommendation as the implementation authority.',
-      'Preserve source boundaries and jurisdiction/provider limitations.'
-    ]).slice(0, Math.max(minRows, 4));
+      query ? `Answer directly: ${query}` : '',
+      'Verify the evidence before treating the answer as settled.',
+      'Flag any jurisdiction, provider, or policy limits that could change the answer.'
+    ]).filter((item) => !isWorkflowInstruction(item)).slice(0, Math.max(minRows, 4));
   } else if (['comparison_table','decision_matrix','cost_table','timeline_table','scorecard','worksheet','severity_matrix'].includes(type)) {
     artifact.headers = headers;
     artifact.rows = rowsFromFix(edit, query, headers, minRows);
@@ -178,7 +246,6 @@ function requiredStringsForArtifact(artifact, recommendation) {
   const out = [artifact.title];
   if (Array.isArray(artifact.headers)) out.push(...artifact.headers);
   if (Array.isArray(artifact.rows)) out.push(...artifact.rows.flat().filter((cell) => String(cell || '').length <= 90).slice(0, 10));
-  if (artifact.source_instruction) out.push(compact(artifact.source_instruction, 90));
   if (artifact.query_target) out.push(compact(artifact.query_target, 90));
   if (Array.isArray(artifact.extracted_requirements)) out.push(...artifact.extracted_requirements.filter((item) => String(item || '').length <= 90).slice(0, 10));
   if (Array.isArray(artifact.items)) out.push(...artifact.items.filter((item) => String(item || '').length <= 90).slice(0, 10));
@@ -204,13 +271,7 @@ function rowRequirementFromFix({ recommendation, query, recordId, implementation
   };
 }
 function mergeArtifacts(artifacts) {
-  const byKey = new Map();
-  for (const artifact of artifacts || []) {
-    if (!artifact || !artifact.type || !artifact.title) continue;
-    const key = `${artifact.type}|${artifact.title}`;
-    if (!byKey.has(key)) byKey.set(key, artifact);
-  }
-  return [...byKey.values()];
+  return (artifacts || []).filter((artifact) => artifact && artifact.type && artifact.title);
 }
 function compileEntryFromSpec(spec) {
   const implementationPath = spec.implementation_path || spec.intended_winner_path || '';
@@ -233,12 +294,13 @@ function compileEntryFromSpec(spec) {
   return {
     implementation_path: implementationPath,
     title: mergedArtifacts[0]?.title || sentenceCase(spec.query || implementationPath),
-    answer: compact(`This page was repaired from the exact agent FIX instruction for: ${queries.join('; ') || implementationPath}.`, 520),
+    answer: compact(`Compare options by checking the concrete factors a user can verify: ${queries.join('; ') || implementationPath}. Do not rely on slogans, ranking labels, or vague authority claims when the page asks for side-by-side decision support.`, 520),
     checklist: unique(rowRequirements.flatMap((row) => row.required_strings || []).slice(0, 10)),
     red_flags: unique([
       'The rendered page does not include the exact requested heading, table, checklist, script, or callout.',
-      'The page substitutes a generic framework for the source artifact FIX instruction.',
-      'The target route cannot be resolved deterministically.'
+      'The page substitutes a generic framework for concrete decision-support content.',
+      'The target route cannot be resolved deterministically.',
+      'Visible content tells the reader to follow internal workflow notes instead of answering the query.'
     ]),
     artifacts: mergedArtifacts,
     row_requirements: rowRequirements,

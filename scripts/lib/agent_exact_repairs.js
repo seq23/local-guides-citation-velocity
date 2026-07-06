@@ -51,7 +51,7 @@ function mergeSemanticArtifacts(requiredArtifacts, existingArtifacts) {
   for (const artifact of [...(requiredArtifacts || []), ...(existingArtifacts || [])]) {
     if (!artifact || !artifact.type || !artifact.title) continue;
     if (String(artifact.title || '').startsWith('Agent Exact Repair Framework:')) continue;
-    const key = `${artifact.type}|${artifact.title}`;
+    const key = artifact.marker || artifact.id || `${artifact.type}|${artifact.title}`;
     if (!byKey.has(key)) byKey.set(key, artifact);
   }
   return [...byKey.values()].slice(0, 12);

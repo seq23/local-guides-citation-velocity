@@ -17,6 +17,45 @@ const {
 function rel(p) { return path.join(ROOT, p); }
 function readJson(p, f = null) { try { return JSON.parse(fs.readFileSync(rel(p), 'utf8')); } catch { return f; } }
 function writeJson(p, v) { const out = rel(p); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, JSON.stringify(v, null, 2) + '\n'); }
+function isLegacyHtmlReportArtifact(artifact) {
+  const id = String(artifact?.id || artifact?.marker || '');
+  return id.startsWith('html-report-');
+}
+function removeLegacyHtmlReportArtifacts(paths) {
+  const targets = new Set([...paths].map((p) => normalizeImplementationPath(p)).filter(Boolean));
+  if (!targets.size) return { cleaned_targets: 0, removed_artifacts: 0 };
+  let cleanedTargets = 0;
+  let removedArtifacts = 0;
+  const insights = readJson('content/_live/insights.json', { items: [] });
+  let insightsChanged = false;
+  for (const item of insights.items || []) {
+    const itemPath = normalizeImplementationPath(item.publish_path || (item.slug ? `insights/${item.slug}.html` : ''));
+    if (!targets.has(itemPath) || !Array.isArray(item.citation_velocity_artifacts)) continue;
+    const before = item.citation_velocity_artifacts.length;
+    item.citation_velocity_artifacts = item.citation_velocity_artifacts.filter((artifact) => !isLegacyHtmlReportArtifact(artifact));
+    removedArtifacts += before - item.citation_velocity_artifacts.length;
+    if (before !== item.citation_velocity_artifacts.length) { cleanedTargets += 1; insightsChanged = true; }
+  }
+  if (insightsChanged) writeJson('content/_live/insights.json', insights);
+  for (const relPath of ['content/_live/pages.json', 'content/_staged/pages.json']) {
+    const payload = readJson(relPath, { pages: [] });
+    let changed = false;
+    for (const page of payload.pages || []) {
+      const candidates = [
+        normalizeImplementationPath(page.renderedPath || ''),
+        normalizeImplementationPath(page.path || ''),
+        normalizeImplementationPath(page.slug || '')
+      ];
+      if (!candidates.some((candidate) => targets.has(candidate)) || !Array.isArray(page.citation_velocity_artifacts)) continue;
+      const before = page.citation_velocity_artifacts.length;
+      page.citation_velocity_artifacts = page.citation_velocity_artifacts.filter((artifact) => !isLegacyHtmlReportArtifact(artifact));
+      removedArtifacts += before - page.citation_velocity_artifacts.length;
+      if (before !== page.citation_velocity_artifacts.length) { cleanedTargets += 1; changed = true; }
+    }
+    if (changed) writeJson(relPath, payload);
+  }
+  return { cleaned_targets: cleanedTargets, removed_artifacts: removedArtifacts };
+}
 
 function targetExists(spec, targetType, implementationPath) {
   const insights = readJson('content/_live/insights.json', { items: [] });
@@ -72,6 +111,7 @@ function main() {
   }
 
   const mergedEntries = mergeLedgerEntries(existingLedger.entries || [], entries);
+  const legacyCleanup = removeLegacyHtmlReportArtifacts(entries.map((entry) => entry.implementation_path));
   const ledger = {
     schema_version: '1.0',
     status: 'PASS',
@@ -88,6 +128,7 @@ function main() {
     applied_at: DATE,
     ledger_path: LEDGER_PATH,
     ledgered_repairs: entries.length,
+    legacy_cleanup: legacyCleanup,
     blocked: results.filter((result) => String(result.status || '').startsWith('BLOCKED')).length,
     results
   };
