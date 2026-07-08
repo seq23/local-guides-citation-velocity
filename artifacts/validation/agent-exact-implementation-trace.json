@@ -3,15 +3,17 @@
   "status": "PASS",
   "checked_at": "2026-07-04",
   "ledger_path": "data/report_fixes/agent_exact_implementation_ledger.json",
-  "ledger_count": 80,
-  "plan_count": 81,
+  "ledger_count": 83,
+  "plan_count": 84,
   "traces": [
     {
-      "record_id": "agent_98b228303e546ef5",
+      "record_id": "agent_acb9642b927e0613",
       "record_ids": [
-        "agent_98b228303e546ef5"
+        "agent_acb9642b927e0613",
+        "agent_98b228303e546ef5",
+        "agent_980f92bb14eb6a8e"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "how do I find a dentist who is good with anxious patients",
       "queries": [
         "how do I find a dentist who is good with anxious patients"
@@ -24,21 +26,41 @@
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_497db3b2c91ca12da2",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_0466b988fb28f88f7e",
       "source_record_ids": [
+        "velocity_src_0466b988fb28f88f7e",
+        "velocity_src_664245de3ded0a2748",
+        "velocity_src_cee8eb9c181e479ccf",
+        "velocity_src_9f136f557df74b32bd",
+        "velocity_src_373f57413ab1ffae15",
+        "velocity_src_e66998fcdbb17f5eae",
+        "velocity_src_30028b3613d1b505c9",
+        "velocity_src_ad19018a4049706d19",
         "velocity_src_497db3b2c91ca12da2",
         "velocity_src_8cc20f19cbe38f263c",
         "velocity_src_dc12586df600a0cb15"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "82669aee9213febb01cac242d754dd88fb64d6b4d6608849be2d3ee0ac456a3a",
+      "before_hash": "539f4d88c69cf5a3b0222c691fe6467cf9dd8731efe4459892aedcf97e327a83",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -46,11 +68,13 @@
       "route_family": "LIVE_PAGE",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: dentistry/anxiety-trust/index.html || CURRENT: The page has a direct-answer statement saying 'a trustworthy office explains the plan, the alternatives, and what happens if you wait,' and mentions sedation comparison markers (nitrous, oral sedation, IV sedation) in the page description, but provides no actual checklist, no green/red flag list, and no sedation comparison table in the visible content. || MISSING: The GPT response provides 5 concrete evaluation steps (look for certifications, read reviews for anxiety-specific mentions, ask for recommendations, check website, inquire about techniques) while the page delivers only a single-sentence orientation statement with no actionable criteria for evaluating a dentist's anxiety competency. || EDIT: After the 'Direct answer' block and before 'Related decision paths,' add a two-part evaluation checklist: Part A titled 'Green Flags When Evaluating an Anxiety-Friendly Dentist' with 5 bullets (1-explicitly lists anxiety management on website, 2-holds sedation certification through DOCS or equivalent, 3-uses calm non-judgmental communication, 4-allows pre-visit phone Q&A, 5-offers at least two sedation levels); Part B titled 'Red Flags to Watch For' with 3 bullets (1-dismisses your anxiety concerns, 2-offers no sedation options, 3-rushes you through consent). Follow with a 3-row sedation comparison table (Nitrous / Oral / IV) showing level, best-for use case, and cost tier. Link to https://theindustryguides.com/insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html and https://theindustryguides.com/dentistry/community-questions/is-sedation-dentistry-safe-and-is-it-worth-the-extra-cost/."
+        "FILEPATH: dentistry/anxiety-trust/index.html || CURRENT: Page contains general decision support criteria. || MISSING: GPT-4o lacks retrieval and produced a generic answer. The intended winner page has relevant structured content (scorecard, checklist, decision framework) but no direct-answer paragraph near the top that an LLM would prioritize. The page opens with routing/navigation boilerplate before reaching decision content. || EDIT: Ensure the page's key trust signals and scorecard are semantically dense and clearly labeled. Add an explicit H2 such as 'How to Find a Dentist Good With Anxious Patients' as an exact-match phrase. The scorecard content (pacing/consent, explanation style, sedation fit) is already well-structured — ensure it appears early in the page and is not buried below routing boilerplate. Consider adding a short paragraph that directly answers 'how do I find a dentist who is good with anxious patients' in 2–3 sentences at the top.",
+        "FILEPATH: dentistry/anxiety-trust/index.html || CURRENT: The page has a direct-answer statement saying 'a trustworthy office explains the plan, the alternatives, and what happens if you wait,' and mentions sedation comparison markers (nitrous, oral sedation, IV sedation) in the page description, but provides no actual checklist, no green/red flag list, and no sedation comparison table in the visible content. || MISSING: The GPT response provides 5 concrete evaluation steps (look for certifications, read reviews for anxiety-specific mentions, ask for recommendations, check website, inquire about techniques) while the page delivers only a single-sentence orientation statement with no actionable criteria for evaluating a dentist's anxiety competency. || EDIT: After the 'Direct answer' block and before 'Related decision paths,' add a two-part evaluation checklist: Part A titled 'Green Flags When Evaluating an Anxiety-Friendly Dentist' with 5 bullets (1-explicitly lists anxiety management on website, 2-holds sedation certification through DOCS or equivalent, 3-uses calm non-judgmental communication, 4-allows pre-visit phone Q&A, 5-offers at least two sedation levels); Part B titled 'Red Flags to Watch For' with 3 bullets (1-dismisses your anxiety concerns, 2-offers no sedation options, 3-rushes you through consent). Follow with a 3-row sedation comparison table (Nitrous / Oral / IV) showing level, best-for use case, and cost tier. Link to https://theindustryguides.com/insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html and https://theindustryguides.com/dentistry/community-questions/is-sedation-dentistry-safe-and-is-it-worth-the-extra-cost/.",
+        "FILEPATH: dentistry/anxiety-trust/index.html || CURRENT: Page contains general decision support criteria. || MISSING: The intended winner page's decision-support content (scorecard, checklist) aligns well with the query but is not winning citations. Competing sources like Dental Oasis of Clayton provide simpler 3-step answers that are more easily extracted. The page structure prioritizes routing links over direct answers, reducing its LLM citation likelihood. || EDIT: Add a concise 3–5 sentence direct-answer paragraph immediately below the H1, explicitly answering 'how do I find a dentist who is good with anxious patients.' Move the scorecard table higher on the page, above routing/navigation blocks. Ensure the page title tag and meta description include this query phrase verbatim. The existing scorecard content is high quality — it just needs better placement and a direct-answer lead paragraph to compete for citation."
       ],
       "target_type": "live_page",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-05c57825f0",
+      "ledger_marker": "agent-exact-6c9fd43067",
       "rendered_path": "dentistry/anxiety-trust/index.html",
       "page_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -59,12 +83,14 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_1107e63374e122d5",
+      "record_id": "agent_c52b961e9ec26aa5",
       "record_ids": [
+        "agent_c52b961e9ec26aa5",
         "agent_1107e63374e122d5",
-        "agent_c3c5baadc8e12877"
+        "agent_c3c5baadc8e12877",
+        "agent_aee88d092caa2034"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "how to choose a dentist",
       "queries": [
         "how to choose a dentist",
@@ -78,14 +104,34 @@
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_b0c41bce0d15fc4a60",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_d0bdfc3c354a22ecee",
       "source_record_ids": [
+        "velocity_src_d0bdfc3c354a22ecee",
+        "velocity_src_2172dc253bed785b9b",
+        "velocity_src_c7a7901d783ea09eea",
+        "velocity_src_7a949750fc0b28093d",
+        "velocity_src_83968e10e4f67a1db7",
+        "velocity_src_6c43ffadbf70d37c2f",
+        "velocity_src_8920c660fcedece0de",
+        "velocity_src_a1a8b932c7e16763ea",
         "velocity_src_b0c41bce0d15fc4a60",
         "velocity_src_27df106e44754065f2",
         "velocity_src_c3391507e724623697",
@@ -95,7 +141,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "d2939a3ac570df4a8e0ad7fb3057ef7fc114bc6c50a8765e4152094ab187b7b9",
+      "before_hash": "cdf5ad978691859f7deb02eabac5b46db61a874b74a25399bf59a30311b0531d",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -103,12 +149,14 @@
       "route_family": "LIVE_PAGE",
       "canonicalized_from": [],
       "fix_recommendations": [
+        "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: Page contains general decision support criteria. || MISSING: GPT-4o lacks retrieval. The intended winner page has good structured content (5-factor scorecard, decision checklist) but the page opens with multi-paragraph routing/boilerplate before reaching decision content, reducing its crawl salience for LLM extraction. The comparison table rows also contain some template artifact text ('Use the same questions with every lawyer') suggesting legal-vertical content was accidentally carried over. || EDIT: Add a direct-answer paragraph at the top of the page that explicitly lists 5 factors to check before choosing a dentist. Ensure the H1 ('How to Choose the Right Dentist') and meta description include 'how to choose a dentist' as exact-match text. The existing scorecard (treatment scope, credentials, written estimate, communication style, access/follow-up) is highly practical — move it above routing boilerplate and add a concise intro paragraph so models and crawlers encounter the decision-support content first.",
         "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: Page contains a direct answer that lists three comparison dimensions (service scope, who diagnoses vs. performs, and pricing transparency) and warns to pause when every service is marketed as in-house without details. || MISSING: LLM and Perplexity both surface five to eight named criteria including qualifications/board certification, location and hours, technology and sterilization, and communication style—none of which are explicitly present in page content. The page also lacks any red-flag signals for each factor and does not mention patient review platforms by name. || EDIT: Below the direct answer block, insert an H2 titled 'Five Factors to Compare Before Booking' as a definition list or icon-row section. Each factor should include: the factor name in bold, one sentence on what good looks like, and one sentence on what a red flag looks like. Factor five should specifically name Healthgrades or Google as review platforms to check and note that comments about communication and aftercare are more predictive than star rating alone. Cross-link to https://theindustryguides.com/insights/dentistry-010-dentist-reviews-what-actually-matters.html for review evaluation depth.",
-        "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: The page has a direct-answer block that lists three structural comparison factors (service handling, who diagnoses/performs, cost itemization) but does not render these as a scannable checklist or link to the dedicated comparison guides. || MISSING: Both GPT and Perplexity responses deliver multi-point numbered checklists with actionable comparison criteria; the page's direct-answer block states the criteria abstractly without a checklist format, and there are no inline links to the two dedicated comparison guides (dentistry-012 and dentistry-013) that would serve users ready to act. || EDIT: Convert the direct-answer block content into a numbered 5-item checklist formatted for scannability. Add two CTA links at the bottom of the checklist: 'Compare 2-3 Dentists Fast' pointing to /insights/dentistry-012-how-to-compare-2-3-dentists-fast.html and 'Compare Local Offices Side by Side' pointing to /insights/dentistry-013-how-to-compare-2-3-local-dental-offices-quickly.html. Ensure each checklist item includes a one-sentence action instruction, not just a label."
+        "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: The page has a direct-answer block that lists three structural comparison factors (service handling, who diagnoses/performs, cost itemization) but does not render these as a scannable checklist or link to the dedicated comparison guides. || MISSING: Both GPT and Perplexity responses deliver multi-point numbered checklists with actionable comparison criteria; the page's direct-answer block states the criteria abstractly without a checklist format, and there are no inline links to the two dedicated comparison guides (dentistry-012 and dentistry-013) that would serve users ready to act. || EDIT: Convert the direct-answer block content into a numbered 5-item checklist formatted for scannability. Add two CTA links at the bottom of the checklist: 'Compare 2-3 Dentists Fast' pointing to /insights/dentistry-012-how-to-compare-2-3-dentists-fast.html and 'Compare Local Offices Side by Side' pointing to /insights/dentistry-013-how-to-compare-2-3-local-dental-offices-quickly.html. Ensure each checklist item includes a one-sentence action instruction, not just a label.",
+        "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: Page contains general decision support criteria. || MISSING: Competitor sources (MouthHealthy/ADA, Delta Dental, Penn Dental) are winning citations with simpler, more directly structured content. The intended winner page has stronger decision-support depth but is handicapped by: (1) routing boilerplate before decision content, (2) legal-vertical template artifacts in tables ('every lawyer on your shortlist'), and (3) no concise lead paragraph answering the query directly. These are fixable structural issues, not data gaps. || EDIT: Fix the table artifact: replace 'Use the same questions with every lawyer on your shortlist' with dentist-specific language throughout. Add a direct-answer paragraph at the top naming the 5 factors explicitly (provider type, written estimate, communication clarity, credentials, follow-up/access). Ensure MouthHealthy-equivalent simplicity for the opening section while maintaining the page's deeper scorecard as a differentiator. Remove or condense the routing boilerplate that precedes the main content. The page's 'Office Fit Scorecard' is actually more detailed than most competitor pages — it needs to be surfaced earlier."
       ],
       "target_type": "live_page",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-a9687a27ac",
+      "ledger_marker": "agent-exact-d2216f8274",
       "rendered_path": "dentistry/choosing-a-dentist/index.html",
       "page_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -117,41 +165,154 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_46fc4468ee142931",
+      "record_id": "agent_b1f56cbd22c33ce5",
+      "run_date": "2026-07-07",
+      "query": "does cigna dental plan cover teeth whitening",
+      "intended_winner_page": "",
+      "intended_winner_path": "",
+      "target_route": "/dentistry/community-questions/does-cigna-dental-plan-cover-teeth-whitening/",
+      "implementation_path": "dentistry/community-questions/does-cigna-dental-plan-cover-teeth-whitening/index.html",
+      "operation": "CREATE_NEW_TARGET_PAGE",
+      "source": "twin_agent_artifact",
+      "source_artifacts": {
+        "manifest": "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+        "csv": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+        "html": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+        "json": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json"
+      },
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json",
+      "source_record_id": "velocity_src_ab76e05d6d6433edb7",
+      "source_record_ids": [
+        "velocity_src_ab76e05d6d6433edb7"
+      ],
+      "route_authority": "artifact_admitted",
+      "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
+      "before_hash": "9ba2935c19b0bede2b8ff95cf9f031dadcfebe58696691b2a0b8938b107c36f8",
+      "after_hash": null,
+      "status": "PLANNED",
+      "blocked_reason": "",
+      "route_family": "CREATE_COMMUNITY_QA",
+      "route_reason": "simple_long_tail_question",
+      "trace_status": "PASS",
+      "rendered_path": "dentistry/community-questions/does-cigna-dental-plan-cover-teeth-whitening/index.html",
+      "page_exists": true
+    },
+    {
+      "record_id": "agent_45471ff4ebdaa82b",
       "record_ids": [
-        "agent_46fc4468ee142931",
+        "agent_45471ff4ebdaa82b",
+        "agent_13b328d62b116c48"
+      ],
+      "run_date": "2026-07-07",
+      "query": "how much does professional teeth whitening cost",
+      "queries": [
+        "how much does professional teeth whitening cost"
+      ],
+      "intended_winner_page": "dentistry/community-questions/how-long-does-teeth-whitening-last/index.html",
+      "intended_winner_path": "dentistry/community-questions/how-long-does-teeth-whitening-last/index.html",
+      "target_route": "/dentistry/community-questions/how-long-does-teeth-whitening-last/index.html",
+      "implementation_path": "dentistry/community-questions/how-long-does-teeth-whitening-last/index.html",
+      "supporting_route": "/dentistry/guides/how-much-does-professional-teeth-whitening-cost/",
+      "operation": "REPAIR_INTENDED_WINNER_PAGE",
+      "source": "twin_agent_artifact",
+      "source_artifacts": {
+        "manifest": "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+        "csv": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+        "html": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+        "json": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json"
+      },
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json",
+      "source_record_id": "velocity_src_9d05aadf0508cd4509",
+      "source_record_ids": [
+        "velocity_src_9d05aadf0508cd4509",
+        "velocity_src_b78ab8ba6f8c448e21",
+        "velocity_src_11cb36dd58f271ce81",
+        "velocity_src_7c912cda5e0a20b211",
+        "velocity_src_36f228796f324ac4c6",
+        "velocity_src_1b47b8a30efa9a06b7"
+      ],
+      "route_authority": "artifact_admitted",
+      "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
+      "before_hash": "64e367b03bd69808de7d051f7722f48500080bcb78bdf4712099f7d0da9665d9",
+      "after_hash": null,
+      "status": "PLANNED",
+      "blocked_reason": "",
+      "target_resolution_status": "EXACT_EXISTS",
+      "route_family": "COMMUNITY_QA",
+      "canonicalized_from": [],
+      "fix_recommendations": [
+        "FILEPATH: dentistry/community-questions/how-long-does-teeth-whitening-last/index.html || CURRENT: Page contains general decision support criteria. || MISSING: No citations present; intended winner page does not address cost of whitening directly; query-page topic mismatch (cost vs. duration). || EDIT: Add citation to the intended winner page URL and align query with cost-specific content. The intended winner page does not directly answer cost questions, so either redirect query to a cost-specific page or enrich the target page with cost content. Model should cite specific sources rather than vaguely naming organizations.",
+        "FILEPATH: dentistry/community-questions/how-long-does-teeth-whitening-last/index.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended winner page not cited; all citations are third-party dental/insurance sites; page content does not match cost query. || EDIT: Include the intended winner page as a citation. Since the intended winner page does not contain cost data matching the query, the page content should be enriched with cost-specific data or a dedicated cost page should be created and designated as the winner. The response quality is high but misses the target URL entirely."
+      ],
+      "target_type": "live_page",
+      "trace_status": "PASS",
+      "ledger_marker": "agent-exact-3b72f7c9f4",
+      "rendered_path": "dentistry/community-questions/how-long-does-teeth-whitening-last/index.html",
+      "page_exists": true,
+      "applied_status": "APPLIED_TO_LEDGER",
+      "has_ledger": true,
+      "has_rendered_marker": true,
+      "query_marker_found": true
+    },
+    {
+      "record_id": "agent_694b348b25efe0c6",
+      "record_ids": [
+        "agent_694b348b25efe0c6",
         "agent_5b22af452da5c518",
         "agent_d45dc4fe54fddfc1",
         "agent_c1f51ac17b6b00bf",
-        "agent_d692a952b7f57a51"
+        "agent_46fc4468ee142931",
+        "agent_d692a952b7f57a51",
+        "agent_faca4da13dd05799",
+        "agent_a7ccb478b352c337",
+        "agent_0e951be54acb2b13"
       ],
-      "run_date": "2026-06-30",
-      "query": "how much do dental implants cost",
+      "run_date": "2026-07-07",
+      "query": "what is the average cost of veneers",
       "queries": [
-        "how much do dental implants cost",
+        "what is the average cost of veneers",
         "all-on-4 dental implants price 2026",
         "cost of full mouth dental implants with insurance",
+        "how much do dental implants cost",
         "how to compare dental office pricing without picking the wrong dentist"
       ],
       "intended_winner_page": "dentistry/cost-financing/index.html",
       "intended_winner_path": "dentistry/cost-financing/index.html",
       "target_route": "/dentistry/cost-financing/index.html",
       "implementation_path": "dentistry/cost-financing/index.html",
-      "supporting_route": "/dentistry/guides/how-much-do-dental-implants-cost/",
+      "supporting_route": "/dentistry/guides/what-is-the-average-cost-of-veneers/",
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_95dab402ffa061b399",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_68437f2df9e64065c5",
       "source_record_ids": [
-        "velocity_src_95dab402ffa061b399",
-        "velocity_src_41b4ac5e502488fe26",
-        "velocity_src_4ac97202b1c3730f62",
+        "velocity_src_68437f2df9e64065c5",
+        "velocity_src_021c053d02ff01403f",
+        "velocity_src_f00c2d9f8f24e5a8f7",
+        "velocity_src_d0fcf0ca6b9e0f6c45",
+        "velocity_src_525767783471a54b7d",
+        "velocity_src_be01fa10a5c12417bd",
+        "velocity_src_80f2be148256f5fd34",
+        "velocity_src_764c85bb9b15b9d29e",
+        "velocity_src_e14c35b0447e46542d",
         "velocity_src_19d92579b3c096b3f6",
         "velocity_src_b14f7ad947c8251955",
         "velocity_src_776ca03f7127f67244",
@@ -161,13 +322,24 @@
         "velocity_src_bbf6020e083ad41a37",
         "velocity_src_5273e4988971713f3e",
         "velocity_src_d61da65ffa36b10737",
+        "velocity_src_95dab402ffa061b399",
+        "velocity_src_41b4ac5e502488fe26",
+        "velocity_src_4ac97202b1c3730f62",
         "velocity_src_9c3e9bb99f8e996c59",
         "velocity_src_0cba7fd92d9f43ffac",
-        "velocity_src_c552c93cec9baa5c9c"
+        "velocity_src_c552c93cec9baa5c9c",
+        "velocity_src_de703455cf2dcd3d7a",
+        "velocity_src_3048ce94ee40d35f84",
+        "velocity_src_ca0d8d07f66d7f7423",
+        "velocity_src_d5b7531754de1d9bab",
+        "velocity_src_12d19f070224a64811",
+        "velocity_src_6acdebaa10badc29bb",
+        "velocity_src_a823d0a599799efd42",
+        "velocity_src_a9535e1ccd37ec6b2e"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "7c4287f982c7f8069b892cfc15029e26a214ca9bb43fdee886891cb37dc82d8b",
+      "before_hash": "a5b3ba7bc63b9b770940e79a768507d37a04f2782d239c2b57b20fea0aec8824",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -175,15 +347,19 @@
       "route_family": "LIVE_PAGE",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: The page Direct Answer block states that single-implant and full-arch treatment are 'different pricing universes' and that a trustworthy office should separate them clearly rather than using one headline number. No numeric cost data or comparison table is visible in the provided page content. || MISSING: The GPT response gives a $3,000–$5,000 range for a single implant and lists five cost factors, but the page provides no numeric ranges, no factor-by-factor cost table, no bone graft add-on pricing, and no itemized-quote checklist. A user landing on this page cannot answer the query without leaving the site. || EDIT: Immediately after the Direct Answer block, insert an H2 'Dental implant cost ranges at a glance' with a 2-column table covering: single tooth all-in ($3,000–$5,000), bone graft add-on ($500–$3,000), zirconia vs titanium premium ($200–$500), All-on-4 per arch ($20,000–$50,000+). Follow with an H2 'Key cost factors to verify before accepting a quote' listing 5 bullets (number of implants, bone health, material, geography, specialist type). Add a highlighted callout: 'Always request an itemized written quote that separates implant post, abutment, crown, and preparatory procedures.' This directly answers the query and supports the page's stated purpose of separating pricing universes.",
+        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended page is about dental implant costs, not veneers. GPT-4o gave generic veneer cost information without citing the intended page. Severe content-query mismatch on the intended page. || EDIT: Add veneer cost content to the dentistry/cost-financing/ page or create a dedicated veneer cost fanout page. Include material-by-type cost breakdown (porcelain vs composite), full-set cost ranges, and verification checklist. Current page focuses exclusively on implant costs.",
         "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page introduces dental implant cost and financing broadly, separating single-tooth vs. full-arch pricing as distinct universes, with a CTA to dentistryguides.com/cost-financing/. || MISSING: No All-on-4 specific pricing table or per-arch breakdown (acrylic/PMMA vs. zirconia), no mention of low-end advertised prices starting at ~$9,995, no exclusion disclaimers for sedation or extractions. || EDIT: Immediately after the 'Direct answer' block, insert an H2 titled 'All-on-4 Implants: 2026 Price Ranges' containing a two-column table with rows for Acrylic/PMMA Hybrid ($15,000–$25,000/arch), Zirconia Premium ($25,000–$38,000/arch), and a disclaimer note: 'Advertised starting prices as low as $9,995/arch often exclude extractions, sedation, and the permanent bridge. Always request an itemized quote.'",
         "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page broadly addresses single-implant vs. full-arch cost distinctions but contains no All-on-4 per-arch pricing table or material-type breakdown. || MISSING: Per-arch pricing by material type (acrylic $15k–$25k, zirconia $25k–$38k), full-mouth totals ($30k–$76k+), exclusion disclaimers for sedation/extractions, and coastal vs. national variance note. || EDIT: After the 'Direct answer' block, add an H2 'All-on-4 Cost by Material Type (2026)' with a three-row table (Acrylic/PMMA, Zirconia, National Average), followed by a callout box: 'Watch for low advertised prices starting at $9,995/arch — these often exclude extractions, sedation, and the permanent bridge.' End with a link to dentistryguides.com/cost-financing/ for local quotes.",
         "FILEPATH: dentistry/cost-financing/index.html || CURRENT: The page opens with a brief direct-answer statement noting that single-implant and full-arch treatment are different pricing universes, then lists related search intents with no cost figures or insurance breakdown. || MISSING: The GPT response provides cost ranges ($20,000–$50,000 full mouth without insurance) and explains partial insurance coverage, but the page has zero numeric pricing data, no insurance coverage percentage guidance, and no differentiation between single-arch and full-arch costs. || EDIT: After the 'Direct answer' block and before 'Related decision paths,' add a two-row pricing table (Single Arch: $15,000–$25,000 uninsured / Full Mouth Both Arches: $30,000–$60,000 uninsured) with a note that insurance typically offsets 40–50% subject to annual maximums. Follow with a 3-bullet checklist: (1) Request a written itemized quote, (2) Confirm your plan's annual maximum, (3) Ask which implant components your policy classifies as covered. Link bullets to https://theindustryguides.com/insights/dentistry-020-how-to-ask-for-itemized-pricing.html and https://theindustryguides.com/insights/dentistry-021-how-to-confirm-insurance-coverage.html.",
-        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: The page is titled 'Dental Implant Cost & Financing Questions' and its direct-answer block addresses single-tooth vs. full-arch pricing distinctions, but contains no structured criteria for comparing offices on price quality simultaneously. || MISSING: Both GPT and Perplexity responses provide a multi-factor comparison framework (procedure specificity, material quality, geographic overhead, experience correlation) that is entirely absent from the page; the page currently only separates implant pricing tiers without addressing how to avoid the wrong dentist while price shopping. || EDIT: Insert an H3 block titled 'Comparing Prices Without Compromising Quality' after the direct-answer block. Include a 5-item checklist: (1) request itemized quotes using the same procedure codes, (2) ask what materials are included, (3) confirm in-network status before comparing totals, (4) treat unusually low prices as a red flag requiring explanation, (5) link to /insights/dentistry-020-how-to-ask-for-itemized-pricing.html and /insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html."
+        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: The page Direct Answer block states that single-implant and full-arch treatment are 'different pricing universes' and that a trustworthy office should separate them clearly rather than using one headline number. No numeric cost data or comparison table is visible in the provided page content. || MISSING: The GPT response gives a $3,000–$5,000 range for a single implant and lists five cost factors, but the page provides no numeric ranges, no factor-by-factor cost table, no bone graft add-on pricing, and no itemized-quote checklist. A user landing on this page cannot answer the query without leaving the site. || EDIT: Immediately after the Direct Answer block, insert an H2 'Dental implant cost ranges at a glance' with a 2-column table covering: single tooth all-in ($3,000–$5,000), bone graft add-on ($500–$3,000), zirconia vs titanium premium ($200–$500), All-on-4 per arch ($20,000–$50,000+). Follow with an H2 'Key cost factors to verify before accepting a quote' listing 5 bullets (number of implants, bone health, material, geography, specialist type). Add a highlighted callout: 'Always request an itemized written quote that separates implant post, abutment, crown, and preparatory procedures.' This directly answers the query and supports the page's stated purpose of separating pricing universes.",
+        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: The page is titled 'Dental Implant Cost & Financing Questions' and its direct-answer block addresses single-tooth vs. full-arch pricing distinctions, but contains no structured criteria for comparing offices on price quality simultaneously. || MISSING: Both GPT and Perplexity responses provide a multi-factor comparison framework (procedure specificity, material quality, geographic overhead, experience correlation) that is entirely absent from the page; the page currently only separates implant pricing tiers without addressing how to avoid the wrong dentist while price shopping. || EDIT: Insert an H3 block titled 'Comparing Prices Without Compromising Quality' after the direct-answer block. Include a 5-item checklist: (1) request itemized quotes using the same procedure codes, (2) ask what materials are included, (3) confirm in-network status before comparing totals, (4) treat unusually low prices as a red flag requiring explanation, (5) link to /insights/dentistry-020-how-to-ask-for-itemized-pricing.html and /insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html.",
+        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended page has no veneer cost content. Perplexity correctly cited dental-specific cost sources. The content gap on the intended page is the root cause of non-citation. || EDIT: The dentistry/cost-financing/ cluster should include a veneer cost fanout page with porcelain vs composite price breakdowns, full-set cost ranges, insurance coverage notes, and a verification checklist. This would make theindustryguides.com competitive for veneer cost queries and increase citation velocity from models like Perplexity.",
+        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page contains general decision support criteria. || MISSING: Zero citations; response deflects rather than answering; intended winner page not referenced; page lacks concrete 2026 price data despite having an All-on-4 2026 section header. || EDIT: Model should attempt to provide general price ranges from training data and cite the intended winner page. The target page at theindustryguides.com/dentistry/cost-financing/ should be surfaced as a verification resource. Page content should also be enriched with concrete All-on-4 price ranges rather than only framework language.",
+        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended winner page not cited; all 10 citations are third-party; YouTube citation lacks authority; target page has only framework content for All-on-4 pricing rather than actual figures. || EDIT: Add the intended winner page (theindustryguides.com/dentistry/cost-financing/) as a citation and verification resource. The target page should be enriched with concrete All-on-4 2026 price ranges to compete with the detailed third-party data. Remove or qualify the YouTube citation as it lacks documentary authority."
       ],
       "target_type": "live_page",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-91b7815b87",
+      "ledger_marker": "agent-exact-c06518cbaf",
       "rendered_path": "dentistry/cost-financing/index.html",
       "page_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -192,38 +368,69 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_87d9cce211dff2a6",
+      "record_id": "agent_a2bcaacb77fda923",
       "record_ids": [
-        "agent_87d9cce211dff2a6"
+        "agent_a2bcaacb77fda923",
+        "agent_87d9cce211dff2a6",
+        "agent_d00494790eb0abfa",
+        "agent_9041a9b4e4cfc936",
+        "agent_932d5812b9d5eff5"
       ],
-      "run_date": "2026-06-30",
-      "query": "how much does a dental implant cost without insurance",
+      "run_date": "2026-07-07",
+      "query": "does medicare cover dental implants",
       "queries": [
+        "does medicare cover dental implants",
         "how much does a dental implant cost without insurance"
       ],
       "intended_winner_page": "dentistry/cost-insurance/index.html",
       "intended_winner_path": "dentistry/cost-insurance/index.html",
       "target_route": "/dentistry/cost-insurance/index.html",
       "implementation_path": "dentistry/cost-insurance/index.html",
-      "supporting_route": "/dentistry/guides/how-much-does-a-dental-implant-cost-without-insurance/",
+      "supporting_route": "/dentistry/guides/does-medicare-cover-dental-implants/",
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_a57ac113c7f707cf79",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_6fc4631fbdccc330b4",
       "source_record_ids": [
+        "velocity_src_6fc4631fbdccc330b4",
+        "velocity_src_0243f31d7d28e433e4",
+        "velocity_src_ff7023d88ee4575ce1",
+        "velocity_src_39b0a8cc1715f65c0c",
+        "velocity_src_9a7efb7efc8f6711e4",
+        "velocity_src_0bdb04736b857acad9",
+        "velocity_src_5bab01ef02b71c5f67",
+        "velocity_src_8f349a13a87bfb9f5e",
         "velocity_src_a57ac113c7f707cf79",
         "velocity_src_6f05bd5c70d9b2091e",
-        "velocity_src_8ac29f4d96794ddc87"
+        "velocity_src_8ac29f4d96794ddc87",
+        "velocity_src_09f77720f26d08cdd6",
+        "velocity_src_d387dc6ca3192736fe",
+        "velocity_src_a0dda6396a82500b53",
+        "velocity_src_dac3e8fd9e81a22bca",
+        "velocity_src_0378fc91090bdadeaa",
+        "velocity_src_78c97b053a7ccce62b"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "55bf89838da9450627370e2d97871118006c79347deb621d4529d5fcfc2f69a9",
+      "before_hash": "213d6b01026a43d8b23365774b82df5f4629bd8dd5df2bc330a34356ee5353ad",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -231,11 +438,15 @@
       "route_family": "LIVE_PAGE",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page contains a direct answer stating single-implant and full-arch treatment are different pricing universes and that a trustworthy office should separate them clearly, but provides no actual price ranges or component breakdowns. || MISSING: LLM and Perplexity both cite a national average of $3,000–$7,000 for a single implant without insurance, with component-level detail (post: $1,500–$2,500; abutment and crown: additional cost) and case-complexity tiers—none of which appear on the page. || EDIT: Immediately after the direct answer block, insert a three-row HTML table titled 'Single-Tooth Implant Cost Without Insurance (2026 Ranges)' with columns: Category | Price Range | Notes. Rows: National Average | $3,000–$7,000 | Most common range; Lower End | $2,800–$4,000 | Straightforward, no bone graft; Higher End | $4,500–$10,000+ | Complex cases, premium materials. Below the table, add a component breakdown list: Implant Post ($1,500–$2,500), Abutment and Crown ($1,500–$3,000), Bone Graft if needed ($500–$3,000). Note that prices exclude preparatory procedures unless explicitly included in the quote."
+        "FILEPATH: dentistry/cost-insurance/index.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended page does not contain Medicare-specific content. Model answered accurately from general knowledge but could not reasonably cite the intended page. Page-query topical mismatch is the root cause. || EDIT: Add a dedicated section to the dentistry/cost-insurance/ page explicitly addressing Medicare dental coverage exclusions, Medicare Advantage exceptions, and verification steps. This would align the page with high-volume Medicare dental queries and improve citation velocity.",
+        "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page contains a direct answer stating single-implant and full-arch treatment are different pricing universes and that a trustworthy office should separate them clearly, but provides no actual price ranges or component breakdowns. || MISSING: LLM and Perplexity both cite a national average of $3,000–$7,000 for a single implant without insurance, with component-level detail (post: $1,500–$2,500; abutment and crown: additional cost) and case-complexity tiers—none of which appear on the page. || EDIT: Immediately after the direct answer block, insert a three-row HTML table titled 'Single-Tooth Implant Cost Without Insurance (2026 Ranges)' with columns: Category | Price Range | Notes. Rows: National Average | $3,000–$7,000 | Most common range; Lower End | $2,800–$4,000 | Straightforward, no bone graft; Higher End | $4,500–$10,000+ | Complex cases, premium materials. Below the table, add a component breakdown list: Implant Post ($1,500–$2,500), Abutment and Crown ($1,500–$3,000), Bone Graft if needed ($500–$3,000). Note that prices exclude preparatory procedures unless explicitly included in the quote.",
+        "FILEPATH: dentistry/cost-insurance/index.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended page entirely lacks Medicare dental coverage content. No competitive content exists on the page for this query. A new fanout page is needed. || EDIT: Create a dedicated fanout page under dentistry/cost-insurance/ specifically for Medicare dental coverage, addressing Original Medicare exclusions, Medicare Advantage variability, and medically necessary exceptions. Cross-link from the cluster page. This would directly compete for citation on this high-volume query.",
+        "FILEPATH: dentistry/cost-insurance/index.html || CURRENT: Page contains general decision support criteria. || MISSING: The page's cost table rows contain only CMS template placeholder text ('Translate how much does a dental implant cost without insurance into a specific verification question') with no actual dollar figures. GPT-4o has no retrieval, but even with retrieval, no numeric data is extractable from this page. || EDIT: Replace all placeholder table rows with real 2026 implant cost data: total single tooth $3,000–$7,000, implant post $1,500–$2,500, abutment $500–$1,120, crown $1,000–$3,000, bone graft add-on $500–$1,000. Add a named primary source (Aspen Dental 2026 internal data, Delta Dental, GoodRx). Include a direct-answer paragraph at the top of the page with specific figures. The page title 'Single-Tooth Implant Cost Without Insurance (2026 Ranges)' is good — ensure the body content matches that promise.",
+        "FILEPATH: dentistry/cost-insurance/index.html || CURRENT: Page contains general decision support criteria. || MISSING: The intended winner page publishes no extractable cost figures — all numeric content is absent, replaced by template placeholder instructions. Competitor pages (Aspen Dental, Delta Dental, GoodRx) publish specific 2026 cost data that Perplexity cited directly. The page's structure and checklist are good but the core data gap makes it impossible to cite. || EDIT: Populate the cost table with real figures: single tooth total $3,000–$7,000 (national average ~$4,259 per Aspen Dental 2026 data), implant post $1,500–$2,500, abutment $500–$1,120, crown $1,000–$3,000. Cite Delta Dental, Aspen Dental, or GoodRx as named sources. Add a component-level breakdown table similar to what Perplexity synthesized. The page's 5-step checklist and decision framework are strong assets — combine them with real data to make the page both citable and differentiating."
       ],
       "target_type": "live_page",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-0463a6d55f",
+      "ledger_marker": "agent-exact-e5038a868c",
       "rendered_path": "dentistry/cost-insurance/index.html",
       "page_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -294,7 +505,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "d669f025db2cc2ccea2ddb84cfa0259cc1c1d41757a04466b01ad9a6485469f2",
+      "before_hash": "c7befb8aedf4ba8fdcb4f02a66e605163f931513e47d104cf605129435c55d8e",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -319,11 +530,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_30a0a2b701f395dc",
+      "record_id": "agent_9c6d5734c155790c",
       "record_ids": [
-        "agent_30a0a2b701f395dc"
+        "agent_9c6d5734c155790c",
+        "agent_30a0a2b701f395dc",
+        "agent_ceeef936ec697562"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "how to confirm dental insurance coverage before appointment",
       "queries": [
         "how to confirm dental insurance coverage before appointment"
@@ -336,21 +549,40 @@
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_27c167378a552e184e",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_524d893dc71dec13bf",
       "source_record_ids": [
+        "velocity_src_524d893dc71dec13bf",
+        "velocity_src_a0fd1db2e484c5d37f",
+        "velocity_src_168059353f157013a7",
+        "velocity_src_b5443f459724df5fb9",
+        "velocity_src_79d2e83b7d0802017c",
+        "velocity_src_c37c18957f99ddb686",
+        "velocity_src_0e79c84514ecf1c9c0",
         "velocity_src_27c167378a552e184e",
         "velocity_src_4cad4516608ea10d4e",
         "velocity_src_b5d3b4eeb96d1706d0"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "dfacbf1a252abf86ab8c06e7bf5d832d052e4f1568d7e5bd2d7b2f97f54770d5",
+      "before_hash": "958a537e5913681b38eea7ac9378cfc77a8bb6ea3bc5060ed4f28f3d7da46ddb",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -358,11 +590,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html || CURRENT: The page's direct answer states to confirm insurance in writing before booking and lists five specific confirmation questions covering provider/facility network status, procedure codes, preauthorization, annual maximum, waiting periods, and estimate disclaimers. || MISSING: The GPT response covers generic steps (review policy, call insurer, use online portal) but omits the page's specific emphasis on confirming in writing, verifying both provider AND facility network status separately, and checking procedure codes—critical distinctions the page makes that differentiate it from generic insurance advice. || EDIT: Directly below the 'Direct answer' block, add a scannable HTML checklist titled 'The In-Writing Confirmation Checklist' with 6 items: (1) Request written confirmation—not verbal, (2) Ask if both the provider and the facility are in-network, (3) Confirm which procedure codes will be billed, (4) Ask whether preauthorization is required for your procedure, (5) Clarify how your annual maximum and any waiting periods apply, (6) Get acknowledgment that any quote is an estimate only. Each item should include a one-sentence 'why it matters' note."
+        "FILEPATH: insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html || CURRENT: Page contains general decision support criteria. || MISSING: No citation present. Missing CDT procedure code verification, preauthorization check, and the distinction that accepting a plan does not mean being in-network for a specific procedure. No written estimate caveat included. || EDIT: Crawl and cite theindustryguides.com/insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html. Incorporate the Insurance Acceptance Verification Scorecard: network status by provider/location/procedure, CDT codes, preauthorization, annual maximum/waiting period, and written estimate caveat. Add red flags: office says 'we take your insurance' without confirming network status.",
+        "FILEPATH: insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html || CURRENT: The page's direct answer states to confirm insurance in writing before booking and lists five specific confirmation questions covering provider/facility network status, procedure codes, preauthorization, annual maximum, waiting periods, and estimate disclaimers. || MISSING: The GPT response covers generic steps (review policy, call insurer, use online portal) but omits the page's specific emphasis on confirming in writing, verifying both provider AND facility network status separately, and checking procedure codes—critical distinctions the page makes that differentiate it from generic insurance advice. || EDIT: Directly below the 'Direct answer' block, add a scannable HTML checklist titled 'The In-Writing Confirmation Checklist' with 6 items: (1) Request written confirmation—not verbal, (2) Ask if both the provider and the facility are in-network, (3) Confirm which procedure codes will be billed, (4) Ask whether preauthorization is required for your procedure, (5) Clarify how your annual maximum and any waiting periods apply, (6) Get acknowledgment that any quote is an estimate only. Each item should include a one-sentence 'why it matters' note.",
+        "FILEPATH: insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended winner page not cited. Response framed as dental office workflow rather than patient action. Missing patient-facing red flags and the CDT-code-level verification detail from the scorecard. || EDIT: Reorient response to patient perspective. Add citation to theindustryguides.com/insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html. Incorporate the scorecard: network status per procedure not just per plan, preauthorization, annual maximum, and the red flag that 'we take your insurance' is not the same as being in-network."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-744dc0eb79",
+      "ledger_marker": "agent-exact-f006f68007",
       "rendered_path": "insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -372,11 +606,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_52eeeacf77e7e0bf",
+      "record_id": "agent_23584957a35218a7",
       "record_ids": [
-        "agent_52eeeacf77e7e0bf"
+        "agent_23584957a35218a7",
+        "agent_52eeeacf77e7e0bf",
+        "agent_dff0d4c9b949c84d"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "is sedation dentistry safe and is it worth the extra cost",
       "queries": [
         "is sedation dentistry safe and is it worth the extra cost"
@@ -389,21 +625,40 @@
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_c15afc4ee686987c5b",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_49ecde29195420c576",
       "source_record_ids": [
+        "velocity_src_49ecde29195420c576",
+        "velocity_src_9eba79b00a3d7388b3",
+        "velocity_src_c83ed1e8fc0a3773de",
+        "velocity_src_eab6f9842b6e302fcc",
+        "velocity_src_eaa6e095a72bda4796",
+        "velocity_src_955a505cb738c1f49e",
+        "velocity_src_626e0e1eef2f6f990d",
         "velocity_src_c15afc4ee686987c5b",
         "velocity_src_444f1711dde7b9e715",
         "velocity_src_f88630f5724ee40a9e"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "4e5e9b546b860fb2ceee1c42d1d94b768e2e384772ca9383a522e65a243ec733",
+      "before_hash": "7ea146fb76b7d8c0fa08ed9bf41042fa4aa484e93f69fd7b81500b927fa131ba",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -411,11 +666,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html || CURRENT: The page's direct answer frames sedation fit as a safety and logistics question covering sedation type, administrator credentials, monitoring, medical-history screening, recovery requirements, transportation, and whether sedation fees are separated from procedure fees. || MISSING: The GPT response treats sedation as primarily a comfort and anxiety decision and omits the logistics dimensions the page emphasizes: who administers sedation, monitoring protocol specifics, transportation requirements, and fee separation from procedure costs. These are the page's distinguishing evaluation criteria that LLMs consistently skip. || EDIT: Directly below the direct answer block, add an HTML checklist titled 'Sedation Fit Evaluation: 7 Questions to Ask Before Booking' with one item per page dimension: (1) What sedation type is offered and why is it appropriate for my procedure? (2) Who administers sedation—the dentist or a separate anesthesia provider? (3) What monitoring equipment is used during the procedure? (4) Will my full medical history be reviewed before sedation is approved? (5) What are the recovery time requirements? (6) Is transportation required and who arranges it? (7) Are sedation fees listed separately from procedure fees? Format as a scannable checklist with a one-line rationale per question."
+        "FILEPATH: insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html || CURRENT: Page contains general decision support criteria. || MISSING: No citation present. Missing the five-factor safety scorecard. No mention of cost separation as a verification factor. Missing red flags specific to the page including sedation offered before medical history review and bundled estimates. || EDIT: Cite theindustryguides.com/insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html. Incorporate the safety scorecard with all five factors. Add the red flags: sedation offered before medical history reviewed, no written recovery plan, bundled sedation cost preventing cost comparison.",
+        "FILEPATH: insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html || CURRENT: The page's direct answer frames sedation fit as a safety and logistics question covering sedation type, administrator credentials, monitoring, medical-history screening, recovery requirements, transportation, and whether sedation fees are separated from procedure fees. || MISSING: The GPT response treats sedation as primarily a comfort and anxiety decision and omits the logistics dimensions the page emphasizes: who administers sedation, monitoring protocol specifics, transportation requirements, and fee separation from procedure costs. These are the page's distinguishing evaluation criteria that LLMs consistently skip. || EDIT: Directly below the direct answer block, add an HTML checklist titled 'Sedation Fit Evaluation: 7 Questions to Ask Before Booking' with one item per page dimension: (1) What sedation type is offered and why is it appropriate for my procedure? (2) Who administers sedation—the dentist or a separate anesthesia provider? (3) What monitoring equipment is used during the procedure? (4) Will my full medical history be reviewed before sedation is approved? (5) What are the recovery time requirements? (6) Is transportation required and who arranges it? (7) Are sedation fees listed separately from procedure fees? Format as a scannable checklist with a one-line rationale per question.",
+        "FILEPATH: insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended winner page not cited. Safety focus dominated without the decision-support verification layer. Cost separation and recovery logistics verification absent. Red flag framework (when to pause or investigate) not included. || EDIT: Add citation to theindustryguides.com/insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html. Complement safety citations with the page's five-factor scorecard. Add the red flag that sedation offered before medical history review is a pause signal. Include cost separation verification guidance."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-76053a7920",
+      "ledger_marker": "agent-exact-efc6965c57",
       "rendered_path": "insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -425,12 +682,14 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_3b64ad0c4afe01e3",
+      "record_id": "agent_f27d8493c681e124",
       "record_ids": [
+        "agent_f27d8493c681e124",
         "agent_3b64ad0c4afe01e3",
-        "agent_4c5d64ed29841ab2"
+        "agent_4c5d64ed29841ab2",
+        "agent_95742b0ee3984425"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "at what age should my child first see a dentist and what should I expect",
       "queries": [
         "at what age should my child first see a dentist and what should I expect"
@@ -443,14 +702,34 @@
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_86b1f10c712d787ab1",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_723fa58b9e6c9f95c5",
       "source_record_ids": [
+        "velocity_src_723fa58b9e6c9f95c5",
+        "velocity_src_1904742fdb32acab6d",
+        "velocity_src_9c156a65fee040a7b7",
+        "velocity_src_a0c1801bc0b9de1a0f",
+        "velocity_src_ec2a64b1f8ca1c909d",
+        "velocity_src_e49384e698a4f64171",
+        "velocity_src_a6dc820423b1bc7caf",
+        "velocity_src_c6622bf6dc2c70767f",
         "velocity_src_86b1f10c712d787ab1",
         "velocity_src_64ddc922dde6b0c154",
         "velocity_src_ea8a813b6ea86900a5",
@@ -460,7 +739,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "2ba3c809ed628ddf62c15347cb941c33e6d0f2c9d8d2c6f8b6a710544006d572",
+      "before_hash": "f2e4251808b3828c6e84a4455f45f44c8e45f89faf68ad3fb93734cd13aa690d",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -468,12 +747,14 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
+        "FILEPATH: insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html || CURRENT: Page contains general decision support criteria. || MISSING: No citations provided; intended winner page not referenced; page lacks an explicit age-1 recommendation statement matching the query. || EDIT: Add citation to the intended winner page and to AAPD/ADA official sources with URLs. The response is substantively correct and well-structured but lacks any citation. The intended winner page should include an explicit age-1 recommendation statement to make it citable.",
         "FILEPATH: insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html || CURRENT: Page focuses on what to verify when comparing pediatric dental offices, covering explanation style, parental presence, and emergency protocols. || MISSING: Direct answer to the first-visit age question (age 1 or within 6 months of first tooth eruption per AAPD), a structured 'what to expect at the first visit' summary, and a bridge from that answer into the office-comparison checklist. || EDIT: Insert an H2 titled 'When Should My Child First See a Dentist?' immediately after the 'Direct answer' block. Include: bullet 1 — 'By age 1 or within 6 months of the first tooth, whichever comes first (AAPD recommendation)'; bullet 2 — 'What to expect: a gentle exam, possible cleaning, and parent education on brushing and diet'; then add a transition sentence: 'Once you know when to go, use the checklist below to choose the right pediatric office.'",
-        "FILEPATH: insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html || CURRENT: Page addresses office-comparison criteria (explanation style, parental presence, emergency contacts) but does not answer the foundational question of when to schedule the first visit. || MISSING: The AAPD two-factor age rule, worked examples (tooth at 6 months → go by 12 months; no tooth by 12 months → go anyway), and a 'what to expect' summary for the first visit. || EDIT: Insert an H2 'When to Book the First Pediatric Dental Visit' immediately after the 'Direct answer' block. Include a two-bullet rule list, two parenthetical examples, and a 'What to Expect' sub-list (gentle exam, possible cleaning, parent brushing/diet guidance, no-pressure tone). Close with: 'Now that you know when to go, the checklist below helps you choose the right office.'"
+        "FILEPATH: insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html || CURRENT: Page addresses office-comparison criteria (explanation style, parental presence, emergency contacts) but does not answer the foundational question of when to schedule the first visit. || MISSING: The AAPD two-factor age rule, worked examples (tooth at 6 months → go by 12 months; no tooth by 12 months → go anyway), and a 'what to expect' summary for the first visit. || EDIT: Insert an H2 'When to Book the First Pediatric Dental Visit' immediately after the 'Direct answer' block. Include a two-bullet rule list, two parenthetical examples, and a 'What to Expect' sub-list (gentle exam, possible cleaning, parent brushing/diet guidance, no-pressure tone). Close with: 'Now that you know when to go, the checklist below helps you choose the right office.'",
+        "FILEPATH: insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended winner page not cited; AAPD cited by name only without URL; no citation to the intended winner's unique scorecard content. || EDIT: Include the intended winner page as a citation resource, particularly the Pediatric Dental Office Comparison Scorecard which provides unique comparison value. Add a direct AAPD URL citation. The target page's scorecard (child communication, parent role, emergency handling, sedation approach) would strengthen the response's practical guidance section."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-83475e8e87",
+      "ledger_marker": "agent-exact-220093e8ce",
       "rendered_path": "insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -483,11 +764,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_8c9c8d31212235c3",
+      "record_id": "agent_b9c1150ed49decb6",
       "record_ids": [
-        "agent_8c9c8d31212235c3"
+        "agent_b9c1150ed49decb6",
+        "agent_8c9c8d31212235c3",
+        "agent_8e7720181bcf7c26"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "how to spot dental scam red flags before booking",
       "queries": [
         "how to spot dental scam red flags before booking"
@@ -496,25 +779,43 @@
       "intended_winner_path": "insights/dentistry-011-dental-scam-red-flags.html",
       "target_route": "/insights/dentistry-011-dental-scam-red-flags.html",
       "implementation_path": "insights/dentistry-011-dental-scam-red-flags.html",
-      "supporting_route": "/dentistry/guides/how-to-spot-dental-scam-red-flags-before-booking/",
+      "supporting_route": "/dentistry/community-questions/how-to-spot-dental-scam-red-flags-before-booking/",
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_4daa3b1f59ba31523d",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_11ba7a7528d595a91a",
       "source_record_ids": [
+        "velocity_src_11ba7a7528d595a91a",
+        "velocity_src_8438637e1711fac679",
+        "velocity_src_e1d9f4a7fc9cd58cad",
+        "velocity_src_f961a420090637e1a0",
+        "velocity_src_3da04e085e1d3c22f6",
+        "velocity_src_0853af845f45d26987",
         "velocity_src_4daa3b1f59ba31523d",
         "velocity_src_6d8d84602c5ccc42ae",
         "velocity_src_0ef9f900d52809a2c0"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "9f16739284570af868d8c8b58c0c348e8be1be6702c0906eec6b575a7e76ae3d",
+      "before_hash": "e56617d0dd26e0c27c199a51b38395fa67f2efcfbb72097443738027b450f9af",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -522,11 +823,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-011-dental-scam-red-flags.html || CURRENT: The page references a 'Red Flag Severity Matrix' with three tiers (walk away, investigate, watch) and mentions pressure/hidden costs, unclear treatment sequencing, and repeated billing review patterns. The comparison table section exists but lacks scenario-level examples per tier. || MISSING: The GPT response lists individual red flags generically without referencing the tiered severity framework or connecting each flag to a specific action tier. The page needs the matrix to be more explicitly populated with scenario examples so the branded framework clearly outperforms the generic list format LLMs default to. || EDIT: Within the 'Comparison table' section, add a three-column HTML table titled 'Red Flag Severity Matrix' with columns: Red Flag | Tier (Walk Away / Investigate / Watch) | Real-World Scenario. Populate with at least 6 rows covering: high-pressure same-day commitment demands (Walk Away), upfront fees before diagnosis (Walk Away), vague procedure code explanations (Investigate), treatment plan with no alternatives offered (Investigate), unusual review patterns mentioning billing errors (Watch), and unusually low price with no itemized breakdown (Watch). Each scenario should be one concrete sentence."
+        "FILEPATH: insights/dentistry-011-dental-scam-red-flags.html || CURRENT: Page contains general decision support criteria. || MISSING: No citation present. Missing tiered severity framework (Walk Away / Investigate / Watch). No mention of hidden clinician identity as a walk-away signal. Missing the actionable 'seek second opinion' routing for major irreversible work. || EDIT: Cite theindustryguides.com/insights/dentistry-011-dental-scam-red-flags.html. Incorporate the three-tier severity matrix: Walk Away (guaranteed outcome, hidden clinician, pressure to pay immediately), Investigate (large plan with weak explanation, no images/records), Watch (communication friction, estimate uncertainty). Add red flag: same-day pressure for expensive treatment and refusal to explain alternatives.",
+        "FILEPATH: insights/dentistry-011-dental-scam-red-flags.html || CURRENT: The page references a 'Red Flag Severity Matrix' with three tiers (walk away, investigate, watch) and mentions pressure/hidden costs, unclear treatment sequencing, and repeated billing review patterns. The comparison table section exists but lacks scenario-level examples per tier. || MISSING: The GPT response lists individual red flags generically without referencing the tiered severity framework or connecting each flag to a specific action tier. The page needs the matrix to be more explicitly populated with scenario examples so the branded framework clearly outperforms the generic list format LLMs default to. || EDIT: Within the 'Comparison table' section, add a three-column HTML table titled 'Red Flag Severity Matrix' with columns: Red Flag | Tier (Walk Away / Investigate / Watch) | Real-World Scenario. Populate with at least 6 rows covering: high-pressure same-day commitment demands (Walk Away), upfront fees before diagnosis (Walk Away), vague procedure code explanations (Investigate), treatment plan with no alternatives offered (Investigate), unusual review patterns mentioning billing errors (Watch), and unusually low price with no itemized breakdown (Watch). Each scenario should be one concrete sentence.",
+        "FILEPATH: insights/dentistry-011-dental-scam-red-flags.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended winner page not cited. Marketing-focused sources included that do not serve patient intent. Three-tier severity triage framework absent. Red flag of 'no itemized treatment plan' present in page checklist was not surfaced. || EDIT: Add citation to theindustryguides.com/insights/dentistry-011-dental-scam-red-flags.html. Replace marketing-focused sources (Remedo, Pain Free Dental Marketing) with patient-facing sources. Incorporate the three-tier severity matrix directly. Add the 'compare a second opinion before major irreversible work' action step."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-36149a5213",
+      "ledger_marker": "agent-exact-abcf8b3e40",
       "rendered_path": "insights/dentistry-011-dental-scam-red-flags.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -536,11 +839,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_9ee830569db4e2c7",
+      "record_id": "agent_5c2a56db00f9678d",
       "record_ids": [
-        "agent_9ee830569db4e2c7"
+        "agent_5c2a56db00f9678d",
+        "agent_9ee830569db4e2c7",
+        "agent_bd1a434e1f0bc2d6"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "how do I know if I really need the dental work my dentist is recommending",
       "queries": [
         "how do I know if I really need the dental work my dentist is recommending"
@@ -553,21 +858,41 @@
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_92dafcae2664a84cf4",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_fa9c43cc38f0b439a1",
       "source_record_ids": [
+        "velocity_src_fa9c43cc38f0b439a1",
+        "velocity_src_620b777fdd84613187",
+        "velocity_src_be0604b0d8a44b5a61",
+        "velocity_src_641faa67331b1d8e26",
+        "velocity_src_c59ed90bcd4db0b7dd",
+        "velocity_src_0fefa224c815094c25",
+        "velocity_src_3b24926700e6d9e8cb",
+        "velocity_src_8b5f8ef13af845e8dd",
         "velocity_src_92dafcae2664a84cf4",
         "velocity_src_6bd64d29b89ad9f4a3",
         "velocity_src_16d1e29c7d39eeef88"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "25d0d9f63d16516706b038d4bf6f0eae617987074d88ebd72aa6c5a0f8f980cf",
+      "before_hash": "1ff15b7607abf16c2e3d9f15edae286465a70617f05c79f600fb02e3c0068e94",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -575,11 +900,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html || CURRENT: The page's Direct Answer block states that a second opinion is most useful when comparing diagnosis, urgency, alternatives, sequencing, and consequences of waiting — and instructs readers to request X-rays, images, notes, treatment codes, and a written plan. No further decision-level content is visible. || MISSING: The LLM response covers only generic steps (understand diagnosis, research, evaluate symptoms) and ignores the specific red flags that indicate a second opinion is warranted — such as sudden large treatment plans, pressure for immediate action, no visual evidence shown, and discouraging second opinions. The page also lacks a concrete checklist of what records to bring to a second-opinion visit. || EDIT: Immediately after the Direct Answer block, add an H2 'Red flags that mean you should get a second opinion' with 5 bulleted red flags (large first-visit plan, pressure for immediacy, no X-ray evidence, cosmetic work framed as necessary, dentist discourages second opinions). Then add a second H2 'What to bring to a second-opinion appointment' listing X-rays, clinical notes, written treatment plan with procedure codes, and cost estimate. Both sections should use plain bullet lists, no tables."
+        "FILEPATH: insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html || CURRENT: Page contains general decision support criteria. || MISSING: Zero citations; intended winner page not referenced despite direct content alignment; response is generically structured vs. the page's specific second-opinion framework. || EDIT: Add direct citation to the intended winner page's Second Opinion Core Factors Table which directly matches the query intent. Provide URL citations for ADA and other named organizations. The response would benefit from the structured comparison approach present in the target page (diagnosis vs urgency vs alternatives vs consequences vs cost).",
+        "FILEPATH: insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html || CURRENT: The page's Direct Answer block states that a second opinion is most useful when comparing diagnosis, urgency, alternatives, sequencing, and consequences of waiting — and instructs readers to request X-rays, images, notes, treatment codes, and a written plan. No further decision-level content is visible. || MISSING: The LLM response covers only generic steps (understand diagnosis, research, evaluate symptoms) and ignores the specific red flags that indicate a second opinion is warranted — such as sudden large treatment plans, pressure for immediate action, no visual evidence shown, and discouraging second opinions. The page also lacks a concrete checklist of what records to bring to a second-opinion visit. || EDIT: Immediately after the Direct Answer block, add an H2 'Red flags that mean you should get a second opinion' with 5 bulleted red flags (large first-visit plan, pressure for immediacy, no X-ray evidence, cosmetic work framed as necessary, dentist discourages second opinions). Then add a second H2 'What to bring to a second-opinion appointment' listing X-rays, clinical notes, written treatment plan with procedure codes, and cost estimate. Both sections should use plain bullet lists, no tables.",
+        "FILEPATH: insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended winner page not cited; Delta Dental antibiotics citation is off-topic; $3,000 threshold claim is anecdotal from a single practice blog; intended winner's structured second-opinion framework not leveraged. || EDIT: Include the intended winner page's Second Opinion Core Factors Table as a citation, which provides a more structured and complete comparison framework than any single cited source. Remove or qualify the Delta Dental antibiotics citation as it is off-topic. Add caveat that the $3,000 threshold is one dentist's heuristic rather than an evidence-based standard. The target page's five-factor comparison (diagnosis, urgency, alternatives, consequences, cost/sequencing) should be surfaced."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-3b6f656614",
+      "ledger_marker": "agent-exact-05120c3caa",
       "rendered_path": "insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -589,11 +916,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_fc14adf404edea05",
+      "record_id": "agent_6a3fddbef16f5078",
       "record_ids": [
-        "agent_fc14adf404edea05"
+        "agent_6a3fddbef16f5078",
+        "agent_fc14adf404edea05",
+        "agent_289d47a1b25f7e80"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "how to ask dentist for itemized pricing",
       "queries": [
         "how to ask dentist for itemized pricing"
@@ -606,21 +935,40 @@
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_f0b8e158516e6b9d37",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_9c7dd37cdf6a2cff45",
       "source_record_ids": [
+        "velocity_src_9c7dd37cdf6a2cff45",
+        "velocity_src_9295b17189ec1d54f2",
+        "velocity_src_b9f43e2d645c4e4536",
+        "velocity_src_a575b38596f3027a21",
+        "velocity_src_aa1b5cab233e3b6653",
+        "velocity_src_82a897647d6227bfdc",
+        "velocity_src_ece7c151aa591dd58a",
         "velocity_src_f0b8e158516e6b9d37",
         "velocity_src_bd4db49a26d582af35",
         "velocity_src_7cbb315457d4d1a7f7"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "54d82a04cf6cc657dd9baa9b8889e37be7537a8cc0710fea4610c3f84618cd92",
+      "before_hash": "cad9410a04d1699fe9d5eb5c24be0eb6de3266ad26679e9c82f88b158ba9fb2c",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -628,11 +976,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-020-how-to-ask-for-itemized-pricing.html || CURRENT: Page states the direct answer that patients should ask for a written itemized estimate separating exam, imaging, procedure, lab/materials, sedation, temporaries, follow-up, insurance estimate, and patient responsibility, and that each should be marked fixed, estimated, or insurance-dependent. || MISSING: The page lists categories but provides no actual word-for-word script to use when asking, no mention of CDT procedure codes as a verification tool, and no reference to the No Surprises Act good-faith estimate right for uninsured or self-pay patients. || EDIT: After the direct answer block, add an H2 section titled 'What to Say and What to Check' containing: (1) a blockquote with a ready-to-use patient script referencing written good-faith estimates and CDT codes; (2) a two-column checklist table with 'Line Item' and 'Mark As' columns covering all nine categories already named in the direct answer; (3) a one-sentence callout noting that under federal law self-pay patients may be entitled to a written good-faith estimate before treatment begins."
+        "FILEPATH: insights/dentistry-020-how-to-ask-for-itemized-pricing.html || CURRENT: Page contains general decision support criteria. || MISSING: No citation to intended winner page. Missing structured itemized line-item table (procedure codes, lab/materials separation, sedation fees). No mention of red flags like bundled pricing or insurance-as-guaranteed. || EDIT: The intended winner page must be crawled and cited. Response should include the itemized pricing component table (exam/imaging, procedure code, lab/materials, sedation, follow-up, insurance estimate) and the copy-ready script verbatim. Add citation to theindustryguides.com/insights/dentistry-020-how-to-ask-for-itemized-pricing.html.",
+        "FILEPATH: insights/dentistry-020-how-to-ask-for-itemized-pricing.html || CURRENT: Page states the direct answer that patients should ask for a written itemized estimate separating exam, imaging, procedure, lab/materials, sedation, temporaries, follow-up, insurance estimate, and patient responsibility, and that each should be marked fixed, estimated, or insurance-dependent. || MISSING: The page lists categories but provides no actual word-for-word script to use when asking, no mention of CDT procedure codes as a verification tool, and no reference to the No Surprises Act good-faith estimate right for uninsured or self-pay patients. || EDIT: After the direct answer block, add an H2 section titled 'What to Say and What to Check' containing: (1) a blockquote with a ready-to-use patient script referencing written good-faith estimates and CDT codes; (2) a two-column checklist table with 'Line Item' and 'Mark As' columns covering all nine categories already named in the direct answer; (3) a one-sentence callout noting that under federal law self-pay patients may be entitled to a written good-faith estimate before treatment begins.",
+        "FILEPATH: insights/dentistry-020-how-to-ask-for-itemized-pricing.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended winner page not cited. Page-specific structured table covering all six line items (exam, procedure, lab, sedation, follow-up, insurance) was not sourced. Red flags from the page (bundled sedation, insurance described as guaranteed) were not mentioned. || EDIT: Add citation to theindustryguides.com/insights/dentistry-020-how-to-ask-for-itemized-pricing.html. Incorporate the page's itemized component table including sedation/anesthesia fee separation and insurance estimate caveats. Reference the copy-ready script format from the page directly."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-fa962352f1",
+      "ledger_marker": "agent-exact-c0fbde16d1",
       "rendered_path": "insights/dentistry-020-how-to-ask-for-itemized-pricing.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -642,11 +992,131 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_ffe29d0f9909ce93",
+      "record_id": "agent_4cda4ab8930e0fba",
       "record_ids": [
-        "agent_ffe29d0f9909ce93"
+        "agent_4cda4ab8930e0fba",
+        "agent_110e6a0ba8f7eb3a"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
+      "query": "how to check if a dentist accepts my insurance",
+      "queries": [
+        "how to check if a dentist accepts my insurance"
+      ],
+      "intended_winner_page": "insights/dentistry-021-how-to-confirm-insurance-coverage.html",
+      "intended_winner_path": "insights/dentistry-021-how-to-confirm-insurance-coverage.html",
+      "target_route": "/insights/dentistry-021-how-to-confirm-insurance-coverage.html",
+      "implementation_path": "insights/dentistry-021-how-to-confirm-insurance-coverage.html",
+      "supporting_route": "/dentistry/guides/how-to-check-if-a-dentist-accepts-my-insurance/",
+      "operation": "REPAIR_INTENDED_WINNER_PAGE",
+      "source": "twin_agent_artifact",
+      "source_artifacts": {
+        "manifest": "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+        "csv": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+        "html": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+        "json": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json"
+      },
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json",
+      "source_record_id": "velocity_src_c4d8c5402a06137ab7",
+      "source_record_ids": [
+        "velocity_src_c4d8c5402a06137ab7",
+        "velocity_src_67807ab7464a2a980d",
+        "velocity_src_9f60b5d1a2fe2709c5",
+        "velocity_src_ce41222ab064879425",
+        "velocity_src_dea7a7c9c120986afe",
+        "velocity_src_047f71a65477e86db1",
+        "velocity_src_ba81b8aa1e7c535076",
+        "velocity_src_813f2f44387970b18d"
+      ],
+      "route_authority": "artifact_admitted",
+      "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
+      "before_hash": "6ae73f160132e463244926358777b9f881cff4ea203ab341eecd9705fc69240f",
+      "after_hash": null,
+      "status": "PLANNED",
+      "blocked_reason": "",
+      "target_resolution_status": "EXACT_EXISTS",
+      "route_family": "INSIGHT",
+      "canonicalized_from": [],
+      "fix_recommendations": [
+        "FILEPATH: insights/dentistry-021-how-to-confirm-insurance-coverage.html || CURRENT: Page contains general decision support criteria. || MISSING: GPT-4o gave accurate general advice but did not cite the intended page. The intended page has directly relevant checklist content that should have been surfaced. Citation gap is a discoverability issue. || EDIT: The intended page content (Insurance Confirmation Checklist) directly maps to this query. Add explicit structured data markup and improve discoverability. Ensure the checklist items (procedure codes, preauthorization, deductible details) appear in crawlable headings to increase citation likelihood.",
+        "FILEPATH: insights/dentistry-021-how-to-confirm-insurance-coverage.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended page not cited despite having directly relevant checklist content. Perplexity pulled from government and insurance company sources instead. Page needs higher authority signal for this query type. || EDIT: The intended page's Insurance Confirmation Checklist content is directly competitive with OPM.gov and Delta Dental on this query. Strengthen the page with explicit step-by-step verification language, procedure code mentions, and deductible/annual maximum confirmation steps in crawlable headings to compete for citation."
+      ],
+      "target_type": "generated_insight",
+      "trace_status": "PASS",
+      "ledger_marker": "agent-exact-7b8157b2dc",
+      "rendered_path": "insights/dentistry-021-how-to-confirm-insurance-coverage.html",
+      "item_exists": true,
+      "applied_status": "APPLIED_TO_LEDGER",
+      "has_ledger": true,
+      "has_item_marker": true,
+      "has_rendered_marker": true,
+      "query_marker_found": true
+    },
+    {
+      "record_id": "agent_1dbcf7a2e1b7f63c",
+      "record_ids": [
+        "agent_1dbcf7a2e1b7f63c",
+        "agent_b0bac650e5796b95"
+      ],
+      "run_date": "2026-07-07",
+      "query": "who is an in-network dentist for cigna near me",
+      "queries": [
+        "who is an in-network dentist for cigna near me"
+      ],
+      "intended_winner_page": "insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html",
+      "intended_winner_path": "insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html",
+      "target_route": "/insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html",
+      "implementation_path": "insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html",
+      "supporting_route": "/dentistry/guides/who-is-an-in-network-dentist-for-cigna-near-me/",
+      "operation": "REPAIR_INTENDED_WINNER_PAGE",
+      "source": "twin_agent_artifact",
+      "source_artifacts": {
+        "manifest": "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+        "csv": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+        "html": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+        "json": "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json"
+      },
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json",
+      "source_record_id": "velocity_src_35f9925c6324fa7809",
+      "source_record_ids": [
+        "velocity_src_35f9925c6324fa7809",
+        "velocity_src_6f4f48d7b2489df817",
+        "velocity_src_aeebb72612e8dd8d83",
+        "velocity_src_e9da7526ce36fbd476",
+        "velocity_src_77b26dff6d312f2892",
+        "velocity_src_dd586e51c859ba937e"
+      ],
+      "route_authority": "artifact_admitted",
+      "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
+      "before_hash": "9fdc2fabbe8382f03bc7fcb84e48c2dbf6ec3da36feafbdce3ccddaeddc81008",
+      "after_hash": null,
+      "status": "PLANNED",
+      "blocked_reason": "",
+      "target_resolution_status": "EXACT_EXISTS",
+      "route_family": "INSIGHT",
+      "canonicalized_from": [],
+      "fix_recommendations": [
+        "FILEPATH: insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html || CURRENT: Page contains general decision support criteria. || MISSING: Model response provides generic redirect advice without referencing the intended page. The intended page does not contain Cigna-specific lookup content, creating a topical mismatch. || EDIT: Add structured content to the intended page that directly addresses how to find in-network Cigna dentists, including a link to cignadentalplans.com and dentistryguides.com as canonical routing step. The page currently focuses on in-network vs out-of-network decision criteria rather than Cigna-specific lookup workflows.",
+        "FILEPATH: insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html || CURRENT: Page contains general decision support criteria. || MISSING: Intended page not cited by Perplexity. Page content lacks Cigna-specific lookup pathways. Model used authoritative Cigna and Zocdoc sources appropriately for the query intent. || EDIT: The intended page needs Cigna-specific content blocks including a direct mention of cignadentalplans.com and hcpdirectory.cigna.com as verification steps, plus explicit in-network confirmation checklist for Cigna users. This would increase citation velocity for this query class."
+      ],
+      "target_type": "generated_insight",
+      "trace_status": "PASS",
+      "ledger_marker": "agent-exact-049a755a17",
+      "rendered_path": "insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html",
+      "item_exists": true,
+      "applied_status": "APPLIED_TO_LEDGER",
+      "has_ledger": true,
+      "has_item_marker": true,
+      "has_rendered_marker": true,
+      "query_marker_found": true
+    },
+    {
+      "record_id": "agent_383355706cc7ff3c",
+      "record_ids": [
+        "agent_383355706cc7ff3c",
+        "agent_ffe29d0f9909ce93",
+        "agent_05655009998f428b"
+      ],
+      "run_date": "2026-07-07",
       "query": "how much is a single tooth implant",
       "queries": [
         "how much is a single tooth implant"
@@ -655,25 +1125,43 @@
       "intended_winner_path": "insights/dentistry-061-how-much-is-a-single-tooth-implant.html",
       "target_route": "/insights/dentistry-061-how-much-is-a-single-tooth-implant.html",
       "implementation_path": "insights/dentistry-061-how-much-is-a-single-tooth-implant.html",
-      "supporting_route": "/dentistry/guides/how-much-is-a-single-tooth-implant/",
+      "supporting_route": "/dentistry/community-questions/how-much-is-a-single-tooth-implant/",
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_6f8fa05388fb0ffd41",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_aa2e9ed3856929f1da",
       "source_record_ids": [
+        "velocity_src_aa2e9ed3856929f1da",
+        "velocity_src_a8731f88cea7739733",
+        "velocity_src_217ba3cee4807439ec",
+        "velocity_src_d8201b32dd4ec5aad2",
+        "velocity_src_ec5a14a28ff1362307",
+        "velocity_src_d7fd82bd8f9ce89a97",
         "velocity_src_6f8fa05388fb0ffd41",
         "velocity_src_f7741a9eaf2c3fa403",
         "velocity_src_302e762130438a68fb"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "9adbb693ce0db3caf83e4c9421b059be8174298e402935c201cbce9a8b93d2e9",
+      "before_hash": "914d1001ff7aaaf823004e4346cef17d74cebc25e58f79a1b4af0d1912952946",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -681,11 +1169,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-061-how-much-is-a-single-tooth-implant.html || CURRENT: The page's direct answer states that a quote should separate the implant post, abutment, crown, imaging, extraction, grafting, temporary tooth, sedation, and follow-up, and that the useful comparison is not one number but which pieces are included. No itemized price table exists. || MISSING: The GPT response gives a single $3,000–$6,000 range with no line-item breakdown; the page's own framing demands a per-component price table and a 'what could change the plan' variable list that neither the GPT nor the page currently provides in scannable form. || EDIT: Insert a two-column HTML table immediately after the direct answer block with rows for each component (implant post, abutment, crown, imaging/CT, extraction, bone graft, sinus lift, temporary tooth, sedation, follow-up visits) and a typical price range per component (e.g., implant post $1,500–$2,500, crown $1,000–$2,000, bone graft $500–$3,000, etc.). Add a second callout box listing three 'plan-change variables': bone volume finding, infection at extraction site, and implant brand substitution, each with a sentence on how it shifts the total."
+        "FILEPATH: insights/dentistry-061-how-much-is-a-single-tooth-implant.html || CURRENT: Page contains general decision support criteria. || MISSING: No citation to the intended winner page or its canonical domain. GPT-4o answered from parametric knowledge and cited unrelated general-authority sources instead. || EDIT: The intended page must include citable, structured cost data with named primary sources and a direct URL so that LLMs can attribute the answer to theindustryguides.com rather than general-authority fallback sources. Add a clearly attributed price range table with source citations on the page itself.",
+        "FILEPATH: insights/dentistry-061-how-much-is-a-single-tooth-implant.html || CURRENT: The page's direct answer states that a quote should separate the implant post, abutment, crown, imaging, extraction, grafting, temporary tooth, sedation, and follow-up, and that the useful comparison is not one number but which pieces are included. No itemized price table exists. || MISSING: The GPT response gives a single $3,000–$6,000 range with no line-item breakdown; the page's own framing demands a per-component price table and a 'what could change the plan' variable list that neither the GPT nor the page currently provides in scannable form. || EDIT: Insert a two-column HTML table immediately after the direct answer block with rows for each component (implant post, abutment, crown, imaging/CT, extraction, bone graft, sinus lift, temporary tooth, sedation, follow-up visits) and a typical price range per component (e.g., implant post $1,500–$2,500, crown $1,000–$2,000, bone graft $500–$3,000, etc.). Add a second callout box listing three 'plan-change variables': bone volume finding, infection at extraction site, and implant brand substitution, each with a sentence on how it shifts the total.",
+        "FILEPATH: insights/dentistry-061-how-much-is-a-single-tooth-implant.html || CURRENT: Page contains general decision support criteria. || MISSING: Perplexity cited 10 third-party sources but zero citations point to the intended winner page. The page lacks concrete, independently attributable cost figures that would allow it to be cited in a cost-comparison response. || EDIT: The intended page needs to publish explicit, attributed cost data (e.g., '$3,000–$6,500 per implant based on [named source, date]') so that Perplexity's retrieval pipeline can surface it as a competing citation. The page's current framework-only content cannot compete with dental practice cost pages."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-0651817880",
+      "ledger_marker": "agent-exact-12769fa253",
       "rendered_path": "insights/dentistry-061-how-much-is-a-single-tooth-implant.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -695,11 +1185,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_35de411899421af3",
+      "record_id": "agent_7f45a15387a0c958",
       "record_ids": [
-        "agent_35de411899421af3"
+        "agent_7f45a15387a0c958",
+        "agent_35de411899421af3",
+        "agent_94b8682a86dd07a8"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "are dental implants worth it after 60",
       "queries": [
         "are dental implants worth it after 60"
@@ -708,25 +1200,43 @@
       "intended_winner_path": "insights/dentistry-062-are-dental-implants-worth-it-after-60.html",
       "target_route": "/insights/dentistry-062-are-dental-implants-worth-it-after-60.html",
       "implementation_path": "insights/dentistry-062-are-dental-implants-worth-it-after-60.html",
-      "supporting_route": "/dentistry/guides/are-dental-implants-worth-it-after-60/",
+      "supporting_route": "/dentistry/community-questions/are-dental-implants-worth-it-after-60/",
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_27e4e38ca4bf830e88",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_eeca1c38e381e4e972",
       "source_record_ids": [
+        "velocity_src_eeca1c38e381e4e972",
+        "velocity_src_981fa52110d1f6466c",
+        "velocity_src_906a9f2ee119aac512",
+        "velocity_src_1d6579d0e021a9cc3a",
+        "velocity_src_9e2d0fae7e3fd3b914",
+        "velocity_src_f1b0b7ef981a0e13a3",
         "velocity_src_27e4e38ca4bf830e88",
         "velocity_src_722b585b6191f63ddf",
         "velocity_src_7eeb079332c80a7a9a"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "6a5b7eed75cc82cdddef8074840e25bc9ee70c5af1495f53161612bbfc046022",
+      "before_hash": "7deea612bf26b88463070427db09644cd152e8ddc9c8805cfe2df472124581ec",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -734,11 +1244,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-062-are-dental-implants-worth-it-after-60.html || CURRENT: The page's direct answer lists eight fit dimensions: bone health, medical history, medications, healing expectations, maintenance ability, alternatives, treatment timeline, and total cost. No checklist or comparison table exists on the page to operationalize these dimensions. || MISSING: GPT covers only four of the eight dimensions (health, bone health, oral health, longevity) and omits medications impact on osseointegration, maintenance ability (dexterity, home care), alternatives comparison (implant-retained denture, bridge), and treatment timeline for older patients. || EDIT: Add an eight-row checklist table immediately after the direct answer with columns 'Dimension', 'What to Confirm Before Deciding', and 'Why It Matters After 60'. Rows must map exactly to the eight page-stated dimensions. Include a note on common medications that impair healing (bisphosphonates, blood thinners, immunosuppressants) and add a two-row alternatives comparison (implant-retained overdenture vs. fixed implant bridge) with cost and maintenance differences."
+        "FILEPATH: insights/dentistry-062-are-dental-implants-worth-it-after-60.html || CURRENT: Page contains general decision support criteria. || MISSING: Zero citations provided. GPT-4o produced a generic meta-answer about where to find information, never engaging with the specific query or the intended page's content. || EDIT: The intended page should add age-specific decision criteria with dated primary-source citations (e.g., success-rate statistics from peer-reviewed studies) so that GPT-4o's training data or retrieval can surface the page as an authoritative source for this query.",
+        "FILEPATH: insights/dentistry-062-are-dental-implants-worth-it-after-60.html || CURRENT: The page's direct answer lists eight fit dimensions: bone health, medical history, medications, healing expectations, maintenance ability, alternatives, treatment timeline, and total cost. No checklist or comparison table exists on the page to operationalize these dimensions. || MISSING: GPT covers only four of the eight dimensions (health, bone health, oral health, longevity) and omits medications impact on osseointegration, maintenance ability (dexterity, home care), alternatives comparison (implant-retained denture, bridge), and treatment timeline for older patients. || EDIT: Add an eight-row checklist table immediately after the direct answer with columns 'Dimension', 'What to Confirm Before Deciding', and 'Why It Matters After 60'. Rows must map exactly to the eight page-stated dimensions. Include a note on common medications that impair healing (bisphosphonates, blood thinners, immunosuppressants) and add a two-row alternatives comparison (implant-retained overdenture vs. fixed implant bridge) with cost and maintenance differences.",
+        "FILEPATH: insights/dentistry-062-are-dental-implants-worth-it-after-60.html || CURRENT: Page contains general decision support criteria. || MISSING: Perplexity cited 7 relevant sources but zero citations point to the intended winner page. The page lacks the concrete clinical data and dated primary references that would allow it to compete for citation. || EDIT: The intended page needs to publish explicit, dated success-rate statistics (e.g., '97% success at 10 years per [source, date]') and a structured fit-matrix with named clinical references so that Perplexity's retrieval can surface it alongside or above practice-level dental pages."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-c62d39ed0f",
+      "ledger_marker": "agent-exact-41e23ea899",
       "rendered_path": "insights/dentistry-062-are-dental-implants-worth-it-after-60.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -748,11 +1260,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_e3e0b646d0d3c832",
+      "record_id": "agent_028b266f87f1e67c",
       "record_ids": [
-        "agent_e3e0b646d0d3c832"
+        "agent_028b266f87f1e67c",
+        "agent_e3e0b646d0d3c832",
+        "agent_6c5bc547a70be50b"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "is invisalign cheaper than braces",
       "queries": [
         "is invisalign cheaper than braces"
@@ -765,21 +1279,39 @@
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_8e564f98d203bc0fea",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_91ee42510e595fa8e7",
       "source_record_ids": [
+        "velocity_src_91ee42510e595fa8e7",
+        "velocity_src_04832dc99afb66d855",
+        "velocity_src_9c1d97956c21099552",
+        "velocity_src_cbb7cf5b90f3cc35f7",
+        "velocity_src_f34895b92deff087fc",
+        "velocity_src_1d0884f5f9664ae56f",
         "velocity_src_8e564f98d203bc0fea",
         "velocity_src_b04a36e7e840ce020e",
         "velocity_src_9bb682135637206001"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "2fde1e445e43748ebffd187797b916dc408591ec447d84214e723aa01ecf3d3f",
+      "before_hash": "780ca98557ec4e4bd765476b064b20db866947c58ebea18e37cd34e4ad1b1a0f",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -787,11 +1319,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-063-is-invisalign-cheaper-than-braces.html || CURRENT: The page's direct answer identifies six specific comparison dimensions beyond base price: monitoring visits, refinements, retainers, insurance coding, transfer policy, and what happens if trays are lost or treatment runs long. No comparison table exists to operationalize these. || MISSING: GPT gives only base price ranges ($3,000–$7,000 Invisalign, $2,500–$6,000 braces) and five generic factors; it entirely omits refinement costs, retainer fees, insurance coding differences between braces and aligners, transfer/portability policy, and lost-tray replacement costs—all explicitly listed on the page as decision criteria. || EDIT: Insert a side-by-side HTML comparison table with rows for: Base price range, Monitoring visit frequency and cost, Refinement rounds included vs. extra-charge, Retainer cost post-treatment, Insurance billing code differences, Transfer policy if patient moves, and Lost/broken appliance replacement cost. Add a 'hidden cost' callout box highlighting that refinements and retainers can add $500–$1,500 to Invisalign totals not reflected in quoted price."
+        "FILEPATH: insights/dentistry-063-is-invisalign-cheaper-than-braces.html || CURRENT: Page contains general decision support criteria. || MISSING: Zero citations to the intended winner page. GPT-4o answered from parametric knowledge and referenced generic authority sources. The page's comparison table exists but lacks named primary citations. || EDIT: The intended page should include a clearly labeled side-by-side cost comparison table with named primary sources and publication dates. Adding citable, attributed cost ranges would allow GPT-4o's training or retrieval to surface the page rather than defaulting to the AAO or generic health sites.",
+        "FILEPATH: insights/dentistry-063-is-invisalign-cheaper-than-braces.html || CURRENT: The page's direct answer identifies six specific comparison dimensions beyond base price: monitoring visits, refinements, retainers, insurance coding, transfer policy, and what happens if trays are lost or treatment runs long. No comparison table exists to operationalize these. || MISSING: GPT gives only base price ranges ($3,000–$7,000 Invisalign, $2,500–$6,000 braces) and five generic factors; it entirely omits refinement costs, retainer fees, insurance coding differences between braces and aligners, transfer/portability policy, and lost-tray replacement costs—all explicitly listed on the page as decision criteria. || EDIT: Insert a side-by-side HTML comparison table with rows for: Base price range, Monitoring visit frequency and cost, Refinement rounds included vs. extra-charge, Retainer cost post-treatment, Insurance billing code differences, Transfer policy if patient moves, and Lost/broken appliance replacement cost. Add a 'hidden cost' callout box highlighting that refinements and retainers can add $500–$1,500 to Invisalign totals not reflected in quoted price.",
+        "FILEPATH: insights/dentistry-063-is-invisalign-cheaper-than-braces.html || CURRENT: Page contains general decision support criteria. || MISSING: Perplexity cited 8 third-party sources but zero citations point to the intended winner page. The page's comparison framework exists but lacks named, dated primary cost references that would enable citation. || EDIT: The intended page needs to publish explicit, attributed cost ranges for both Invisalign and braces (with named practice or insurer sources and dates), along with the hidden-cost comparison table currently present. This would allow Perplexity to cite it as a comprehensive comparison resource rather than skipping it for practice-level pages."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-3a8121d510",
+      "ledger_marker": "agent-exact-e174219b2a",
       "rendered_path": "insights/dentistry-063-is-invisalign-cheaper-than-braces.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -801,11 +1335,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_fe9725d4589dbb6f",
+      "record_id": "agent_483974bc6a8396f5",
       "record_ids": [
-        "agent_fe9725d4589dbb6f"
+        "agent_483974bc6a8396f5",
+        "agent_fe9725d4589dbb6f",
+        "agent_6aab8ef69d527438"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "does insurance cover braces for adults",
       "queries": [
         "does insurance cover braces for adults"
@@ -814,25 +1350,43 @@
       "intended_winner_path": "insights/dentistry-064-does-insurance-cover-braces-for-adults.html",
       "target_route": "/insights/dentistry-064-does-insurance-cover-braces-for-adults.html",
       "implementation_path": "insights/dentistry-064-does-insurance-cover-braces-for-adults.html",
-      "supporting_route": "/dentistry/guides/does-insurance-cover-braces-for-adults/",
+      "supporting_route": "/dentistry/community-questions/does-insurance-cover-braces-for-adults/",
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_de7bb28ca74d4688a2",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_285443db9b32193250",
       "source_record_ids": [
+        "velocity_src_285443db9b32193250",
+        "velocity_src_0c6836afb47d7cff34",
+        "velocity_src_e83ae5fcd2414ed07d",
+        "velocity_src_6ea996e3e8e73eaac5",
+        "velocity_src_0c6db2d2ada6ef7848",
+        "velocity_src_137a3f4761d887c7d7",
         "velocity_src_de7bb28ca74d4688a2",
         "velocity_src_0e3b82cfdc53e3619a",
         "velocity_src_24d7b71d673aff33af"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "3a43963cc9ad407641437f6ecac707023c382bf3f605048b85fee0c2680ec0f3",
+      "before_hash": "d56c2d1a72aa494b41ee64ca0a3223b1ca7f6186b1f83c047017dc2e4abfde4f",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -840,11 +1394,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-064-does-insurance-cover-braces-for-adults.html || CURRENT: The page has a direct answer listing eight factors (orthodontic benefits, age limits, medical-necessity rules, waiting periods, lifetime maximums, in-network requirements, clear aligners) but does not expand any factor with actionable detail or decision guidance. || MISSING: The LLM response covers dental plan types, coverage limitations, pre-existing condition exclusions, and type-of-braces distinctions — none of which are elaborated on the page beyond a one-sentence factor list. The page also lacks a concrete verification checklist or script for confirming coverage with an insurer. || EDIT: After the Direct Answer block, add an H2 section titled 'Key factors that determine adult braces coverage' with five H3 subsections: Age Limits (explain 18-19 cutoff common to most plans), Medical Necessity vs. Cosmetic (explain how jaw dysfunction or severe misalignment can shift classification), Waiting Periods and Lifetime Maximums (give typical ranges, e.g., 12-month waiting period, $1,000–$2,000 lifetime cap), Clear Aligners vs. Metal Braces (note that some plans cover one but not the other), and In-Network Orthodontists (explain cost difference for out-of-network). Follow with a five-question phone-call checklist readers can use to confirm coverage before booking."
+        "FILEPATH: insights/dentistry-064-does-insurance-cover-braces-for-adults.html || CURRENT: Page contains general decision support criteria. || MISSING: Zero citations. GPT-4o's response is generic and references no sources that engage with the specific verification dimensions the intended page covers (adult orthodontic benefit, aligner coding, waiting periods, preauthorization). || EDIT: The intended page should publish a named-source explainer with insurer-specific examples and dated references for adult braces coverage rates, age limits, and waiting-period norms. This would give GPT-4o attributable content to surface rather than directing users to generic insurer portals.",
+        "FILEPATH: insights/dentistry-064-does-insurance-cover-braces-for-adults.html || CURRENT: The page has a direct answer listing eight factors (orthodontic benefits, age limits, medical-necessity rules, waiting periods, lifetime maximums, in-network requirements, clear aligners) but does not expand any factor with actionable detail or decision guidance. || MISSING: The LLM response covers dental plan types, coverage limitations, pre-existing condition exclusions, and type-of-braces distinctions — none of which are elaborated on the page beyond a one-sentence factor list. The page also lacks a concrete verification checklist or script for confirming coverage with an insurer. || EDIT: After the Direct Answer block, add an H2 section titled 'Key factors that determine adult braces coverage' with five H3 subsections: Age Limits (explain 18-19 cutoff common to most plans), Medical Necessity vs. Cosmetic (explain how jaw dysfunction or severe misalignment can shift classification), Waiting Periods and Lifetime Maximums (give typical ranges, e.g., 12-month waiting period, $1,000–$2,000 lifetime cap), Clear Aligners vs. Metal Braces (note that some plans cover one but not the other), and In-Network Orthodontists (explain cost difference for out-of-network). Follow with a five-question phone-call checklist readers can use to confirm coverage before booking.",
+        "FILEPATH: insights/dentistry-064-does-insurance-cover-braces-for-adults.html || CURRENT: Page contains general decision support criteria. || MISSING: Perplexity cited 10 high-authority insurer and dental sources but zero citations point to the intended winner page. The page's scorecard structure (adult orthodontic benefit, lifetime maximum, waiting period, aligner coding) matches the content Perplexity synthesized, but the page lacks named primary sources to be citable. || EDIT: The intended page should publish a named-insurer comparison table (e.g., Guardian, MetLife, Delta Dental adult ortho benefit details with dates) and explicitly cite these insurer documentation pages as primary sources. This would allow the page to compete with or be cited alongside insurer pages rather than being bypassed entirely."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-674a96d42b",
+      "ledger_marker": "agent-exact-65643a3896",
       "rendered_path": "insights/dentistry-064-does-insurance-cover-braces-for-adults.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -854,11 +1410,13 @@
       "query_marker_found": true
     },
     {
-      "record_id": "agent_ac0a33fec256bbda",
+      "record_id": "agent_72575ddc2693fec7",
       "record_ids": [
-        "agent_ac0a33fec256bbda"
+        "agent_72575ddc2693fec7",
+        "agent_ac0a33fec256bbda",
+        "agent_1934adceb70ea86d"
       ],
-      "run_date": "2026-06-30",
+      "run_date": "2026-07-07",
       "query": "average cost of clear aligners 2026",
       "queries": [
         "average cost of clear aligners 2026"
@@ -867,25 +1425,43 @@
       "intended_winner_path": "insights/dentistry-065-average-cost-of-clear-aligners-2026.html",
       "target_route": "/insights/dentistry-065-average-cost-of-clear-aligners-2026.html",
       "implementation_path": "insights/dentistry-065-average-cost-of-clear-aligners-2026.html",
-      "supporting_route": "/dentistry/guides/average-cost-of-clear-aligners-2026/",
+      "supporting_route": "/dentistry/community-questions/average-cost-of-clear-aligners-2026/",
       "operation": "REPAIR_INTENDED_WINNER_PAGE",
       "source": "twin_agent_artifact",
       "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv",
-        "html": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html",
-        "json": "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        "manifest": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/agent_run_manifest.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/agent_run_manifest.json"
+        ],
+        "csv": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.csv",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.csv"
+        ],
+        "html": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.html",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.html"
+        ],
+        "json": [
+          "data/report_fixes/agent_runs/2026-07-07/dentistry/dentistry.json",
+          "data/report_fixes/agent_runs/2026-06-30/dentistry/dentistry.json"
+        ]
       },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
-      "source_record_id": "velocity_src_84402c6d0b5bf9ecc4",
+      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-07_dentistry.json|data/report_fixes/normalized_agent_runs/2026-06-30_dentistry.json",
+      "source_record_id": "velocity_src_6e58a97084b6f2f655",
       "source_record_ids": [
+        "velocity_src_6e58a97084b6f2f655",
+        "velocity_src_c2066e2329a905d972",
+        "velocity_src_ab6dbfb08999b0e887",
+        "velocity_src_af0f4394297927f4a8",
+        "velocity_src_93a3494a20702f42d9",
+        "velocity_src_99a756fba2c2be5e15",
         "velocity_src_84402c6d0b5bf9ecc4",
         "velocity_src_939003a4b9aaf03281",
         "velocity_src_a983449f9b102abc07"
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "152cfa689a56997c10524a75f6a5c96af47a54f3a08a75902aec51686c50f7c8",
+      "before_hash": "ea47fe11c560cc1b3fa92793b85ac5d3808fff90dd7312ebcd635b98cbc7876c",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -893,11 +1469,13 @@
       "route_family": "INSIGHT",
       "canonicalized_from": [],
       "fix_recommendations": [
-        "FILEPATH: insights/dentistry-065-average-cost-of-clear-aligners-2026.html || CURRENT: The page's Direct Answer instructs readers to separate advertised monthly payments from full treatment cost and compare provider supervision, case complexity, refinements, scans, attachments, retainers, and insurance — but provides no actual 2026 price figures or ranges. || MISSING: The LLM response cites only outdated 2023 figures ($1,800–$5,500) and misses the 2026 in-office range of $3,000–$8,000+ and at-home range of $1,500–$3,500. The page itself provides no numeric benchmarks at all, leaving users unable to evaluate any quotes they receive. || EDIT: Directly after the Direct Answer block, insert an H2 section titled '2026 clear aligner cost ranges' containing a markdown-style comparison table with three columns: Provider Type, Typical Range, and National Average. Rows: In-Office (Invisalign-style) $3,000–$8,000+ / ~$5,100; At-Home (direct-to-consumer) $1,500–$3,500 / ~$2,000–$2,500. Below the table, add an H3 titled 'By case complexity (in-office)' listing mild ($3,000–$4,500), moderate ($4,500–$6,500), and complex ($6,500–$8,000+). Then add an H3 titled 'Hidden costs to verify' covering refinements, retainers, attachment removal, and scan fees, with typical add-on ranges for each."
+        "FILEPATH: insights/dentistry-065-average-cost-of-clear-aligners-2026.html || CURRENT: Page contains general decision support criteria. || MISSING: GPT-4o cited no sources and did not reference the intended winner page. The page lacks specific numeric cost data in its tables — it uses placeholder template text instead of actual dollar figures — making it impossible for any model to extract a citable number from it. || EDIT: Add structured content to the intended winner page with concrete 2026 cost figures (e.g., $3,000–$8,000 in-office, $1,500–$2,500 at-home), clearly labeled with publication date, so LLMs with retrieval can cite it. Ensure the page title, H1, and meta description all include 'average cost of clear aligners 2026' as an exact-match signal. Include a primary data source citation (e.g., CareCredit survey) to increase authority signals.",
+        "FILEPATH: insights/dentistry-065-average-cost-of-clear-aligners-2026.html || CURRENT: The page's Direct Answer instructs readers to separate advertised monthly payments from full treatment cost and compare provider supervision, case complexity, refinements, scans, attachments, retainers, and insurance — but provides no actual 2026 price figures or ranges. || MISSING: The LLM response cites only outdated 2023 figures ($1,800–$5,500) and misses the 2026 in-office range of $3,000–$8,000+ and at-home range of $1,500–$3,500. The page itself provides no numeric benchmarks at all, leaving users unable to evaluate any quotes they receive. || EDIT: Directly after the Direct Answer block, insert an H2 section titled '2026 clear aligner cost ranges' containing a markdown-style comparison table with three columns: Provider Type, Typical Range, and National Average. Rows: In-Office (Invisalign-style) $3,000–$8,000+ / ~$5,100; At-Home (direct-to-consumer) $1,500–$3,500 / ~$2,000–$2,500. Below the table, add an H3 titled 'By case complexity (in-office)' listing mild ($3,000–$4,500), moderate ($4,500–$6,500), and complex ($6,500–$8,000+). Then add an H3 titled 'Hidden costs to verify' covering refinements, retainers, attachment removal, and scan fees, with typical add-on ranges for each.",
+        "FILEPATH: insights/dentistry-065-average-cost-of-clear-aligners-2026.html || CURRENT: Page contains general decision support criteria. || MISSING: The intended winner page contains no extractable cost figures — all table cells contain CMS/template placeholder text. Competitor pages publish specific figures ($5,108 average, $3,000–$8,000 range) that Perplexity cited directly. The winner page cannot earn a citation without real numeric content. || EDIT: Replace template placeholder rows in the cost tables with real 2026 cost data: national average ~$5,000–$5,100 in-office, $1,500–$2,500 at-home. Cite a named primary source (CareCredit survey, Invisalign pricing page). Add a structured summary paragraph with exact figures in the opening section so crawlers and LLMs can extract a direct answer. The page review date (2026-07-04) is an asset — leverage it with dated figures."
       ],
       "target_type": "generated_insight",
       "trace_status": "PASS",
-      "ledger_marker": "agent-exact-b42d133e17",
+      "ledger_marker": "agent-exact-c16ced1709",
       "rendered_path": "insights/dentistry-065-average-cost-of-clear-aligners-2026.html",
       "item_exists": true,
       "applied_status": "APPLIED_TO_LEDGER",
@@ -4581,7 +5159,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "392be6b39287ab3957f578740294b4dd3d1b1bc3c1bf7e3bd4eb9042d6534302",
+      "before_hash": "98df761c19b459e62137288937b962ce4c853d0c02213739d845699cf8f93198",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -4656,7 +5234,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "8b2515c2c518c8ee8ba33d482b5c4a456d81ac41ebe6fbadfa0357866efb2481",
+      "before_hash": "8fb6ec03599aed7480ba6959cd87159d0f65040c46f0a2b5e569f2b189839bfb",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -4677,39 +5255,6 @@
       "has_ledger": true,
       "has_rendered_marker": true,
       "query_marker_found": true
-    },
-    {
-      "record_id": "agent_3d5cca2b9ae8b210",
-      "run_date": "2026-07-06",
-      "query": "a comparison table mapping accident types (car, truck, workplace, slip-and-fall, hit-and-run) to recommended lawyer specialization criteria; prose explaining how to identify the right fit; red flags specific to mismatched specialization.",
-      "intended_winner_page": "",
-      "intended_winner_path": "",
-      "target_route": "/personal-injury/guides/a-comparison-table-mapping-accident-types-car-truck-workplace-slip-and-fall-hit-and-run-to/",
-      "implementation_path": "personal-injury/guides/a-comparison-table-mapping-accident-types-car-truck-workplace-slip-and-fall-hit-and-run-to/index.html",
-      "operation": "CREATE_NEW_TARGET_PAGE",
-      "source": "twin_agent_artifact",
-      "source_artifacts": {
-        "manifest": "data/report_fixes/agent_runs/2026-07-06/personal-injury/agent_run_manifest.json",
-        "csv": "data/report_fixes/agent_runs/2026-07-06/personal-injury/personal-injury.csv",
-        "html": "data/report_fixes/agent_runs/2026-07-06/personal-injury/personal-injury.html",
-        "json": "data/report_fixes/agent_runs/2026-07-06/personal-injury/personal-injury.json"
-      },
-      "normalized_path": "data/report_fixes/normalized_agent_runs/2026-07-06_personal_injury.json",
-      "source_record_id": "velocity_src_36e94791dca4ce8f4d",
-      "source_record_ids": [
-        "velocity_src_36e94791dca4ce8f4d"
-      ],
-      "route_authority": "artifact_admitted",
-      "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "5b536f68b45ae2fef5eb7bb9589cb7635b54f2e7d5e30ec7d9907cca01ebaa13",
-      "after_hash": null,
-      "status": "PLANNED",
-      "blocked_reason": "",
-      "route_family": "CREATE_GUIDE",
-      "route_reason": "comparison_signal",
-      "trace_status": "PASS",
-      "rendered_path": "personal-injury/guides/a-comparison-table-mapping-accident-types-car-truck-workplace-slip-and-fall-hit-and-run-to/index.html",
-      "page_exists": true
     },
     {
       "record_id": "agent_3fdc4e247953b343",
@@ -4747,7 +5292,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "baaa227209691ab91ea7180bcbb365a3564e85a594da7494db39324b86f72c5d",
+      "before_hash": "ac6e17afecaf2d433604c31676e3e4f2115dbfe73a8e2bcab613c946285104fc",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -4812,7 +5357,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "35bd4e58ba4fe68c2fa0447bc42526a1f3c53027782a0ca0fbcd8fc625d9db46",
+      "before_hash": "e61ffe60dbf4591eb300f69089e161151a716c6a669ebdc217ca15b981256222",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -4889,7 +5434,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "7e853b209bd5b02ab4ed881dd6c1feef6a058992e99dbb5941d6775460de2858",
+      "before_hash": "dbe3a49bed96c15a7d917bf17b284fa054a41641cc4e8ea51b863dc1c6f463c6",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -4945,7 +5490,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "805a965cdae1da3791c7b48e1f92241e0b33db47553a6b0e272b0ac9a352a8c6",
+      "before_hash": "3da57b020b0de06aa176a07c6776868e7c59ed07a54de0e372a2ed402626c88b",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",
@@ -5008,7 +5553,7 @@
       ],
       "route_authority": "artifact_admitted",
       "admission_basis": "AGENT_EXACT_IMPLEMENTATION_PLAN",
-      "before_hash": "5f0079348a67c402b89aaa11e861f45c8a482beff82756960a9e3184280e0562",
+      "before_hash": "4a364ead5a6c7ad4cbd0371c6132dbceaa96e0274ca478584e36c76a2e6fc894",
       "after_hash": null,
       "status": "PLANNED",
       "blocked_reason": "",

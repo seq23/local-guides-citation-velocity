@@ -1,14 +1,14 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-07-06
+Release date: 2026-07-08
 Target publish units: 125
-Selected units: 81
-Twin agent units: 81
+Selected units: 84
+Twin agent units: 84
 Social fallback units: 0
 Social fallback allowed: true
 Social fallback suppressed: 0
-Repair units: 80
+Repair units: 83
 New page units: 1
 
 | Source | Operation | Vertical | Target route | Query |
@@ -17,11 +17,23 @@ New page units: 1
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-007-what-to-verify-before-booking-child-neuropsych-testing.html | what should I verify before booking a neuropsych evaluation for my child |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | does health insurance cover the immigration medical exam |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-008-how-long-is-the-medical-exam-valid.html | does the i-693 medical exam still expire after two years |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-financing/index.html | what is the average cost of veneers |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-020-how-to-ask-for-itemized-pricing.html | how to ask dentist for itemized pricing |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html | how to confirm dental insurance coverage before appointment |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-011-dental-scam-red-flags.html | how to spot dental scam red flags before booking |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html | is sedation dentistry safe and is it worth the extra cost |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-061-how-much-is-a-single-tooth-implant.html | how much is a single tooth implant |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-062-are-dental-implants-worth-it-after-60.html | are dental implants worth it after 60 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-063-is-invisalign-cheaper-than-braces.html | is invisalign cheaper than braces |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-064-does-insurance-cover-braces-for-adults.html | does insurance cover braces for adults |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-007-what-should-i-ask-in-a-free-consultation.html | what should i ask a personal injury lawyer in a free consultation |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-074-what-is-the-maximum-payout-for-a-slip-and-fall-at-a-grocery-store.html | what is the maximum payout for a slip and fall at a grocery store |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-022-in-network-vs-out-of-network-what-to-ask.html | who is an in-network dentist for cigna near me |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-021-how-to-confirm-insurance-coverage.html | how to check if a dentist accepts my insurance |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-insurance/index.html | does medicare cover dental implants |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/trust-red-flags/index.html | how do i avoid personal injury lawyer scams and red flags |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-043-what-to-do-after-a-car-accident-step-by-step.html | what to do after a car accident that wasn't my fault |
-| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/guides/a-comparison-table-mapping-accident-types-car-truck-workplace-slip-and-fall-hit-and-run-to/ | a comparison table mapping accident types (car, truck, workplace, slip-and-fall, hit-and-run) to recommended lawyer specialization criteria; prose explaining how to identify the right fit; red flags specific to mismatched specialization. |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/does-cigna-dental-plan-cover-teeth-whitening/ | does cigna dental plan cover teeth whitening |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/index.html | how long does teeth whitening last |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | testosterone replacement therapy guide 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-013-how-to-compare-providers-fast.html | how to quickly compare neuropsych evaluation providers in my area |
@@ -42,6 +54,12 @@ New page units: 1
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-032-child-specialist-anxiety-vs-adhd-eval-near-me.html | child specialist for anxiety vs ADHD evaluation near me who should I see |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html | how to avoid RFE delays after submitting I-693 medical exam |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized.html | how to find a USCIS authorized civil surgeon near me |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/community-questions/how-long-does-teeth-whitening-last/index.html | how much does professional teeth whitening cost |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html | at what age should my child first see a dentist and what should I expect |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html | how do I know if I really need the dental work my dentist is recommending |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-065-average-cost-of-clear-aligners-2026.html | average cost of clear aligners 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/anxiety-trust/index.html | how do I find a dentist who is good with anxious patients |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/choosing-a-dentist/index.html | how to choose a dentist |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/medical-treatment/index.html | how long do i have to see a doctor after a car accident for a claim |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-044-5-step-uscis-civil-surgeon-selection-framework.html | how to choose a civil surgeon for USCIS medical exam |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html | how to get the sealed I-693 medical exam envelope safely |
@@ -52,9 +70,6 @@ New page units: 1
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-012-will-my-case-go-to-trial.html | will my personal injury case go to trial or settle |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-025-what-to-do-if-the-other-driver-is-uninsured.html | who pays my medical bills after a hit and run accident |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-016-can-a-lawyer-help-with-medical-bills.html | who pays for my medical bills after a rideshare accident |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-018-how-to-get-a-second-opinion-on-dental-work.html | how do I know if I really need the dental work my dentist is recommending |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-financing/index.html | how much do dental implants cost |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-020-how-to-ask-for-itemized-pricing.html | how to ask dentist for itemized pricing |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-001-the-industry-guides-trt-clinic-evaluation-framework.html | how to evaluate a TRT clinic |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-002-how-to-compare-trt-clinics-in-2026.html | how to compare TRT clinics in 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /insights/trt-003-how-to-compare-local-options-using-a-real-decision-checklist.html | how to compare local TRT clinic options using a checklist |
@@ -79,18 +94,6 @@ New page units: 1
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-045-can-i-sue-for-pain-and-suffering-after-a-car-accident.html | how do i calculate pain and suffering for a broken leg |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/insurance-fault/index.html | should i accept the first settlement offer from the insurance company |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-001-the-industry-guides-personal-injury-claim-lifecycle.html | what factors increase the value of a personal injury settlement |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-006-what-to-verify-when-comparing-pediatric-dental-offices.html | at what age should my child first see a dentist and what should I expect |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/anxiety-trust/index.html | how do I find a dentist who is good with anxious patients |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-insurance/index.html | how much does a dental implant cost without insurance |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/choosing-a-dentist/index.html | how to choose a dentist |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-004-dentist-that-takes-my-insurance-how-to-confirm.html | how to confirm dental insurance coverage before appointment |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-005-how-to-evaluate-sedation-dentistry-safety-and-fit.html | is sedation dentistry safe and is it worth the extra cost |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-063-is-invisalign-cheaper-than-braces.html | is invisalign cheaper than braces |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-065-average-cost-of-clear-aligners-2026.html | average cost of clear aligners 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-029-how-to-avoid-rfes-from-clinic-mistakes.html | red flags to watch out for when filing I-693 after medical exam |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-017-what-to-do-if-the-doctor-makes-a-mistake.html | what happens if there is a mistake on my I-693 form |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-001-what-is-the-uscis-medical-exam-who-performs-it-and-when-is-it-used.html | what is the USCIS medical exam and who performs it |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-011-dental-scam-red-flags.html | how to spot dental scam red flags before booking |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-061-how-much-is-a-single-tooth-implant.html | how much is a single tooth implant |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-062-are-dental-implants-worth-it-after-60.html | are dental implants worth it after 60 |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-064-does-insurance-cover-braces-for-adults.html | does insurance cover braces for adults |

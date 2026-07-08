@@ -17,6 +17,10 @@ if(report){
   if(Number(report.fixes_discovered||0)<1) errors.push('html_report_contract_no_fixes_discovered');
   if(Number(report.blocked_fix_records||0)>0) warnings.push(`blocked_fix_records:${report.blocked_fix_records}`);
   const pageSpecs=Array.isArray(report.page_specs)?report.page_specs:[];
+  const releasePageSpecs=Array.isArray(report.release_page_specs)?report.release_page_specs:[];
+  if(releasePageSpecs.length>pageSpecs.length) errors.push(`release_page_specs_exceed_page_specs:${releasePageSpecs.length}>${pageSpecs.length}`);
+  if(Number(report.pages_to_build_discovered||0)!==pageSpecs.length) errors.push(`page_specs_count_field_mismatch:${pageSpecs.length}!=${report.pages_to_build_discovered}`);
+  if(Number(report.release_pages_to_build_discovered||0)!==releasePageSpecs.length) errors.push(`release_page_specs_count_field_mismatch:${releasePageSpecs.length}!=${report.release_pages_to_build_discovered}`);
   for(const spec of pageSpecs){
     if(!spec.query) errors.push(`page_spec_missing_query:${spec.id||'unknown'}`);
     if(spec.blocked_reason){

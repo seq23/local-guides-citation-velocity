@@ -545,8 +545,8 @@ function parseReports() {
     allPages.push(...pages);
   }
   const dedupFixes = Array.from(new Map(allFixes.map(f => [`${f.page_url}|${f.query}|${f.fix_recommendation}`, f])).values());
-  const dedupPages = Array.from(new Map(allPages.map(p => [`${p.vertical}|${p.query}`, p])).values());
-  return { manifests, parsed, errors, fixes: dedupFixes, pages: dedupPages };
+  const releasePages = Array.from(new Map(allPages.map(p => [`${p.vertical}|${p.query}`, p])).values());
+  return { manifests, parsed, errors, fixes: dedupFixes, pages: allPages, releasePages };
 }
 function main() {
   const discovered = parseReports();
@@ -568,18 +568,20 @@ function main() {
     external_fix_records: fixed.results.filter(r => r.status === 'EXTERNAL_TARGET_RECORDED').length,
     blocked_fix_records: fixed.results.filter(r => String(r.status).startsWith('BLOCKED')).length,
     pages_to_build_discovered: discovered.pages.length,
+    release_pages_to_build_discovered: discovered.releasePages.length,
     approval_queue_added: queue.added_count,
     approval_queue_total: queue.total_count,
     approval_queue_skipped_existing: queue.skipped_count,
     fixes: fixed.results,
     page_specs: discovered.pages,
+    release_page_specs: discovered.releasePages,
     approval_records_added: queue.added.map(row => ({ id: row.id, vertical: row.vertical, query: row.query, target_route: row.target_route, renderedPath: row.renderedPath || renderedPathForRoute(row.target_route), route_family: row.route_family || '', route_shape: row.route_shape || routeShape(row.target_route), route_authority: row.route_authority || '', admission_basis: row.admission_basis || '' })),
     approval_records_skipped: queue.skipped.map(row => ({ id: row.id, vertical: row.vertical, query: row.query, target_route: row.target_route, skipped_reason: row.skipped_reason, existing_route: row.existing_route || '' }))
   };
   writeJson(REPORT_DATA, report);
   writeJson(REPORT_ARTIFACT, report);
   writeJson('artifacts/validation/velocity-agent-duplicate-resolution.json', { schema_version: '1.0', status: 'PASS', source_record_count: [...discovered.fixes, ...discovered.pages].flatMap((x) => x.source_record_ids || [x.source_record_id]).filter(Boolean).length, canonical_target_count: new Set([...discovered.fixes.map(f => f.page_url), ...discovered.pages.map(p => p.target_route)]).size, deduped_record_count: Math.max(0, [...discovered.fixes, ...discovered.pages].length - new Set([...discovered.fixes.map(f => `${f.page_url}|${f.query}`), ...discovered.pages.map(p => `${p.vertical}|${p.query}`)]).size), duplicate_groups: queue.skipped.filter(x => x.source_record_ids && x.source_record_ids.length).map(x => ({ canonical_key: x.canonical_new_page_key || x.target_route || x.query, canonical_target: x.existing_route || x.target_route || '', source_record_ids: x.source_record_ids || [], status: x.canonical_status || 'SKIPPED_WITH_PROOF' })) });
-  console.log(`HTML REPORT CONTRACT PASS: fixes=${report.fixes_discovered}; applied=${report.fixes_applied}; external=${report.external_fix_records}; pages=${report.pages_to_build_discovered}; queued=${report.approval_queue_added}`);
+  console.log(`HTML REPORT CONTRACT PASS: fixes=${report.fixes_discovered}; applied=${report.fixes_applied}; external=${report.external_fix_records}; pages=${report.pages_to_build_discovered}; release_pages=${report.release_pages_to_build_discovered}; queued=${report.approval_queue_added}`);
 }
 
 if (require.main === module) main();
