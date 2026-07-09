@@ -2,8 +2,8 @@
 
 Evidence date: 2026-06-20
 
-- Admitted public routes: 2281
-- Eligible provider-routing records: 2267
+- Admitted public routes: 2291
+- Eligible provider-routing records: 2277
 - Citation monitor recommendations: 84
 - Citation monitor weekly runs: 45
 - Citation wins: 9
