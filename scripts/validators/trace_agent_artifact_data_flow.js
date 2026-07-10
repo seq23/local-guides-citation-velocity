@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
-const { parseManifestBundle } = require('../lib/agent_artifact_source_parser');
+const { parseManifestBundle, questionFrom, modelFrom, normalizeSpace } = require('../lib/agent_artifact_source_parser');
 const RUN_ROOT = 'data/report_fixes/agent_runs';
 const REPORT_PATH = 'artifacts/validation/agent-artifact-data-flow-trace.json';
 function rel(p){ return path.join(ROOT, p); }
@@ -24,6 +24,37 @@ function walkFiles(dirRel, pred, out=[]){
 }
 function walkManifests(){ const out=[]; const start=rel(RUN_ROOT); if(!fs.existsSync(start)) return out; function walk(abs){ for(const e of fs.readdirSync(abs,{withFileTypes:true})){ const p=path.join(abs,e.name); if(e.isDirectory()) walk(p); else if(e.name==='agent_run_manifest.json') out.push(path.relative(ROOT,p).replace(/\\/g,'/')); } } walk(start); return out.sort(); }
 function parseCsvRows(text){ const rows=[]; let row=[], field='', q=false; for(let i=0;i<text.length;i++){ const ch=text[i], next=text[i+1]; if(ch==='"'){ if(q&&next==='"'){ field+='"'; i++; } else q=!q; } else if(ch===','&&!q){ row.push(field); field=''; } else if((ch==='\n'||ch==='\r')&&!q){ if(ch==='\r'&&next==='\n') i++; row.push(field); field=''; if(row.some(c=>String(c).trim())) rows.push(row); row=[]; } else field+=ch; } if(field.length||row.length){ row.push(field); if(row.some(c=>String(c).trim())) rows.push(row); } if(!rows.length) return []; const headers=rows.shift().map(h=>String(h||'').replace(/^\uFEFF/,'').trim()); return rows.map(cells=>Object.fromEntries(headers.map((h,i)=>[h,String(cells[i]||'').trim()]))); }
+
+function analyzeCsvGrain(rows){
+  const queryKeys=new Set();
+  const observationKeys=new Set();
+  const models=new Set();
+  const rowsMissingQuery=[];
+  const duplicateObservationKeys=[];
+  rows.forEach((row,index)=>{
+    const query=questionFrom(row);
+    const model=modelFrom(row);
+    const queryKey=normalizeSpace(query).toLowerCase();
+    if(!queryKey){ rowsMissingQuery.push(index); return; }
+    queryKeys.add(queryKey);
+    if(model){
+      models.add(model);
+      const observationKey=`${queryKey}|${normalizeSpace(model).toLowerCase()}`;
+      if(observationKeys.has(observationKey)) duplicateObservationKeys.push(observationKey);
+      else observationKeys.add(observationKey);
+    }
+  });
+  return {
+    physical_row_count:rows.length,
+    unique_query_count:queryKeys.size,
+    unique_model_count:models.size,
+    models:[...models].sort(),
+    unique_query_model_observation_count:observationKeys.size,
+    rows_missing_query:rowsMissingQuery,
+    duplicate_query_model_observation_keys:[...new Set(duplicateObservationKeys)]
+  };
+}
+
 function normalizeRoute(route){ let v=String(route||'').trim(); if(!v) return ''; v=v.replace(/^https?:\/\/[^/]+/,''); if(!v.startsWith('/')) v=`/${v}`; return v.replace(/\/+/g,'/'); }
 function routeToPath(route){ let v=normalizeRoute(route).replace(/^\//,''); if(!v) return ''; if(v.endsWith('.html')) return v; return `${v.replace(/\/+$/,'')}/index.html`; }
 function pageExists(payload, route){ const wanted=normalizeRoute(route); const wantedPath=routeToPath(route); return (payload.pages||[]).some(p=>normalizeRoute(p.slug||p.path||'')===wanted || routeToPath(p.path||p.slug||'')===wantedPath); }
@@ -63,18 +94,39 @@ for(const {path:manifestPath, manifest} of manifests){
   for(const key of ['csv_path','html_path','json_path']) if(!exists(manifest[key]||'')) trace.errors.push(`missing_${key}:${manifest[key]||''}`);
   const csvRows=exists(manifest.csv_path)?parseCsvRows(readText(manifest.csv_path)):[];
   const json=exists(manifest.json_path)?readJson(manifest.json_path, {}):{};
+  const csvGrain=analyzeCsvGrain(csvRows);
   const jsonFixes=jsonFixRows(json);
   const uniqueFixes=[...new Set(jsonFixes.map(uniqueFixKey))];
   const pagesToBuild=Array.isArray(json.pages_to_build)?json.pages_to_build:[];
   const manifestSourceRecords=sourceRecordsForTrace.filter((record) => [manifest.csv_path, manifest.html_path, manifest.json_path].filter(Boolean).includes(record.source_file));
   const reconciledPageKeys=new Set(manifestSourceRecords.filter((record) => record.recommendation_type === 'new_page_opportunity').map((record) => record.canonical_key || `${record.vertical}|${record.query}`));
-  trace.csv_row_count=csvRows.length;
+  trace.csv_row_count=csvGrain.physical_row_count;
+  trace.csv_unique_query_count=csvGrain.unique_query_count;
+  trace.csv_unique_model_count=csvGrain.unique_model_count;
+  trace.csv_models=csvGrain.models;
+  trace.csv_unique_query_model_observation_count=csvGrain.unique_query_model_observation_count;
   trace.json_scoreboard_total=Number((json.scoreboard||{}).total||0);
+  trace.scoreboard_total_interpretation='UNDETERMINED';
+  if(trace.json_scoreboard_total){
+    if(trace.json_scoreboard_total===trace.csv_row_count) trace.scoreboard_total_interpretation='PHYSICAL_CSV_ROW_COUNT';
+    else if(trace.json_scoreboard_total===trace.csv_unique_query_count) trace.scoreboard_total_interpretation='UNIQUE_QUERY_COUNT';
+    else if(trace.json_scoreboard_total===trace.csv_unique_query_model_observation_count) trace.scoreboard_total_interpretation='UNIQUE_QUERY_MODEL_OBSERVATION_COUNT';
+    else {
+      trace.scoreboard_total_interpretation='PRODUCER_DEFINED_OR_UNKNOWN';
+      trace.warnings.push(`scoreboard_total_not_inferred:${trace.json_scoreboard_total};csv_rows=${trace.csv_row_count};unique_queries=${trace.csv_unique_query_count};query_model_observations=${trace.csv_unique_query_model_observation_count}`);
+    }
+  }
   trace.json_fix_rows=jsonFixes.length;
   trace.json_unique_fix_rows=uniqueFixes.length;
   trace.json_pages_to_build=pagesToBuild.length;
   trace.reconciled_pages_to_build=reconciledPageKeys.size;
-  if(trace.json_scoreboard_total && trace.csv_row_count!==trace.json_scoreboard_total) trace.errors.push(`csv_json_scoreboard_mismatch:${trace.csv_row_count}!=${trace.json_scoreboard_total}`);
+  const manifestSourceRecordIds=new Set(manifestSourceRecords.map(record=>record.source_record_id).filter(Boolean));
+  trace.source_record_count=manifestSourceRecords.length;
+  trace.unique_source_record_id_count=manifestSourceRecordIds.size;
+  trace.source_records_missing_id=manifestSourceRecords.filter(record=>!record.source_record_id).length;
+  if(trace.source_records_missing_id) trace.errors.push(`source_records_missing_id:${trace.source_records_missing_id}`);
+  if(csvGrain.rows_missing_query.length) trace.errors.push(`csv_rows_missing_query:${csvGrain.rows_missing_query.slice(0,20).join(',')}`);
+  if(csvGrain.duplicate_query_model_observation_keys.length) trace.warnings.push(`duplicate_query_model_observations:${csvGrain.duplicate_query_model_observation_keys.slice(0,20).join(',')}`);
   if(trace.csv_row_count<1) trace.errors.push('csv_empty');
   if(trace.json_fix_rows<1) trace.errors.push('json_fix_rows_empty');
   if(trace.json_pages_to_build<1 && trace.reconciled_pages_to_build>0) trace.warnings.push(`json_pages_to_build_recovered_from_sources:${trace.reconciled_pages_to_build}`);
@@ -85,7 +137,8 @@ for(const {path:manifestPath, manifest} of manifests){
   trace.normalized_record_count=normalized ? Number(normalized.record_count||((normalized.records||[]).length)) : 0;
   if(!normalized) trace.errors.push(`normalized_missing:${normalizedPath}`);
   else if(trace.normalized_record_count<1) trace.errors.push(`normalized_empty:${normalizedPath}`);
-  else if(trace.normalized_record_count!==trace.csv_row_count) trace.warnings.push(`normalized_csv_count_diff_trace_only:${trace.normalized_record_count}!=${trace.csv_row_count}`);
+  else if(trace.normalized_record_count!==trace.csv_row_count) trace.warnings.push(`normalized_record_count_differs_from_csv_physical_rows:${trace.normalized_record_count}!=${trace.csv_row_count};expected_when_sources_are_deduplicated_or_multi_artifact`);
+  trace.normalized_source_record_id_count=normalized ? new Set((normalized.records||[]).flatMap(row=>[...(row.source_record_ids||[]),row.source_record_id].filter(Boolean))).size : 0;
   const summary=(htmlReport.report_summaries||[]).find(s=>s.manifest_path===manifestPath);
   trace.html_report_parser=summary ? summary.parser || 'html' : '';
   trace.html_report_fix_count=summary ? Number(summary.new_fix_count||0) : 0;
@@ -161,6 +214,10 @@ if(releasePlan.status && releasePlan.status!=='PASS') errors.push(`velocity_rele
 if(exactPlan.status && exactPlan.status!=='PASS') errors.push(`agent_exact_plan_status:${exactPlan.status}`);
 if(exactTrace.status && exactTrace.status!=='PASS') errors.push(`agent_exact_trace_status:${exactTrace.status}`);
 if(exactValidate.status && exactValidate.status!=='PASS') errors.push(`agent_exact_validate_status:${exactValidate.status}`);
+const coverageReport=readJson('artifacts/validation/velocity-agent-source-coverage.json', null);
+if(!coverageReport) errors.push('velocity_agent_source_coverage_report_missing');
+else if(coverageReport.status!=='PASS') errors.push(`velocity_agent_source_coverage_status:${coverageReport.status||'UNKNOWN'}`);
+else if(Array.isArray(coverageReport.silent_drops)&&coverageReport.silent_drops.length) errors.push(`velocity_agent_source_coverage_silent_drops:${coverageReport.silent_drops.length}`);
 const exactLedger=readJson('data/report_fixes/agent_exact_implementation_ledger.json', {entries:[]});
 const agentFixLedger=readJson('data/report_fixes/agent_fix_ledger.json', {fixes:[]});
 const dispositionLedger=readJson('data/report_fixes/agent_artifact_disposition_ledger.json', {entries:[]});
@@ -180,7 +237,7 @@ for(const trace of traces){
   trace.exact_repair_rows_dispositioned=[...currentRepairIds].filter(id=>agentFixDispositions.has(id)).length;
   if(missing.length) errors.push(`${trace.manifest_path}:exact_repair_rows_unaccounted:${missing.slice(0,10).join(',')}`);
 }
-const report={schema_version:'1.0',validator:'agent-artifact-data-flow-trace',status:errors.length?'FAIL':'PASS',manifest_count:manifests.length,traces,workflow:{agent_intake_status:intake.status||'',html_report_status:htmlReport.status||'',velocity_plan_selected_count:releasePlan.selected_count||0,velocity_created_count:velocityRelease.created_count||0,exact_plan_repairs:exactPlan.repair_count||0,exact_plan_new_pages:exactPlan.new_page_count||0,exact_trace_status:exactTrace.status||'',exact_validate_status:exactValidate.status||''},errors,
+const report={schema_version:'2.0',validator:'agent-artifact-data-flow-trace',accounting_policy:{count_equality_required:false,authority:'source_record_id_and_downstream_disposition',accepted_grains:['physical_csv_row','unique_query','query_model_observation','json_recommendation','normalized_record','canonical_recommendation','release_unit']},status:errors.length?'FAIL':'PASS',manifest_count:manifests.length,traces,workflow:{agent_intake_status:intake.status||'',html_report_status:htmlReport.status||'',velocity_plan_selected_count:releasePlan.selected_count||0,velocity_created_count:velocityRelease.created_count||0,exact_plan_repairs:exactPlan.repair_count||0,exact_plan_new_pages:exactPlan.new_page_count||0,exact_trace_status:exactTrace.status||'',exact_validate_status:exactValidate.status||''},errors,
   source_records_found: sourceRecordsForTrace.length,
   source_records_by_file: sourceRecordsForTrace.reduce((acc, r) => { acc[r.source_file] = (acc[r.source_file] || 0) + 1; return acc; }, {}),
   source_records_by_section: sourceRecordsForTrace.reduce((acc, r) => { acc[r.source_section] = (acc[r.source_section] || 0) + 1; return acc; }, {}),
@@ -190,7 +247,7 @@ const report={schema_version:'1.0',validator:'agent-artifact-data-flow-trace',st
   source_record_trace_origin: sourceRecords.length ? 'source_record_ledgers' : 'parsed_agent_manifests',
   source_record_ledger_count: sourceLedgerFiles.length,
   parsed_manifest_source_record_count: parsedManifestSourceRecords.length,
-  coverage_validator_status: fs.existsSync(path.join(ROOT, 'artifacts/validation/velocity-agent-source-coverage.json')) ? (JSON.parse(fs.readFileSync(path.join(ROOT, 'artifacts/validation/velocity-agent-source-coverage.json'), 'utf8')).status || 'UNKNOWN') : 'NOT_RUN',warnings,checked_at:process.env.SOURCE_DATE||new Date().toISOString().slice(0,10)};
+  coverage_validator_status: coverageReport ? (coverageReport.status || 'UNKNOWN') : 'NOT_RUN',warnings,checked_at:process.env.SOURCE_DATE||new Date().toISOString().slice(0,10)};
 writeJson(REPORT_PATH, report);
 if(errors.length){ console.error('AGENT ARTIFACT DATA FLOW TRACE FAIL'); errors.forEach(e=>console.error(`- ${e}`)); process.exit(1); }
 console.log(`AGENT ARTIFACT DATA FLOW TRACE PASS: ${manifests.length} json manifest(s)`);

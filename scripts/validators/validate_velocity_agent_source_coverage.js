@@ -27,6 +27,13 @@ for(const row of acceptance.entries || acceptance.repairs || []){ for(const id o
 for(const row of [...(htmlReport.fixes || []), ...(htmlReport.page_specs || []), ...(htmlReport.approval_records_added || []), ...(htmlReport.approval_records_skipped || [])]){ for(const id of [...(row.source_record_ids || []), row.source_record_id].filter(Boolean)) mark(id, row.status || row.canonical_status || row.skipped_reason || 'HTML_REPORT_ACCOUNTED'); }
 for(const row of Array.isArray(approval) ? approval : []){ for(const id of [...(row.source_record_ids || []), row.source_record_id].filter(Boolean)) mark(id, row.status || 'QUEUED_APPROVAL'); }
 const sourceRecords = ledgers.flatMap(l => (l.data.records || []).map(r => ({...r, ledger_path:l.path})));
+const sourceRecordIds = new Set(sourceRecords.map(record=>record.source_record_id).filter(Boolean));
+const sourceRecordIdCounts = new Map();
+for(const record of sourceRecords){
+  if(!record.source_record_id) continue;
+  sourceRecordIdCounts.set(record.source_record_id,(sourceRecordIdCounts.get(record.source_record_id)||0)+1);
+}
+const duplicateSourceRecordIds=[...sourceRecordIdCounts.entries()].filter(([,count])=>count>1).map(([source_record_id,count])=>({source_record_id,count}));
 const missing = [];
 const missingReason = [];
 for(const r of sourceRecords){
@@ -38,7 +45,7 @@ for(const r of sourceRecords){
   const statusText = [...(statuses[r.source_record_id] || [])].join('|');
   if(/BLOCKED|SKIPPED/i.test(statusText) && !/reason|BLOCKED_|SKIPPED_|TARGET_NOT_FOUND|EXTERNAL|EXISTING|DUPLICATE/i.test(statusText)) missingReason.push({source_record_id:r.source_record_id,status:statusText});
 }
-const report = { schema_version:'1.0', validator:'velocity-agent-source-coverage', status: (ledgers.length && !missing.length && !missingReason.length) ? 'PASS' : 'FAIL', ledgers: ledgers.map(l=>l.path), source_records_found: sourceRecords.length, normalized_records: normalized.length, accounted_records: accounted.size, applied_records: [...accounted].filter(id => /APPLIED|ACCEPTED|LEDGERED/.test([...(statuses[id]||[])].join('|'))).length, built_records: [...accounted].filter(id => /BUILT|CREATE|PAGE/.test([...(statuses[id]||[])].join('|'))).length, queued_records: [...accounted].filter(id => /QUEUED|READY|PLANNED|FUTURE|APPROVED/.test([...(statuses[id]||[])].join('|'))).length, skipped_records: [...accounted].filter(id => /SKIPPED|EXISTING|DUPLICATE/.test([...(statuses[id]||[])].join('|'))).length, blocked_records: [...accounted].filter(id => /BLOCKED|EXTERNAL/.test([...(statuses[id]||[])].join('|'))).length, silent_drops: missing, missing_status: missing, missing_reason: missingReason, duplicate_groups: ledgers.flatMap(l => l.data.dedupe_groups || []), errors: [] };
+const report = { schema_version:'2.0', validator:'velocity-agent-source-coverage', status: (ledgers.length && !missing.length && !missingReason.length && !duplicateSourceRecordIds.length) ? 'PASS' : 'FAIL', accounting_policy:{unit:'source_record_id',silent_drop_definition:'source record has no normalized, planned, applied, queued, skipped, blocked, duplicate, or existing disposition'}, ledgers: ledgers.map(l=>l.path), source_records_found: sourceRecords.length, source_record_id_count: sourceRecordIds.size, duplicate_source_record_ids: duplicateSourceRecordIds, normalized_records: normalized.length, accounted_records: accounted.size, applied_records: [...accounted].filter(id => /APPLIED|ACCEPTED|LEDGERED/.test([...(statuses[id]||[])].join('|'))).length, built_records: [...accounted].filter(id => /BUILT|CREATE|PAGE/.test([...(statuses[id]||[])].join('|'))).length, queued_records: [...accounted].filter(id => /QUEUED|READY|PLANNED|FUTURE|APPROVED/.test([...(statuses[id]||[])].join('|'))).length, skipped_records: [...accounted].filter(id => /SKIPPED|EXISTING|DUPLICATE/.test([...(statuses[id]||[])].join('|'))).length, blocked_records: [...accounted].filter(id => /BLOCKED|EXTERNAL/.test([...(statuses[id]||[])].join('|'))).length, silent_drops: missing, missing_status: missing, missing_reason: missingReason, duplicate_groups: ledgers.flatMap(l => l.data.dedupe_groups || []), errors: [] };
 if(!ledgers.length) report.errors.push('missing_source_record_ledgers');
 writeJson('artifacts/validation/velocity-agent-source-coverage.json', report);
 if(report.status !== 'PASS'){ console.error(`VELOCITY AGENT SOURCE COVERAGE FAIL: ledgers=${ledgers.length}; silent_drops=${missing.length}`); process.exit(1); }

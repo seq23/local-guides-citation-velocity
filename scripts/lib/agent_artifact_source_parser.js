@@ -59,6 +59,7 @@ function flattenRecommendation(value) {
   return { text: normalizeSpace(String(value)), fields: { raw: normalizeSpace(String(value)) } };
 }
 function questionFrom(row) { return normalizeSpace(row.Query || row.query || row['Target Query'] || row.query_target || row.Question || row['Recommendation Query'] || row.prompt || ''); }
+function modelFrom(row) { return normalizeSpace(row.Model || row.model || row['AI Model'] || row['Answer Engine'] || row.Engine || ''); }
 function targetFrom(row) { return normalizeSpace(row['Repo File Path'] || row.repo_file_path || row['File Path'] || row.file_path || row.intended_winner_path || row['Intended Winner Page'] || row.intended_winner_page || row.url || row.URL || row.page || row['Target URL'] || row.target_page || ''); }
 function recommendationFrom(row) {
   const flattened = flattenRecommendation(row.fix_recommendation || row['Fix Recommendation'] || row.fix || row.edit_instruction || row.recommendation || row['Recommended Fix'] || row.why_worth_building || row.why_build || row.reason || '');
@@ -91,6 +92,8 @@ function normalizeSourceRecord({ row, context, sourceFile, sourceSection, index,
     run_date: context.run_date || '',
     vertical: normalizeVertical(context.vertical || row.vertical || row.Vertical || ''),
     query,
+    model: modelFrom(row),
+    source_grain: modelFrom(row) ? 'QUERY_MODEL_OBSERVATION' : 'QUERY_RECOMMENDATION',
     target_url: /^https?:\/\//i.test(target) ? target : '',
     repo_file_path: !/^https?:\/\//i.test(target) ? target.replace(/^\//, '') : '',
     recommendation_type: type,
@@ -174,4 +177,4 @@ function parseManifestBundle({ manifestPath, root }) {
   if (!manifest) return { manifest_path: manifestPath, records: [], errors: [`${manifestPath}:invalid_json`], duplicate_groups: [] };
   return parseAgentRunBundle({ root, manifest, manifestPath });
 }
-module.exports = { parseAgentRunBundle, parseManifestBundle, parseCsvRecords, parseJsonRecords, parseHtmlRecords, flattenRecommendation, normalizeSourceRecord, canonicalSourceRecordId, canonicalDedupeKey, canonicalNewPageKey, canonicalPageFixKey, classifyRecommendationType, duplicateGroups, normalizeSpace, slugify };
+module.exports = { parseAgentRunBundle, parseManifestBundle, parseCsvRecords, parseJsonRecords, parseHtmlRecords, flattenRecommendation, normalizeSourceRecord, canonicalSourceRecordId, canonicalDedupeKey, canonicalNewPageKey, canonicalPageFixKey, classifyRecommendationType, duplicateGroups, normalizeSpace, questionFrom, modelFrom, slugify };
