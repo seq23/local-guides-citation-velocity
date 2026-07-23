@@ -30,6 +30,7 @@ Those layers are mutated by repo automation only.
 data/report_fixes/agent_runs/YYYY-MM-DD/<vertical>/
   <vertical>.csv
   <vertical>.html
+  <vertical>.json
   agent_run_manifest.json
 ```
 
@@ -39,6 +40,7 @@ Example:
 data/report_fixes/agent_runs/2026-06-23/dentistry/
   dentistry.csv
   dentistry.html
+  dentistry.json
   agent_run_manifest.json
 ```
 
@@ -51,6 +53,7 @@ data/report_fixes/agent_runs/2026-06-23/dentistry/
   "vertical": "dentistry",
   "csv_path": "data/report_fixes/agent_runs/2026-06-23/dentistry/dentistry.csv",
   "html_path": "data/report_fixes/agent_runs/2026-06-23/dentistry/dentistry.html",
+  "json_path": "data/report_fixes/agent_runs/2026-06-23/dentistry/dentistry.json",
   "status": "READY_FOR_ABSORPTION"
 }
 ```
@@ -61,6 +64,24 @@ Valid statuses:
 - `IMPORTED`
 - `ABSORBED`
 - `QUARANTINED`
+
+`READY_FOR_ABSORPTION`, `IMPORTED`, and `ABSORBED` runs must point to real committed artifact content. Files whose entire payload is an unresolved pointer such as:
+
+```json
+{"_fetchBase64":"local:/agent/current/generated/personal-injury.csv"}
+```
+
+are not valid absorbed artifacts. They must either be replaced with the real CSV/HTML/JSON contents or marked `QUARANTINED` with:
+
+```json
+{
+  "status": "QUARANTINED",
+  "quarantine_reason": "why the committed artifact cannot be trusted",
+  "quarantine_action": "what must happen before the run can be absorbed"
+}
+```
+
+Quarantine preserves the source folder for audit. It does not authorize content mutation and it does not feed release planning.
 
 ## Required CSV Columns
 

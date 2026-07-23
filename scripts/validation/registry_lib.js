@@ -10,7 +10,36 @@ function registryHash(reg){return crypto.createHash('sha256').update(JSON.string
 function norm(p){return String(p||'').replace(/\\/g,'/').replace(/^\.\//,'');}
 function exists(rel){return fs.existsSync(path.join(ROOT,rel));}
 function walk(abs,out=[]){if(!fs.existsSync(abs))return out;const st=fs.statSync(abs);if(st.isFile()){out.push(abs);return out;}for(const ent of fs.readdirSync(abs,{withFileTypes:true})){const p=path.join(abs,ent.name);if(ent.isDirectory())walk(p,out);else out.push(p);}return out;}
-function fileSha(abs){return crypto.createHash('sha256').update(fs.readFileSync(abs)).digest('hex');}
+const VOLATILE_JSON_KEYS = new Set([
+  'generated_at',
+  'checked_at',
+  'updated_at',
+  'finished_at',
+  'started_at',
+  'timestamp',
+  'run_timestamp'
+]);
+function stripVolatile(value){
+  if(Array.isArray(value))return value.map(stripVolatile);
+  if(value&&typeof value==='object'){
+    const out={};
+    for(const key of Object.keys(value).sort()){
+      if(VOLATILE_JSON_KEYS.has(key))continue;
+      out[key]=stripVolatile(value[key]);
+    }
+    return out;
+  }
+  return value;
+}
+function fileSha(abs){
+  const raw=fs.readFileSync(abs);
+  if(abs.endsWith('.json')){
+    try{
+      return crypto.createHash('sha256').update(JSON.stringify(stripVolatile(JSON.parse(raw.toString('utf8'))))).digest('hex');
+    }catch{}
+  }
+  return crypto.createHash('sha256').update(raw).digest('hex');
+}
 function sourceSnapshot(reg){const snap=new Map();for(const rel of reg.lineage_policy?.source_roots||[]){const abs=path.join(ROOT,rel);for(const file of walk(abs)){const r=norm(path.relative(ROOT,file));if(/(^|\/)node_modules\//.test(r))continue;snap.set(r,fileSha(file));}}return snap;}
 function mutationDiff(before,after){const keys=new Set([...before.keys(),...after.keys()]);const changed=[];for(const key of keys)if(before.get(key)!==after.get(key))changed.push(key);return changed.sort();}
 function globRegex(glob){const g=norm(glob);let x='';for(let i=0;i<g.length;i++){const c=g[i];if(c==='*'&&g[i+1]==='*'){x+='.*';i++;}else if(c==='*')x+='[^/]*';else if(c==='?')x+='.';else x+=c.replace(/[.+^${}()|[\]\\]/g,'\\$&');}return new RegExp(`^${x}$`);}

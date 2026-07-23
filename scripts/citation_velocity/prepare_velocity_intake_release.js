@@ -130,7 +130,21 @@ function artifactErrors(manifest, manifestRel) {
   if (manifest.html_path && !String(manifest.html_path).toLowerCase().endsWith('.html')) errors.push(`${manifestRel}:html_path_must_end_html:${manifest.html_path}`);
   if (manifest.json_path && !String(manifest.json_path).toLowerCase().endsWith('.json')) errors.push(`${manifestRel}:json_path_must_end_json:${manifest.json_path}`);
   if (manifest.status && !['READY_FOR_ABSORPTION', 'ABSORBED', 'QUARANTINED', 'IMPORTED'].includes(String(manifest.status))) errors.push(`${manifestRel}:bad-status:${manifest.status}`);
+  if (manifest.status === 'QUARANTINED') {
+    if (!manifest.quarantine_reason) errors.push(`${manifestRel}:quarantined-missing-reason`);
+    if (!manifest.quarantine_action) errors.push(`${manifestRel}:quarantined-missing-action`);
+    return errors;
+  }
+  for (const key of ['csv_path', 'html_path', 'json_path']) {
+    if (manifest[key] && fs.existsSync(rel(manifest[key])) && isUnresolvedLocalFetch(rel(manifest[key]))) {
+      errors.push(`${manifestRel}:unresolved-local-fetch-artifact:${manifest[key]}`);
+    }
+  }
   return errors;
+}
+function isUnresolvedLocalFetch(abs) {
+  const text = fs.readFileSync(abs, 'utf8').trim();
+  return /^\{\s*"_fetchBase64"\s*:\s*"local:\/\/agent\/current\/generated\//.test(text);
 }
 function questionFromRow(row) {
   return row.Query || row.query || row['Target Query'] || row['query_target'] || row.Question || row['Recommendation Query'] || '';
@@ -364,6 +378,7 @@ function importAgentRuns() {
     const errors = artifactErrors(manifest, manifestRel);
     if (errors.length) { invalid.push({ manifest: manifestRel, errors }); continue; }
     if (!manifestAllowedByPolicy(manifest, policy)) {
+      if (String(manifest.status) === 'QUARANTINED') skipped_by_policy.push({ manifest: manifestRel, run_date: manifest.run_date, reason: 'quarantined_agent_artifacts', quarantine_reason: manifest.quarantine_reason || '' });
       if (String(manifest.status) === 'READY_FOR_ABSORPTION') skipped_by_policy.push({ manifest: manifestRel, run_date: manifest.run_date, reason: 'before_exact_implementation_cutover' });
       continue;
     }
