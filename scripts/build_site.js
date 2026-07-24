@@ -1191,7 +1191,7 @@ if (!item.cluster_path) {
     const prev = contentState[item.publish_path];
     const lastmod = (prev && prev.source_hash === sourceHash && prev.lastmod) ? prev.lastmod : today;
     item.date_modified = lastmod;
-    const bodyHtml = renderInsightPage(item);
+    const bodyHtml = enforceValidationSiteContractsOnHtml(renderInsightPage(item));
     assertGeneratedHtmlBeforeWrite({ kind: 'insight', slug: item.publish_path, html: bodyHtml, minWords: 280, requireCanonBlocks: true });
     const contentHash = sha256(stripLastUpdated(bodyHtml));
     contentState[item.publish_path] = { hash: contentHash, source_hash: sourceHash, lastmod };
