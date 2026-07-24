@@ -25,6 +25,23 @@ function plannedPathSet(plan) {
   }
   return out;
 }
+function normalizedString(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+function compiledArtifactErrors(entry) {
+  const errors = [];
+  const artifacts = Array.isArray(entry.artifacts) ? entry.artifacts : [];
+  const artifactKeys = new Set(artifacts.map((artifact) => `${normalizedString(artifact.type)}|${normalizedString(artifact.title)}`));
+  for (const row of entry.row_requirements || []) {
+    for (const block of row.required_blocks || []) {
+      const key = `${normalizedString(block.type)}|${normalizedString(block.heading_exact)}`;
+      if (block.heading_exact && !artifactKeys.has(key)) {
+        errors.push(`row:${row.row_id}:compiled_artifact_missing:${block.heading_exact}`);
+      }
+    }
+  }
+  return errors;
+}
 function main() {
   const errors = [];
   const traces = [];
@@ -39,7 +56,8 @@ function main() {
     const implementationPath = normalizePath(entry.implementation_path);
     manifestPaths.add(implementationPath);
     const html = fileText(implementationPath);
-    const renderErrors = validateEntryAgainstHtml(entry, html);
+    const compileErrors = compiledArtifactErrors(entry);
+    const renderErrors = [...compileErrors, ...validateEntryAgainstHtml(entry, html)];
     if (!html) renderErrors.push('missing_rendered_html');
     if (!planned.has(implementationPath)) renderErrors.push('not_present_in_current_agent_exact_plan');
     for (const oldPath of entry.canonicalized_from || []) {
@@ -50,6 +68,7 @@ function main() {
       implementation_path: implementationPath,
       trace_status: renderErrors.length ? 'FAIL' : 'PASS',
       row_requirement_count: (entry.row_requirements || []).length,
+      compiled_artifact_count: (entry.artifacts || []).length,
       required_strings_checked: (entry.required_strings || []).length,
       required_artifact_types: entry.required_artifact_types || [],
       errors: renderErrors,

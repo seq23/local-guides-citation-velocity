@@ -23,13 +23,13 @@ function run() {
       eligible.push(cand);
     }
   }
-  for (const requiredType of ['create', 'repair', 'atom_update', 'internal_link_update']) {
+  for (const requiredType of ['create_distinct_page', 'repair_existing', 'content_atom_update', 'internal_link_update']) {
     const match = eligible.find((cand) => cand.release_unit_type === requiredType && !selected.some((u) => u.candidate_id === cand.candidate_id));
     if (match && selected.length < dailyLimit) selected.push({ ...match, planner_status: 'selected', why_selected: `Required fixture trace coverage for ${requiredType}.` });
   }
   for (const cand of eligible) {
     if (selected.some((u) => u.candidate_id === cand.candidate_id)) continue;
-    if (selected.length < dailyLimit) selected.push({ ...cand, planner_status: 'selected', why_selected: `Top ${cand.release_unit_type} opportunity for ${cand.traffic_intent} under shadow cadence.` });
+    if (selected.length < dailyLimit) selected.push({ ...cand, planner_status: 'selected', why_selected: `Top ${cand.release_unit_type} opportunity for ${cand.traffic_intent} under the governed daily processing budget.` });
     else blocked.push({ ...cand, planner_status: 'not_selected', why_not_selected: 'Daily target unit budget already filled.' });
   }
   const plan = {
@@ -37,7 +37,7 @@ function run() {
     repo: 'local-guides-citation-velocity',
     run_id: `release_plan_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}`,
     generated_at: new Date().toISOString(),
-    mode: 'planner_preview_shadow',
+    mode: 'planner_preview_safe_harbor',
     primary_kpi: profile.primary_kpi || null,
     external_telemetry_present: false,
     candidates_total: candidates.length,

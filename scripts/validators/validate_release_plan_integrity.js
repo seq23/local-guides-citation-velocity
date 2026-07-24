@@ -13,9 +13,9 @@ const plan = exists('artifacts/validation/daily-citation-release-plan.json') ? r
 if (!plan) errors.push('missing release plan');
 const selected = plan?.selected || [];
 const blocked = plan?.blocked || [];
-const requiredSelected = new Set(['create', 'repair', 'atom_update', 'internal_link_update']);
+const requiredSelected = new Set(['create_distinct_page', 'repair_existing', 'content_atom_update', 'internal_link_update']);
 for (const t of requiredSelected) if (!selected.some((u) => u.release_unit_type === t)) errors.push(`missing-selected-type:${t}`);
-if (!blocked.some((u) => ['block', 'quarantine'].includes(u.release_unit_type))) errors.push('missing blocked/quarantined unit');
+if (!blocked.some((u) => ['quarantine', 'skip_prohibited', 'skip_unsupported'].includes(u.release_unit_type))) errors.push('missing blocked/quarantined unit');
 for (const unit of selected) {
   for (const field of ['candidate_id', 'release_unit_type', 'route_owner', 'page_family', 'expected_aeo_geo_seo_role', 'traffic_intent', 'risk_level', 'validation_requirements']) if (unit[field] === undefined || unit[field] === null || unit[field] === '') errors.push(`selected-unit-missing:${unit.candidate_id}:${field}`);
 }

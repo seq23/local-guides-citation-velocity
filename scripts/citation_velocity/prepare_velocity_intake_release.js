@@ -68,6 +68,13 @@ function fileHash(relativePath) {
   if (!fs.existsSync(p)) return null;
   return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 }
+function artifactIntegrity(relativePath) {
+  if (!relativePath) return null;
+  const p = rel(relativePath);
+  if (!fs.existsSync(p)) return { path: relativePath, exists: false };
+  const stat = fs.statSync(p);
+  return { path: relativePath, exists: true, size_bytes: stat.size, sha256: fileHash(relativePath) };
+}
 function slugify(value) {
   return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 90) || 'citation-question';
 }
@@ -447,15 +454,16 @@ function importAgentRuns() {
     });
     if (records.length) {
       const normalizedRel = `${NORMALIZED_ROOT}/${manifest.run_date}_${vertical}.json`;
-      writeJson(normalizedRel, { schema_version: '1.3', source_ledger_path: `${SOURCE_LEDGER_ROOT}/${manifest.run_date}_${vertical}.json`, run_id: runId, manifest: manifestRel, csv_path: manifest.csv_path, html_path: manifest.html_path, json_path: manifest.json_path || '', record_count: records.length, policy_path: POLICY_PATH, records });
+      const artifact_integrity = {
+        manifest: artifactIntegrity(manifestRel),
+        csv: artifactIntegrity(manifest.csv_path),
+        html: artifactIntegrity(manifest.html_path),
+        json: artifactIntegrity(manifest.json_path || '')
+      };
+      writeJson(normalizedRel, { schema_version: '1.4', source_ledger_path: `${SOURCE_LEDGER_ROOT}/${manifest.run_date}_${vertical}.json`, run_id: runId, manifest: manifestRel, csv_path: manifest.csv_path, html_path: manifest.html_path, json_path: manifest.json_path || '', record_count: records.length, raw_artifact_count: Object.values(artifact_integrity).filter((x)=>x&&x.exists).length, artifact_integrity, policy_path: POLICY_PATH, records });
       normalized.push(...records);
-      manifest.status = 'ABSORBED';
-      manifest.absorbed_at = DATE;
-      manifest.normalized_record_count = records.length;
-      manifest.normalized_path = normalizedRel;
-      manifest.exact_implementation_policy = POLICY_PATH;
-      writeJson(manifestRel, manifest);
-      absorbed.push({ manifest: manifestRel, run_id: runId, record_count: records.length });
+      // Raw agent artifacts are immutable evidence. Absorption state is recorded in generated ledgers, never by editing the source manifest.
+      absorbed.push({ manifest: manifestRel, run_id: runId, record_count: records.length, normalized_path: normalizedRel, disposition: 'NORMALIZED_WITH_RAW_IMMUTABLE' });
     }
   }
   return { manifests, normalized, invalid, absorbed, skipped_by_policy };
@@ -551,7 +559,10 @@ function updateLedger(agentRecords, plan) {
   const selected = new Set(plan.selected_ids || []);
   for (const record of agentRecords) {
     const selectedForRelease = selected.has(record.id);
+    const prior = byId.get(record.id) || {};
+    const completed = ['RELEASED_VERIFIED','APPLIED_VERIFIED'].includes(String(prior.implementation_status || ''));
     byId.set(record.id, {
+      ...prior,
       id: record.id,
       run_date: record.run_date,
       vertical: record.vertical,
@@ -569,7 +580,7 @@ function updateLedger(agentRecords, plan) {
       source_record_ids: record.source_record_ids || [],
       source_record_canonical_key: record.source_record_canonical_key || '',
       recommendation_fields: record.recommendation_fields || {},
-      implementation_status: selectedForRelease ? (record.operation || 'SELECTED_FOR_RELEASE') : (String(record.status || '').startsWith('BLOCKED_') || String(record.status || '').startsWith('SKIPPED_') ? record.status : 'QUEUED_FOR_FUTURE_RELEASE'),
+      implementation_status: completed ? prior.implementation_status : (selectedForRelease ? (record.operation || 'SELECTED_FOR_RELEASE') : (String(record.status || '').startsWith('BLOCKED_') || String(record.status || '').startsWith('SKIPPED_') ? record.status : 'QUEUED_FOR_FUTURE_RELEASE')),
       trace_required: selectedForRelease,
       sourceFiles: record.operation === 'REPAIR_INTENDED_WINNER_PAGE' ? ['content/_live/insights.json'] : ['content/_staged/pages.json', 'content/_live/pages.json'],
       liveManifestPath: record.operation === 'REPAIR_INTENDED_WINNER_PAGE' ? 'content/_live/insights.json' : 'content/_live/pages.json',
@@ -640,7 +651,9 @@ function main() {
   const existingTitles = existingTitleSet();
   const existingRoutes = existingRouteSet();
   const blockedAgent = agent.normalized.filter((r) => String(r.status || '').startsWith('BLOCKED_'));
-  const orderedAgent = agent.normalized.filter((r) => r.status === 'READY_TO_RELEASE').sort((a, b) => b.priority_score - a.priority_score);
+  const existingFixLedger = readJson(LEDGER_PATH, { fixes: [] });
+  const completedIds = new Set((existingFixLedger.fixes || []).filter((fix) => ['RELEASED_VERIFIED','APPLIED_VERIFIED'].includes(String(fix.implementation_status || ''))).map((fix) => fix.id));
+  const orderedAgent = agent.normalized.filter((r) => r.status === 'READY_TO_RELEASE' && !completedIds.has(r.id)).sort((a, b) => String(b.run_date || '').localeCompare(String(a.run_date || '')) || b.priority_score - a.priority_score || String(a.id).localeCompare(String(b.id)));
   for (const record of orderedAgent) {
     if (selected.length >= TARGET) break;
     if (record.operation === 'CREATE_NEW_TARGET_PAGE' && existingTitles.has(String(record.query || '').trim().toLowerCase())) {
@@ -654,17 +667,13 @@ function main() {
   }
   const allowSocialFallbackRelease = process.env.ALLOW_SOCIAL_FALLBACK_RELEASE !== '0';
   const socialCapacity = TARGET - selected.length;
-  const social = socialFallbackRecords(socialCapacity, seenIds, existingTitles, existingRoutes);
+  const social = allowSocialFallbackRelease ? socialFallbackRecords(socialCapacity, seenIds, existingTitles, existingRoutes) : [];
   for (const record of social) {
     if (selected.length >= TARGET) break;
     if (seenRoutes.has(record.target_route)) continue;
     selected.push(record); seenRoutes.add(record.target_route); seenIds.add(record.id);
   }
   const suppressedSocialFallbackCount = allowSocialFallbackRelease ? 0 : countSocialFallbackCandidates(TARGET - selected.length, seenIds);
-  if (!allowSocialFallbackRelease && TARGET > selected.length && suppressedSocialFallbackCount > 0) {
-    console.error('SOCIAL FALLBACK RELEASE DISABLED: strategy gap-fill requires validated fallback release when agent-backed units are below target. Set ALLOW_SOCIAL_FALLBACK_RELEASE=1 or omit the variable.');
-    process.exit(1);
-  }
   const approvals = selected.map(toApproval);
   writeJson('data/community/approval_queue.json', approvals);
   const plan = {
@@ -672,15 +681,17 @@ function main() {
     status: 'PASS',
     release_date: DATE,
     target_publish_units: TARGET,
+    processing_budget_units: TARGET,
+    processing_budget_is_not_quota: true,
     selected_count: selected.length,
     agent_selected_count: selected.filter((r) => r.source === 'twin_agent_artifact').length,
     social_fallback_selected_count: selected.filter((r) => r.source === 'social_public_backlog').length,
     social_fallback_release_allowed: allowSocialFallbackRelease,
-    social_fallback_release_required: true,
-    social_fallback_release_policy: 'REQUIRED_WHEN_AGENT_QUEUE_SHORTFALL_AND_VALIDATED',
-    strategy_gap_fill_required: true,
+    social_fallback_release_required: false,
+    social_fallback_release_policy: allowSocialFallbackRelease ? 'EXPLICITLY_ENABLED' : 'DISABLED_BY_DEFAULT_SAFE_HARBOR_AGENT_FIRST',
+    strategy_gap_fill_required: false,
     social_fallback_suppressed_count: suppressedSocialFallbackCount,
-    social_fallback_suppressed_reason: allowSocialFallbackRelease ? '' : 'explicit opt-out only; violates normal strategy gap-fill release lane',
+    social_fallback_suppressed_reason: allowSocialFallbackRelease ? '' : 'fallback disabled by Safe Harbor contract; processing budget is not a publication quota',
     repair_count: selected.filter((r) => r.operation === 'REPAIR_INTENDED_WINNER_PAGE').length,
     new_page_count: selected.filter((r) => r.operation === 'CREATE_NEW_TARGET_PAGE').length,
     blocked_count: blockedAgent.length,

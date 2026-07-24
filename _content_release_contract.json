@@ -1,65 +1,78 @@
 {
-  "schema_version": "1.4",
+  "schema_version": "2.0",
   "repo": "local-guides-citation-velocity",
-  "default_release_mode": "planner_preview_then_controlled_shadow_apply",
+  "runtime_autonomy_model": "FULL_SAFE_AUTONOMY",
+  "canonical_orchestration": "scripts/release/run_staged_release.js",
+  "publication_boundary": "Signals and opportunities never publish directly. Safe Harbor strategy disposition must classify a new route SAFE_AUTOPUBLISH and ADMITTED_FOR_BUILD before staging; promotion occurs only after release validation stages.",
   "allowed_release_unit_types": [
-    "create",
-    "repair",
-    "atom_update",
-    "answer_block_update",
-    "entity_context_update",
+    "repair_existing",
+    "content_atom_update",
     "internal_link_update",
-    "schema_update",
     "source_update",
-    "distribution_update",
-    "block",
+    "create_distinct_page",
+    "skip_duplicate",
+    "skip_unsupported",
+    "skip_prohibited",
     "quarantine"
   ],
-  "allowed_runtime_mutations": [
-    "data/signals/**",
-    "artifacts/validation/**",
-    "reports/**",
-    "content/generated/**",
-    "public/generated/**",
-    "sitemaps/**",
-    "sitemap*.xml",
-    "llms*.txt"
+  "safe_harbor": {
+    "strategy_registry": "data/strategy/page_strategy_registry.json",
+    "opportunity_backlog": "data/strategy/page_opportunity_backlog.json",
+    "release_queue": "data/release/page_release_queue.json",
+    "routine_human_approval_required": false,
+    "publication_quota": false,
+    "exception_behavior": "SKIP_RECORD_CONTINUE"
+  },
+  "page_lifecycle": [
+    "OPPORTUNITY",
+    "ADMITTED_FOR_BUILD",
+    "STAGED",
+    "VALIDATED",
+    "LIVE",
+    "FROZEN"
   ],
+  "repair_lifecycle": [
+    "FROZEN",
+    "TRANSACTIONALLY_THAWED",
+    "VALIDATED",
+    "REFROZEN"
+  ],
+  "staging": {
+    "source": "content/_staged",
+    "live": "content/_live",
+    "implicit_staged_to_live_forbidden": true,
+    "promotion_command": "node scripts/release/promote_staged_content.js"
+  },
+  "freeze": {
+    "registry": "data/release/frozen_page_registry.json",
+    "cache_root": "data/release/frozen_html_cache",
+    "pending_mutations": "data/release/pending_mutation_routes.json",
+    "active_scope": "data/release/active_mutation_scope.json",
+    "normal_build_mutation_of_frozen_routes_forbidden": true
+  },
+  "controlled_apply": {
+    "public_content_mutation_enabled": true,
+    "boundary": "Only Safe Harbor-admitted new routes or transactionally thawed exact repair targets may change public content. All other frozen routes are restored byte-for-byte before release proof."
+  },
+  "processing_budget": {
+    "daily_processing_budget_units": 5,
+    "max_new_pages_per_day": 2,
+    "max_repairs_per_day": 2,
+    "max_atom_updates_per_day": 3,
+    "max_internal_link_updates_per_day": 5,
+    "budget_is_not_quota": true
+  },
+  "protected_runtime_paths": [
+    "data/report_fixes/agent_runs/**",
+    "data/release/frozen_html_cache/**",
+    "data/release/frozen_page_registry.json"
+  ],
+  "local_validation_required_before_complete": true,
+  "structural_graph_live_policy": "staged structural pages remain live when graph-critical; public discovery surfaces remain admission-driven",
   "forbidden_runtime_mutations": [
     ".github/**",
     "package.json",
-    "package-lock.json",
     "scripts/**",
-    "docs/**",
-    "_repo*.json",
-    "_validation_registry.json",
-    "_repo_validation_matrix.json",
-    "_citation_intelligence_contract.json",
-    "_content_release_contract.json",
-    "data/strategy/**"
-  ],
-  "publication_boundary": "signals never publish directly; release plan governs publication; shadow apply may record generated-state no-op ledgers only",
-  "structural_graph_live_policy": "All staged structural pages remain live when needed to preserve atlas, cluster, route, sitemap, and internal-link graph integrity.",
-  "controlled_apply": {
-    "public_content_mutation_enabled": false,
-    "reason": "Container implementation is shadow/fixture validated. Local updater and later owner-approved controlled release perform publication."
-  },
-  "batch_d_controlled_release": {
-    "status": "enabled_structural_shadow",
-    "cadence_class": "CADENCE_DAILY_LIGHT",
-    "manual_command": "npm run release:controlled-citation-intelligence",
-    "scheduled_workflow": ".github/workflows/daily-citation-intelligence.yml",
-    "public_content_mutation_enabled": false,
-    "max_release_units_per_day": 10,
-    "target_release_units_per_day": 5,
-    "proof_required": [
-      "fixture trace",
-      "release planner",
-      "shadow apply ledger",
-      "daily proof packet",
-      "browserless mock backup",
-      "workflow validators"
-    ],
-    "local_validation_required_before_complete": true
-  }
+    "docs/**"
+  ]
 }

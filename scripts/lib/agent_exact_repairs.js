@@ -54,7 +54,7 @@ function mergeSemanticArtifacts(requiredArtifacts, existingArtifacts) {
     const key = artifact.marker || artifact.id || `${artifact.type}|${artifact.title}`;
     if (!byKey.has(key)) byKey.set(key, artifact);
   }
-  return [...byKey.values()].slice(0, 12);
+  return [...byKey.values()];
 }
 
 function compactSentence(value, max = 260) {
@@ -82,6 +82,12 @@ function normalizeImplementationPath(value) {
 
 function routeToImplementationPath(value) {
   return normalizeImplementationPath(value);
+}
+function normalizedTargetRoute(value) {
+  const impl = normalizeImplementationPath(value);
+  if (!impl) return '';
+  if (impl.endsWith('/index.html')) return `/${impl.slice(0, -'index.html'.length)}`;
+  return `/${impl}`.replace(/\/{2,}/g, '/');
 }
 
 function routeVariants(value) {
@@ -119,9 +125,13 @@ function entryFromSpec(spec, date) {
   const fixRecommendations = unique(spec.fix_recommendations || spec.recommendations || [spec.recommendation]);
   const marker = markerFor(recordIds, implementationPath);
   const semantic = semanticEntryForImplementationPath(implementationPath);
+  const sourceManifestId = normalizeText(spec.source_manifest_id || spec.source_run_id || spec.source_artifacts?.manifest || '');
+  const targetIdentity = hash(`${sourceManifestId}|${recordIds.join('|')}|${normalizedTargetRoute(spec.target_route || implementationPath)}|${implementationPath}`, 24);
   return {
-    schema_version: '1.0',
+    schema_version: '1.1',
     marker,
+    target_identity: targetIdentity,
+    source_manifest_id: sourceManifestId,
     target_type: targetType,
     implementation_path: implementationPath,
     target_route: spec.target_route || '',
@@ -154,6 +164,11 @@ function mergeLedgerEntries(existingEntries, entries) {
     if (!entry || !entry.implementation_path) continue;
     const key = normalizeImplementationPath(entry.implementation_path);
     const prior = byPath.get(key) || {};
+    const priorRoute = normalizedTargetRoute(prior.target_route || prior.implementation_path || '');
+    const nextRoute = normalizedTargetRoute(entry.target_route || entry.implementation_path || '');
+    if (priorRoute && nextRoute && priorRoute !== nextRoute) {
+      throw new Error(`agent_exact_cross_route_collision:${key}:${priorRoute}:${nextRoute}`);
+    }
     const recordIds = unique([...(prior.record_ids || []), ...(entry.record_ids || [])]);
     const merged = {
       ...prior,
@@ -164,7 +179,9 @@ function mergeLedgerEntries(existingEntries, entries) {
       queries: unique([...(prior.queries || []), ...(entry.queries || [])]),
       fix_recommendations: unique([...(prior.fix_recommendations || []), ...(entry.fix_recommendations || [])]),
       supporting_routes: unique([...(prior.supporting_routes || []), ...(entry.supporting_routes || [])]),
-      marker: markerFor(recordIds, key)
+      marker: markerFor(recordIds, key),
+      target_identities: unique([...(prior.target_identities || [prior.target_identity]), ...(entry.target_identities || [entry.target_identity])]),
+      target_identity: entry.target_identity || prior.target_identity || ''
     };
     byPath.set(key, merged);
   }
@@ -217,12 +234,13 @@ function applyEntryToTarget(target, entry, context = {}) {
   const semantic = semanticEntryForImplementationPath(entry.implementation_path || entry.intended_winner_path);
   target.date_modified = entry.applied_at || target.date_modified;
   if (semantic) {
-    target.description = compactSentence(`${semantic.title || target.title || primary}. Semantically repaired from agent-run recommendation with extractable decision-support blocks.`, 320);
+    if (semantic.description) target.description = compactSentence(semantic.description, 320);
     target.answer = semantic.answer || target.answer;
     target.checklist = unique([...(semantic.checklist || []), ...(target.checklist || [])]).slice(0, 14);
     target.red_flags = unique([...(semantic.red_flags || []), ...(target.red_flags || [])]).slice(0, 14);
+    target.source_records = unique([...(semantic.authority_source_ids || []), ...(target.source_records || [])]);
   } else {
-    target.description = compactSentence(`${target.description || target.title || primary} Updated for citation-readiness: ${recommendation}`, 320);
+    target.description = target.description || compactSentence(target.title || primary, 320);
     target.answer = compactSentence(`${target.answer || target.description || target.title || primary} Citation-ready update: ${recommendation}`, 520);
     target.checklist = unique([
       ...(target.checklist || []),
@@ -284,6 +302,7 @@ module.exports = {
   compactSentence,
   normalizeImplementationPath,
   routeToImplementationPath,
+  normalizedTargetRoute,
   slugFromInsightPath,
   targetTypeForImplementationPath,
   markerFor,

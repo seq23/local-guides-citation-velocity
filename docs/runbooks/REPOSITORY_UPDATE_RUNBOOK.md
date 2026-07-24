@@ -65,7 +65,7 @@ That commit may contain `data/report_fixes/agent_runs/**/agent_run_manifest.json
 
 ## Local updater
 
-Canonical active updater target: `$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh`.  
+Canonical active updater target: `$HOME/update_repo_from_zip_generic_v3.sh`.  
 Do not infer a different path from memory. If the active tool is relocated, discover and inspect it before use.
 
 Arguments, in order:
@@ -86,7 +86,7 @@ Replace `<ZIP_FILENAME>` with the exact downloaded baseline ZIP filename.
 ALLOW_LARGE_DELETE=1 \
 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
 PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
-bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
+bash "$HOME/update_repo_from_zip_generic_v3.sh" \
 "$HOME/Downloads/<ZIP_FILENAME>" \
 "$HOME/Documents/GitHub/local-guides-citation-velocity" \
 snapshot \
@@ -99,7 +99,7 @@ Current repair example:
 ALLOW_LARGE_DELETE=1 \
 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
 PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
-bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
+bash "$HOME/update_repo_from_zip_generic_v3.sh" \
 "$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_07-06-26_170700bb4.zip" \
 "$HOME/Documents/GitHub/local-guides-citation-velocity" \
 snapshot \

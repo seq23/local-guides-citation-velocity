@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.0",
-  "effective_date": "2026-06-19",
+  "schema_version": "2.0",
+  "effective_date": "2026-07-24",
   "authority": "docs/PAGE_RELEASE_LAW.md",
   "inventory_policy": "DERIVE_CURRENT_TOTAL_FROM_ADMISSION_LEDGER",
   "canonical_origin": "https://theindustryguides.com",
@@ -27,5 +27,28 @@
   ],
   "historical_route_baseline": 1763,
   "approved_retirement_registry": "data/release/route_retirements.json",
-  "inventory_floor_policy": "ACTIVE_ADMISSION_PLUS_APPROVED_301_RETIREMENTS_MUST_MEET_OR_EXCEED_HISTORICAL_BASELINE"
+  "inventory_floor_policy": "ACTIVE_ADMISSION_PLUS_APPROVED_301_RETIREMENTS_MUST_MEET_OR_EXCEED_HISTORICAL_BASELINE",
+  "page_lifecycle": [
+    "OPPORTUNITY",
+    "ADMITTED_FOR_BUILD",
+    "STAGED",
+    "VALIDATED",
+    "LIVE",
+    "FROZEN",
+    "TRANSACTIONALLY_THAWED",
+    "UNLOCKED_FOR_REBUILD",
+    "RETIRED"
+  ],
+  "runtime_autonomy": "FULL_SAFE_AUTONOMY",
+  "page_strategy_registry": "data/strategy/page_strategy_registry.json",
+  "page_release_queue": "data/release/page_release_queue.json",
+  "opportunity_backlog": "data/strategy/page_opportunity_backlog.json",
+  "new_page_policy": "SAFE_HARBOR_DISTINCT_INTENT_SOURCE_ROUTE_NEUTRALITY_GATE_NO_DAILY_QUOTA",
+  "normal_build_may_promote_staged": false,
+  "normal_build_may_mutate_frozen": false,
+  "frozen_page_registry": "data/release/frozen_page_registry.json",
+  "frozen_html_cache_dir": "data/release/frozen_html_cache",
+  "active_mutation_scope": "data/release/active_mutation_scope.json",
+  "required_accepted_state": "FROZEN",
+  "transactional_repair_policy": "EXPLICIT_TARGET_SCOPE_ONLY_ROLLBACK_ON_FAILURE_REFREEZE_ON_SUCCESS"
 }

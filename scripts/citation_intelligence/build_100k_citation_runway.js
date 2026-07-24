@@ -16,6 +16,8 @@ const {
   countLlmsEntries
 } = require('./pipeline_lib');
 
+const { ShardedJsonWriter } = require('../lib/sharded_json');
+
 const TARGET = 100000;
 const HORIZON_DAYS = 180;
 
@@ -250,19 +252,70 @@ function buildRepairQueue(records, routes) {
   return selected;
 }
 
+function repairCandidateState() {
+  return { selected: [], seen: new Set() };
+}
+
+function considerRepairCandidate(record, state) {
+  if (state.selected.length >= 250) return;
+  const key = `${record.vertical}:${record.intent}:${record.state}:${record.page_family}`;
+  if (state.seen.has(key)) return;
+  state.seen.add(key);
+  state.selected.push({
+    repair_id: `freewin_${hash(key, 12)}`,
+    opportunity_id: record.opportunity_id,
+    vertical: record.vertical,
+    state: record.state,
+    action: record.direct_owned_surface_exists ? 'refresh_existing_surface' : 'prepare_safe_owned_surface_or_answer_atom',
+    safe_to_auto_repair: record.direct_owned_surface_exists,
+    protected_action: false,
+    why_it_can_help: 'Improves answer-extractable coverage, internal-link depth, and local query fit without paid data.',
+    competitor_free_win_angle: 'Cover a public high-intent query family with clearer direct answers, source boundaries, and internal links.',
+    supporting_existing_route: record.supporting_existing_route,
+    route_candidate: record.route_candidate,
+    validation_required: [
+      'duplicate intent check',
+      'source/claim boundary check',
+      'canonical and sitemap check',
+      'citation honesty check'
+    ],
+    status: record.direct_owned_surface_exists ? 'safe_refresh_candidate' : 'future_release_candidate'
+  });
+}
+
 function run() {
   const profile = readJson('data/strategy/citation_strategy_profile.json', {});
   const verticalKeys = (profile.verticals || Object.keys(VERTICAL_SEEDS)).filter((v) => VERTICAL_SEEDS[v]);
   const routes = routeInventory();
-  const records = [];
-  for (let i = 0; i < TARGET; i += 1) records.push(makeFanoutRecord(i, routes, verticalKeys));
+  const generatedAt = `${TODAY}T00:00:00.000Z`;
+  const repairState = repairCandidateState();
+  const shardWriter = new ShardedJsonWriter('data/queries/citation_fanout_opportunities_100k', {
+    recordsPerShard: 5000,
+    maxBytesPerShard: 8 * 1024 * 1024,
+    metadata: {
+      repo: 'local-guides-citation-velocity',
+      generated_at: generatedAt,
+      target: TARGET,
+      proof_boundary: 'query_fanout_opportunities_not_external_citations',
+      generator: 'scripts/citation_intelligence/build_100k_citation_runway.js'
+    }
+  });
+
+  for (let i = 0; i < TARGET; i += 1) {
+    const record = makeFanoutRecord(i, routes, verticalKeys);
+    shardWriter.add(record);
+    considerRepairCandidate(record, repairState);
+  }
+  const shardIndex = shardWriter.finalize();
+  const legacyMonolith = path.join(ROOT, 'data/queries/citation_fanout_opportunities_100k.json');
+  if (fs.existsSync(legacyMonolith)) fs.rmSync(legacyMonolith, { force: true });
+
   const ownedSurfaceCount = countIndexableRoutes();
   const sitemapUrls = countSitemapUrls();
   const llmsEntries = countLlmsEntries();
   const observedWins = loadObservedWins();
-  const generatedAt = new Date().toISOString();
   const strategy = {
-    schema_version: '2.0',
+    schema_version: '2.1',
     repo: 'seq23/local-guides-citation-velocity',
     repo_name: 'local-guides-citation-velocity',
     target: {
@@ -274,11 +327,11 @@ function run() {
     },
     cadence: {
       autonomy_model: 'FULL_SAFE_AUTONOMY_FOR_SAFE_LOCAL_AUTHORITY_ACTIONS',
-      new_page_cadence: 'daily_or_near_daily_safe_pages_when_release_contract_allows',
-      refresh_cadence: 'daily_self_heal_queue_plus_weekly_operator_review',
-      content_atom_cadence: 'daily_answer_atom_or_internal_link_candidates',
-      internal_link_cadence: 'after_every_safe_publish_or_refresh_batch',
-      flagship_asset_cadence: 'monthly_or_quarterly_vertical_guides_when_source_depth_supports'
+      new_page_cadence: 'process qualified distinct-intent candidates within daily safety budgets; never manufacture pages to satisfy a quota',
+      refresh_cadence: 'daily self-heal candidates plus weekly operator observation',
+      content_atom_cadence: 'daily answer atom or internal-link candidates when qualified',
+      internal_link_cadence: 'after every safe publish or refresh batch',
+      flagship_asset_cadence: 'monthly or quarterly vertical guides when source depth supports'
     },
     measurement_boundaries: {
       owned_surfaces: 'repo-created pages, answers, atoms, schema, sitemap and llms surfaces',
@@ -310,12 +363,19 @@ function run() {
       'verified provider claims without source authority',
       'legal/medical advice beyond neutral educational boundaries',
       'paid/provider mutations without credentials and owner authority',
-      'one thin page per wording variation'
+      'one thin page per wording variation',
+      'publication solely to satisfy a daily page quota'
     ],
+    fanout_storage: {
+      format: 'indexed_json_shards',
+      index: 'data/queries/citation_fanout_opportunities_100k/index.json',
+      shard_count: shardIndex.shard_count,
+      aggregate_sha256: shardIndex.aggregate_sha256
+    },
     generated_at: generatedAt
   };
   const scoreboard = {
-    schema_version: '2.0',
+    schema_version: '2.1',
     repo: 'local-guides-citation-velocity',
     generated_at: generatedAt,
     target_citation_ready_opportunities_or_surfaces: TARGET,
@@ -324,8 +384,10 @@ function run() {
     owned_surfaces_current: ownedSurfaceCount,
     sitemap_urls_current: sitemapUrls,
     llms_entries_current: llmsEntries,
-    citation_ready_opportunities_current: records.length,
-    generated_fanout_records: records.length,
+    citation_ready_opportunities_current: TARGET,
+    generated_fanout_records: TARGET,
+    fanout_shard_count: shardIndex.shard_count,
+    fanout_aggregate_sha256: shardIndex.aggregate_sha256,
     submitted_urls_current: readJson('data/seo/search_submission_registry.json', { domains: [] }).domains?.filter((d) => d.submission_record).length || 0,
     indexed_urls_current: 0,
     observed_wins_current: observedWins.length,
@@ -341,7 +403,7 @@ function run() {
     status: 'PASS_WITH_EXTERNAL_TELEMETRY_ABSENT'
   };
   const zeroDollarLedger = {
-    schema_version: '2.0',
+    schema_version: '2.1',
     repo: 'local-guides-citation-velocity',
     generated_at: generatedAt,
     mode: 'repo_local_zero_dollar_intelligence',
@@ -362,16 +424,19 @@ function run() {
       'keep unsupported external outcome claims blocked until telemetry exists'
     ]
   };
-  const repairQueue = buildRepairQueue(records, routes);
+  const repairQueue = repairState.selected;
   const validation = {
-    schema_version: '2.0',
+    schema_version: '2.1',
     validator: 'citation-100k-runway',
     repo: 'local-guides-citation-velocity',
     generated_at: generatedAt,
     status: 'PASS',
     target: TARGET,
     time_horizon_days: HORIZON_DAYS,
-    fanout_records: records.length,
+    fanout_records: TARGET,
+    fanout_index: 'data/queries/citation_fanout_opportunities_100k/index.json',
+    fanout_shards: shardIndex.shard_count,
+    fanout_aggregate_sha256: shardIndex.aggregate_sha256,
     owned_surfaces_current: ownedSurfaceCount,
     repair_candidates: repairQueue.length,
     observed_external_citations_current: observedWins.length,
@@ -379,23 +444,15 @@ function run() {
     notes: [
       '100K is a citation-ready opportunity/surface target, not a proven citation claim.',
       'External outcomes remain evidence-ledger only.',
-      'Fanout records are planning intelligence; they do not justify thin pages.'
+      'Fanout records are planning intelligence; they do not justify thin pages.',
+      'Fanout records are stored as deterministic indexed shards, not a monolithic JSON file.'
     ]
   };
   writeJson('data/strategy/citation_growth_strategy.json', strategy);
-  writeJson('data/queries/citation_fanout_opportunities_100k.json', {
-    schema_version: '2.0',
-    repo: 'local-guides-citation-velocity',
-    generated_at: generatedAt,
-    target: TARGET,
-    count: records.length,
-    proof_boundary: 'query_fanout_opportunities_not_external_citations',
-    records
-  });
   writeJson('data/measurement/citation_honesty_scoreboard.json', scoreboard);
   writeJson('data/measurement/zero_dollar_citation_test_ledger.json', zeroDollarLedger);
   writeJson('data/measurement/free_win_self_heal_queue.json', {
-    schema_version: '2.0',
+    schema_version: '2.1',
     repo: 'local-guides-citation-velocity',
     generated_at: generatedAt,
     count: repairQueue.length,
@@ -410,8 +467,8 @@ function run() {
     records: observedWins
   });
   writeJson('artifacts/validation/citation-100k-runway.json', validation);
-  writeText('reports/citation-100k-runway.md', `# 100K Citation-Ready Runway\n\nStatus: PASS\n\nTarget: ${TARGET} citation-ready opportunities/surfaces in ${HORIZON_DAYS} days or less.\nFanout opportunities: ${records.length}\nOwned surfaces: ${ownedSurfaceCount}\nSafe/free-win repair candidates: ${repairQueue.length}\nObserved external citation/win records: ${observedWins.length}\n\nThis report does not claim 100K external citations, rankings, indexing, traffic, or LLM surfacing.\n`);
-  console.log(`citation runway: ${records.length} opportunities; repairs=${repairQueue.length}; observed=${observedWins.length}`);
+  writeText('reports/citation-100k-runway.md', `# 100K Citation-Ready Runway\n\nStatus: PASS\n\nTarget: ${TARGET} citation-ready opportunities/surfaces in ${HORIZON_DAYS} days or less.\nFanout opportunities: ${TARGET}\nShard count: ${shardIndex.shard_count}\nAggregate SHA256: ${shardIndex.aggregate_sha256}\nOwned surfaces: ${ownedSurfaceCount}\nSafe/free-win repair candidates: ${repairQueue.length}\nObserved external citation/win records: ${observedWins.length}\n\nThis report does not claim 100K external citations, rankings, indexing, traffic, or LLM surfacing.\n`);
+  console.log(`citation runway: ${TARGET} sharded opportunities; shards=${shardIndex.shard_count}; repairs=${repairQueue.length}; observed=${observedWins.length}`);
 }
 
 if (require.main === module) {

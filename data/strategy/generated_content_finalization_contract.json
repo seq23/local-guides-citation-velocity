@@ -1,33 +1,38 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "repo": "local-guides-citation-velocity",
-  "contract": "Every generated or generated-adjacent content release must self-heal and prevalidate before it can be considered finished.",
+  "contract": "Every generated or repaired content release must pass Safe Harbor/target authorization, bounded source repair, render validation, promotion, and freeze/refreeze before it is considered finished.",
   "applies_to": [
-    "agent artifact pages to build",
-    "agent exact repairs",
-    "manual/imported strategy gap-fill candidates",
-    "social/manual fallback candidates admitted for release",
-    "programmatic state/support pages",
-    "daily citation-intelligence release candidates"
+    "Safe Harbor-admitted distinct new pages",
+    "agent exact repairs to existing routes",
+    "programmatic source repairs",
+    "content atom/internal-link updates when they mutate public output"
   ],
   "required_finish_sequence": [
-    "build_or_mutate_source_content",
-    "self_heal_source_content",
-    "validate_programmatic_substance",
-    "build_rendered_site",
+    "classify_strategy_or_exact_repair_target",
+    "stage_new_content_or_queue_exact_mutation_route",
+    "begin_transactional_mutation_scope",
+    "bounded_source_self_heal",
+    "build_rendered_site_with_frozen_non_targets_restored",
     "validate_rendered_programmatic_substance",
     "validate_rich_new_page_contract",
     "validate_page_family_contract",
+    "reconcile_admission_registry",
+    "freeze_new_and_refreeze_authorized_routes",
+    "validate_page_release_law",
+    "build_declared_dist",
     "write_evidence_artifact"
   ],
   "release_blocking": true,
   "forbidden_finish_states": [
-    "generated_without_self_healing",
-    "generated_without_source_validation",
-    "generated_without_render_validation",
+    "generated_without_safe_harbor_or_exact_target_authority",
+    "staged_implicitly_promoted_by_normal_build",
+    "frozen_non_target_route_changed",
     "agent_content_finished_without_finalizer",
-    "gap_fill_content_finished_without_finalizer"
+    "synthetic_quota_page_published",
+    "release_finished_with_active_mutation_scope"
   ],
   "finish_command": "npm run release:content-finalize",
+  "canonical_apply_command": "npm run release:apply",
   "evidence_file": "artifacts/validation/generated-content-finalization-contract.json"
 }

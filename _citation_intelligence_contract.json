@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.4",
+  "schema_version": "2.1",
   "repo": "local-guides-citation-velocity",
   "mode": "SHADOW_MODE",
   "live_firehose_enabled": false,
@@ -33,7 +33,7 @@
   },
   "required_outputs": [
     "data/strategy/citation_growth_strategy.json",
-    "data/queries/citation_fanout_opportunities_100k.json",
+    "data/queries/citation_fanout_opportunities_100k/index.json",
     "data/measurement/citation_honesty_scoreboard.json",
     "data/measurement/zero_dollar_citation_test_ledger.json",
     "data/measurement/free_win_self_heal_queue.json",
@@ -65,5 +65,12 @@
     "proof_packet_passes",
     "postdeploy_or_browser_fallback_passes",
     "scheduled_cadence_enabled"
-  ]
+  ],
+  "fanout_storage": {
+    "format": "indexed_json_shards",
+    "index": "data/queries/citation_fanout_opportunities_100k/index.json",
+    "legacy_monolith_forbidden": "data/queries/citation_fanout_opportunities_100k.json",
+    "expected_records": 100000,
+    "integrity": "every shard hash/count plus aggregate hash must validate before release or packaging"
+  }
 }

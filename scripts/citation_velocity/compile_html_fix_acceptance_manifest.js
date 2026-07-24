@@ -4,7 +4,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { compileEntryFromSpec, unique } = require('../lib/html_fix_acceptance_parser');
+const { compileEntryFromSpec } = require('../lib/html_fix_acceptance_parser');
+const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const PLAN_PATH = 'artifacts/validation/agent-exact-implementation-plan.json';
@@ -27,14 +28,15 @@ function inferVertical(spec) {
 function main() {
   const plan = readJson(PLAN_PATH, { specs: [] });
   const specs = (plan.specs || []).filter((spec) => spec && spec.status !== 'BLOCKED' && spec.operation === 'REPAIR_INTENDED_WINNER_PAGE');
-  const entries = specs.map((spec) => compileEntryFromSpec(spec));
+  const compile = (spec) => authorityGroundedEntryForSpec(spec) || compileEntryFromSpec(spec);
+  const entries = specs.map(compile);
   const manifest = {
     schema_version: '2.0',
     status: 'PASS',
     generated_by: 'compile_html_fix_acceptance_manifest.js',
     generated_at: DATE,
     source_plan: PLAN_PATH,
-    rule: 'No hand-authored production semantic manifest. Every selected repair row is compiled from source FIX/EDIT text into rendered acceptance criteria.',
+    rule: 'Production semantic manifests are generated. High-stakes verticals compile agent intent through admitted primary-source authority templates; other verticals compile source FIX/EDIT text into rendered acceptance criteria.',
     entry_count: entries.length,
     row_requirement_count: entries.reduce((sum, entry) => sum + (entry.row_requirements || []).length, 0),
     entries
@@ -45,7 +47,7 @@ function main() {
   for (const spec of specs) {
     const k = `${spec.run_date || DATE}_${inferVertical(spec)}`;
     if (!grouped.has(k)) grouped.set(k, []);
-    grouped.get(k).push(compileEntryFromSpec(spec));
+    grouped.get(k).push(compile(spec));
   }
   for (const [key, groupEntries] of grouped.entries()) {
     writeJson(`${MANIFEST_DIR}/${key}.json`, {

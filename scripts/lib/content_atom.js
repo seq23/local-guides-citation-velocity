@@ -184,8 +184,11 @@ function finalize(atom, context = {}) {
   payload.title = clean(payload.title);
   payload.source_basis = payload.source_basis || sourceBasis({ sourceRoute: context.sourceRoute, sourceFields: [] });
   const signaturePayload = { type: payload.type, title: payload.title, rows: payload.rows, steps: payload.steps, lines: payload.lines, branches: payload.branches, stat: payload.stat, synthesis: payload.synthesis };
-  payload.uniqueness_key = hash(JSON.stringify(signaturePayload), 24);
-  payload.atom_id = `ATOM-${hash(`${context.sourceRoute || ''}|${context.title || ''}|${payload.uniqueness_key}`, 18).toUpperCase()}`;
+  payload.semantic_signature = hash(JSON.stringify(signaturePayload), 24);
+  payload.route_uniqueness_key = hash(`${context.sourceRoute || ''}|${payload.semantic_signature}`, 24);
+  // Backward-compatible field name retained for existing validators/renderers; new atoms use route-bound identity.
+  payload.uniqueness_key = payload.route_uniqueness_key;
+  payload.atom_id = `ATOM-${hash(`${context.sourceRoute || ''}|${context.title || ''}|${payload.route_uniqueness_key}`, 18).toUpperCase()}`;
   return payload;
 }
 
@@ -196,6 +199,8 @@ function validateContentAtom(atom, context = {}) {
   if (clean(atom.title).length < 12) errors.push('atom_title_too_short');
   if (!clean(atom.atom_id).startsWith('ATOM-')) errors.push('missing_atom_id');
   if (!/^[a-f0-9]{24}$/i.test(clean(atom.uniqueness_key))) errors.push('missing_uniqueness_key');
+  if (atom.semantic_signature && !/^[a-f0-9]{24}$/i.test(clean(atom.semantic_signature))) errors.push('invalid_semantic_signature');
+  if (atom.route_uniqueness_key && !/^[a-f0-9]{24}$/i.test(clean(atom.route_uniqueness_key))) errors.push('invalid_route_uniqueness_key');
   if (!atom.source_basis || !clean(atom.source_basis.method) || !(atom.source_basis.source_fields || []).length) errors.push('missing_source_basis');
 
   if (atom.type === 'original_comparison_table') {

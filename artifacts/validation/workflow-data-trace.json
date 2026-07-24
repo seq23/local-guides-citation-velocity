@@ -73,7 +73,7 @@
       "downstream": [
         "deploy-distribution.yml"
       ],
-      "failure_boundary": "Push only after self-healing, exact-agent validation, and citation-fix validation pass."
+      "failure_boundary": "Push only after Safe Harbor/transactional release finalization, deterministic rebuild, release validation, exact-agent validation, and citation-fix validation pass."
     },
     {
       "file": "velocity-full-rebuild.yml",
@@ -83,7 +83,8 @@
       ],
       "consumes": [
         "repository source",
-        "strategy gate"
+        "citation strategy gate",
+        "frozen accepted-output registry"
       ],
       "produces": [
         "validated rebuild commit",
@@ -93,7 +94,7 @@
       "downstream": [
         "deploy-distribution.yml"
       ],
-      "failure_boundary": "Push only after self-healing validates the rebuilt source."
+      "failure_boundary": "Push only after deterministic frozen-aware rebuild and release validation pass; broad self-healing is not permitted in the rebuild workflow."
     },
     {
       "file": "deploy-distribution.yml",
@@ -140,5 +141,5 @@
   ],
   "errors": [],
   "warnings": [],
-  "checked_at": "2026-07-13"
+  "checked_at": "2026-07-24"
 }

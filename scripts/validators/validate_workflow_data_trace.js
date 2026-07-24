@@ -32,10 +32,15 @@ for (const w of reg.workflows || []) {
   if (w.mutates_repo && !has(txt, 'contents: write')) errors.push(`${w.file}:write_permission_missing`);
   if (!w.mutates_repo && regex(txt, /git\s+push|git\s+commit|commit validated/i)) errors.push(`${w.file}:unexpected_repo_mutation`);
   if (w.mutates_repo) {
-    if (!has(txt, 'npm run release:self-healing')) errors.push(`${w.file}:self_healing_gate_missing`);
+    if (has(txt, 'npm run release:self-healing')) errors.push(`${w.file}:broad_self_healing_forbidden_in_safe_autonomy_workflow`);
     const pushPos = txt.indexOf('git push');
-    const gatePos = txt.lastIndexOf('npm run release:self-healing', pushPos);
-    if (pushPos >= 0 && gatePos < 0) errors.push(`${w.file}:push_without_revalidation`);
+    const gatePos = txt.lastIndexOf('npm run validate:release', pushPos);
+    if (pushPos >= 0 && gatePos < 0) errors.push(`${w.file}:push_without_release_revalidation`);
+    if (w.file === 'velocity-content-release.yml' && !has(txt, 'npm run release:velocity-intake')) errors.push(`${w.file}:safe_harbor_intake_missing`);
+    if (w.file === 'velocity-full-rebuild.yml') {
+      if (!has(txt, 'npm run intelligence:build')) errors.push(`${w.file}:intelligence_build_missing`);
+      if (!has(txt, 'npm run release:full-rebuild')) errors.push(`${w.file}:deterministic_full_rebuild_missing`);
+    }
   }
   for (const forbidden of reg.global_contract.forbidden_actions || []) if (has(txt, forbidden)) errors.push(`${w.file}:forbidden:${forbidden}`);
 }

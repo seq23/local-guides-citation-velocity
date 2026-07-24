@@ -13,6 +13,7 @@ const {
   normalizeImplementationPath,
   targetTypeForImplementationPath
 } = require('../lib/agent_exact_repairs');
+const { queueMutationRoutes, implementationPathToRoute } = require('../lib/frozen_pages');
 
 function rel(p) { return path.join(ROOT, p); }
 function readJson(p, f = null) { try { return JSON.parse(fs.readFileSync(rel(p), 'utf8')); } catch { return f; } }
@@ -26,18 +27,8 @@ function removeLegacyHtmlReportArtifacts(paths) {
   if (!targets.size) return { cleaned_targets: 0, removed_artifacts: 0 };
   let cleanedTargets = 0;
   let removedArtifacts = 0;
-  const insights = readJson('content/_live/insights.json', { items: [] });
-  let insightsChanged = false;
-  for (const item of insights.items || []) {
-    const itemPath = normalizeImplementationPath(item.publish_path || (item.slug ? `insights/${item.slug}.html` : ''));
-    if (!targets.has(itemPath) || !Array.isArray(item.citation_velocity_artifacts)) continue;
-    const before = item.citation_velocity_artifacts.length;
-    item.citation_velocity_artifacts = item.citation_velocity_artifacts.filter((artifact) => !isLegacyHtmlReportArtifact(artifact));
-    removedArtifacts += before - item.citation_velocity_artifacts.length;
-    if (before !== item.citation_velocity_artifacts.length) { cleanedTargets += 1; insightsChanged = true; }
-  }
-  if (insightsChanged) writeJson('content/_live/insights.json', insights);
-  for (const relPath of ['content/_live/pages.json', 'content/_staged/pages.json']) {
+  // Live source is not mutated during planning/ledger application. Cleanup is staged-only and becomes live only through validated promotion.
+  for (const relPath of ['content/_staged/pages.json']) {
     const payload = readJson(relPath, { pages: [] });
     let changed = false;
     for (const page of payload.pages || []) {
@@ -121,6 +112,10 @@ function main() {
     entries: mergedEntries
   };
   writeJson(LEDGER_PATH, ledger);
+  // Always canonicalize repair targets through implementationPathToRoute so
+  // `/foo/index.html` and `/foo/` resolve to one frozen/admission identity.
+  const queuedRoutes = entries.map((entry) => implementationPathToRoute(entry.target_route || entry.implementation_path)).filter(Boolean);
+  queueMutationRoutes(queuedRoutes, 'agent-exact-implementation-plan');
 
   const report = {
     schema_version: '1.1',
@@ -128,6 +123,7 @@ function main() {
     applied_at: DATE,
     ledger_path: LEDGER_PATH,
     ledgered_repairs: entries.length,
+    queued_mutation_routes: queuedRoutes,
     legacy_cleanup: legacyCleanup,
     blocked: results.filter((result) => String(result.status || '').startsWith('BLOCKED')).length,
     results

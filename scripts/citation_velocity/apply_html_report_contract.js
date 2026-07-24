@@ -555,10 +555,17 @@ function main() {
     console.error(`HTML REPORT CONTRACT FAIL: ${discovered.errors.join('; ')}`);
     process.exit(1);
   }
-  const fixed = applyFixes(discovered.fixes);
-  const queue = updateApprovalQueue(discovered.pages);
+  // Modern exact-intake mode is evidence-only here. Public/source mutation is owned by the selected exact-repair + Safe Harbor release path.
+  // Legacy mutation may be explicitly enabled only for historical recovery tooling.
+  const legacyMutation = process.env.ALLOW_LEGACY_HTML_REPORT_MUTATIONS === '1';
+  const fixed = legacyMutation ? applyFixes(discovered.fixes) : {
+    applied: 0,
+    results: discovered.fixes.map((fix) => ({ ...fix, status: 'RECORDED_EVIDENCE_ONLY', reason: 'exact_intake_pipeline_owns_public_mutation' }))
+  };
+  const queue = legacyMutation ? updateApprovalQueue(discovered.pages) : { added_count: 0, total_count: 0, skipped_count: 0, added: [], skipped: [] };
   const report = {
-    schema_version: '1.0',
+    schema_version: '1.1',
+    mode: legacyMutation ? 'LEGACY_MUTATION_EXPLICIT' : 'EVIDENCE_ONLY_EXACT_INTAKE',
     status: 'PASS',
     generated_at: DATE,
     manifests_seen: discovered.manifests.length,

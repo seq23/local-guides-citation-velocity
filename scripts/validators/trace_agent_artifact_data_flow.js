@@ -58,6 +58,16 @@ function analyzeCsvGrain(rows){
 function normalizeRoute(route){ let v=String(route||'').trim(); if(!v) return ''; v=v.replace(/^https?:\/\/[^/]+/,''); if(!v.startsWith('/')) v=`/${v}`; return v.replace(/\/+/g,'/'); }
 function routeToPath(route){ let v=normalizeRoute(route).replace(/^\//,''); if(!v) return ''; if(v.endsWith('.html')) return v; return `${v.replace(/\/+$/,'')}/index.html`; }
 function pageExists(payload, route){ const wanted=normalizeRoute(route); const wantedPath=routeToPath(route); return (payload.pages||[]).some(p=>normalizeRoute(p.slug||p.path||'')===wanted || routeToPath(p.path||p.slug||'')===wantedPath); }
+function normalizedPathForManifest(manifest){
+  const date=String(manifest.run_date||'');
+  const vertical=String(manifest.vertical||'');
+  const candidates=[
+    manifest.normalized_path,
+    `data/report_fixes/normalized_agent_runs/${date}_${vertical}.json`,
+    `data/report_fixes/normalized_agent_runs/${date}_${vertical.replace(/-/g,'_')}.json`
+  ].filter(Boolean);
+  return candidates.find((candidate)=>exists(candidate)) || candidates[0] || '';
+}
 function renderedExistsForExistingRoute(existingRoute){
   const raw=String(existingRoute||'').trim();
   if(!raw) return false;
@@ -68,7 +78,12 @@ function renderedExistsForExistingRoute(existingRoute){
   else candidates.push(`insights/${raw}.html`);
   return candidates.some(candidate=>candidate&&exists(candidate));
 }
-function jsonFixRows(payload){ const rows=[]; for(const key of ['free_wins','outperform','page_fixes']) for(const row of Array.isArray(payload[key])?payload[key]:[]) rows.push({...row, source_category:key}); return rows; }
+function jsonFixRows(payload){
+  const rows=[];
+  const keys=['free_wins','outperform','page_fixes','pending','pending_fixes','recommendations','results','fixes'];
+  for(const key of keys) for(const row of Array.isArray(payload[key])?payload[key]:[]) rows.push({...row, source_category:key});
+  return rows;
+}
 function uniqueFixKey(row){ return [row.file_path||row.page_url||'', row.query||'', row.fix||row.fix_recommendation||''].map(String).join('|'); }
 const errors=[]; const warnings=[]; const traces=[];
 const manifests=walkManifests().map(p=>({path:p, manifest:readJson(p,null)})).filter(x=>x.manifest&&x.manifest.json_path);
@@ -91,6 +106,14 @@ const stagedPages=readJson('content/_staged/pages.json', {pages:[]});
 if(!manifests.length) warnings.push('no_json_agent_manifests_present');
 for(const {path:manifestPath, manifest} of manifests){
   const trace={manifest_path:manifestPath, run_date:manifest.run_date, vertical:manifest.vertical, status:manifest.status, csv_path:manifest.csv_path, html_path:manifest.html_path, json_path:manifest.json_path, errors:[], warnings:[]};
+  if(String(manifest.status||'').toUpperCase()==='QUARANTINED'){
+    trace.skipped=true;
+    trace.skip_reason=manifest.quarantine_reason||'manifest_status_quarantined';
+    trace.warnings.push(`quarantined_manifest_skipped:${trace.skip_reason}`);
+    traces.push(trace);
+    warnings.push(`${manifestPath}:quarantined_manifest_skipped`);
+    continue;
+  }
   for(const key of ['csv_path','html_path','json_path']) if(!exists(manifest[key]||'')) trace.errors.push(`missing_${key}:${manifest[key]||''}`);
   const csvRows=exists(manifest.csv_path)?parseCsvRows(readText(manifest.csv_path)):[];
   const json=exists(manifest.json_path)?readJson(manifest.json_path, {}):{};
@@ -130,7 +153,7 @@ for(const {path:manifestPath, manifest} of manifests){
   if(trace.csv_row_count<1) trace.errors.push('csv_empty');
   if(trace.json_fix_rows<1) trace.errors.push('json_fix_rows_empty');
   if(trace.json_pages_to_build<1 && trace.reconciled_pages_to_build>0) trace.warnings.push(`json_pages_to_build_recovered_from_sources:${trace.reconciled_pages_to_build}`);
-  const normalizedPath=manifest.normalized_path || `data/report_fixes/normalized_agent_runs/${manifest.run_date}_${String(manifest.vertical||'').replace(/-/g,'_')}.json`;
+  const normalizedPath=normalizedPathForManifest(manifest);
   const normalized=readJson(normalizedPath, null);
   trace.normalized_path=normalizedPath;
   trace.normalized_exists=Boolean(normalized);
@@ -173,37 +196,48 @@ for(const {path:manifestPath, manifest} of manifests){
     if (releasePlanAccountsForPages) trace.warnings.push(`page_specs_recovered_from_release_plan:${pageSpecs.length}!=${expectedPageSpecCount}`);
     else trace.errors.push(`page_specs_count_mismatch:${pageSpecs.length}!=${expectedPageSpecCount}`);
   }
-  if(added.length+skipped.length!==pageSpecs.length) {
-    if (releasePlanAccountsForPages) trace.warnings.push(`page_spec_accounting_recovered_from_release_plan:${added.length}+${skipped.length}!=${pageSpecs.length}`);
-    else trace.errors.push(`page_spec_accounting_mismatch:${added.length}+${skipped.length}!=${pageSpecs.length}`);
-  }
+  const evidenceOnlyMode=htmlReport.mode==='EVIDENCE_ONLY_EXACT_INTAKE';
   const addedRoutesMissing=[];
   const allPageSpecRoutesMissing=[];
-  const skippedById=new Map(skipped.map(rec=>[rec.id, rec]));
   let resolvedByExistingRoute=0;
-  for(const spec of pageSpecs){
-    const route=spec.target_route;
-    const rendered=routeToPath(route);
-    const inLive=pageExists(livePages, route);
-    const inStaged=pageExists(stagedPages, route);
-    const renderedExists=rendered && exists(rendered);
-    const skip=skippedById.get(spec.id);
-    const existingResolved=skip && skip.skipped_reason==='exact_title_already_exists' && renderedExistsForExistingRoute(skip.existing_route);
-    if(existingResolved) resolvedByExistingRoute++;
-    if(!existingResolved && (!inLive || !inStaged || !renderedExists)) allPageSpecRoutesMissing.push({route, live:inLive, staged:inStaged, rendered:renderedExists, skipped_reason:skip&&skip.skipped_reason||'', existing_route:skip&&skip.existing_route||''});
+  if(evidenceOnlyMode){
+    // In the Safe-Harbor architecture, HTML report page specs are planning evidence,
+    // not direct publication instructions. Their durable accounting is the source
+    // record + downstream disposition; they must not be required to appear as live pages.
+    trace.page_spec_accounting_mode='PLANNING_EVIDENCE_ONLY';
+    if(expectedPageSpecCount>0 && trace.reconciled_pages_to_build<expectedPageSpecCount){
+      trace.errors.push(`page_spec_source_record_accounting_shortfall:${trace.reconciled_pages_to_build}<${expectedPageSpecCount}`);
+    }
+  } else {
+    if(added.length+skipped.length!==pageSpecs.length) {
+      if (releasePlanAccountsForPages) trace.warnings.push(`page_spec_accounting_recovered_from_release_plan:${added.length}+${skipped.length}!=${pageSpecs.length}`);
+      else trace.errors.push(`page_spec_accounting_mismatch:${added.length}+${skipped.length}!=${pageSpecs.length}`);
+    }
+    const skippedById=new Map(skipped.map(rec=>[rec.id, rec]));
+    for(const spec of pageSpecs){
+      const route=spec.target_route;
+      const rendered=routeToPath(route);
+      const inLive=pageExists(livePages, route);
+      const inStaged=pageExists(stagedPages, route);
+      const renderedExists=rendered && exists(rendered);
+      const skip=skippedById.get(spec.id);
+      const existingResolved=skip && skip.skipped_reason==='exact_title_already_exists' && renderedExistsForExistingRoute(skip.existing_route);
+      if(existingResolved) resolvedByExistingRoute++;
+      if(!existingResolved && (!inLive || !inStaged || !renderedExists)) allPageSpecRoutesMissing.push({route, live:inLive, staged:inStaged, rendered:renderedExists, skipped_reason:skip&&skip.skipped_reason||'', existing_route:skip&&skip.existing_route||''});
+    }
+    for(const rec of added){
+      const inLive=pageExists(livePages, rec.target_route);
+      const inStaged=pageExists(stagedPages, rec.target_route);
+      const rendered=routeToPath(rec.target_route);
+      const renderedExists=rendered && exists(rendered);
+      if(!inLive || !inStaged || !renderedExists) addedRoutesMissing.push({route:rec.target_route, live:inLive, staged:inStaged, rendered:renderedExists});
+    }
+    if(allPageSpecRoutesMissing.length) trace.errors.push(`page_spec_routes_missing:${JSON.stringify(allPageSpecRoutesMissing.slice(0,5))}`);
+    if(addedRoutesMissing.length) trace.errors.push(`added_routes_missing:${JSON.stringify(addedRoutesMissing.slice(0,5))}`);
   }
-  for(const rec of added){
-    const inLive=pageExists(livePages, rec.target_route);
-    const inStaged=pageExists(stagedPages, rec.target_route);
-    const rendered=routeToPath(rec.target_route);
-    const renderedExists=rendered && exists(rendered);
-    if(!inLive || !inStaged || !renderedExists) addedRoutesMissing.push({route:rec.target_route, live:inLive, staged:inStaged, rendered:renderedExists});
-  }
-  trace.page_spec_routes_rendered=pageSpecs.length-allPageSpecRoutesMissing.length;
+  trace.page_spec_routes_rendered=evidenceOnlyMode?0:pageSpecs.length-allPageSpecRoutesMissing.length;
   trace.page_spec_routes_resolved_by_existing=resolvedByExistingRoute;
   trace.added_routes_rendered=added.length-addedRoutesMissing.length;
-  if(allPageSpecRoutesMissing.length) trace.errors.push(`page_spec_routes_missing:${JSON.stringify(allPageSpecRoutesMissing.slice(0,5))}`);
-  if(addedRoutesMissing.length) trace.errors.push(`added_routes_missing:${JSON.stringify(addedRoutesMissing.slice(0,5))}`);
   traces.push(trace);
   for(const e of trace.errors) errors.push(`${manifestPath}:${e}`);
   for(const w of trace.warnings) warnings.push(`${manifestPath}:${w}`);

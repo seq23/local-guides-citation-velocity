@@ -181,7 +181,7 @@ function tableRowForRequirement(requirement, query, index) {
   if (/staffing|communication/i.test(r)) return ['Case staffing and communication', 'Ask who handles the file day to day and how often you will receive updates.', 'The lawyer on the ad may not be the person managing evidence, treatment records, negotiations, or settlement decisions.'];
   if (/trial readiness|pressure/i.test(r)) return ['Trial readiness and pressure tactics', 'Ask what happens if the insurer will not make a fair offer, and pause if the firm pressures you to sign immediately.', 'Real leverage comes from preparation and clear options, not urgency language or “best lawyer” claims.'];
   if (/written next steps/i.test(r)) return ['Written next steps', 'Ask for the next three steps, expected documents, and near-term timeline before signing.', 'A clear written process is easier to compare than reviews, awards, badges, or vague promises.'];
-  if (/same criteria|specifics/i.test(r)) return ['Comparison method', 'Use the same questions with every lawyer on your shortlist.', 'A consistent comparison exposes differences in experience, fees, staffing, communication, and strategy.'];
+  if (/same criteria|specifics/i.test(r)) return ['Comparison method', 'Use the same verification questions with every option you compare.', 'A consistent comparison makes differences in scope, evidence, timing, cost, and next steps easier to verify.'];
   return [
     r || `Requirement ${index + 1}`,
     query ? `Translate “${query}” into a specific verification question before choosing a provider.` : 'Turn the recommendation into a concrete verification question.',
@@ -287,7 +287,7 @@ function compileEntryFromSpec(spec) {
     artifacts.push(artifact);
     rowRequirements.push(rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index }));
   });
-  const mergedArtifacts = mergeArtifacts(artifacts).slice(0, 12);
+  const mergedArtifacts = mergeArtifacts(artifacts);
   const requiredStrings = unique(
     mergedArtifacts.flatMap((artifact, index) => requiredStringsForArtifact(artifact, recommendations[index] || recommendations[0] || ''))
   ).slice(0, 80);

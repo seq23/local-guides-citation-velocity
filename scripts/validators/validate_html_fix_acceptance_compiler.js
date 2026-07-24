@@ -39,6 +39,15 @@ if (!fs.existsSync(rel(MANIFEST_PATH))) {
       if (!entry.implementation_path) errors.push(`entry_${index}:missing_implementation_path`);
       if (!Array.isArray(entry.row_requirements)) errors.push(`entry_${index}:row_requirements_must_be_array`);
       if (!Array.isArray(entry.required_strings)) errors.push(`entry_${index}:required_strings_must_be_array`);
+      const impl = String(entry.implementation_path || '');
+      if (impl.startsWith('uscis-medical/')) {
+        if (entry.authority_grounded !== true) errors.push(`entry_${index}:uscis_requires_authority_grounded_compilation`);
+        if (!Array.isArray(entry.authority_source_ids) || !entry.authority_source_ids.length) errors.push(`entry_${index}:uscis_missing_authority_source_ids`);
+        if (!Array.isArray(entry.authority_urls) || !entry.authority_urls.length) errors.push(`entry_${index}:uscis_missing_authority_urls`);
+        const serialized = JSON.stringify(entry).toLowerCase();
+        for (const forbidden of ['skin test alternative','every lawyer','every attorney','valid indefinitely']) if (serialized.includes(forbidden)) errors.push(`entry_${index}:uscis_forbidden_stale_or_cross_vertical_phrase:${forbidden}`);
+        if (impl === 'uscis-medical/index.html' && !serialized.includes('igra')) errors.push(`entry_${index}:uscis_tb_hub_missing_igra`);
+      }
     }
   }
 }

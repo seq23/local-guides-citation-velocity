@@ -40,8 +40,13 @@ function fileSha(abs){
   }
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
-function sourceSnapshot(reg){const snap=new Map();for(const rel of reg.lineage_policy?.source_roots||[]){const abs=path.join(ROOT,rel);for(const file of walk(abs)){const r=norm(path.relative(ROOT,file));if(/(^|\/)node_modules\//.test(r))continue;snap.set(r,fileSha(file));}}return snap;}
-function mutationDiff(before,after){const keys=new Set([...before.keys(),...after.keys()]);const changed=[];for(const key of keys)if(before.get(key)!==after.get(key))changed.push(key);return changed.sort();}
+function fileStatSig(abs){const st=fs.statSync(abs,{bigint:true});return `${st.size}:${st.mtimeNs}:${st.ctimeNs}`;}
+// Build one hash baseline, then reuse hashes for files whose filesystem signature did
+// not change. Registry runs still detect persistent source mutations, but they no
+// longer reread large immutable shard/cache trees before and after every validator.
+function sourceSnapshot(reg,previous=null){const snap=new Map();for(const rel of reg.lineage_policy?.source_roots||[]){const abs=path.join(ROOT,rel);for(const file of walk(abs)){const r=norm(path.relative(ROOT,file));if(/(^|\/)node_modules\//.test(r))continue;const sig=fileStatSig(file);const prior=previous&&previous.get(r);const hash=prior&&prior.sig===sig?prior.hash:fileSha(file);snap.set(r,{sig,hash});}}return snap;}
+function snapshotHash(value){return value&&typeof value==='object'&&'hash' in value?value.hash:value;}
+function mutationDiff(before,after){const keys=new Set([...before.keys(),...after.keys()]);const changed=[];for(const key of keys)if(snapshotHash(before.get(key))!==snapshotHash(after.get(key)))changed.push(key);return changed.sort();}
 function globRegex(glob){const g=norm(glob);let x='';for(let i=0;i<g.length;i++){const c=g[i];if(c==='*'&&g[i+1]==='*'){x+='.*';i++;}else if(c==='*')x+='[^/]*';else if(c==='?')x+='.';else x+=c.replace(/[.+^${}()|[\]\\]/g,'\\$&');}return new RegExp(`^${x}$`);}
 function allowedPath(rel,patterns){return (patterns||[]).some(p=>globRegex(p).test(norm(rel)));}
 function dependencyClosure(reg,ids){const byId=new Map(reg.validators.map(v=>[v.id,v]));const out=new Set();function add(id,trail=[]){if(out.has(id))return;const v=byId.get(id);if(!v)throw new Error(`Unknown dependency ${id} required by ${trail.at(-1)||'selection'}`);if(trail.includes(id))throw new Error(`Dependency cycle: ${[...trail,id].join(' -> ')}`);for(const dep of v.depends_on||[])add(dep,[...trail,id]);out.add(id);}for(const id of ids)add(id);return [...out];}

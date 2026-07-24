@@ -1,3 +1,21 @@
+# CURRENT OPERATOR NOTICE — 2026-07-24
+
+This repository is governed by `docs/SOURCE_AUTHORITY.md`, `docs/PAGE_RELEASE_LAW.md`, and `docs/DAY_0_OPERATOR_GUIDE.md`. The sections below retain useful historical context, but legacy batch-release instructions are **not** the canonical 2026 operating flow.
+
+Canonical current entry points:
+
+```bash
+npm run validate
+npm run intelligence:build
+npm run agent:intake
+npm run release:apply
+npm run validate:release
+```
+
+Accepted public pages are frozen by default. New pages are machine-governed through Safe Harbor and may not be manufactured to satisfy a daily quota. The 100K fanout universe is sharded planning intelligence, not 100K public pages or proven citations. Deploy output is `dist/`. See `docs/DAY_0_OPERATOR_GUIDE.md`.
+
+---
+
 # theindustryguides.com — Velocity Repo (Canon‑Only Hardline)
 
 ## Mission

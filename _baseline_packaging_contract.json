@@ -1,12 +1,11 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "required_wrapper": "local-guides-citation-velocity-main",
   "excluded": [
     ".git",
     "node_modules",
     ".env",
     ".env.*",
-    "dist",
     ".build",
     "logs",
     "artifacts/validation/runtime",
@@ -45,9 +44,30 @@
     "artifacts/release/VALIDATOR_HOSTILE_REVIEW.md",
     "artifacts/release/VALIDATOR_HOSTILE_REVIEW.json",
     "reports/workflow-yaml-inventory.md",
-    "reports/fixture-signal-trace.md",
-    "reports/daily-proof-packet.md",
-    "reports/daily-citation-release-plan.json"
+    "docs/SOURCE_AUTHORITY.md",
+    "docs/authority/LISTINGS_CANONICAL_MASTER_INDEX_v3.md",
+    "data/release/baseline_provenance.json",
+    "data/release/frozen_page_registry.json",
+    "data/release/frozen_html_cache/",
+    "data/queries/citation_fanout_opportunities_100k/index.json",
+    "data/strategy/page_strategy_registry.json",
+    "data/release/page_release_queue.json",
+    "scripts/lib/frozen_pages.js",
+    "scripts/lib/sharded_json.js",
+    "scripts/verify_baseline_snapshot.js",
+    "SYSTEM_MAP_PLAIN_ENGLISH.md",
+    "IMPLEMENTATION_STATUS.md",
+    "VALIDATION_AND_HANDOFF.md",
+    "ROLLBACK.md",
+    "ENVIRONMENT_AND_SECRETS_GUIDE.md",
+    "CONTENT_OR_PUBLISHING_WORKFLOW.md",
+    "PROOF_MATRIX.md",
+    "REAL_VS_FIXTURE_DATA_GUIDE.md",
+    "WORKFLOW_AUTOMATION_MAP.md",
+    "docs/DAY_0_OPERATOR_GUIDE.md",
+    "artifacts/validation/fixture-signal-trace.json",
+    "artifacts/validation/daily-proof-packet.json",
+    "artifacts/validation/daily-citation-release-plan.json"
   ],
   "hash_manifest": "_artifact_validation_manifest.json",
   "reopen_and_verify": true,
@@ -58,5 +78,7 @@
     "coverage_runtime_support.csv",
     "coverage_promoted.csv"
   ],
-  "packaging_note": "Repo hygiene keeps generated runtime artifacts gitignored; the external LKG updater still requires these files/directories inside delivered baseline ZIPs."
+  "packaging_note": "dist is gitignored/runtime-derived but intentionally required inside delivered baseline ZIPs. Final archive must be reopened and every release-critical manifest hash verified from inside the ZIP.",
+  "post_package_proof": "node scripts/verify_baseline_snapshot.js <zip>",
+  "filename_policy": "local-guides-citation-velocity-main_BASELINE_MM-DD-YY_<first12_of_final_zip_sha256>.zip"
 }

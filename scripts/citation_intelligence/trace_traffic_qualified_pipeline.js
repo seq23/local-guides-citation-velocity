@@ -25,9 +25,9 @@ async function run() {
   proof();
   const releasePlan = readJson('artifacts/validation/daily-citation-release-plan.json', { selected: [], blocked: [] });
   const citationRunway = readJson('artifacts/validation/citation-100k-runway.json', { fanout_records: 0, time_horizon_days: null });
-  const required = ['create', 'repair', 'atom_update', 'internal_link_update'];
+  const required = ['create_distinct_page', 'repair_existing', 'content_atom_update', 'internal_link_update'];
   const present = new Set((releasePlan.selected || []).map((u) => u.release_unit_type));
-  const blockedPresent = (releasePlan.blocked || []).some((u) => ['block', 'quarantine'].includes(u.release_unit_type));
+  const blockedPresent = (releasePlan.blocked || []).some((u) => ['quarantine', 'skip_prohibited', 'skip_unsupported'].includes(u.release_unit_type));
   const errors = required.filter((t) => !present.has(t));
   if (!blockedPresent) errors.push('missing blocked/quarantined candidate');
   if ((citationRunway.fanout_records || 0) < 100000) errors.push('100K citation fanout runway missing');

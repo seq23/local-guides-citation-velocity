@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
+const { validateShardedDataset } = require('../lib/sharded_json');
 
 const ROOT = path.resolve(__dirname, '../..');
 
@@ -104,7 +105,7 @@ const nodeModulesSource = nodeModulesSourceEntries();
 
 for (const rel of [
   'data/strategy/citation_growth_strategy.json',
-  'data/queries/citation_fanout_opportunities_100k.json',
+  'data/queries/citation_fanout_opportunities_100k/index.json',
   'data/measurement/citation_honesty_scoreboard.json',
   'data/measurement/zero_dollar_citation_test_ledger.json',
   'data/measurement/free_win_self_heal_queue.json',
@@ -119,10 +120,13 @@ if (rootHtml.length > 8) errors.push(`root_html_pollution:${rootHtml.length}`);
 if (generatedRootFiles.length) errors.push(`generated_phase_files_in_repo_root:${generatedRootFiles.join(',')}`);
 if (nodeModulesSource.entries.length) errors.push('node_modules_present_in_source_snapshot');
 
-const fanout = exists('data/queries/citation_fanout_opportunities_100k.json')
-  ? readJson('data/queries/citation_fanout_opportunities_100k.json')
-  : { records: [] };
-if ((fanout.records || []).length < 100000) errors.push('fanout_file_missing_100k_records');
+let fanoutValidation = { ok:false, errors:['fanout_index_missing'], record_count:0, shard_count:0 };
+if (exists('data/queries/citation_fanout_opportunities_100k/index.json')) {
+  try { fanoutValidation = validateShardedDataset('data/queries/citation_fanout_opportunities_100k', 100000); }
+  catch (err) { fanoutValidation = { ok:false, errors:[`fanout_validation_error:${err.message}`], record_count:0, shard_count:0 }; }
+}
+if (!fanoutValidation.ok) errors.push(...fanoutValidation.errors.map((e)=>`fanout_shard_integrity:${e}`));
+if (exists('data/queries/citation_fanout_opportunities_100k.json')) errors.push('legacy_fanout_monolith_reintroduced');
 
 const report = {
   validator: 'local-guides-tree-hygiene',
@@ -137,10 +141,12 @@ const report = {
   node_modules_raw_entries: nodeModulesSource.raw_entries,
   node_modules_git_tracked_entries: nodeModulesSource.git_tracked_entries,
   node_modules_git_visible_untracked_entries: nodeModulesSource.git_visible_untracked_entries,
-  fanout_records: (fanout.records || []).length,
+  fanout_records: fanoutValidation.record_count,
+  fanout_shards: fanoutValidation.shard_count,
+  fanout_aggregate_sha256: fanoutValidation.aggregate_sha256 || null,
   expected_locations: {
     strategy: 'data/strategy/',
-    fanout_queries: 'data/queries/',
+    fanout_queries: 'data/queries/citation_fanout_opportunities_100k/',
     measurement_ledgers: 'data/measurement/',
     validation_receipts: 'artifacts/validation/',
     reports: 'reports/',

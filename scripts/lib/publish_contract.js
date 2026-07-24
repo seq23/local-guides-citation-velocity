@@ -90,7 +90,7 @@ function renderContentAtom(atom) {
   if (errors.length) throw new Error(`Invalid content atom before render: ${errors.join(', ')}`);
   const artifact = atomToCitationArtifact(atom);
   if (!artifact) throw new Error(`Unable to render content atom ${atom.atom_id || 'unknown'}`);
-  return `<section class="programmatic-content-atom" data-content-atom="${htmlEscape(atom.type)}" data-atom-id="${htmlEscape(atom.atom_id)}" data-atom-uniqueness="${htmlEscape(atom.uniqueness_key)}">${renderCitationVelocityArtifacts([artifact])}</section>`;
+  return `<section class="programmatic-content-atom" data-content-atom="${htmlEscape(atom.type)}" data-atom-id="${htmlEscape(atom.atom_id)}" data-atom-uniqueness="${htmlEscape(atom.route_uniqueness_key || atom.uniqueness_key)}" data-atom-semantic="${htmlEscape(atom.semantic_signature || atom.uniqueness_key)}">${renderCitationVelocityArtifacts([artifact])}</section>`;
 }
 
 function renderAnswerBox(title, summary, bullets = []) {

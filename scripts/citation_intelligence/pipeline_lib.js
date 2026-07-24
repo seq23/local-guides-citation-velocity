@@ -124,14 +124,32 @@ function scoreSignals(normalized, clusters) {
     return { ...item, cluster_id: clusterByKey.get(key)?.cluster_id || null, opportunity_score };
   }).sort((a, b) => b.opportunity_score - a.opportunity_score || a.normalized_id.localeCompare(b.normalized_id));
 }
+
+function canonicalReleaseUnitType(candidateType) {
+  return ({
+    create: 'create_distinct_page',
+    repair: 'repair_existing',
+    atom_update: 'content_atom_update',
+    internal_link_update: 'internal_link_update',
+    answer_block_update: 'content_atom_update',
+    entity_context_update: 'content_atom_update',
+    schema_update: 'source_update',
+    source_update: 'source_update',
+    distribution_update: 'internal_link_update',
+    block: 'quarantine',
+    quarantine: 'quarantine'
+  })[String(candidateType || '')] || String(candidateType || 'skip_unsupported');
+}
+
 function buildCandidates(scored) {
   return scored.map((item) => {
     const blocked = item.candidate_type === 'block' || item.risk_level === 'high' && /traffic|ranking|ai overview|guarantee/i.test(item.raw_signal_phrase);
     return {
       candidate_id: `cand_${hash(`${item.normalized_id}:${item.candidate_type}`, 12)}`,
       normalized_id: item.normalized_id,
-      release_unit_type: blocked ? 'block' : item.candidate_type,
-      action: blocked ? 'block' : item.candidate_type,
+      release_unit_type: blocked ? 'quarantine' : canonicalReleaseUnitType(item.candidate_type),
+      action: blocked ? 'quarantine' : canonicalReleaseUnitType(item.candidate_type),
+      legacy_candidate_type: item.candidate_type,
       route_owner: item.route_owner,
       page_family: item.page_family,
       vertical: item.vertical,
@@ -205,4 +223,4 @@ function latestNormalized() {
   const latest = readJson('data/signals/normalized/latest.json', null);
   return latest && Array.isArray(latest.records) ? latest.records : [];
 }
-module.exports = { ROOT, TODAY, abs, exists, ensureDir, readJson, writeJson, writeText, hash, slugify, excerpt, normalizeRecord, clusterSignals, scoreSignals, buildCandidates, countIndexableRoutes, countSitemapUrls, countLlmsEntries, latestRawRecords, latestNormalized };
+module.exports = { ROOT, TODAY, abs, exists, ensureDir, readJson, writeJson, writeText, hash, slugify, excerpt, normalizeRecord, clusterSignals, scoreSignals, canonicalReleaseUnitType, buildCandidates, countIndexableRoutes, countSitemapUrls, countLlmsEntries, latestRawRecords, latestNormalized };

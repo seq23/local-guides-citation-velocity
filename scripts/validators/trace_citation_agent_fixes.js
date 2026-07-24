@@ -54,6 +54,17 @@ function isRenderedRepair(fixOrUnit) {
   return fixOrUnit && (fixOrUnit.operation === 'REPAIR_INTENDED_WINNER_PAGE' || String(fixOrUnit.target_route || '').startsWith('/insights/') || String(fixOrUnit.renderedPath || '').startsWith('insights/'));
 }
 function markersFor(fixOrUnit) { return Array.from(new Set(fixOrUnit.required_markers || [fixOrUnit.query].filter(Boolean))); }
+
+const semanticAcceptance = readJson('data/report_fixes/agent_exact_semantic_acceptance_manifest.json', { entries: [] });
+const acceptanceByRenderedPath = new Map((semanticAcceptance.entries || []).map((entry) => [String(entry.implementation_path || '').replace(/^\/+/, ''), entry]));
+function semanticMarkersForRoute(route, fallback = []) {
+  const renderedPath = routeToRenderedPath(route);
+  const entry = acceptanceByRenderedPath.get(renderedPath);
+  if (!entry || !entry.authority_grounded) return fallback;
+  // For authority-grounded high-stakes repairs, trace the compiled acceptance
+  // contract rather than requiring the raw agent query text to appear verbatim.
+  return Array.from(new Set((entry.required_strings || []).filter(Boolean)));
+}
 function traceRenderedTarget(id, route, markers, requireInsightManifest = false) {
   const renderedPath = routeToRenderedPath(route);
   if (!renderedPath || !exists(renderedPath)) {
@@ -76,9 +87,10 @@ const stagedPages = pagesPayload('content/_staged/pages.json');
 
 for (const fix of selected) {
   const id = fix.id || fix.query;
-  const markers = markersFor(fix);
-  if (!markers.length) { errors.push(`${id}:missing_required_markers`); continue; }
+  const rawMarkers = markersFor(fix);
   const route = fix.target_route || (`/${String(fix.renderedPath || '').replace(/index\.html$/, '')}`);
+  const markers = isRenderedRepair(fix) ? semanticMarkersForRoute(route, rawMarkers) : rawMarkers;
+  if (!markers.length) { errors.push(`${id}:missing_required_markers`); continue; }
   if (isRenderedRepair(fix)) {
     traceRenderedTarget(id, route, markers, String(fix.liveManifestPath || '').includes('insights.json') && String(route || '').startsWith('/insights/'));
     continue;
@@ -107,7 +119,8 @@ if (plan && plan.selected_count > 0) {
   for (const unit of plan.selected_units || []) {
     const id = unit.id || unit.query;
     if (isRenderedRepair(unit)) {
-      traceRenderedTarget(id, unit.target_route || unit.intended_winner_path, [unit.query].filter(Boolean), String(unit.target_route || '').startsWith('/insights/'));
+      const route = unit.target_route || unit.intended_winner_path;
+      traceRenderedTarget(id, route, semanticMarkersForRoute(route, [unit.query].filter(Boolean)), String(unit.target_route || '').startsWith('/insights/'));
       continue;
     }
     if (isSocialFallbackUnit(unit) && !createdReleaseIds.has(id)) {

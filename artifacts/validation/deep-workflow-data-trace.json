@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-07-24T00:53:08.684Z",
+  "generated_at": "2026-07-24T17:22:20.165Z",
   "status": "PASS",
   "workflow_count": 6,
   "errors": [],
@@ -107,7 +107,7 @@
     },
     {
       "workflow": "velocity-content-release.yml",
-      "command_count": 9,
+      "command_count": 10,
       "status": "PASS",
       "commands": [
         {
@@ -143,12 +143,23 @@
           ]
         },
         {
-          "command": "npm run release:self-healing",
+          "command": "npm run build",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "release:self-healing",
+              "name": "build",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run validate:release",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate:release",
               "ok": true
             }
           ]
@@ -201,7 +212,7 @@
     },
     {
       "workflow": "velocity-full-rebuild.yml",
-      "command_count": 3,
+      "command_count": 5,
       "status": "PASS",
       "commands": [
         {
@@ -210,23 +221,45 @@
           "checks": []
         },
         {
-          "command": "npm run strategy:gate",
+          "command": "npm run intelligence:build",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "strategy:gate",
+              "name": "intelligence:build",
               "ok": true
             }
           ]
         },
         {
-          "command": "npm run release:self-healing",
+          "command": "npm run release:full-rebuild",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "release:self-healing",
+              "name": "release:full-rebuild",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run build",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "build",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run validate:release",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate:release",
               "ok": true
             }
           ]

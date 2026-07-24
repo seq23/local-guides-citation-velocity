@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       batch_size:
-        description: "How many eligible Velocity release units to admit, including validated social fallback when needed to hit the strategy target"
+        description: "Maximum number of eligible governed Velocity release units to process; this is a cap, not a publication quota"
         required: false
         default: "5"
         type: string
@@ -19,7 +19,7 @@ permissions:
 env:
   NODE_OPTIONS: --max-old-space-size=3072
   VELOCITY_RELEASE_TARGET: ${{ inputs.batch_size || '5' }}
-  ALLOW_SOCIAL_FALLBACK_RELEASE: "1"
+  ALLOW_SOCIAL_FALLBACK_RELEASE: "0"
 
 concurrency:
   group: velocity-content-release-main
@@ -50,9 +50,9 @@ jobs:
           git reset --hard origin/main
       - name: Set release date
         run: echo "SOURCE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
-      - name: Run traffic-qualified preview before controlled content release
+      - name: Run planning-only citation intelligence before Safe Harbor content release
         run: npm run release:daily-citation-intelligence:preview
-      - name: Absorb approved artifacts and release Velocity content
+      - name: Absorb governed artifacts and run Safe Harbor content release
         run: npm run release:velocity-intake
       - name: Commit validated Velocity release
         id: candidate
@@ -63,13 +63,14 @@ jobs:
           if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
           git commit -m "velocity content release $(date -u +%F)"
-      - name: Rebase, self-heal, revalidate, and push Velocity
+      - name: Rebase, rebuild, revalidate, and push Velocity
         if: ${{ steps.candidate.outputs.changed == 'true' }}
         run: |
           for attempt in 1 2 3; do
             git fetch origin main
             git rebase origin/main
-            npm run release:self-healing
+            npm run build
+            npm run validate:release
             npm run trace:agent-exact
             npm run validate:agent-exact
             npm run trace:citation-agent-fixes

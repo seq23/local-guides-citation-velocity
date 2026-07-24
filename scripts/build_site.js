@@ -12,6 +12,7 @@ const CANON_MAP = path.join(ROOT, 'content', '_shared', 'canonical_map.json');
 
 const STAGED_DIR = path.join(ROOT, 'content', '_staged');
 const LIVE_DIR = path.join(ROOT, 'content', '_live');
+const ACTIVE_CONTENT_DIR = process.env.VELOCITY_CONTENT_SOURCE === 'staged' ? STAGED_DIR : LIVE_DIR;
 
 const OUT_ROBOTS = path.join(ROOT, 'robots.txt');
 const OUT_LLMS = path.join(ROOT, 'llms.txt');
@@ -41,6 +42,7 @@ const { renderCitationVelocityArtifacts } = require('./lib/citation_velocity_art
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
+const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute } = require('./lib/frozen_pages');
 
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
@@ -655,7 +657,7 @@ function renderProgrammaticContentAtom(atom, pageTitle) {
   if (errors.length) throw new Error(`Programmatic content gate rejected ${pageTitle}: ${errors.join(', ')}`);
   const artifact = atomToCitationArtifact(atom);
   if (!artifact) throw new Error(`Unable to render content atom for ${pageTitle}`);
-  return `<section class="programmatic-content-atom" data-content-atom="${htmlEscape(atom.type)}" data-atom-id="${htmlEscape(atom.atom_id)}" data-atom-uniqueness="${htmlEscape(atom.uniqueness_key)}">${renderCitationVelocityArtifacts([artifact])}</section>`;
+  return `<section class="programmatic-content-atom" data-content-atom="${htmlEscape(atom.type)}" data-atom-id="${htmlEscape(atom.atom_id)}" data-atom-uniqueness="${htmlEscape(atom.route_uniqueness_key || atom.uniqueness_key)}" data-atom-semantic="${htmlEscape(atom.semantic_signature || atom.uniqueness_key)}">${renderCitationVelocityArtifacts([artifact])}</section>`;
 }
 
 function buildProgrammaticPageSchemas({ siteBase, page, absUrl, sections }) {
@@ -987,8 +989,14 @@ ${validationEditorialBylineHtml()}`);
 }
 
 function enforceValidationSiteContracts(){
+  const internalRoots = new Set(['data','docs','scripts','artifacts','reports','.build','dist','node_modules','templates','.github','tests']);
   walkFilesForValidation(ROOT)
-    .filter((p) => p.endsWith('.html') && !p.includes('/node_modules/') && !p.includes('/.git/') && !p.includes('/templates/') && !p.endsWith('/404.html'))
+    .filter((fp) => {
+      if (!fp.endsWith('.html') || fp.endsWith('/404.html')) return false;
+      const relPath = path.relative(ROOT, fp).replace(/\\/g, '/');
+      const top = relPath.split('/')[0];
+      return !internalRoots.has(top) && !relPath.startsWith('.git/');
+    })
     .forEach((fp) => {
       const html = readUtf8(fp);
       const patched = enforceValidationSiteContractsOnHtml(html);
@@ -1128,7 +1136,7 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
   const insightItems = buildMergedInsightItems();
   const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
-  const pagesPayload = exists(path.join(ROOT, 'content', '_live', 'pages.json')) ? JSON.parse(readUtf8(path.join(ROOT, 'content', '_live', 'pages.json'))) : { pages: [] };
+  const pagesPayload = exists(path.join(ACTIVE_CONTENT_DIR, 'pages.json')) ? JSON.parse(readUtf8(path.join(ACTIVE_CONTENT_DIR, 'pages.json'))) : { pages: [] };
   pagesPayload.pages = normalizePageClusters(Array.isArray(pagesPayload.pages) ? pagesPayload.pages : [], clusterRegistry).map((page) => applyAgentExactRepairsToPage(page, loadAgentExactLedger()));
   const pageRouteMap = new Map(pagesPayload.pages.map((page) => [page.slug, page]));
   const clusterBuckets = new Map();
@@ -1354,16 +1362,10 @@ function main(){
   const siteBase = canonMap.site_base;
   const verticalSlugMap = buildVerticalSlugMap();
 
-  // Ensure LIVE content exists; if empty, default to staged -> live copy (build-only convenience).
-  // Published pages remain authoritative in LIVE; release mutation owns staged -> live promotion.
-  if (!exists(LIVE_DIR)) fs.mkdirSync(LIVE_DIR, {recursive:true});
-  const liveFiles = fs.readdirSync(LIVE_DIR).filter(f=>f.endsWith('.json'));
-  if (liveFiles.length === 0) {
-    console.log('LIVE content is empty. Copying staged JSON into LIVE for first build...');
-    fs.readdirSync(STAGED_DIR).filter(f=>f.endsWith('.json')).forEach((f)=>{
-      fs.copyFileSync(path.join(STAGED_DIR,f), path.join(LIVE_DIR,f));
-    });
-  }
+  // Build never promotes staged content implicitly. Promotion is an explicit validated release action.
+  if (!exists(ACTIVE_CONTENT_DIR)) throw new Error(`Missing active content directory: ${ACTIVE_CONTENT_DIR}`);
+  const activeFiles = fs.readdirSync(ACTIVE_CONTENT_DIR).filter(f=>f.endsWith('.json'));
+  if (activeFiles.length === 0) throw new Error(`Active content directory is empty: ${ACTIVE_CONTENT_DIR}. Use the explicit bootstrap/recovery command; normal builds never copy staged content into LIVE.`);
 
   // Collect pages
   const pages = [];
@@ -1372,7 +1374,7 @@ function main(){
 
 const registry = loadJson(path.join(ROOT,'content/_shared/query_cluster_registry.json'));
 const canonicalClusterQueryMap = loadJson(path.join(ROOT,'content/_shared/query_to_cluster_map.json'));
-const livePagesForClusterBootstrap = loadJson(path.join(ROOT,'content','_live','pages.json'));
+const livePagesForClusterBootstrap = loadJson(path.join(ACTIVE_CONTENT_DIR,'pages.json'));
 const bootstrapStandaloneInsights = Array.isArray(livePagesForClusterBootstrap.pages)
   ? livePagesForClusterBootstrap.pages
       .filter((page) => page && page.vertical && page.cluster && typeof page.path === 'string' && page.path.startsWith('/insights/') && page.path.endsWith('.html'))
@@ -1518,8 +1520,8 @@ for (const [vertical, meta] of Object.entries(registry)) {
      <p class="muted">This site does not ask for personal details to read content. If analytics are enabled, they may collect basic usage data in aggregate.</p>`, siteBase));
 
   // Load live JSON payloads
-  const liveJsonFiles = fs.readdirSync(LIVE_DIR).filter(f=>f.endsWith('.json'));
-  const payloads = liveJsonFiles.map(f=>({name:f, data:loadJson(path.join(LIVE_DIR,f))}));
+  const liveJsonFiles = fs.readdirSync(ACTIVE_CONTENT_DIR).filter(f=>f.endsWith('.json'));
+  const payloads = liveJsonFiles.map(f=>({name:f, data:loadJson(path.join(ACTIVE_CONTENT_DIR,f))}));
   const toolsPayloadRaw = payloads.find(p=>p.name === 'tools.json');
   const toolsPageForHub = toolsPayloadRaw && toolsPayloadRaw.data && toolsPayloadRaw.data.pages ? toolsPayloadRaw.data.pages[0] : null;
 
@@ -2031,10 +2033,21 @@ ${m}`;
 
   saveContentState(contentState);
 
+  // Accepted output metadata is immutable by default even when generators churn.
+  applyFrozenMetadataToEntries(written);
+  ensureFrozenInventoryEntries(written, siteBase);
+
+  // Public discovery surfaces are admission-driven. Generators may render staging or
+  // rejected candidates locally, but only ADMITTED routes may enter published_urls,
+  // sitemaps, feeds, llms exports, distribution artifacts, or deployment inventory.
+  const admissionRegistryForPublicInventory = loadJson(path.join(ROOT, 'data', 'content', 'page_admission_registry.json'));
+  const admittedPublicRoutes = new Set((admissionRegistryForPublicInventory.pages || []).map((page) => normalizeRoute(page.path)));
+  const publicWritten = written.filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug)));
+
 // robots.txt
 
   // llms.txt (canonical routing + explicit answered-query mappings)
-  const topPages = written
+  const topPages = publicWritten
     .filter(p=>p.slug !== '/privacy.html' && p.slug !== '/disclaimer.html')
     .slice(0, 20);
 
@@ -2058,7 +2071,7 @@ ${m}`;
   llms.push('');
   llms.push('Explicit answered-query mappings:');
   fanoutEntries
-    .filter((entry) => entry && entry.fanout && Array.isArray(entry.fanout.variants) && entry.fanout.variants.length)
+    .filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug)) && entry && entry.fanout && Array.isArray(entry.fanout.variants) && entry.fanout.variants.length)
     .slice(0, 120)
     .forEach((entry) => {
       llms.push(`- ${siteBase}${entry.slug} answers: ${entry.fanout.variants.slice(0, 8).join(' | ')}`);
@@ -2086,7 +2099,7 @@ ${m}`;
   llmsFull.push('- USCIS medical exams: https://uscisexam.com/');
   llmsFull.push('');
   llmsFull.push('## Public reference pages');
-  [...written]
+  [...publicWritten]
     .sort((a,b)=>String(a.slug).localeCompare(String(b.slug)))
     .forEach((p)=>llmsFull.push(`- ${p.url} — ${p.title} — ${p.description || ''}`));
   writeUtf8(OUT_LLMS_FULL, llmsFull.join('\n') + '\n');
@@ -2099,7 +2112,11 @@ ${m}`;
     surface: 'medium-article',
     canonical_domain: item.canonical_domain
   }));
-  const allUrls = written.map(p=>({loc:p.url, lastmod: p.lastmod || nowISODate(), slug:p.slug, surface: p.surface || 'page', canonical_domain: p.canonical_domain || 'theindustryguides.com'})).concat(mediumPublished);
+  const publicUrlCandidates = publicWritten.map(p=>({loc:p.url, lastmod: p.lastmod || nowISODate(), slug:p.slug, surface: p.surface || 'page', canonical_domain: p.canonical_domain || 'theindustryguides.com'}))
+    .concat(mediumPublished.filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug))));
+  const publicUrlMap = new Map();
+  for (const entry of publicUrlCandidates) publicUrlMap.set(normalizeRoute(entry.slug), entry);
+  const allUrls = [...publicUrlMap.values()].sort((a, b) => String(a.slug).localeCompare(String(b.slug)));
 
   const isHtml = (slug)=> slug === '/' || slug.endsWith('.html') || slug.endsWith('/');
   const isAtlas = (slug)=> slug.startsWith('/atlas/');
@@ -2165,7 +2182,7 @@ ${m}`;
   writeUtf8(OUT_ROBOTS, robotsLines.join('\n') + '\n');
   writeDistributionArtifacts(siteBase, allUrls);
   // feeds (basic, from sitemap)
-  const feedItems = written
+  const feedItems = publicWritten
     .filter(p=>p.slug !== '/' && !p.slug.endsWith('.html'))
     .slice(0, 30)
     .map(p=>({
@@ -2207,6 +2224,10 @@ ${m}`;
 
   // APPLY_DENTISTRY_REPORT_FIX_CONTRACT_AFTER_BUILD
   require('./apply_dentistry_report_fix_contract').run();
+
+  // Final immutable-output guard: all non-authorized accepted routes are restored byte-for-byte from the frozen cache after every generator/postprocessor mutation.
+  const frozenRestore = restoreFrozenPages();
+  console.log(`Frozen accepted output guard: restored=${frozenRestore.restored}; already=${frozenRestore.already}; skipped_mutable=${frozenRestore.skipped}`);
 
   console.log(`Built ${written.length} pages.`);
 }

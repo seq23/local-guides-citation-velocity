@@ -59,8 +59,8 @@ function siblingLinkCount(html) {
   return new Set(hrefs).size;
 }
 function contentAtomMarkers(html) {
-  return [...String(html).matchAll(/data-content-atom=["']([^"']+)["'][^>]*data-atom-id=["']([^"']+)["'][^>]*data-atom-uniqueness=["']([^"']+)["']/gi)]
-    .map((match) => ({ type: match[1], atom_id: match[2], uniqueness_key: match[3] }));
+  return [...String(html).matchAll(/data-content-atom=["']([^"']+)["'][^>]*data-atom-id=["']([^"']+)["'][^>]*data-atom-uniqueness=["']([^"']+)["'](?:[^>]*data-atom-semantic=["']([^"']+)["'])?/gi)]
+    .map((match) => ({ type: match[1], atom_id: match[2], uniqueness_key: match[3], semantic_signature: match[4] || match[3] }));
 }
 function directAnswer(html) {
   const block = String(html).match(/<section[^>]+data-direct-answer=["']true["'][^>]*>([\s\S]*?)<\/section>/i);
@@ -122,6 +122,7 @@ const seenDescriptions = new Map();
 const seenH1 = new Map();
 const seenAtomIds = new Map();
 const seenAtomUniqueness = new Map();
+const seenAtomSemantic = new Map();
 const rendered = [];
 const requiredSchema = ['Article', 'BreadcrumbList'];
 
@@ -179,8 +180,10 @@ for (const entry of routes) {
   if (atomMarkers[0]) {
     if (seenAtomIds.has(atomMarkers[0].atom_id)) pageErrors.push(`duplicate_atom_id_with:${seenAtomIds.get(atomMarkers[0].atom_id)}`);
     else seenAtomIds.set(atomMarkers[0].atom_id, entry.route);
-    if (seenAtomUniqueness.has(atomMarkers[0].uniqueness_key)) pageErrors.push(`duplicate_content_atom_with:${seenAtomUniqueness.get(atomMarkers[0].uniqueness_key)}`);
+    if (seenAtomUniqueness.has(atomMarkers[0].uniqueness_key)) pageErrors.push(`duplicate_route_atom_identity_with:${seenAtomUniqueness.get(atomMarkers[0].uniqueness_key)}`);
     else seenAtomUniqueness.set(atomMarkers[0].uniqueness_key, entry.route);
+    if (seenAtomSemantic.has(atomMarkers[0].semantic_signature)) warnings.push(`${entry.route}:duplicate_content_atom_semantics_with:${seenAtomSemantic.get(atomMarkers[0].semantic_signature)}`);
+    else seenAtomSemantic.set(atomMarkers[0].semantic_signature, entry.route);
   }
 
   if (pageErrors.length) errors.push(...pageErrors.map((issue) => `${entry.route}:${issue}`));

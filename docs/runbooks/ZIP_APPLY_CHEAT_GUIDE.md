@@ -8,7 +8,7 @@ Fast path for applying a full baseline snapshot ZIP to `local-guides-citation-ve
 REPO_PATH="$HOME/Documents/GitHub/local-guides-citation-velocity"
 REPO_NAME="local-guides-citation-velocity"
 MODE="snapshot"
-UPDATER="$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh"
+UPDATER="$HOME/update_repo_from_zip_generic_v3.sh"
 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev"
 ```
 
@@ -49,7 +49,7 @@ Use this template for the governed local updater path. Replace `<ZIP_FILENAME>` 
 ALLOW_LARGE_DELETE=1 \
 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
 PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
-bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
+bash "$HOME/update_repo_from_zip_generic_v3.sh" \
 "$HOME/Downloads/<ZIP_FILENAME>" \
 "$HOME/Documents/GitHub/local-guides-citation-velocity" \
 snapshot \
@@ -62,7 +62,7 @@ Current repair example for the 2026-07-06 agent-normalization and workflow-reent
 ALLOW_LARGE_DELETE=1 \
 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
 PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" \
-bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" \
+bash "$HOME/update_repo_from_zip_generic_v3.sh" \
 "$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_07-06-26_170700bb4.zip" \
 "$HOME/Documents/GitHub/local-guides-citation-velocity" \
 snapshot \
@@ -78,13 +78,13 @@ The SHA in the filename is the starting source commit for the snapshot. For the 
 Replace `ZIP_PATH` with the downloaded baseline ZIP path.
 
 ```bash
-ALLOW_LARGE_DELETE=1 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" "ZIP_PATH" "$HOME/Documents/GitHub/local-guides-citation-velocity" snapshot local-guides-citation-velocity
+ALLOW_LARGE_DELETE=1 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" bash "$HOME/update_repo_from_zip_generic_v3.sh" "ZIP_PATH" "$HOME/Documents/GitHub/local-guides-citation-velocity" snapshot local-guides-citation-velocity
 ```
 
 Example:
 
 ```bash
-ALLOW_LARGE_DELETE=1 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" bash "$HOME/repo-tools/active/update_repo_from_zip_generic_v3_1.sh" "$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_MM-DD-YY_<sha>.zip" "$HOME/Documents/GitHub/local-guides-citation-velocity" snapshot local-guides-citation-velocity
+ALLOW_LARGE_DELETE=1 POSTDEPLOY_BASE_URL="https://local-guides-citation-velocity.pages.dev" PLAYWRIGHT_BASE_URL="https://local-guides-citation-velocity.pages.dev" bash "$HOME/update_repo_from_zip_generic_v3.sh" "$HOME/Downloads/local-guides-citation-velocity-main_BASELINE_MM-DD-YY_<sha>.zip" "$HOME/Documents/GitHub/local-guides-citation-velocity" snapshot local-guides-citation-velocity
 ```
 
 ## Safe delete pattern

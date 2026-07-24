@@ -1,11 +1,19 @@
 #!/usr/bin/env node
 'use strict';
-const fs=require('fs'),path=require('path');
+const fs=require('fs'),path=require('path'),crypto=require('crypto'),zlib=require('zlib');
 const ROOT=path.resolve(__dirname,'../..');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const contract=read('data/release/page_release_contract.json');
 const admission=read('data/content/page_admission_registry.json');
 const retirements=read(contract.approved_retirement_registry||'data/release/route_retirements.json');
+const frozen=read(contract.frozen_page_registry||'data/release/frozen_page_registry.json');
+const frozenByRoute=new Map((frozen.pages||[]).map((row)=>[String(row.route||''),row]));
+const pageStrategy=read(contract.page_strategy_registry||'data/strategy/page_strategy_registry.json');
+const releaseQueue=read(contract.page_release_queue||'data/release/page_release_queue.json');
+
+const activeScopePath=path.join(ROOT,contract.active_mutation_scope||'data/release/active_mutation_scope.json');
+const sha256=(buf)=>crypto.createHash('sha256').update(buf).digest('hex');
+
 const pages=admission.pages||[]; const errors=[]; const warnings=[];
 const sitemapFiles=['sitemap.xml',...fs.readdirSync(path.join(ROOT,'sitemaps')).filter(x=>x.endsWith('.xml')).map(x=>'sitemaps/'+x)];
 const sitemap=sitemapFiles.map(f=>fs.readFileSync(path.join(ROOT,f),'utf8')).join('\n');
@@ -62,9 +70,17 @@ for(const r of activeRetirements){
  const linePattern=new RegExp(`^${source.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\s+${target.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\s+301(?:!?)?$`,'m');
  if(!linePattern.test(redirectText))errors.push(`retirement_redirect_missing:${source}`);
 }
+for(const row of releaseQueue.records||[]){
+ if(row.eligible===true && (row.decision!=='SAFE_AUTOPUBLISH'||row.lifecycle_state!=='ADMITTED_FOR_BUILD'))errors.push(`release_queue_invalid_eligible_state:${row.id||row.target_route}`);
+ if(row.eligible===true && /STRATEGY_GAP_FILL/i.test(String(row.admission_basis||'')))errors.push(`quota_gap_fill_still_eligible:${row.id||row.target_route}`);
+ if(row.eligible===true && String(row.source||'')==='strategy_gap_fill_engine')errors.push(`synthetic_gap_fill_source_still_eligible:${row.id||row.target_route}`);
+}
+if(pageStrategy.runtime_autonomy!=='FULL_SAFE_AUTONOMY')errors.push('page_strategy_runtime_autonomy_not_full_safe_autonomy');
+if(fs.existsSync(activeScopePath))errors.push('active_mutation_scope_present_during_release_validation');
+if((frozen.pages||[]).length!==pages.length)errors.push(`frozen_registry_count_mismatch:${(frozen.pages||[]).length}/${pages.length}`);
 const historicalBaseline=Number(contract.historical_route_baseline||0);
 const effectiveInventory=pages.length+activeRetirements.length;
 if(effectiveInventory<historicalBaseline)errors.push(`unexplained_inventory_regression:${pages.length}+${activeRetirements.length}<${historicalBaseline}`);
-const report={validator:'page-release-law',status:errors.length?'FAIL':'PASS',inventory_policy:contract.inventory_policy,current_admitted_routes:pages.length,approved_active_retirements:activeRetirements.length,effective_inventory_for_regression:effectiveInventory,historical_route_baseline:historicalBaseline,programmatic_routes:pages.filter(p=>p.programmatic_gate_status===contract.programmatic_gate_value).length,error_count:errors.length,warning_count:warnings.length,errors,warnings,checked_at:process.env.SOURCE_DATE||'2026-06-20'};
+const report={validator:'page-release-law',status:errors.length?'FAIL':'PASS',inventory_policy:contract.inventory_policy,current_admitted_routes:pages.length,approved_active_retirements:activeRetirements.length,effective_inventory_for_regression:effectiveInventory,historical_route_baseline:historicalBaseline,programmatic_routes:pages.filter(p=>p.programmatic_gate_status===contract.programmatic_gate_value).length,frozen_routes:(frozen.pages||[]).length,error_count:errors.length,warning_count:warnings.length,errors,warnings,checked_at:process.env.SOURCE_DATE||'2026-06-20'};
 fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts/validation/page-release-law.json'),JSON.stringify(report,null,2)+'\n');
 if(errors.length){console.error(`PAGE RELEASE LAW FAIL (${errors.length})`);console.error(errors.slice(0,100).join('\n'));process.exit(1);}console.log(`PAGE RELEASE LAW PASS: ${pages.length} dynamically admitted routes.`);

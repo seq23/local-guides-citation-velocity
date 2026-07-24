@@ -11,10 +11,10 @@ Options:
   --include-git          Include .git/ in the ZIP if present. Default excludes .git/.
   --skip-install         Skip npm ci.
   --skip-build           Skip npm run build.
-  --skip-validate        Skip npm run validate:all.
+  --skip-validate        Skip npm run validate:release (used when validation is delegated to the local updater).
   --out-dir PATH         Output directory for the ZIP. Default: parent directory of repo root.
   --repo-name NAME       Repo name used in ZIP filename. Default: current directory name.
-  --sha VALUE            Override filename SHA. Default: git short SHA if available, else content hash.
+  --sha VALUE            Deprecated compatibility option. Final filename always uses the first 12 chars of the finished ZIP SHA256.
   -h, --help             Show this help.
 
 The ZIP always includes .github/workflows/ when present. It excludes only local junk/cache/output artifacts
@@ -102,10 +102,10 @@ else
 fi
 
 if [[ "$SKIP_VALIDATE" == "0" ]]; then
-  echo "Running npm run validate:all..."
-  npm run validate:all
+  echo "Running npm run validate:release..."
+  npm run validate:release
 else
-  echo "Skipping validate:all."
+  echo "Skipping validate:release (local updater authority)."
 fi
 
 echo "Verifying LKG updater completeness artifacts..."
@@ -121,45 +121,46 @@ for coverage_file in coverage_targets.csv coverage_runtime_support.csv coverage_
 done
 require_file data/site.json
 
-if [[ -n "$SHA_OVERRIDE" ]]; then
-  SHA="$SHA_OVERRIDE"
-elif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  SHA="$(git rev-parse --short=7 HEAD)"
-else
-  # Fast fallback for ZIP-delivered repos without .git. This is not a commit hash; it is a deterministic
-  # packaging fingerprint from source-of-truth root/script files so snapshot creation does not traverse
-  # thousands of generated pages just to name the archive.
-  SHA="$(sha256sum package.json README.md .gitignore scripts/make_baseline_snapshot.sh content/_shared/executable_files.json 2>/dev/null | sha256sum | cut -c1-7)"
-fi
+echo "Building release-critical artifact manifest..."
+SOURCE_DATE="${SOURCE_DATE:-$(date +%F)}" node scripts/validators/build_artifact_validation_manifest.js
 
 DATE="$(date +%m-%d-%y)"
 ZIP_REPO_NAME="${REPO_NAME%-main}"
-ZIP_NAME="${ZIP_REPO_NAME}-main_BASELINE_${DATE}_${SHA}.zip"
-ZIP_PATH="$OUT_DIR/$ZIP_NAME"
-rm -f "$ZIP_PATH"
-
-EXCLUDES=(
-  "*/node_modules/*"
-  "*/.DS_Store"
-  "*/.cache/*"
-  "*/tmp/*"
-  "*/logs/*"
-  "*.zip"
-)
+TMP_ZIP="$OUT_DIR/.${ZIP_REPO_NAME}-main_BASELINE_${DATE}_pending_$$.zip"
+rm -f "$TMP_ZIP" "$TMP_ZIP.verification.json"
 
 if [[ "$INCLUDE_GIT" == "0" ]]; then
-  EXCLUDES+=("*/.git/*")
   echo "Packaging with .git excluded. Use --include-git to include Git history."
 else
   echo "Packaging with .git included if present."
 fi
 
-PARENT="$(dirname "$ROOT")"
 BASE="$(basename "$ROOT")"
 if [[ "$INCLUDE_GIT" == "1" ]]; then
-  ruby scripts/create_store_zip.rb "$ROOT" "$ZIP_PATH" --include-git
+  ruby scripts/create_store_zip.rb "$ROOT" "$TMP_ZIP" --include-git
 else
-  ruby scripts/create_store_zip.rb "$ROOT" "$ZIP_PATH"
+  ruby scripts/create_store_zip.rb "$ROOT" "$TMP_ZIP"
+fi
+
+echo "Reopening and verifying temporary ZIP bytes..."
+node scripts/verify_baseline_snapshot.js "$TMP_ZIP"
+ZIP_SHA256="$(sha256sum "$TMP_ZIP" | awk '{print $1}')"
+SHORT_SHA="${ZIP_SHA256:0:12}"
+if [[ -n "$SHA_OVERRIDE" && "$SHA_OVERRIDE" != "$SHORT_SHA" ]]; then
+  echo "Ignoring deprecated --sha=$SHA_OVERRIDE; finished ZIP SHA256 requires $SHORT_SHA" >&2
+fi
+ZIP_NAME="${ZIP_REPO_NAME}-main_BASELINE_${DATE}_${SHORT_SHA}.zip"
+ZIP_PATH="$OUT_DIR/$ZIP_NAME"
+rm -f "$ZIP_PATH" "$ZIP_PATH.verification.json"
+mv "$TMP_ZIP" "$ZIP_PATH"
+rm -f "$TMP_ZIP.verification.json"
+
+echo "Verifying final named ZIP..."
+node scripts/verify_baseline_snapshot.js "$ZIP_PATH"
+FINAL_SHA256="$(sha256sum "$ZIP_PATH" | awk '{print $1}')"
+if [[ "$FINAL_SHA256" != "$ZIP_SHA256" ]]; then
+  echo "Snapshot refused: ZIP SHA changed after rename" >&2
+  exit 1
 fi
 
 echo "Verifying ZIP root and workflow inclusion..."
@@ -188,3 +189,4 @@ fi
 
 SIZE="$(du -h "$ZIP_PATH" | awk '{print $1}')"
 echo "Baseline snapshot created: $ZIP_PATH ($SIZE)"
+echo "SHA256: $FINAL_SHA256"
