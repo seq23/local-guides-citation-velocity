@@ -5076,6 +5076,51 @@
         "artifacts/validation/workflow-yaml-syntax.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "portfolio-kpi-truth",
+      "title": "Portfolio 100K surfacing KPI truth contract",
+      "path": "scripts/validators/validate_portfolio_kpi_truth.js",
+      "command": "node scripts/validators/validate_portfolio_kpi_truth.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "release",
+        "strict",
+        "local",
+        "content-release",
+        "postrelease"
+      ],
+      "tags": [
+        "kpi-truth",
+        "citation-honesty",
+        "authority-scale"
+      ],
+      "risk_prevented": "Prevents owned fanout, generated pages, internal links, modeled opportunities, or unsupported observations from being mislabeled as external citations or LLM surfacing wins.",
+      "why_existing_checks_do_not_cover": "Existing citation validators protect individual evidence lanes but do not enforce the portfolio-wide metric taxonomy introduced by the authority-scale migration.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/portfolio-kpi-truth.json",
+      "failure_action": "repair KPI definitions or evidence records before release",
+      "depends_on": [],
+      "requires_files": [
+        "data/authority_scale/kpi_truth_contract.json",
+        "data/authority_scale/observed_surfacing_ledger.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/portfolio-kpi-truth.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/portfolio-kpi-truth.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

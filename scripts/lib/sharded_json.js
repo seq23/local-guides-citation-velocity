@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const ROOT = path.resolve(__dirname, '../..');
 
@@ -29,6 +30,7 @@ class ShardedJsonWriter {
     this.recordsPerShard = Number(options.recordsPerShard || 5000);
     this.maxBytesPerShard = Number(options.maxBytesPerShard || 8 * 1024 * 1024);
     this.metadata = options.metadata || {};
+    this.compression = options.compression === 'none' ? 'none' : 'gzip';
     this.records = [];
     this.approxBytes = 0;
     this.totalRecords = 0;
@@ -49,7 +51,7 @@ class ShardedJsonWriter {
   flush() {
     if (!this.records.length) return;
     const partNumber = this.shards.length + 1;
-    const filename = `part-${String(partNumber).padStart(5, '0')}.json`;
+    const filename = `part-${String(partNumber).padStart(5, '0')}.json${this.compression === 'gzip' ? '.gz' : ''}`;
     const rel = `${this.relDir}/${filename}`;
     const payload = {
       schema_version: '1.0',
@@ -59,7 +61,8 @@ class ShardedJsonWriter {
       last_id: this.records[this.records.length - 1]?.opportunity_id || null,
       records: this.records
     };
-    const buffer = Buffer.from(JSON.stringify(payload, null, 2) + '\n', 'utf8');
+    const rawBuffer = Buffer.from(JSON.stringify(payload, null, 2) + '\n', 'utf8');
+    const buffer = this.compression === 'gzip' ? zlib.gzipSync(rawBuffer, { level: 9, mtime: 0 }) : rawBuffer;
     const sha256 = sha256Buffer(buffer);
     writeAtomic(path.join(ROOT, rel), buffer);
     this.shards.push({
@@ -67,6 +70,8 @@ class ShardedJsonWriter {
       part: partNumber,
       record_count: this.records.length,
       byte_count: buffer.length,
+      uncompressed_byte_count: rawBuffer.length,
+      compression: this.compression,
       sha256,
       first_id: payload.first_id,
       last_id: payload.last_id
@@ -80,12 +85,13 @@ class ShardedJsonWriter {
     this.flush();
     const aggregateInput = this.shards.map((s) => `${s.part}:${s.record_count}:${s.sha256}:${s.first_id}:${s.last_id}`).join('\n');
     const index = {
-      schema_version: '2.0',
+      schema_version: '2.1',
       ...this.metadata,
       record_count: this.totalRecords,
       shard_count: this.shards.length,
       records_per_shard_target: this.recordsPerShard,
       max_bytes_per_shard: this.maxBytesPerShard,
+      compression: this.compression,
       aggregate_sha256: sha256Buffer(Buffer.from(aggregateInput, 'utf8')),
       shards: this.shards
     };
@@ -102,7 +108,9 @@ function readShardIndex(relDir = 'data/queries/citation_fanout_opportunities_100
 function *iterateShardedRecords(relDir = 'data/queries/citation_fanout_opportunities_100k') {
   const index = readShardIndex(relDir);
   for (const shard of index.shards || []) {
-    const payload = JSON.parse(fs.readFileSync(path.join(ROOT, shard.path), 'utf8'));
+    const buffer = fs.readFileSync(path.join(ROOT, shard.path));
+    const raw = shard.compression === 'gzip' || shard.path.endsWith('.gz') ? zlib.gunzipSync(buffer) : buffer;
+    const payload = JSON.parse(raw.toString('utf8'));
     for (const record of payload.records || []) yield record;
   }
 }
@@ -122,7 +130,11 @@ function validateShardedDataset(relDir = 'data/queries/citation_fanout_opportuni
     if (actualHash !== shard.sha256) errors.push(`shard_hash_mismatch:${shard.path}`);
     if (buffer.length !== Number(shard.byte_count)) errors.push(`shard_size_mismatch:${shard.path}`);
     let payload;
-    try { payload = JSON.parse(buffer.toString('utf8')); } catch (e) { errors.push(`invalid_shard_json:${shard.path}:${e.message}`); continue; }
+    try {
+      const raw = shard.compression === 'gzip' || shard.path.endsWith('.gz') ? zlib.gunzipSync(buffer) : buffer;
+      payload = JSON.parse(raw.toString('utf8'));
+      if (shard.uncompressed_byte_count && raw.length !== Number(shard.uncompressed_byte_count)) errors.push(`shard_uncompressed_size_mismatch:${shard.path}`);
+    } catch (e) { errors.push(`invalid_shard_json:${shard.path}:${e.message}`); continue; }
     if ((payload.records || []).length !== Number(shard.record_count)) errors.push(`shard_count_mismatch:${shard.path}`);
     if ((payload.records || [])[0]?.opportunity_id !== shard.first_id) errors.push(`shard_first_id_mismatch:${shard.path}`);
     if ((payload.records || []).at(-1)?.opportunity_id !== shard.last_id) errors.push(`shard_last_id_mismatch:${shard.path}`);

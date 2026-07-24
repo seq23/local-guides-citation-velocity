@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "3a108bb020c444a3c75af492e05f3862c7309194104a4f4f6c5939304114b24f",
+  "registry_sha256": "d37bcc24d4b2862e86789f6b9d0c272325559f28acbe3937cca4eb14fb23abac",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 116,
-    "active": 88,
+    "total": 117,
+    "active": 89,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 88,
+    "hard_fail": 89,
     "strong_warning": 11,
     "soft_warning": 2,
     "info": 15
@@ -106,10 +106,12 @@
         "vertical-keys",
         "workflow-contract",
         "workflow-data-trace",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "portfolio-kpi-truth"
       ],
       "execution_order": [
         "authority-contracts",
+        "portfolio-kpi-truth",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "validation-policy",
@@ -239,7 +241,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "portfolio-kpi-truth"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -253,6 +256,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "portfolio-kpi-truth",
         "rich-new-page-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -419,7 +423,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "portfolio-kpi-truth"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -433,6 +438,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "portfolio-kpi-truth",
         "rich-new-page-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -633,7 +639,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "portfolio-kpi-truth"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -647,6 +654,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "portfolio-kpi-truth",
         "rich-new-page-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -821,7 +829,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "portfolio-kpi-truth"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -835,6 +844,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "portfolio-kpi-truth",
         "rich-new-page-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -1090,10 +1100,12 @@
         "vertical-keys",
         "workflow-contract",
         "workflow-data-trace",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "portfolio-kpi-truth"
       ],
       "execution_order": [
         "authority-contracts",
+        "portfolio-kpi-truth",
         "validation-policy",
         "validation-registry",
         "workflow-yaml-syntax",
@@ -1163,7 +1175,8 @@
         "velocity-agent-recommendation-driven-output",
         "velocity-agent-source-coverage",
         "velocity-intake-workflow",
-        "velocity-route-resolution-self-test"
+        "velocity-route-resolution-self-test",
+        "portfolio-kpi-truth"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1171,6 +1184,7 @@
         "agent-improvement-capability",
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
+        "portfolio-kpi-truth",
         "rich-new-page-contract",
         "validator-authority-contract",
         "workflow-yaml-syntax",
@@ -5066,6 +5080,45 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "portfolio-kpi-truth",
+        "title": "Portfolio 100K surfacing KPI truth contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "release",
+          "strict",
+          "local",
+          "content-release",
+          "postrelease"
+        ],
+        "path": "scripts/validators/validate_portfolio_kpi_truth.js",
+        "command": "node scripts/validators/validate_portfolio_kpi_truth.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/authority_scale/kpi_truth_contract.json",
+          "data/authority_scale/observed_surfacing_ledger.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/portfolio-kpi-truth.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/portfolio-kpi-truth.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents owned fanout, generated pages, internal links, modeled opportunities, or unsupported observations from being mislabeled as external citations or LLM surfacing wins.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -7303,6 +7356,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A malformed workflow file can pass token-based trace checks but fail before any GitHub Actions job starts.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "portfolio-kpi-truth",
+        "title": "Portfolio 100K surfacing KPI truth contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "release",
+          "strict",
+          "local",
+          "content-release",
+          "postrelease"
+        ],
+        "path": "scripts/validators/validate_portfolio_kpi_truth.js",
+        "command": "node scripts/validators/validate_portfolio_kpi_truth.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/authority_scale/kpi_truth_contract.json",
+          "data/authority_scale/observed_surfacing_ledger.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/portfolio-kpi-truth.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/portfolio-kpi-truth.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents owned fanout, generated pages, internal links, modeled opportunities, or unsupported observations from being mislabeled as external citations or LLM surfacing wins.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

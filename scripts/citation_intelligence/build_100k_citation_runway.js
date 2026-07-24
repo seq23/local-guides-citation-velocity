@@ -156,14 +156,24 @@ function existingRouteFor(vertical, family, index, routes) {
 }
 
 function makeFanoutRecord(index, routes, verticalKeys) {
-  const vertical = verticalKeys[index % verticalKeys.length];
+  // Mixed-radix enumeration guarantees that every materialized query tuple is
+  // distinct before any page-strategy admission happens. Page family is a
+  // planning classification and is deliberately not allowed to manufacture a
+  // duplicate wording of the same query opportunity.
+  let cursor = index;
+  const vertical = verticalKeys[cursor % verticalKeys.length];
+  cursor = Math.floor(cursor / verticalKeys.length);
+  const state = STATES[cursor % STATES.length];
+  cursor = Math.floor(cursor / STATES.length);
+  const intent = INTENTS[cursor % INTENTS.length];
+  cursor = Math.floor(cursor / INTENTS.length);
   const seed = VERTICAL_SEEDS[vertical];
-  const state = STATES[Math.floor(index / verticalKeys.length) % STATES.length];
-  const intent = INTENTS[Math.floor(index / (verticalKeys.length * STATES.length)) % INTENTS.length];
-  const entity = seed.entities[Math.floor(index / 7) % seed.entities.length];
-  const situation = seed.situations[Math.floor(index / 11) % seed.situations.length];
-  const pageFamily = PAGE_FAMILIES[Math.floor(index / 13) % PAGE_FAMILIES.length];
-  const modifier = MODIFIERS[Math.floor(index / 17) % MODIFIERS.length];
+  const entity = seed.entities[cursor % seed.entities.length];
+  cursor = Math.floor(cursor / seed.entities.length);
+  const situation = seed.situations[cursor % seed.situations.length];
+  cursor = Math.floor(cursor / seed.situations.length);
+  const modifier = MODIFIERS[cursor % MODIFIERS.length];
+  const pageFamily = PAGE_FAMILIES[index % PAGE_FAMILIES.length];
   const query = `${intent.phrase} ${entity} for ${situation} in ${state} ${modifier}?`;
   const routeCandidate = `/${vertical}/opportunities/${slugify(`${state}-${intent.id}-${entity}-${situation}-${modifier}`).slice(0, 120)}/`;
   const existingRoute = existingRouteFor(vertical, pageFamily, index, routes);
@@ -292,6 +302,7 @@ function run() {
   const shardWriter = new ShardedJsonWriter('data/queries/citation_fanout_opportunities_100k', {
     recordsPerShard: 5000,
     maxBytesPerShard: 8 * 1024 * 1024,
+    compression: 'gzip',
     metadata: {
       repo: 'local-guides-citation-velocity',
       generated_at: generatedAt,

@@ -33,7 +33,8 @@ The latest supplied baseline ZIP is the starting source of truth. Inside the rep
 - Runtime autonomy: `FULL_SAFE_AUTONOMY`.
 - Page strategy: machine Safe Harbor; no routine manual approval queue and no synthetic page quota.
 - Accepted output: `data/release/frozen_page_registry.json` + content-addressed gzip cache.
-- 100K intelligence: indexed deterministic shards; legacy monolith forbidden.
+- 100K+ intelligence: indexed deterministic gzip shards; legacy monolith and uncompressed shard bloat are forbidden.
+- Maximum Fanout + 100K Surfacing Acceleration: no arbitrary opportunity-discovery ceiling; 100K is a minimum materialized reference runway, never a page quota or external-citation claim.
 - Release lifecycle: stage → validate → promote → freeze/refreeze.
 - Public deploy surface: admitted-route driven `dist/`.
 - Full validation is local/updater authority after applying a baseline ZIP.

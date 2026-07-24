@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "effective_date": "2026-07-24",
+  "repo": "seq23/local-guides-citation-velocity",
+  "standard": "MAXIMUM_FANOUT_PLUS_100K_SURFACING_ACCELERATION",
+  "objective": "Maximize legitimate citation, reference, search and LLM surfacing opportunities as fast as safely possible, with 100K observed surfacing/citation events as an acceleration target rather than a guaranteed outcome.",
+  "fanout": {
+    "capacity_policy": "NO_ARBITRARY_UPPER_CEILING_ON_LEGITIMATE_OPPORTUNITY_DISCOVERY",
+    "materialized_reference_runway_minimum": 100000,
+    "materialized_reference_runway_is_page_quota": false,
+    "storage": "DETERMINISTIC_COMPRESSED_SHARDS",
+    "required_dimensions": [
+      "vertical",
+      "entity",
+      "intent",
+      "question",
+      "decision",
+      "comparison",
+      "problem",
+      "persona",
+      "geography_when_legitimate",
+      "cost",
+      "timeline",
+      "risk",
+      "procedure",
+      "source_or_reference_need",
+      "llm_conversational_prompt"
+    ],
+    "semantic_rule": "MAXIMUM_COVERAGE_MINIMUM_DUPLICATION",
+    "admission_rule": "OPPORTUNITY_DOES_NOT_EQUAL_PAGE_DISTINCT_ANSWER_VALUE_AND_SOURCE_SUPPORT_REQUIRED"
+  },
+  "surfacing": {
+    "channels": [
+      "traditional_search",
+      "ai_overviews_and_answer_engines",
+      "llm_retrieval_and_citation",
+      "editorial_reference",
+      "structured_machine_discovery"
+    ],
+    "citation_magnets": [
+      "decision_matrices",
+      "comparison_tables",
+      "checklists",
+      "procedures",
+      "source_summaries",
+      "reference_tables",
+      "glossaries",
+      "structured_datasets",
+      "original_frameworks",
+      "direct_answer_faqs"
+    ],
+    "measurement_truth_boundary": "OPPORTUNITY_PUBLISHED_INDEXED_SURFACED_REFERENCED_AND_VERIFIED_CITATION_ARE_SEPARATE_METRICS"
+  },
+  "accepted_output": {
+    "default_state": "FROZEN",
+    "mutation_policy": "EXACT_ROUTE_THAW_VALIDATE_REFREEZE_ONLY",
+    "normal_build_may_mutate_frozen": false,
+    "freshness_policy": "SOURCE_CHANGE_OR_EDITORIAL_TRIGGER_SELECTS_EXACT_AFFECTED_ROUTES_FOR_REVIEW"
+  },
+  "velocity": {
+    "model": "DYNAMIC_SAFETY_CEILING_NOT_QUOTA",
+    "scale_signals": [
+      "qualified_distinct_backlog",
+      "source_coverage",
+      "validation_health",
+      "duplicate_intent_rate",
+      "indexation_capacity",
+      "observed_surfacing_yield"
+    ],
+    "downshift_conditions": [
+      "unsupported_high_stakes_claim",
+      "semantic_duplication",
+      "validator_failure",
+      "source_freshness_failure",
+      "indexation_or_quality_backlog"
+    ]
+  }
+}

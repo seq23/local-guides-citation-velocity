@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
-const { validateShardedDataset } = require('../lib/sharded_json');
+const { validateShardedDataset, iterateShardedRecords } = require('../lib/sharded_json');
 
 const ROOT = path.resolve(__dirname, '../..');
 
@@ -122,11 +122,39 @@ if (nodeModulesSource.entries.length) errors.push('node_modules_present_in_sourc
 
 let fanoutValidation = { ok:false, errors:['fanout_index_missing'], record_count:0, shard_count:0 };
 if (exists('data/queries/citation_fanout_opportunities_100k/index.json')) {
-  try { fanoutValidation = validateShardedDataset('data/queries/citation_fanout_opportunities_100k', 100000); }
+  try {
+    fanoutValidation = validateShardedDataset('data/queries/citation_fanout_opportunities_100k', 100000);
+    const seenQueries = new Set();
+    const seenRoutes = new Set();
+    let duplicateQueries = 0;
+    let duplicateRoutes = 0;
+    for (const record of iterateShardedRecords('data/queries/citation_fanout_opportunities_100k')) {
+      const queryKey = String(record.query || '').trim().toLowerCase();
+      const routeKey = String(record.route_candidate || '').trim().toLowerCase();
+      if (queryKey) {
+        if (seenQueries.has(queryKey)) duplicateQueries += 1;
+        else seenQueries.add(queryKey);
+      }
+      if (routeKey) {
+        if (seenRoutes.has(routeKey)) duplicateRoutes += 1;
+        else seenRoutes.add(routeKey);
+      }
+    }
+    if (duplicateQueries) fanoutValidation.errors.push(`exact_duplicate_queries:${duplicateQueries}`);
+    if (duplicateRoutes) fanoutValidation.errors.push(`exact_duplicate_route_candidates:${duplicateRoutes}`);
+    fanoutValidation.ok = fanoutValidation.errors.length === 0;
+    fanoutValidation.unique_query_count = seenQueries.size;
+    fanoutValidation.unique_route_candidate_count = seenRoutes.size;
+  }
   catch (err) { fanoutValidation = { ok:false, errors:[`fanout_validation_error:${err.message}`], record_count:0, shard_count:0 }; }
 }
 if (!fanoutValidation.ok) errors.push(...fanoutValidation.errors.map((e)=>`fanout_shard_integrity:${e}`));
 if (exists('data/queries/citation_fanout_opportunities_100k.json')) errors.push('legacy_fanout_monolith_reintroduced');
+const fanoutDir = path.join(ROOT, 'data/queries/citation_fanout_opportunities_100k');
+if (fs.existsSync(fanoutDir)) {
+  const plainShards = fs.readdirSync(fanoutDir).filter((name) => /^part-\d+\.json$/.test(name));
+  if (plainShards.length) errors.push(`uncompressed_fanout_shards_reintroduced:${plainShards.join(',')}`);
+}
 
 const report = {
   validator: 'local-guides-tree-hygiene',

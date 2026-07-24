@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs'),path=require('path');const ROOT=path.resolve(__dirname,'../..');const errors=[];
+const c=JSON.parse(fs.readFileSync(path.join(ROOT,'data/authority_scale/kpi_truth_contract.json'),'utf8'));const l=JSON.parse(fs.readFileSync(path.join(ROOT,'data/authority_scale/observed_surfacing_ledger.json'),'utf8'));
+for(const k of ['fanout_opportunities','admitted_pages','published_pages','indexed_pages','search_visibility','llm_surfacing','external_reference','verified_citation'])if(!c.metrics?.[k])errors.push(`missing_metric:${k}`);
+if(c.standard!=='PORTFOLIO_100K_SURFACING_TRUTH_CONTRACT')errors.push('wrong_standard');if(!Array.isArray(c.truth_rules)||!c.truth_rules.some(x=>/100K is a target/i.test(x)))errors.push('missing_target_not_guarantee_rule');
+const allowed=new Set(['indexed_page','search_visibility','llm_surfacing','external_reference','verified_citation']);for(const [i,e] of (l.events||[]).entries()){if(!allowed.has(e.metric))errors.push(`event_${i}_metric`);for(const k of ['observed_at','surface_provider','url','evidence'])if(!e[k])errors.push(`event_${i}_missing_${k}`);}
+const out={validator:'portfolio-kpi-truth',ok:!errors.length,standard:c.standard,observed_events:(l.events||[]).length,verified_citations:(l.events||[]).filter(e=>e.metric==='verified_citation').length,errors};fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts/validation/portfolio-kpi-truth.json'),JSON.stringify(out,null,2)+'\n');if(errors.length){console.error(errors.join('\n'));process.exit(1)}console.log('PORTFOLIO KPI TRUTH PASS');
