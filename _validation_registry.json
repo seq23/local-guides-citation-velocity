@@ -5121,6 +5121,54 @@
         "artifacts/validation/portfolio-kpi-truth.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "citation-yield-feedback",
+      "title": "Citation yield feedback and dynamic velocity truth contract",
+      "path": "scripts/validators/validate_citation_yield_feedback.js",
+      "command": "node scripts/validators/validate_citation_yield_feedback.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "release",
+        "strict",
+        "local"
+      ],
+      "tags": [
+        "authority-scale",
+        "citation-yield",
+        "dynamic-velocity",
+        "kpi-truth"
+      ],
+      "risk_prevented": "Prevents unsupported citation-yield claims, invalid Twin Agent scope, or unsafe publication velocity changes from passing a release.",
+      "why_existing_checks_do_not_cover": "The portfolio KPI validator enforces metric taxonomy, but it does not validate the citation-yield contract, evidence-complete citation counts, or the dynamic velocity decision.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/citation-yield-feedback.json",
+      "failure_action": "repair citation-yield evidence or velocity decision before release",
+      "depends_on": [
+        "portfolio-kpi-truth"
+      ],
+      "requires_files": [
+        "data/authority_scale/citation_yield_contract.json",
+        "data/authority_scale/citation_yield_observations.json",
+        "data/authority_scale/citation_yield_scoreboard.json",
+        "data/authority_scale/velocity_decision.json",
+        "data/authority_scale/velocity_health.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/citation-yield-feedback.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/citation-yield-feedback.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

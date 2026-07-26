@@ -18,8 +18,14 @@ const sourceDefaults = {personal_injury:['SRC-CONGRESS-STATE-LEGISLATURES','SRC-
 const sourceRegistry = (()=>{ try { return new Map((read('data/evidence/source_registry.json').sources||[]).map((row)=>[row.source_id,row])); } catch { return new Map(); } })();
 function projectedWords(page, sections){ return String([page.title,page.description,page.bodyHtml,page.dated_primary_fact,...(sections||[]).flatMap((sec)=>[sec.q,sec.a,...(sec.checklist||[]),...(sec.red_flags||[])])].join(' ')).trim().split(/\s+/).filter(Boolean).length; }
 const releaseQueue = read('data/release/page_release_queue.json');
-const ready = (releaseQueue.records || []).filter((x)=>x.eligible === true && x.decision === 'SAFE_AUTOPUBLISH' && x.lifecycle_state === 'ADMITTED_FOR_BUILD');
-const report = {schema_version:'2.0',run_date:DATE,admitted_for_build:ready.length,created:[],skipped:[],target:'content/_staged/pages.json'};
+const velocityDecision = (()=>{ try { return read('data/authority_scale/velocity_decision.json'); } catch { return {recommended_new_url_ceiling_per_day:2}; } })();
+const publicationLedger = (()=>{ try { return read('data/authority_scale/publication_ledger.json'); } catch { return {schema_version:'1.0',runs:[]}; } })();
+const dailyCeiling = Number(velocityDecision.recommended_new_url_ceiling_per_day || 2);
+const alreadyToday = (publicationLedger.runs||[]).filter((r)=>String(r.date||'')===DATE).reduce((n,r)=>n+Number(r.created||0),0);
+const remainingToday = Math.max(0,dailyCeiling-alreadyToday);
+const readyAll = (releaseQueue.records || []).filter((x)=>x.eligible === true && x.decision === 'SAFE_AUTOPUBLISH' && x.lifecycle_state === 'ADMITTED_FOR_BUILD');
+const ready = readyAll.slice(0, remainingToday);
+const report = {schema_version:'2.0',run_date:DATE,admitted_for_build:readyAll.length,selected_under_daily_new_url_ceiling:ready.length,daily_new_url_ceiling:dailyCeiling,already_published_today_before_run:alreadyToday,created:[],skipped:readyAll.slice(remainingToday).map((x)=>({id:x.id,reason:'daily_new_url_ceiling_reached'})),target:'content/_staged/pages.json'};
 if (!ready.length) { write('artifacts/validation/velocity-content-release.json',report); console.log('No Safe Harbor new pages admitted for build.'); process.exit(0); }
 for (const rel of ['content/_staged/pages.json']) {
   const payload=read(rel); const pages=payload.pages||[]; const existing=new Set(pages.map((p)=>p.slug)); const existingTitles=new Set(pages.map((p)=>String(p.title||p.visible_q||'').trim().toLowerCase()).filter(Boolean));
@@ -52,5 +58,7 @@ for (const rel of ['content/_staged/pages.json']) {
 }
 report.created=[...new Map(report.created.map((row)=>[row.route,row])).values()].sort((a,b)=>a.route.localeCompare(b.route));
 report.created_count=report.created.length;
+publicationLedger.runs=[...(publicationLedger.runs||[]),{run_at:`${DATE}T00:00:00.000Z`,date:DATE,created:report.created_count,ceiling:dailyCeiling,already_published_today_before_run:alreadyToday}];
+write('data/authority_scale/publication_ledger.json',publicationLedger);
 write('artifacts/validation/velocity-content-release.json',report);
 console.log(`Staged ${report.created_count} Safe Harbor Velocity page(s); live promotion is a separate validated release step.`);

@@ -191,7 +191,7 @@
     "validate:workflow-artifacts": "node scripts/validation/run_validation_registry.js --id workflow-artifacts",
     "validate:traffic-qualified-citation-intelligence": "node scripts/validation/run_validation_registry.js --profile citation-intelligence",
     "release:daily-citation-intelligence:preview": "npm run strategy:gate && npm run trace:traffic-qualified-pipeline && npm run workflow:inventory && npm run validate:traffic-qualified-citation-intelligence",
-    "release:daily-citation-intelligence": "npm run strategy:gate && npm run trace:traffic-qualified-pipeline && npm run workflow:inventory && npm run build && npm run validate:traffic-qualified-citation-intelligence",
+    "release:daily-citation-intelligence": "npm run authority:yield:build && npm run authority:yield:validate && npm run strategy:gate && npm run trace:traffic-qualified-pipeline && npm run workflow:inventory && npm run build && npm run validate:traffic-qualified-citation-intelligence",
     "test:browserless-mock-backup": "node scripts/validators/validate_browserless_mock_backup.js",
     "validate:browserless-mock-backup": "node scripts/validation/run_validation_registry.js --id browserless-mock-backup",
     "validate:deep:isolated": "node scripts/validation/run_validation_registry.js --profile deep-isolated",
@@ -232,7 +232,10 @@
     "freeze:route": "node scripts/frozen_pages.js freeze-route",
     "freeze:unlock": "node scripts/frozen_pages.js begin manual-unlock",
     "bootstrap:live": "node scripts/release/bootstrap_live_content.js --confirm-recovery-bootstrap",
-    "validate:kpi-truth": "node scripts/validation/run_validation_registry.js --id portfolio-kpi-truth"
+    "validate:kpi-truth": "node scripts/validation/run_validation_registry.js --id portfolio-kpi-truth",
+    "authority:yield:build": "node scripts/authority_scale/build_citation_yield_feedback.mjs && node scripts/authority_scale/evaluate_velocity.mjs",
+    "authority:yield:validate": "node scripts/validation/run_validation_registry.js --id citation-yield-feedback",
+    "authority:velocity:evaluate": "node scripts/authority_scale/evaluate_velocity.mjs"
   },
   "engines": {
     "node": "24.x"

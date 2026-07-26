@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "d37bcc24d4b2862e86789f6b9d0c272325559f28acbe3937cca4eb14fb23abac",
+  "registry_sha256": "c2a674dcf2c16241598d62b37c4d6fcff3eb2b65f20ce3d42d50f1087c55cf42",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 117,
-    "active": 89,
+    "total": 118,
+    "active": 90,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 89,
+    "hard_fail": 90,
     "strong_warning": 11,
     "soft_warning": 2,
     "info": 15
@@ -242,7 +242,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "portfolio-kpi-truth"
+        "portfolio-kpi-truth",
+        "citation-yield-feedback"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -257,6 +258,7 @@
         "local-pantry-trace",
         "nap-consistency",
         "portfolio-kpi-truth",
+        "citation-yield-feedback",
         "rich-new-page-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -424,7 +426,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "portfolio-kpi-truth"
+        "portfolio-kpi-truth",
+        "citation-yield-feedback"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -439,6 +442,7 @@
         "local-pantry-trace",
         "nap-consistency",
         "portfolio-kpi-truth",
+        "citation-yield-feedback",
         "rich-new-page-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -640,7 +644,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "portfolio-kpi-truth"
+        "portfolio-kpi-truth",
+        "citation-yield-feedback"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -655,6 +660,7 @@
         "local-pantry-trace",
         "nap-consistency",
         "portfolio-kpi-truth",
+        "citation-yield-feedback",
         "rich-new-page-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -830,7 +836,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "portfolio-kpi-truth"
+        "portfolio-kpi-truth",
+        "citation-yield-feedback"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -845,6 +852,7 @@
         "local-pantry-trace",
         "nap-consistency",
         "portfolio-kpi-truth",
+        "citation-yield-feedback",
         "rich-new-page-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -1674,6 +1682,10 @@
     {
       "from": "workflow-yaml-inventory",
       "to": "workflow-topology"
+    },
+    {
+      "from": "portfolio-kpi-truth",
+      "to": "citation-yield-feedback"
     }
   ],
   "by_severity": {
@@ -5119,6 +5131,47 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "citation-yield-feedback",
+        "title": "Citation yield feedback and dynamic velocity truth contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "release",
+          "strict",
+          "local"
+        ],
+        "path": "scripts/validators/validate_citation_yield_feedback.js",
+        "command": "node scripts/validators/validate_citation_yield_feedback.js",
+        "depends_on": [
+          "portfolio-kpi-truth"
+        ],
+        "requires_files": [
+          "data/authority_scale/citation_yield_contract.json",
+          "data/authority_scale/citation_yield_observations.json",
+          "data/authority_scale/citation_yield_scoreboard.json",
+          "data/authority_scale/velocity_decision.json",
+          "data/authority_scale/velocity_health.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/citation-yield-feedback.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/citation-yield-feedback.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents unsupported citation-yield claims, invalid Twin Agent scope, or unsafe publication velocity changes from passing a release.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -7395,6 +7448,47 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents owned fanout, generated pages, internal links, modeled opportunities, or unsupported observations from being mislabeled as external citations or LLM surfacing wins.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "citation-yield-feedback",
+        "title": "Citation yield feedback and dynamic velocity truth contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "release",
+          "strict",
+          "local"
+        ],
+        "path": "scripts/validators/validate_citation_yield_feedback.js",
+        "command": "node scripts/validators/validate_citation_yield_feedback.js",
+        "depends_on": [
+          "portfolio-kpi-truth"
+        ],
+        "requires_files": [
+          "data/authority_scale/citation_yield_contract.json",
+          "data/authority_scale/citation_yield_observations.json",
+          "data/authority_scale/citation_yield_scoreboard.json",
+          "data/authority_scale/velocity_decision.json",
+          "data/authority_scale/velocity_health.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/citation-yield-feedback.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/citation-yield-feedback.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents unsupported citation-yield claims, invalid Twin Agent scope, or unsafe publication velocity changes from passing a release.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

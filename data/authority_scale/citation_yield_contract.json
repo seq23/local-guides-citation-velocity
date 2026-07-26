@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "effective_date": "2026-07-24",
+  "repo_id": "local-guides-citation-velocity",
+  "objective": {
+    "metric": "verified_external_citation_events",
+    "stretch_target": 100000,
+    "window_days": 180,
+    "target_is_guarantee": false,
+    "rule": "maximize_probability_without_fabricating_evidence"
+  },
+  "twin_agent": {
+    "enabled": true,
+    "law": "Twin Agent is permitted only in Velocity and Spry/BHPC. Other repos may use generalized page-quality lessons but must not fabricate Twin runs, manifests, or telemetry."
+  },
+  "risk_profile": "neutral_local_decision_support",
+  "public_domains": [
+    "theindustryguides.com"
+  ],
+  "page_quality_patterns": [
+    {
+      "id": "answer_first",
+      "rule": "State the direct useful answer or definition near the top; do not require the reader or an LLM to infer the answer from a long introduction."
+    },
+    {
+      "id": "named_extractable_framework",
+      "rule": "When the content contains a real repeatable methodology, give it a clear descriptive name and a standalone definition. Do not invent proprietary-sounding jargon without substance."
+    },
+    {
+      "id": "exact_intent_subheads",
+      "rule": "Use headings that directly match important user decisions, comparisons, costs, timelines, risks, procedures, and audience/use-case variants when those intents materially change the answer."
+    },
+    {
+      "id": "structured_reference_material",
+      "rule": "Prefer extractable steps, checklists, decision matrices, comparison tables, timelines, definitions, sourced statistics, templates, or calculators where they genuinely improve the answer."
+    },
+    {
+      "id": "persona_use_case_depth",
+      "rule": "Add persona or use-case sections only when the audience has a meaningfully different problem, workflow, constraint, or decision."
+    },
+    {
+      "id": "improve_before_new_url",
+      "rule": "Before creating a new URL, test whether improving an existing near-match would create more expected citation yield with less duplication."
+    },
+    {
+      "id": "one_intent_one_best_surface",
+      "rule": "Do not create thin keyword-swap pages. Merge semantically equivalent queries into the strongest canonical surface unless distinct intent warrants a separate URL."
+    },
+    {
+      "id": "truthful_evidence",
+      "rule": "Never count page creation, indexing, impressions, LLM mentions, or backlinks as verified external citations. Evidence types remain separate."
+    }
+  ],
+  "publication_budget": {
+    "unified_new_url_budget": true,
+    "repairs_may_use_separate_budget": true,
+    "current_starting_ceiling_per_day": 2,
+    "scale_tiers": [
+      2,
+      5,
+      10,
+      25,
+      50
+    ],
+    "tiers_are_ceilings_not_quotas": true
+  },
+  "dynamic_velocity": {
+    "upshift_requires": [
+      "clean_canonical_validation",
+      "zero_unresolved_semantic_duplicate_regression",
+      "distribution_pipeline_healthy",
+      "indexation_not_systemically_degrading",
+      "observed_yield_stable_or_improving"
+    ],
+    "downshift_on": [
+      "validator_failure",
+      "duplicate_pressure",
+      "thin_content_risk",
+      "source_or_claim_failure",
+      "distribution_failure",
+      "indexation_backlog"
+    ],
+    "default_when_evidence_insufficient": "hold_current_tier"
+  },
+  "event_types": [
+    "search_impression",
+    "search_click",
+    "llm_mention_unlinked",
+    "llm_linked_citation",
+    "external_backlink_or_reference",
+    "verified_external_citation"
+  ],
+  "verified_citation_evidence_rule": "verified_external_citation events require provider/source, observed_at, surfaced_url, query_or_prompt, and evidence_ref. Missing proof may be stored only as a lower-confidence candidate event.",
+  "closed_loop": [
+    "discover",
+    "score",
+    "choose_best_surface_or_existing_repair",
+    "generate_or_improve",
+    "validate_and_safe_repair",
+    "admit_and_freeze",
+    "publish",
+    "distribute",
+    "observe",
+    "learn_and_reprioritize"
+  ]
+}

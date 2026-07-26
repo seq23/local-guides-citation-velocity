@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "repo_id": "local-guides-citation-velocity",
+  "repair_date": "2026-07-26",
+  "source_snapshot": "local-guides-citation-velocity-main_BASELINE_07-24-26_6fae29a32822.zip",
+  "root_cause": "validate:release appended a direct citation-yield validator after the canonical release profile, violating registry-only validation authority and the exact package alias contract.",
+  "implemented": [
+    "canonical validate:release alias restored",
+    "citation-yield-feedback registered as a governed HARD_FAIL validator",
+    "authority:yield:validate routed through the registry",
+    "release/strict/audit/local profile coverage added",
+    "validation matrix regenerated"
+  ],
+  "validation": {
+    "validation_registry": "PASS",
+    "registered_validators": 118,
+    "active_validators": 90,
+    "release_profile": "PASS",
+    "release_profile_counts": {
+      "PASS": 88
+    },
+    "advisory_profile": "PASS",
+    "advisory_profile_counts": {
+      "PASS": 15,
+      "STRONG_WARNING": 1
+    },
+    "citation_yield_feedback": "PASS",
+    "velocity_decision": "HOLD",
+    "deterministic_build": "PASS",
+    "browser_contract": {
+      "status": "PASS",
+      "cases": 36,
+      "assertions": 432
+    },
+    "browserless_backup": {
+      "status": "PASS",
+      "cases": 36
+    },
+    "real_playwright": "NOT_EXECUTED_PACKAGE_INSTALL_TIMEOUT"
+  },
+  "environment": {
+    "declared_node": "24.x",
+    "container_node": "22.16.0",
+    "local_validation_required": true
+  },
+  "scope_exclusions": [
+    "no content changes",
+    "no route changes",
+    "no publishing behavior changes",
+    "no provider mutations"
+  ]
+}
