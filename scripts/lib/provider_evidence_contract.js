@@ -1,0 +1,3 @@
+'use strict';
+function validateProviderEvidence(item={}){ const errors=[]; if(!item.provider_name) errors.push('missing_provider_name'); if(!/^https?:\/\//.test(String(item.official_url||''))) errors.push('missing_official_url'); if(!item.vertical) errors.push('missing_vertical'); if(!item.geography) errors.push('missing_geography'); if(!Array.isArray(item.evidence)||!item.evidence.length) errors.push('missing_evidence'); else for(const e of item.evidence){ if(!e.claim||!/^https?:\/\//.test(String(e.source_url||''))) errors.push('invalid_evidence_item'); } return {ok:!errors.length,errors}; }
+module.exports={validateProviderEvidence};

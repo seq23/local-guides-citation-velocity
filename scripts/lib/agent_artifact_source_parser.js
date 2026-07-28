@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { normalizeSeoExecution } = require('./seo_execution_contract');
 
 function normalizeSpace(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 function sha(value, len = 16) { return crypto.createHash('sha256').update(String(value || '')).digest('hex').slice(0, len); }
@@ -60,13 +61,13 @@ function flattenRecommendation(value) {
 }
 function questionFrom(row) { return normalizeSpace(row.Query || row.query || row['Target Query'] || row.query_target || row.Question || row['Recommendation Query'] || row.prompt || ''); }
 function modelFrom(row) { return normalizeSpace(row.Model || row.model || row['AI Model'] || row['Answer Engine'] || row.Engine || ''); }
-function targetFrom(row) { return normalizeSpace(row['Repo File Path'] || row.repo_file_path || row['File Path'] || row.file_path || row.intended_winner_path || row['Intended Winner Page'] || row.intended_winner_page || row.url || row.URL || row.page || row['Target URL'] || row.target_page || ''); }
+function targetFrom(row) { return normalizeSpace(row['Repo File Path'] || row.repo_file_path || row['File Path'] || row.file_path || row.intended_winner_path || row['Intended Winner Page'] || row.intended_winner_page || row.url || row.URL || row.page || row['Target URL'] || row.target_url || row.target_page || row.target_filepath || ''); }
 function recommendationFrom(row) {
-  const flattened = flattenRecommendation(row.fix_recommendation || row['Fix Recommendation'] || row.fix || row.edit_instruction || row.recommendation || row['Recommended Fix'] || row.why_worth_building || row.why_build || row.reason || '');
+  const flattened = flattenRecommendation(row.fix_recommendation || row['Fix Recommendation'] || row.fix || row.edit_instruction || row.recommendation || row['Recommended Fix'] || row.why_worth_building || row.why_build || row.reason || row.exact_edit || '');
   return flattened;
 }
 function classifyRecommendationType(row, fallback = 'unknown') {
-  const action = normalizeSpace(row.action_tier || row['Action Tier'] || row.action || '').toLowerCase();
+  const action = normalizeSpace(row.page_decision || row.action_tier || row['Action Tier'] || row.action || '').toLowerCase();
   const gap = normalizeSpace(row.gap_type || row['Gap Type'] || row.gap || '').toLowerCase();
   const target = targetFrom(row);
   if (/page.?fix|fix|repair/.test(action) || /page.?fix|repair|patch/.test(gap) || (target && recommendationFrom(row).text)) return 'existing_page_fix';
@@ -101,8 +102,11 @@ function normalizeSourceRecord({ row, context, sourceFile, sourceSection, index,
     gap_type: normalizeSpace(row.gap_type || row['Gap Type'] || row.gap || ''),
     recommendation_text: recommendation.text,
     recommendation_fields: recommendation.fields,
-    status: 'DISCOVERED'
+    status: 'DISCOVERED',
+    seo_execution_status: 'NOT_PROVIDED',
+    seo_execution: null
   };
+  if (sourceSection === 'json.seo_execution') { const normalized = normalizeSeoExecution(row); record.seo_execution_status = normalized.status; record.seo_execution = normalized.value; record.seo_execution_errors = normalized.errors; if (normalized.value) { record.target_url = normalized.value.target_url || record.target_url; record.repo_file_path = normalized.value.target_filepath || record.repo_file_path; record.recommendation_type = normalized.value.page_decision === 'build_new' ? 'new_page_opportunity' : (normalized.value.page_decision === 'repair_existing' ? 'existing_page_fix' : record.recommendation_type); record.recommendation_text = normalized.value.exact_edit || record.recommendation_text; } }
   record.canonical_key = canonicalDedupeKey(record);
   return record;
 }
@@ -115,12 +119,16 @@ function parseJsonRecords(root, jsonPath, context) {
   if (!jsonPath || !fs.existsSync(relRoot(root, jsonPath))) return [];
   const payload = readJson(root, jsonPath, {});
   const out = [];
-  const keys = ['free_wins','outperform','page_fixes','pending','pending_fixes','pages_to_build','new_page_opportunities','recommendations','results','fixes'];
+  const keys = ['seo_execution','free_wins','outperform','page_fixes','pending','pending_fixes','pages_to_build','new_page_opportunities','recommendations','results','fixes'];
   for (const key of keys) {
     const arr = Array.isArray(payload[key]) ? payload[key] : [];
     for (let i = 0; i < arr.length; i++) {
       const item = arr[i] || {};
-      const fallback = ['pages_to_build','new_page_opportunities'].includes(key) ? 'new_page_opportunity' : (['page_fixes','pending_fixes','fixes'].includes(key) ? 'existing_page_fix' : '');
+      const fallback = key === 'seo_execution'
+        ? (String(item.page_decision || '').includes('build') ? 'new_page_opportunity' : 'existing_page_fix')
+        : (['pages_to_build','new_page_opportunities'].includes(key)
+          ? 'new_page_opportunity'
+          : (['page_fixes','pending_fixes','fixes'].includes(key) ? 'existing_page_fix' : ''));
       const row = { ...item, action_tier: item.action_tier || item.action || (key === 'pages_to_build' ? 'free win' : ''), gap_type: item.gap_type || item.gap || (key === 'pages_to_build' ? 'new page opportunity' : '') };
       const rec = normalizeSourceRecord({ row, context, sourceFile: jsonPath, sourceSection: `json.${key}`, index: i, fallbackType: fallback });
       if (rec.query && (rec.recommendation_text || rec.recommendation_type !== 'unknown' || rec.repo_file_path || rec.target_url)) out.push(rec);

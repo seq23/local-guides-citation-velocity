@@ -5169,6 +5169,126 @@
         "artifacts/validation/citation-yield-feedback.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "seo-execution-contract",
+      "title": "SEO execution contract validator",
+      "path": "scripts/validators/validate_seo_execution_contract.js",
+      "command": "node scripts/validators/validate_seo_execution_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "depends_on": [
+        "agent-artifact-continuity"
+      ],
+      "tags": [
+        "agent-runs",
+        "seo-execution",
+        "citation-velocity"
+      ],
+      "risk_prevented": "Prevents Twin SEO execution records from entering the velocity lane with invalid scope, malformed structured arrays, target conflicts, duplicate repair/build contradictions, self-links, or unsupported schema actions.",
+      "requires_files": [
+        "scripts/lib/seo_execution_contract.js",
+        "data/report_fixes/agent_runs"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "timeout_seconds": 120,
+      "why_existing_checks_do_not_cover": "Existing artifact continuity and exact trace checks prove raw files and ledgers exist, but they do not validate the Phase 1 Twin seo_execution field contract, normalized scopes, target-path conflicts, or structured JSON string fields."
+    },
+    {
+      "id": "velocity-commercial-pages",
+      "title": "Velocity commercial-intent page policy validator",
+      "path": "scripts/validators/validate_velocity_commercial_pages.js",
+      "command": "node scripts/validators/validate_velocity_commercial_pages.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "depends_on": [
+        "seo-execution-contract"
+      ],
+      "tags": [
+        "commercial-intent",
+        "best-top",
+        "velocity-only"
+      ],
+      "risk_prevented": "Prevents best/top/comparison/review capture pages from shipping without Velocity-only separation, permitted ranking mode, disclosure, and evidence-backed methodology controls.",
+      "requires_files": [
+        "data/report_fixes/velocity_commercial_intent_policy.json",
+        "scripts/lib/velocity_commercial_intent_contract.js"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "timeout_seconds": 120,
+      "why_existing_checks_do_not_cover": "Existing content safety and page-family checks prevent generic unsafe content, but they do not enforce the approved Velocity-only best/top commercial-intent exception with ranking-mode separation and methodology disclosure."
+    },
+    {
+      "id": "provider-evidence",
+      "title": "Provider evidence contract validator",
+      "path": "scripts/validators/validate_provider_evidence.js",
+      "command": "node scripts/validators/validate_provider_evidence.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "depends_on": [
+        "velocity-commercial-pages"
+      ],
+      "tags": [
+        "provider-evidence",
+        "methodology",
+        "commercial-intent"
+      ],
+      "risk_prevented": "Prevents curated provider lists, review analysis, and unranked shortlists from claiming evidence that is missing, stale, unsupported, or not tied to a disclosed methodology.",
+      "requires_files": [
+        "data/report_fixes/provider_evidence_schema.json",
+        "scripts/lib/provider_evidence_contract.js"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "timeout_seconds": 120,
+      "why_existing_checks_do_not_cover": "Existing source coverage checks validate agent provenance, but they do not verify that provider shortlists, comparisons, or review analysis have evidence fields, freshness rules, and disclosed methodology controls."
     }
   ],
   "legacy_policy": {
