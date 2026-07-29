@@ -80,7 +80,7 @@ function renderedExistsForExistingRoute(existingRoute){
 }
 function jsonFixRows(payload){
   const rows=[];
-  const keys=['free_wins','outperform','page_fixes','pending','pending_fixes','recommendations','results','fixes'];
+  const keys=['free_wins','outperform','page_fixes','seo_execution','pending','pending_fixes','recommendations','results','fixes'];
   for(const key of keys) for(const row of Array.isArray(payload[key])?payload[key]:[]) rows.push({...row, source_category:key});
   return rows;
 }

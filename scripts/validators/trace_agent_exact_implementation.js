@@ -39,6 +39,8 @@ function routeKeysForPage(page) {
 
 const plan = readJson('artifacts/validation/agent-exact-implementation-plan.json', { specs: [] });
 const apply = readJson('artifacts/validation/agent-exact-implementation-apply.json', { results: [] });
+const velocityContentRelease = readJson('artifacts/validation/velocity-content-release.json', { created: [], skipped: [] });
+const ceilingDeferredNewPageIds = new Set((velocityContentRelease.skipped || []).filter((row) => String(row.reason || '').includes('daily_new_url_ceiling_reached')).map((row) => row.id).filter(Boolean));
 const ledger = readJson(LEDGER_PATH, { entries: [] });
 const insights = readJson('content/_live/insights.json', { items: [] });
 const livePages = readJson('content/_live/pages.json', { pages: [] });
@@ -72,12 +74,13 @@ for (const spec of plan.specs || []) {
     if (targetType === 'generated_insight') {
       const item = insightByPath.get(implementationPath) || insightByPath.get(normalizeImplementationPath(`insights/${slugFromInsightPath(implementationPath)}.html`));
       const renderedPath = implementationPath;
-      const renderedHtml = readTextIfExists(renderedPath).toLowerCase();
-      const itemText = JSON.stringify(item || {}).toLowerCase();
+      const renderedRaw = readTextIfExists(renderedPath);
+      const renderedHtml = normalize(renderedRaw);
+      const itemText = normalize(JSON.stringify(item || {}));
       const hasLedger = Boolean(entry && marker);
       const hasApply = Boolean(applied && ['APPLIED_TO_LEDGER', 'APPLIED'].includes(applied.status));
       const hasItemMarker = Boolean(item && item.agent_exact_repair && item.agent_exact_repair.marker === marker);
-      const hasRenderedMarker = Boolean(marker && renderedHtml.includes(marker.toLowerCase()));
+      const hasRenderedMarker = Boolean(marker && renderedHtml.includes(normalize(marker)));
       const hasQuery = Boolean((needle && (itemText.includes(needle) || renderedHtml.includes(needle))) || semanticNeedlesFound(implementationPath, renderedHtml));
       const pass = Boolean(hasLedger && hasApply && item && hasItemMarker && hasRenderedMarker && hasQuery);
       traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, item_exists: Boolean(item), applied_status: applied?.status || '', has_ledger: hasLedger, has_item_marker: hasItemMarker, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
@@ -88,10 +91,11 @@ for (const spec of plan.specs || []) {
     if (targetType === 'live_page') {
       const page = livePageByPath.get(implementationPath);
       const renderedPath = implementationPath;
-      const renderedHtml = readTextIfExists(renderedPath).toLowerCase();
+      const renderedRaw = readTextIfExists(renderedPath);
+      const renderedHtml = normalize(renderedRaw);
       const hasLedger = Boolean(entry && marker);
       const hasApply = Boolean(applied && ['APPLIED_TO_LEDGER', 'APPLIED'].includes(applied.status));
-      const hasRenderedMarker = Boolean(marker && renderedHtml.includes(marker.toLowerCase()));
+      const hasRenderedMarker = Boolean(marker && renderedHtml.includes(normalize(marker)));
       const hasQuery = Boolean((needle && renderedHtml.includes(needle)) || semanticNeedlesFound(implementationPath, renderedHtml));
       const pass = Boolean(hasLedger && hasApply && page && hasRenderedMarker && hasQuery);
       traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, page_exists: Boolean(page), applied_status: applied?.status || '', has_ledger: hasLedger, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
@@ -104,8 +108,9 @@ for (const spec of plan.specs || []) {
   } else if (spec.operation === 'CREATE_NEW_TARGET_PAGE') {
     const implementationPath = normalizeImplementationPath(spec.implementation_path || routeToImplementationPath(spec.target_route));
     const exists = Boolean(livePageByPath.get(implementationPath) || fs.existsSync(rel(implementationPath)));
-    traces.push({ ...spec, trace_status: exists ? 'PASS' : 'FAIL', rendered_path: implementationPath, page_exists: exists });
-    if (!exists) errors.push(`${spec.record_id}:new_page_not_proven:${spec.target_route}`);
+    const deferredByDailyCeiling = !exists && ceilingDeferredNewPageIds.has(spec.record_id);
+    traces.push({ ...spec, trace_status: exists ? 'PASS' : (deferredByDailyCeiling ? 'DEFERRED_BY_DAILY_CEILING' : 'FAIL'), rendered_path: implementationPath, page_exists: exists, deferred_by_daily_ceiling: deferredByDailyCeiling });
+    if (!exists && !deferredByDailyCeiling) errors.push(`${spec.record_id}:new_page_not_proven:${spec.target_route}`);
   }
 }
 

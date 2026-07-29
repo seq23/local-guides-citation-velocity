@@ -1,20 +1,18 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-07-27
-Target publish units: 5
-Selected units: 5
-Twin agent units: 5
+Release date: 2026-07-28
+Target publish units: 125
+Selected units: 3
+Twin agent units: 3
 Social fallback units: 0
-Social fallback allowed: false
+Social fallback allowed: true
 Social fallback suppressed: 0
-Repair units: 5
-New page units: 0
+Repair units: 0
+New page units: 3
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-022-what-documents-matter-most.html | what documents matter most in a personal injury claim |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-042-no-win-no-fee-car-accident-lawyer-near-me.html | no win no fee car accident lawyer near me |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-009-can-i-switch-lawyers-if-i-m-unhappy.html | can i switch personal injury lawyers if i'm unhappy with mine |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-015-do-i-have-to-talk-to-insurance-first.html | do i have to talk to the insurance company first after an accident |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | do i need a lawyer after a drink and drive accident |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/do-i-have-to-talk-to-the-insurance-company-first-after-an-accident-openai-gpt-4o/ | do i have to talk to the insurance company first after an accident OpenAI GPT-4o |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-is-fault-determined-in-a-personal-injury-case-openai-gpt-4o/ | how is fault determined in a personal injury case OpenAI GPT-4o |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/can-i-switch-personal-injury-lawyers-if-i-m-unhappy-with-mine-openai-gpt-4o/ | can i switch personal injury lawyers if i'm unhappy with mine OpenAI GPT-4o |

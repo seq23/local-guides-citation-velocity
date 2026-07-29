@@ -49,8 +49,8 @@ function main() {
   const plan = readJson(PLAN_PATH, { specs: [] });
   if (!manifest) errors.push('missing_semantic_acceptance_manifest');
   if (!manifest || manifest.generated_by !== 'compile_html_fix_acceptance_manifest.js') errors.push('semantic_manifest_must_be_generated_not_hand_authored');
-  if (!manifest || !Array.isArray(manifest.entries) || !manifest.entries.length) errors.push('semantic_acceptance_manifest_empty');
   const planned = plannedPathSet(plan);
+  if (!manifest || !Array.isArray(manifest.entries) || (!manifest.entries.length && planned.size)) errors.push('semantic_acceptance_manifest_empty');
   const manifestPaths = new Set();
   for (const entry of manifest?.entries || []) {
     const implementationPath = normalizePath(entry.implementation_path);

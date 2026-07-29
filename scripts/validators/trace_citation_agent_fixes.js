@@ -84,6 +84,11 @@ if (exists('data/report_fixes/velocity_citation_agent_2026_05.json')) warnings.p
 const selected = (ledger.fixes || []).filter((f) => f.trace_required || f.implementation_status === 'SELECTED_FOR_RELEASE');
 const livePages = pagesPayload('content/_live/pages.json');
 const stagedPages = pagesPayload('content/_staged/pages.json');
+const plan = readJson('artifacts/validation/velocity-intake-release-plan.json', null);
+const velocityContentRelease = readJson('artifacts/validation/velocity-content-release.json', { created: [], skipped: [] });
+const createdReleaseIds = new Set((velocityContentRelease.created || []).map((row) => row.id).filter(Boolean));
+const skippedReleaseById = new Map((velocityContentRelease.skipped || []).map((row) => [row.id, row]));
+function isDeferredByDailyCeiling(id) { const skipped = skippedReleaseById.get(id); return Boolean(skipped && String(skipped.reason || '').includes('daily_new_url_ceiling_reached')); }
 
 for (const fix of selected) {
   const id = fix.id || fix.query;
@@ -95,6 +100,7 @@ for (const fix of selected) {
     traceRenderedTarget(id, route, markers, String(fix.liveManifestPath || '').includes('insights.json') && String(route || '').startsWith('/insights/'));
     continue;
   }
+  if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:selected_new_page_deferred_by_daily_new_url_ceiling:${route}`); continue; }
   for (const [label, payload] of [['staged', stagedPages], ['live', livePages]]) {
     if (!pageExists(payload, route)) { errors.push(`${id}:${label}_missing_route:${route}`); continue; }
     for (const marker of markers) if (!pageHasMarker(payload, route, marker)) errors.push(`${id}:${label}_missing_marker:${marker}`);
@@ -108,10 +114,6 @@ for (const fix of selected) {
   }
 }
 
-const plan = readJson('artifacts/validation/velocity-intake-release-plan.json', null);
-const velocityContentRelease = readJson('artifacts/validation/velocity-content-release.json', { created: [], skipped: [] });
-const createdReleaseIds = new Set((velocityContentRelease.created || []).map((row) => row.id).filter(Boolean));
-const skippedReleaseById = new Map((velocityContentRelease.skipped || []).map((row) => [row.id, row]));
 function isSocialFallbackUnit(unit) {
   return String(unit && unit.source || '') === 'social_public_backlog' || String(unit && unit.admission_basis || '').includes('SOCIAL_BACKLOG_APPROVED_FALLBACK');
 }
@@ -131,6 +133,7 @@ if (plan && plan.selected_count > 0) {
     }
     const liveExists = pageExists(livePages, unit.target_route);
     const stagedExists = pageExists(stagedPages, unit.target_route);
+    if ((!liveExists || !stagedExists) && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:deferred_by_daily_new_url_ceiling:${unit.target_route}`); continue; }
     if (!liveExists) errors.push(`${id}:live_missing_route:${unit.target_route}`);
     else if (!pageHasMarker(livePages, unit.target_route, unit.query)) errors.push(`${id}:live_missing_query`);
     if (!stagedExists) errors.push(`${id}:staged_missing_route:${unit.target_route}`);
