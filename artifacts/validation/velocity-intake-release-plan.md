@@ -1,7 +1,7 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-07-30
+Release date: 2026-07-31
 Target publish units: 5
 Selected units: 5
 Twin agent units: 5
@@ -13,8 +13,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-036-insurance-friendly-anxiety-vs-adhd-eval-near-me.html | insurance coverage for adhd testing |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-001-decision-tree-adhd-vs-autism-vs-broader-neuro-evaluation.html | adhd vs autism evaluation |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-008-what-to-verify-before-booking-concussion-testing.html | why do i feel nauseous every time i get a headache |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-013-how-to-compare-providers-fast.html | how to compare neuropsych providers |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-043-telehealth-vs-in-person-neuropsychological-testing-which-is-better.html | telehealth neuropsych evaluation vs in person |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/community-questions/what-is-the-uscis-medical-exam-and-who-performs-it/index.html | can i go to my regular family doctor for the uscis medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/cost/index.html | how much does the i-693 medical exam cost in 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/index.html | what is the USCIS medical exam and who performs it |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/exam-day-documents/index.html | how long does the whole uscis medical process take from start to finish |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/delays-rfe/index.html | how to avoid RFE delays after submitting I-693 medical exam |
