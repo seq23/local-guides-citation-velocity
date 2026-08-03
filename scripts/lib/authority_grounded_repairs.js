@@ -152,6 +152,72 @@ function authorityGroundedEntryForSpec(spec) {
       ]
     });
   }
+  if (p === 'uscis-medical/civil-surgeon-near-me/index.html') {
+    const keys=['finder','i693','medreq'];
+    return finish(spec, {
+      title:'How to Find and Verify a USCIS-Designated Civil Surgeon',
+      description:'A source-grounded guide to locating a USCIS-designated civil surgeon, confirming the office performs Form I-693 examinations, and comparing appointment requirements before booking.',
+      answer:'For an adjustment-of-status immigration medical exam in the United States, start with the official USCIS Find a Civil Surgeon tool. Search your location, review the listed physicians, and contact an office directly to confirm that it currently performs Form I-693 examinations and to ask what records, testing, vaccinations, fees, and follow-up may be required.',
+      checklist:[
+        'Use the official USCIS Find a Civil Surgeon locator.',
+        'Search by ZIP code, city, or address.',
+        'Confirm the listed office currently performs Form I-693 examinations.',
+        'Ask what identification, vaccination, medical records, testing, fees, and follow-up are required.',
+        'Request appointment instructions and fee inclusions in writing when available.'
+      ],
+      red_flags:[
+        'The physician cannot be verified through the official USCIS civil surgeon process.',
+        'An office says any regular doctor may complete Form I-693 without USCIS designation.',
+        'The office cannot explain whether it currently performs immigration medical examinations.',
+        'The quoted fee does not explain which examination, testing, vaccination, follow-up, or correction services are included.'
+      ],
+      authority_source_ids:ids(keys),
+      authority_urls:urls(keys),
+      artifacts:[
+        {
+          type:'numbered_framework',
+          title:'How to Find a USCIS-Designated Civil Surgeon Near You',
+          items:[
+            'Open the official USCIS Find a Civil Surgeon tool.',
+            'Enter your ZIP code, city, or address to review nearby listed physicians.',
+            'Open the available listing details and contact the office.',
+            'Confirm that the physician currently performs Form I-693 immigration medical examinations.',
+            'Ask what records, testing, vaccinations, fees, and follow-up the office requires before booking.'
+          ]
+        },
+        {
+          type:'checklist',
+          title:'How to Verify a Civil Surgeon Before Booking',
+          items:[
+            'Confirm the physician appears through the official USCIS locator.',
+            'Confirm the office completes Form I-693 for adjustment-of-status applicants.',
+            'Ask which identification, medical, and vaccination records to bring.',
+            'Request a written explanation of what the quoted fee includes.',
+            'Ask how the office handles required testing, missing vaccination records, follow-up, and form corrections.'
+          ]
+        },
+        {
+          type:'comparison_table',
+          title:'Questions to Ask Each Civil Surgeon Office',
+          headers:['Question','What to confirm','Why it matters'],
+          rows:[
+            ['Do you currently perform Form I-693 examinations?','The listed physician and office currently provide the required immigration medical service.','A USCIS listing does not replace confirming the office service and appointment availability.'],
+            ['What does the quoted fee include?','Whether the examination, testing, vaccination review, follow-up, and form completion are included or billed separately.','Comparing the same categories prevents misleading headline-price comparisons.'],
+            ['What records should I bring?','Required identification, vaccination history, medical records, and immigration documents.','Missing records may require additional steps before the form can be completed.'],
+            ['How are follow-up and corrections handled?','Whether result review, additional visits, or form corrections may involve separate procedures or charges.','The total process may extend beyond the first appointment.']
+          ]
+        },
+        {
+          type:'source_block',
+          title:'Primary Sources',
+          sources:sources(keys),
+          reviewed_date:'2026-07-24',
+          recheck_date:'2026-08-24'
+        }
+      ]
+    });
+  }
+
   return null;
 }
 
