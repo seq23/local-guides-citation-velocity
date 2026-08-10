@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { classifyConsoleError } = require('./console_error_policy');
 
 const ROOT = path.resolve(__dirname, '../..');
 const SUMMARY_DIR = path.join(ROOT, 'artifacts/diagnostics/click-audit');
@@ -194,11 +195,16 @@ async function runCheck(browser, check, attempt) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
   const consoleErrors = [];
+  const providerConsoleWarnings = [];
   const failedRequests = [];
   const baseOrigin = new URL(base).origin;
 
   page.on('console', message => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    const classification = classifyConsoleError(text);
+    if (classification.severity === 'WARNING') providerConsoleWarnings.push({ ...classification, message: text });
+    else consoleErrors.push(text);
   });
   page.on('requestfailed', request => {
     try {
@@ -221,6 +227,7 @@ async function runCheck(browser, check, attempt) {
       ...check,
       status: failures.length ? 'FAIL' : 'PASS',
       failures,
+      provider_console_warnings: providerConsoleWarnings,
       attempt,
     };
   } catch (error) {
@@ -282,6 +289,7 @@ async function runCheckWithRetry(browser, check) {
 
   const failed = results.filter(result => result.status === 'FAIL');
   const recovered = results.filter(result => result.recovered_after_attempts);
+  const providerWarnings = results.flatMap(result => (result.provider_console_warnings || []).map(warning => ({ device: result.device, route: result.route, ...warning })));
   const report = {
     status: failed.length ? 'FAIL' : 'PASS',
     test_cases: results.length,
@@ -289,6 +297,8 @@ async function runCheckWithRetry(browser, check) {
     total_assertions: results.length * contract.assertions_per_case,
     failed_count: failed.length,
     recovered_count: recovered.length,
+    provider_console_warning_count: providerWarnings.length,
+    provider_console_warnings: providerWarnings,
     retry_policy: {
       retries: RETRIES,
       retry_delay_ms: RETRY_DELAY_MS,
