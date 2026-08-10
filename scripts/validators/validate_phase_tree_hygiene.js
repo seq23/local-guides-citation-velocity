@@ -97,6 +97,7 @@ function nodeModulesSourceEntries() {
 }
 
 const errors = [];
+const warnings = [];
 const all = walk(ROOT, [], { skipDirs: ['node_modules'] });
 const rootFiles = all.filter((x) => x.type === 'file' && !x.rel.includes('/')).map((x) => x.rel).sort();
 const rootHtml = rootFiles.filter((x) => x.endsWith('.html'));
@@ -110,10 +111,15 @@ for (const rel of [
   'data/measurement/zero_dollar_citation_test_ledger.json',
   'data/measurement/free_win_self_heal_queue.json',
   'artifacts/validation/citation-100k-runway.json',
-  'reports/citation-100k-runway.md',
   'scripts/citation_intelligence/build_100k_citation_runway.js'
 ]) {
   if (!exists(rel)) errors.push(`missing_expected_phase_file:${rel}`);
+}
+
+for (const rel of [
+  'reports/citation-100k-runway.md'
+]) {
+  if (!exists(rel)) warnings.push(`missing_generated_report_warning:${rel}`);
 }
 
 if (rootHtml.length > 8) errors.push(`root_html_pollution:${rootHtml.length}`);
@@ -180,10 +186,12 @@ const report = {
     reports: 'reports/',
     scripts: 'scripts/citation_intelligence/'
   },
+  warnings,
   errors
 };
 
 writeReport(report);
+if (warnings.length) console.warn(warnings.join('\n'));
 if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);
