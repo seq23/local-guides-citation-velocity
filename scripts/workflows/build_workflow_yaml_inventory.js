@@ -10,7 +10,9 @@ const lanes = {
   'daily-citation-intelligence.yml': { lane: 'signal-intelligence', status: 'add', reason: 'Daily traffic-qualified citation intelligence shadow/proof lane.', command: 'npm run release:daily-citation-intelligence', mutations: ['data/signals/**', 'artifacts/validation/**', 'reports/**'] },
   'velocity-full-rebuild.yml': { lane: 'full-rebuild', status: 'replace', reason: 'Canonical full rebuild lane replacing velocity_full_rebuild.yml.', command: 'npm run release:self-healing', mutations: ['content/_live/**', 'artifacts/validation/**', 'reports/**', 'llms*.txt', 'sitemap*.xml'] },
   'deploy-distribution.yml': { lane: 'deploy', status: 'modify', reason: 'Deploy lane consumes exact validated artifact and does not perform release mutation.', command: 'node scripts/prepare_distribution_from_attestation.js', mutations: ['.build/**', 'reports/indexnow-*.json'] },
-  'postdeploy-public-audit.yml': { lane: 'postdeploy-audit', status: 'replace', reason: 'Canonical postdeploy audit lane replacing postdeploy_public_audit.yml.', command: 'npm run postdeploy:public-click-audit', mutations: ['artifacts/diagnostics/**'] }
+  'postdeploy-public-audit.yml': { lane: 'postdeploy-audit', status: 'replace', reason: 'Canonical postdeploy audit lane replacing postdeploy_public_audit.yml.', command: 'npm run postdeploy:public-click-audit', mutations: ['artifacts/diagnostics/**'] },
+  'search-intelligence-loop.yml': { lane: 'search-intelligence', status: 'add', reason: 'Scheduled read/diagnose/retest Search Intelligence lane with no independent publication authority.', command: 'npm run search:intelligence:closed-loop', mutations: ['data/search_intelligence/**', 'artifacts/validation/**'] },
+  'ci-health-recovery.yml': { lane: 'ci-health', status: 'add', reason: 'Exact-SHA CI red/recovery observation and governed issue alert lane.', command: 'node scripts/search_intelligence/ci_health_alert.js', mutations: ['data/search_intelligence/automation_health.json'] }
 };
 const retired = [
   { path: '.github/workflows/validate.yml', action: 'REPLACE', replacement: '.github/workflows/validate-repo.yml' },
@@ -51,10 +53,10 @@ const workflows = fs.readdirSync(workflowDir).filter((f) => /\.ya?ml$/.test(f)).
     allowed_runtime_mutations: meta.mutations,
     forbidden_runtime_mutations: ['.github/**', 'package.json', 'package-lock.json', 'scripts/**', 'docs/**', '_repo*.json', '_validation_registry.json', '_repo_validation_matrix.json', '_citation_intelligence_contract.json', '_content_release_contract.json', 'data/strategy/**'],
     required_artifacts: requiredArtifacts(name, text),
-    validation_owner: name === 'daily-citation-intelligence.yml' ? 'citation-intelligence validators' : 'validation registry and workflow topology validators'
+    validation_owner: ['daily-citation-intelligence.yml','search-intelligence-loop.yml'].includes(name) ? 'citation/search-intelligence validators' : 'validation registry and workflow topology validators'
   };
 });
-const inventory = { schema_version: '1.4', repo: 'local-guides-citation-velocity', generated_at: new Date().toISOString(), workflow_count: workflows.length, workflows, retired_or_replaced_workflows: retired, canonical_lanes: ['validate','build','content-release','signal-intelligence','deploy','postdeploy-audit','full-rebuild','manual-maintenance','retired'] };
+const inventory = { schema_version: '1.4', repo: 'local-guides-citation-velocity', generated_at: new Date().toISOString(), workflow_count: workflows.length, workflows, retired_or_replaced_workflows: retired, canonical_lanes: ['validate','build','content-release','signal-intelligence','search-intelligence','ci-health','deploy','postdeploy-audit','full-rebuild','manual-maintenance','retired'] };
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), { recursive: true });
 fs.mkdirSync(path.join(ROOT, 'reports'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'artifacts/validation/workflow-yaml-inventory.json'), JSON.stringify(inventory, null, 2) + '\n');

@@ -1,6 +1,6 @@
 {
-  "schema_version": "3.0",
-  "authority": "Canonical Velocity workflow topology after Traffic-Qualified Citation Intelligence overhaul. Every workflow must map to one lane, use Node 24, observe memory caps, avoid orphan commands, and restrict runtime mutations to admitted generated state.",
+  "schema_version": "4.0",
+  "authority": "Canonical Velocity workflow topology with separate Search Intelligence observation/retest lane and exact-SHA CI health alert/recovery loop. Scheduled Search Intelligence does not commit source changes or alter publishing cadence.",
   "global_contract": {
     "node_version": "24",
     "node_options": "--max-old-space-size=3072",
@@ -29,6 +29,40 @@
     ]
   },
   "workflows": [
+    {
+      "file": "ci-health-recovery.yml",
+      "name": "CI Health Red Recovery",
+      "lane": "ci-health",
+      "triggers": [
+        "workflow_run:Validate Repo",
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": false,
+      "permissions": [
+        "contents: read",
+        "issues: write"
+      ],
+      "timeout_minutes": 15,
+      "commands": [
+        "node scripts/search_intelligence/ci_health_alert.js"
+      ],
+      "required_inputs": [],
+      "required_secrets": [],
+      "optional_secrets": [],
+      "consumes": [
+        "Validate Repo exact-SHA workflow conclusion"
+      ],
+      "produces": [
+        "automation health receipt",
+        "governed GitHub issue alert/recovery state"
+      ],
+      "upstream": [
+        "validate-repo.yml"
+      ],
+      "downstream": [],
+      "failure_boundary": "A RED exact-SHA result is recorded and surfaced; no success state is inferred from a failed or unobserved run."
+    },
     {
       "file": "daily-citation-intelligence.yml",
       "name": "Daily Citation Intelligence",
@@ -63,6 +97,127 @@
       "upstream": [],
       "downstream": [],
       "failure_boundary": "Signal intelligence may update generated state but must not commit governance or source authority files."
+    },
+    {
+      "file": "deploy-distribution.yml",
+      "name": "Deploy Distribution",
+      "lane": "deploy",
+      "triggers": [
+        "workflow_run:Validate Repo",
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": false,
+      "permissions": [
+        "actions: read",
+        "contents: read"
+      ],
+      "timeout_minutes": 30,
+      "commands": [
+        "node scripts/prepare_distribution_from_attestation.js",
+        "distribution_scripts/deploy_distribution.sh"
+      ],
+      "required_inputs": [
+        "artifact_name",
+        "artifact_run_id",
+        "commit_sha"
+      ],
+      "required_secrets": [],
+      "optional_secrets": [
+        "INDEXNOW_KEY",
+        "GSC_SERVICE_ACCOUNT_JSON",
+        "GSC_SITE_URL"
+      ],
+      "consumes": [
+        "velocity-validated-{commit_sha}",
+        "artifacts/release/validation-attestation.json",
+        ".build/indexnow-priority.txt",
+        ".build/indexnow-batch.txt"
+      ],
+      "produces": [
+        "distribution evidence"
+      ],
+      "upstream": [
+        "validate-repo.yml"
+      ],
+      "downstream": [
+        "postdeploy-public-audit.yml"
+      ],
+      "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
+    },
+    {
+      "file": "postdeploy-public-audit.yml",
+      "name": "Postdeploy Public Audit",
+      "lane": "postdeploy-audit",
+      "triggers": [
+        "workflow_run:Deploy Distribution",
+        "schedule:23-11-utc-tue-fri",
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": false,
+      "permissions": [
+        "contents: read"
+      ],
+      "timeout_minutes": 45,
+      "commands": [
+        "npm ci --ignore-scripts",
+        "npm run postdeploy:public-click-audit"
+      ],
+      "required_inputs": [
+        "base_url"
+      ],
+      "required_secrets": [],
+      "optional_secrets": [],
+      "consumes": [
+        "deployed Velocity base URL"
+      ],
+      "produces": [
+        "artifacts/diagnostics/click-audit/**"
+      ],
+      "upstream": [
+        "deploy-distribution.yml"
+      ],
+      "downstream": [],
+      "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
+    },
+    {
+      "file": "search-intelligence-loop.yml",
+      "name": "Search Intelligence Closed Loop",
+      "lane": "search-intelligence",
+      "triggers": [
+        "schedule:41-14-utc",
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": false,
+      "permissions": [
+        "contents: read"
+      ],
+      "timeout_minutes": 45,
+      "commands": [
+        "npm ci --ignore-scripts",
+        "npm run search:intelligence:closed-loop",
+        "npm run validate:search-intelligence"
+      ],
+      "required_inputs": [],
+      "required_secrets": [],
+      "optional_secrets": [],
+      "consumes": [
+        "admitted route registry",
+        "read-only Agent Run normalization",
+        "optional provider truth evidence",
+        "source/claim registries"
+      ],
+      "produces": [
+        "data/search_intelligence/**",
+        "Search Intelligence validation receipts"
+      ],
+      "upstream": [
+        "daily-citation-intelligence.yml"
+      ],
+      "downstream": [],
+      "failure_boundary": "Scheduled lane observes, diagnoses, queues, retests, and reports only. It has no independent page-admission, cadence, or repo-commit authority."
     },
     {
       "file": "validate-repo.yml",
@@ -183,87 +338,6 @@
         "deploy-distribution.yml"
       ],
       "failure_boundary": "Push only after deterministic frozen-aware rebuild and release validation pass; broad self-healing is not permitted in the rebuild workflow."
-    },
-    {
-      "file": "deploy-distribution.yml",
-      "name": "Deploy Distribution",
-      "lane": "deploy",
-      "triggers": [
-        "workflow_run:Validate Repo",
-        "workflow_dispatch"
-      ],
-      "manual_ready": true,
-      "mutates_repo": false,
-      "permissions": [
-        "actions: read",
-        "contents: read"
-      ],
-      "timeout_minutes": 30,
-      "commands": [
-        "node scripts/prepare_distribution_from_attestation.js",
-        "distribution_scripts/deploy_distribution.sh"
-      ],
-      "required_inputs": [
-        "artifact_name",
-        "artifact_run_id",
-        "commit_sha"
-      ],
-      "required_secrets": [],
-      "optional_secrets": [
-        "INDEXNOW_KEY",
-        "GSC_SERVICE_ACCOUNT_JSON",
-        "GSC_SITE_URL"
-      ],
-      "consumes": [
-        "velocity-validated-{commit_sha}",
-        "artifacts/release/validation-attestation.json",
-        ".build/indexnow-priority.txt",
-        ".build/indexnow-batch.txt"
-      ],
-      "produces": [
-        "distribution evidence"
-      ],
-      "upstream": [
-        "validate-repo.yml"
-      ],
-      "downstream": [
-        "postdeploy-public-audit.yml"
-      ],
-      "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
-    },
-    {
-      "file": "postdeploy-public-audit.yml",
-      "name": "Postdeploy Public Audit",
-      "lane": "postdeploy-audit",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "manual_ready": true,
-      "mutates_repo": false,
-      "permissions": [
-        "contents: read"
-      ],
-      "timeout_minutes": 45,
-      "commands": [
-        "npm ci --ignore-scripts",
-        "npm run postdeploy:public-click-audit"
-      ],
-      "required_inputs": [
-        "base_url"
-      ],
-      "required_secrets": [],
-      "optional_secrets": [],
-      "consumes": [
-        "deployed Velocity base URL"
-      ],
-      "produces": [
-        "artifacts/diagnostics/click-audit/**"
-      ],
-      "upstream": [
-        "deploy-distribution.yml"
-      ],
-      "downstream": [],
-      "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
     }
   ]
 }

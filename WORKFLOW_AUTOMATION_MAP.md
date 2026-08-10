@@ -8,3 +8,11 @@
 | Distribution | repo scripts/manual/provider | search notification/distribution | provider credentials required where applicable |
 
 Runtime model is FULL SAFE AUTONOMY: safe operations proceed; exceptions skip/record/continue; owner involvement is reserved for genuine external authority, credential, destructive, legal/commercial, or unrecoverable infrastructure boundaries.
+
+## Phase 0–16 workflow additions
+
+- `search-intelligence-loop.yml`: scheduled + manual; read/diagnose/retest/score only; no repo commit or cadence authority.
+- `ci-health-recovery.yml`: workflow-run + manual; observes Validate Repo exact-SHA status and manages the automation-health issue.
+- `postdeploy-public-audit.yml`: now manual + scheduled + after successful Deploy Distribution.
+
+Canonical workflow count: 8. Scheduled workflows: 3. Push-triggered workflows: 2. All 8 remain manual-ready.

@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "system": "LOCAL_GUIDES_SEARCH_INTELLIGENCE",
+  "effective_date": "2026-08-09",
+  "objective": "Observe real search/provider/Agent signals, diagnose admitted pages, perform only bounded source-backed repairs, validate, retest, and feed verified outcomes back into priority without fabricating external success.",
+  "phase_coverage": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+  "target_query_count": 240,
+  "agent_signal_limit": 106,
+  "default_repair_cooldown_days": 14,
+  "provider_states": ["CONFIGURED", "NOT_CONFIGURED", "INCONCLUSIVE", "ERROR"],
+  "retest_outcomes": ["IMPROVED", "UNCHANGED", "REGRESSED", "INCONCLUSIVE"],
+  "auto_repair_types": ["METADATA_DESCRIPTION", "INTERNAL_LINK", "DIRECT_ANSWER_STRUCTURE", "STRUCTURED_DATA", "BREADCRUMBS", "CANONICAL_LINK", "SITEMAP_CONSISTENCY", "FORMATTING", "STALE_INTERNAL_REFERENCE"],
+  "review_only_types": ["UNSUPPORTED_MEDICAL_CLAIM", "UNSUPPORTED_LEGAL_CLAIM", "IMMIGRATION_INTERPRETATION", "NEW_UNSOURCED_STATISTIC", "VOLATILE_FACT", "GUARANTEE", "SPECULATIVE_FACT"],
+  "protected_agent_roots": [
+    "data/report_fixes/agent_runs",
+    "data/report_fixes/normalized_agent_runs",
+    "data/report_fixes/source_record_ledgers",
+    "data/report_fixes/agent_exact_semantic_manifests"
+  ],
+  "allowed_source_roots": ["content/_live", "content/_shared", "data/page_families", "data/content"],
+  "truth_laws": [
+    "UNKNOWN and INCONCLUSIVE are never PASS.",
+    "No improvement may be claimed without before and after external evidence.",
+    "A repair is APPLIED only when the governed source file bytes changed.",
+    "External citations require provider, observed_at, query_or_prompt, surfaced_url, cited_url, and evidence_ref.",
+    "Search Intelligence may read Agent outputs but may never mutate Agent-owned paths.",
+    "Existing admitted owner routes are repaired before any new URL is considered.",
+    "This system has no independent page-admission or publication-cadence authority."
+  ]
+}

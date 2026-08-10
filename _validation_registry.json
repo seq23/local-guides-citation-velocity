@@ -828,6 +828,7 @@
         "audit",
         "distribution",
         "local",
+        "release",
         "strict"
       ],
       "tags": [
@@ -996,11 +997,12 @@
       "scope": "CONTAINER",
       "profiles": [
         "audit",
-        "release",
-        "strict",
-        "local",
         "citation-intelligence",
-        "deep-isolated"
+        "deep-isolated",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
       ],
       "tags": [
         "browserless",
@@ -1485,6 +1487,55 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "citation-yield-feedback",
+      "title": "Citation yield feedback and dynamic velocity truth contract",
+      "path": "scripts/validators/validate_citation_yield_feedback.js",
+      "command": "node scripts/validators/validate_citation_yield_feedback.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "authority-scale",
+        "citation-yield",
+        "dynamic-velocity",
+        "kpi-truth"
+      ],
+      "risk_prevented": "Prevents unsupported citation-yield claims, invalid Twin Agent scope, or unsafe publication velocity changes from passing a release.",
+      "why_existing_checks_do_not_cover": "The portfolio KPI validator enforces metric taxonomy, but it does not validate the citation-yield contract, evidence-complete citation counts, or the dynamic velocity decision.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/citation-yield-feedback.json",
+      "failure_action": "repair citation-yield evidence or velocity decision before release",
+      "depends_on": [
+        "portfolio-kpi-truth"
+      ],
+      "requires_files": [
+        "data/authority_scale/citation_yield_contract.json",
+        "data/authority_scale/citation_yield_observations.json",
+        "data/authority_scale/citation_yield_scoreboard.json",
+        "data/authority_scale/velocity_decision.json",
+        "data/authority_scale/velocity_health.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/citation-yield-feedback.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/citation-yield-feedback.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "cluster-membership",
       "title": "Legacy cluster membership checker",
       "path": "scripts/validate_cluster_membership.js",
@@ -1530,6 +1581,7 @@
         "audit",
         "content-release",
         "core",
+        "full-audit",
         "local",
         "postrelease",
         "release",
@@ -1566,11 +1618,12 @@
       "scope": "CONTAINER",
       "profiles": [
         "audit",
-        "release",
-        "strict",
-        "local",
         "citation-intelligence",
-        "deep-isolated"
+        "deep-isolated",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
       ],
       "tags": [
         "batch-d",
@@ -1670,10 +1723,11 @@
       "scope": "CONTAINER",
       "profiles": [
         "audit",
-        "release",
-        "strict",
+        "deep-isolated",
+        "full-audit",
         "local",
-        "deep-isolated"
+        "release",
+        "strict"
       ],
       "tags": [
         "workflow",
@@ -2041,6 +2095,7 @@
       "profiles": [
         "advisory",
         "audit",
+        "release",
         "social",
         "strict"
       ],
@@ -2347,7 +2402,9 @@
       "profiles": [
         "agent-run",
         "audit",
-        "full-audit"
+        "full-audit",
+        "release",
+        "strict"
       ],
       "depends_on": [
         "agent-exact-implementation-plan"
@@ -3326,6 +3383,51 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "portfolio-kpi-truth",
+      "title": "Portfolio 100K surfacing KPI truth contract",
+      "path": "scripts/validators/validate_portfolio_kpi_truth.js",
+      "command": "node scripts/validators/validate_portfolio_kpi_truth.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "release",
+        "strict",
+        "local",
+        "content-release",
+        "postrelease"
+      ],
+      "tags": [
+        "kpi-truth",
+        "citation-honesty",
+        "authority-scale"
+      ],
+      "risk_prevented": "Prevents owned fanout, generated pages, internal links, modeled opportunities, or unsupported observations from being mislabeled as external citations or LLM surfacing wins.",
+      "why_existing_checks_do_not_cover": "Existing citation validators protect individual evidence lanes but do not enforce the portfolio-wide metric taxonomy introduced by the authority-scale migration.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/portfolio-kpi-truth.json",
+      "failure_action": "repair KPI definitions or evidence records before release",
+      "depends_on": [],
+      "requires_files": [
+        "data/authority_scale/kpi_truth_contract.json",
+        "data/authority_scale/observed_surfacing_ledger.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/portfolio-kpi-truth.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/portfolio-kpi-truth.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "preflight-velocity-integrity",
       "title": "Legacy preflight monolith",
       "path": "scripts/preflight_velocity_integrity.js",
@@ -3404,6 +3506,46 @@
         "artifacts/validation/programmatic-substance.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "provider-evidence",
+      "title": "Provider evidence contract validator",
+      "path": "scripts/validators/validate_provider_evidence.js",
+      "command": "node scripts/validators/validate_provider_evidence.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "depends_on": [
+        "velocity-commercial-pages"
+      ],
+      "tags": [
+        "provider-evidence",
+        "methodology",
+        "commercial-intent"
+      ],
+      "risk_prevented": "Prevents curated provider lists, review analysis, and unranked shortlists from claiming evidence that is missing, stale, unsupported, or not tied to a disclosed methodology.",
+      "requires_files": [
+        "data/report_fixes/provider_evidence_schema.json",
+        "scripts/lib/provider_evidence_contract.js"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "timeout_seconds": 120,
+      "why_existing_checks_do_not_cover": "Existing source coverage checks validate agent provenance, but they do not verify that provider shortlists, comparisons, or review analysis have evidence fields, freshness rules, and disclosed methodology controls."
     },
     {
       "id": "public-click-audit",
@@ -3860,6 +4002,239 @@
       "estimated_runtime_seconds": 20
     },
     {
+      "id": "search-intelligence-agent-separation",
+      "title": "Search Intelligence Agent Runs read-only separation",
+      "path": "scripts/validators/validate_search_intelligence_agent_separation.js",
+      "command": "node scripts/validators/validate_search_intelligence_agent_separation.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 2",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "search-intelligence",
+        "agent-runs",
+        "provenance"
+      ],
+      "risk_prevented": "Prevents Search Intelligence from altering protected Agent Runs history, normalized records, source ledgers, or semantic manifests.",
+      "why_existing_checks_do_not_cover": "Existing Agent validators prove Agent lineage, not immutability against the new Search Intelligence lane.",
+      "estimated_runtime_seconds": 4,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/search-intelligence-agent-separation.json",
+      "failure_action": "stop release and restore protected Agent bytes",
+      "depends_on": [
+        "search-intelligence-contract"
+      ],
+      "requires_files": [
+        "data/search_intelligence/protected_agent_tree_manifest.json",
+        "data/search_intelligence/agent_signal_bridge.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/search-intelligence-agent-separation.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/search-intelligence-agent-separation.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "search-intelligence-contract",
+      "title": "Search Intelligence Phase 0-16 closed-loop contract",
+      "path": "scripts/validators/validate_search_intelligence_contract.js",
+      "command": "node scripts/validators/validate_search_intelligence_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 2",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "search-intelligence",
+        "seo",
+        "aeo",
+        "geo"
+      ],
+      "risk_prevented": "Prevents partial Search Intelligence implementations, unowned queries, missing phase surfaces, or independent page-admission authority.",
+      "why_existing_checks_do_not_cover": "Citation Intelligence validates fanout and strategy, not the separate repair/retest Search Intelligence loop.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/search-intelligence-contract.json",
+      "failure_action": "stop release and restore the complete Phase 0-16 Search Intelligence contract",
+      "depends_on": [],
+      "requires_files": [
+        "data/search_intelligence/search_intelligence_contract.json",
+        "data/search_intelligence/target_query_set.json",
+        "data/search_intelligence/search_diagnosis.json",
+        "data/search_intelligence/operator_scorecard.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/search-intelligence-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/search-intelligence-contract.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "search-intelligence-safety",
+      "title": "Search Intelligence bounded self-healing and regulated-content safety",
+      "path": "scripts/validators/validate_search_intelligence_safety.js",
+      "command": "node scripts/validators/validate_search_intelligence_safety.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 2",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "search-intelligence",
+        "self-healing",
+        "regulated-content"
+      ],
+      "risk_prevented": "Prevents protected-path repair, regulated factual auto-repair, cooldown bypass, rollback without provenance, and no-op repairs counted as applied.",
+      "why_existing_checks_do_not_cover": "General content-safety does not exercise the new Search Intelligence mutation engine.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 90,
+      "evidence_file": "artifacts/validation/search-intelligence-safety.json",
+      "failure_action": "stop release and repair self-healing safety boundary",
+      "depends_on": [
+        "search-intelligence-contract"
+      ],
+      "requires_files": [
+        "scripts/tests/test_search_intelligence.js",
+        "data/search_intelligence/repair_candidates.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/search-intelligence-safety.json",
+        "artifacts/validation/search-intelligence-hostile.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/search-intelligence-safety.json",
+        "artifacts/validation/search-intelligence-hostile.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "search-intelligence-truth",
+      "title": "Search Intelligence external evidence and outcome truth",
+      "path": "scripts/validators/validate_search_intelligence_truth.js",
+      "command": "node scripts/validators/validate_search_intelligence_truth.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 2",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "search-intelligence",
+        "truth",
+        "citations",
+        "retest"
+      ],
+      "risk_prevented": "Prevents fake provider green states, unsupported citation claims, improvement without before/after evidence, or APPLIED repair receipts without byte mutation.",
+      "why_existing_checks_do_not_cover": "Portfolio KPI truth does not validate Search Intelligence repair/retest receipts.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/search-intelligence-truth.json",
+      "failure_action": "stop release and correct fabricated or unsupported evidence state",
+      "depends_on": [
+        "search-intelligence-contract"
+      ],
+      "requires_files": [
+        "data/search_intelligence/provider_truth_snapshot.json",
+        "data/search_intelligence/verified_external_citations.json",
+        "data/search_intelligence/retest_outcomes.json",
+        "data/search_intelligence/repair_receipts.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/search-intelligence-truth.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/search-intelligence-truth.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "search-intelligence-workflow",
+      "title": "Search Intelligence scheduling, postdeploy, and CI-red recovery workflow contract",
+      "path": "scripts/validators/validate_search_intelligence_workflow.js",
+      "command": "node scripts/validators/validate_search_intelligence_workflow.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 2",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "search-intelligence",
+        "workflow",
+        "postdeploy",
+        "ci-health"
+      ],
+      "risk_prevented": "Prevents unscheduled public audit, missing Search Intelligence loop, missing exact-SHA CI alert/recovery, or workflow-count drift.",
+      "why_existing_checks_do_not_cover": "Existing workflow topology predates the Phase 0-16 Search Intelligence and CI health lanes.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/search-intelligence-workflow.json",
+      "failure_action": "stop release and restore the eight-workflow topology",
+      "depends_on": [
+        "search-intelligence-contract"
+      ],
+      "requires_files": [
+        ".github/workflows/search-intelligence-loop.yml",
+        ".github/workflows/ci-health-recovery.yml",
+        ".github/workflows/postdeploy-public-audit.yml"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/search-intelligence-workflow.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/search-intelligence-workflow.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "search-quality-basics",
       "title": "Indexable HTML search-quality fundamentals",
       "path": "scripts/validators/validate_search_quality_basics.js",
@@ -3902,6 +4277,46 @@
         "artifacts/validation/search-quality-basics.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "seo-execution-contract",
+      "title": "SEO execution contract validator",
+      "path": "scripts/validators/validate_seo_execution_contract.js",
+      "command": "node scripts/validators/validate_seo_execution_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "depends_on": [
+        "agent-artifact-continuity"
+      ],
+      "tags": [
+        "agent-runs",
+        "seo-execution",
+        "citation-velocity"
+      ],
+      "risk_prevented": "Prevents Twin SEO execution records from entering the velocity lane with invalid scope, malformed structured arrays, target conflicts, duplicate repair/build contradictions, self-links, or unsupported schema actions.",
+      "requires_files": [
+        "scripts/lib/seo_execution_contract.js",
+        "data/report_fixes/agent_runs"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "timeout_seconds": 120,
+      "why_existing_checks_do_not_cover": "Existing artifact continuity and exact trace checks prove raw files and ledgers exist, but they do not validate the Phase 1 Twin seo_execution field contract, normalized scopes, target-path conflicts, or structured JSON string fields."
     },
     {
       "id": "signal-normalization",
@@ -4433,6 +4848,49 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "validator-materiality",
+      "title": "Validator materiality and anti-petty-blocker hostile test",
+      "path": "scripts/validators/validate_validator_materiality.js",
+      "command": "node scripts/validators/validate_validator_materiality.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "validation",
+        "materiality",
+        "governance"
+      ],
+      "risk_prevented": "Prevents warnings, unknowns, optional providers, or generated-state observations from being promoted into brittle release blockers while preserving real hard-fail semantics.",
+      "why_existing_checks_do_not_cover": "Registry shape validation does not execute the required hostile materiality cases.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/validator-materiality-hostile.json",
+      "failure_action": "stop release and repair validator severity/materiality semantics",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/tests/test_validator_materiality.js",
+        "scripts/validation/policy.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/validator-materiality-hostile.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/validator-materiality-hostile.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "velocity-agent-duplicate-resolution",
       "title": "Velocity agent duplicate resolution contract",
       "path": "scripts/validators/validate_velocity_agent_duplicate_resolution.js",
@@ -4572,6 +5030,46 @@
         "artifacts/validation/velocity-agent-source-coverage.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "velocity-commercial-pages",
+      "title": "Velocity commercial-intent page policy validator",
+      "path": "scripts/validators/validate_velocity_commercial_pages.js",
+      "command": "node scripts/validators/validate_velocity_commercial_pages.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "depends_on": [
+        "seo-execution-contract"
+      ],
+      "tags": [
+        "commercial-intent",
+        "best-top",
+        "velocity-only"
+      ],
+      "risk_prevented": "Prevents best/top/comparison/review capture pages from shipping without Velocity-only separation, permitted ranking mode, disclosure, and evidence-backed methodology controls.",
+      "requires_files": [
+        "data/report_fixes/velocity_commercial_intent_policy.json",
+        "scripts/lib/velocity_commercial_intent_contract.js"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "timeout_seconds": 120,
+      "why_existing_checks_do_not_cover": "Existing content safety and page-family checks prevent generic unsafe content, but they do not enforce the approved Velocity-only best/top commercial-intent exception with ranking-mode separation and methodology disclosure."
     },
     {
       "id": "velocity-intake-workflow",
@@ -4859,6 +5357,7 @@
         "audit",
         "core",
         "distribution",
+        "full-audit",
         "local",
         "postrelease",
         "release",
@@ -5076,219 +5575,6 @@
         "artifacts/validation/workflow-yaml-syntax.json"
       ],
       "enforce_no_source_mutation": true
-    },
-    {
-      "id": "portfolio-kpi-truth",
-      "title": "Portfolio 100K surfacing KPI truth contract",
-      "path": "scripts/validators/validate_portfolio_kpi_truth.js",
-      "command": "node scripts/validators/validate_portfolio_kpi_truth.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "release",
-        "strict",
-        "local",
-        "content-release",
-        "postrelease"
-      ],
-      "tags": [
-        "kpi-truth",
-        "citation-honesty",
-        "authority-scale"
-      ],
-      "risk_prevented": "Prevents owned fanout, generated pages, internal links, modeled opportunities, or unsupported observations from being mislabeled as external citations or LLM surfacing wins.",
-      "why_existing_checks_do_not_cover": "Existing citation validators protect individual evidence lanes but do not enforce the portfolio-wide metric taxonomy introduced by the authority-scale migration.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 60,
-      "evidence_file": "artifacts/validation/portfolio-kpi-truth.json",
-      "failure_action": "repair KPI definitions or evidence records before release",
-      "depends_on": [],
-      "requires_files": [
-        "data/authority_scale/kpi_truth_contract.json",
-        "data/authority_scale/observed_surfacing_ledger.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/portfolio-kpi-truth.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/portfolio-kpi-truth.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "citation-yield-feedback",
-      "title": "Citation yield feedback and dynamic velocity truth contract",
-      "path": "scripts/validators/validate_citation_yield_feedback.js",
-      "command": "node scripts/validators/validate_citation_yield_feedback.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "release",
-        "strict",
-        "local"
-      ],
-      "tags": [
-        "authority-scale",
-        "citation-yield",
-        "dynamic-velocity",
-        "kpi-truth"
-      ],
-      "risk_prevented": "Prevents unsupported citation-yield claims, invalid Twin Agent scope, or unsafe publication velocity changes from passing a release.",
-      "why_existing_checks_do_not_cover": "The portfolio KPI validator enforces metric taxonomy, but it does not validate the citation-yield contract, evidence-complete citation counts, or the dynamic velocity decision.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 60,
-      "evidence_file": "artifacts/validation/citation-yield-feedback.json",
-      "failure_action": "repair citation-yield evidence or velocity decision before release",
-      "depends_on": [
-        "portfolio-kpi-truth"
-      ],
-      "requires_files": [
-        "data/authority_scale/citation_yield_contract.json",
-        "data/authority_scale/citation_yield_observations.json",
-        "data/authority_scale/citation_yield_scoreboard.json",
-        "data/authority_scale/velocity_decision.json",
-        "data/authority_scale/velocity_health.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/citation-yield-feedback.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/citation-yield-feedback.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "seo-execution-contract",
-      "title": "SEO execution contract validator",
-      "path": "scripts/validators/validate_seo_execution_contract.js",
-      "command": "node scripts/validators/validate_seo_execution_contract.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "agent-run",
-        "audit",
-        "content-release",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "depends_on": [
-        "agent-artifact-continuity"
-      ],
-      "tags": [
-        "agent-runs",
-        "seo-execution",
-        "citation-velocity"
-      ],
-      "risk_prevented": "Prevents Twin SEO execution records from entering the velocity lane with invalid scope, malformed structured arrays, target conflicts, duplicate repair/build contradictions, self-links, or unsupported schema actions.",
-      "requires_files": [
-        "scripts/lib/seo_execution_contract.js",
-        "data/report_fixes/agent_runs"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "timeout_seconds": 120,
-      "why_existing_checks_do_not_cover": "Existing artifact continuity and exact trace checks prove raw files and ledgers exist, but they do not validate the Phase 1 Twin seo_execution field contract, normalized scopes, target-path conflicts, or structured JSON string fields."
-    },
-    {
-      "id": "velocity-commercial-pages",
-      "title": "Velocity commercial-intent page policy validator",
-      "path": "scripts/validators/validate_velocity_commercial_pages.js",
-      "command": "node scripts/validators/validate_velocity_commercial_pages.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "agent-run",
-        "audit",
-        "content-release",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "depends_on": [
-        "seo-execution-contract"
-      ],
-      "tags": [
-        "commercial-intent",
-        "best-top",
-        "velocity-only"
-      ],
-      "risk_prevented": "Prevents best/top/comparison/review capture pages from shipping without Velocity-only separation, permitted ranking mode, disclosure, and evidence-backed methodology controls.",
-      "requires_files": [
-        "data/report_fixes/velocity_commercial_intent_policy.json",
-        "scripts/lib/velocity_commercial_intent_contract.js"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "timeout_seconds": 120,
-      "why_existing_checks_do_not_cover": "Existing content safety and page-family checks prevent generic unsafe content, but they do not enforce the approved Velocity-only best/top commercial-intent exception with ranking-mode separation and methodology disclosure."
-    },
-    {
-      "id": "provider-evidence",
-      "title": "Provider evidence contract validator",
-      "path": "scripts/validators/validate_provider_evidence.js",
-      "command": "node scripts/validators/validate_provider_evidence.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "agent-run",
-        "audit",
-        "content-release",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "depends_on": [
-        "velocity-commercial-pages"
-      ],
-      "tags": [
-        "provider-evidence",
-        "methodology",
-        "commercial-intent"
-      ],
-      "risk_prevented": "Prevents curated provider lists, review analysis, and unranked shortlists from claiming evidence that is missing, stale, unsupported, or not tied to a disclosed methodology.",
-      "requires_files": [
-        "data/report_fixes/provider_evidence_schema.json",
-        "scripts/lib/provider_evidence_contract.js"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "timeout_seconds": 120,
-      "why_existing_checks_do_not_cover": "Existing source coverage checks validate agent provenance, but they do not verify that provider shortlists, comparisons, or review analysis have evidence fields, freshness rules, and disclosed methodology controls."
     }
   ],
   "legacy_policy": {

@@ -1,6 +1,11 @@
 name: Postdeploy Public Audit
 
 on:
+  workflow_run:
+    workflows: ["Deploy Distribution"]
+    types: [completed]
+  schedule:
+    - cron: "23 11 * * 2,5"
   workflow_dispatch:
     inputs:
       base_url:
@@ -16,11 +21,12 @@ env:
   NODE_OPTIONS: --max-old-space-size=3072
 
 concurrency:
-  group: postdeploy-public-audit-${{ inputs.base_url }}
+  group: postdeploy-public-audit-${{ inputs.base_url || 'https://theindustryguides.com' }}
   cancel-in-progress: false
 
 jobs:
   audit:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -36,7 +42,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run deployed click, CTA, schema, and route audit
         env:
-          PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
+          PLAYWRIGHT_BASE_URL: ${{ inputs.base_url || 'https://theindustryguides.com' }}
         run: npm run postdeploy:public-click-audit
       - name: Upload click-audit evidence
         if: always()

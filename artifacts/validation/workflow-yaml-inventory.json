@@ -1,9 +1,41 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-08-07T13:10:03.919Z",
-  "workflow_count": 6,
+  "generated_at": "2026-08-10T00:42:27.307Z",
+  "workflow_count": 8,
   "workflows": [
+    {
+      "path": ".github/workflows/ci-health-recovery.yml",
+      "name": "CI Health Red Recovery",
+      "trigger": [
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "primary_command": "node scripts/search_intelligence/ci_health_alert.js",
+      "repo_lane": "ci-health",
+      "current_status": "add",
+      "reason": "Exact-SHA CI red/recovery observation and governed issue alert lane.",
+      "allowed_runtime_mutations": [
+        "data/search_intelligence/automation_health.json"
+      ],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        "artifact path declared inline or by action"
+      ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
     {
       "path": ".github/workflows/daily-citation-intelligence.yml",
       "name": "Daily Citation Intelligence",
@@ -38,7 +70,7 @@
         "artifacts/validation/**",
         "reports/**"
       ],
-      "validation_owner": "citation-intelligence validators"
+      "validation_owner": "citation/search-intelligence validators"
     },
     {
       "path": ".github/workflows/deploy-distribution.yml",
@@ -79,7 +111,9 @@
       "path": ".github/workflows/postdeploy-public-audit.yml",
       "name": "Postdeploy Public Audit",
       "trigger": [
-        "workflow_dispatch"
+        "schedule",
+        "workflow_dispatch",
+        "workflow_run"
       ],
       "primary_command": "npm run postdeploy:public-click-audit",
       "repo_lane": "postdeploy-audit",
@@ -105,6 +139,41 @@
         "artifacts/diagnostics/click-audit/**"
       ],
       "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/search-intelligence-loop.yml",
+      "name": "Search Intelligence Closed Loop",
+      "trigger": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "primary_command": "npm run search:intelligence:closed-loop",
+      "repo_lane": "search-intelligence",
+      "current_status": "add",
+      "reason": "Scheduled read/diagnose/retest Search Intelligence lane with no independent publication authority.",
+      "allowed_runtime_mutations": [
+        "data/search_intelligence/**",
+        "artifacts/validation/**"
+      ],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        "data/search_intelligence/**",
+        "artifacts/validation/search-intelligence-*.json",
+        "artifacts/validation/validator-materiality-hostile.json"
+      ],
+      "validation_owner": "citation/search-intelligence validators"
     },
     {
       "path": ".github/workflows/validate-repo.yml",
@@ -260,6 +329,8 @@
     "build",
     "content-release",
     "signal-intelligence",
+    "search-intelligence",
+    "ci-health",
     "deploy",
     "postdeploy-audit",
     "full-rebuild",

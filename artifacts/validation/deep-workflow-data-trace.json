@@ -1,11 +1,29 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-08-07T13:13:46.950Z",
+  "generated_at": "2026-08-10T01:31:10.067Z",
   "status": "PASS",
-  "workflow_count": 6,
+  "workflow_count": 8,
   "errors": [],
   "warnings": [],
   "workflows": [
+    {
+      "workflow": "ci-health-recovery.yml",
+      "command_count": 1,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "node scripts/search_intelligence/ci_health_alert.js",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/search_intelligence/ci_health_alert.js",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "workflow": "daily-citation-intelligence.yml",
       "command_count": 1,
@@ -54,6 +72,35 @@
             {
               "type": "npm_script",
               "name": "postdeploy:public-click-audit",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "search-intelligence-loop.yml",
+      "command_count": 2,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "npm run search:intelligence:closed-loop",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "search:intelligence:closed-loop",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "command": "npm run validate:search-intelligence",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate:search-intelligence",
               "ok": true
             }
           ]

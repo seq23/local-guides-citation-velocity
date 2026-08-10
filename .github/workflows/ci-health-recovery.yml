@@ -1,0 +1,42 @@
+name: CI Health Red Recovery
+
+on:
+  workflow_run:
+    workflows: ["Validate Repo"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
+concurrency:
+  group: ci-health-recovery
+  cancel-in-progress: false
+
+jobs:
+  record-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Record exact-SHA CI health and open/close governed alert
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion || 'success' }}
+          WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url || format('{0}/{1}/actions', github.server_url, github.repository) }}
+        run: node scripts/search_intelligence/ci_health_alert.js
+      - name: Upload CI health receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velocity-ci-health-${{ github.run_id }}
+          if-no-files-found: error
+          path: data/search_intelligence/automation_health.json

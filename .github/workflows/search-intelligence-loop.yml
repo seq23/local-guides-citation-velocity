@@ -1,0 +1,42 @@
+name: Search Intelligence Closed Loop
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 14 * * *"
+
+permissions:
+  contents: read
+
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
+concurrency:
+  group: search-intelligence-closed-loop
+  cancel-in-progress: false
+
+jobs:
+  observe-diagnose-retest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Build bounded Search Intelligence truth state
+        run: npm run search:intelligence:closed-loop
+      - name: Validate Search Intelligence boundaries and truth
+        run: npm run validate:search-intelligence
+      - name: Upload Search Intelligence evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velocity-search-intelligence-${{ github.run_id }}
+          if-no-files-found: error
+          path: |
+            data/search_intelligence/**
+            artifacts/validation/search-intelligence-*.json
+            artifacts/validation/validator-materiality-hostile.json
