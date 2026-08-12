@@ -1,10 +1,44 @@
 {
-  "schema_version": "1.0",
-  "generated_at": "2026-08-10T01:31:10.067Z",
+  "schema_version": "2.0",
+  "generated_at": "2026-08-12T13:17:33.085Z",
   "status": "PASS",
   "workflow_count": 8,
   "errors": [],
   "warnings": [],
+  "lifecycle_checks": [
+    {
+      "id": "velocity-agent-manifest-trigger-is-bounded",
+      "status": "PASS"
+    },
+    {
+      "id": "velocity-intake-resolves-through-provenance-and-finalization",
+      "status": "PASS"
+    },
+    {
+      "id": "search-intelligence-runtime-protected-tree-guard-is-wired",
+      "status": "PASS"
+    },
+    {
+      "id": "search-intelligence-guard-allows-preexisting-agent-addition",
+      "status": "PASS"
+    },
+    {
+      "id": "search-intelligence-guard-rejects-protected-mutation",
+      "status": "PASS"
+    },
+    {
+      "id": "search-intelligence-guard-rejects-new-protected-file-during-run",
+      "status": "PASS"
+    },
+    {
+      "id": "postdeploy-cloudflare-telemetry-is-warning-only",
+      "status": "PASS"
+    },
+    {
+      "id": "postdeploy-first-party-console-error-still-blocks",
+      "status": "PASS"
+    }
+  ],
   "workflows": [
     {
       "workflow": "ci-health-recovery.yml",
@@ -20,7 +54,9 @@
               "path": "scripts/search_intelligence/ci_health_alert.js",
               "ok": true
             }
-          ]
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         }
       ]
     },
@@ -37,16 +73,87 @@
               "type": "npm_script",
               "name": "release:daily-citation-intelligence",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/authority_scale/build_citation_yield_feedback.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/authority_scale/evaluate_velocity.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/strategy/build_citation_strategy_gate.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_intelligence/trace_traffic_qualified_pipeline.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/workflows/build_workflow_yaml_inventory.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_pages_dist.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_intelligence/build_100k_citation_runway.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "release:daily-citation-intelligence"
+          ],
+          "transitive_npm_scripts": [
+            "authority:yield:build",
+            "authority:yield:validate",
+            "build",
+            "citation:100k-runway",
+            "release:daily-citation-intelligence",
+            "strategy:gate",
+            "trace:traffic-qualified-pipeline",
+            "validate:traffic-qualified-citation-intelligence",
+            "workflow:inventory"
           ]
         }
       ]
     },
     {
       "workflow": "deploy-distribution.yml",
-      "command_count": 1,
+      "command_count": 5,
       "status": "PASS",
       "commands": [
+        {
+          "command": "if [ \"${{ github.event_name }}\" = \"workflow_dispatch\" ]; then\necho \"name=${{ inputs.artifact_name }}\" >> \"$GITHUB_OUTPUT\"\necho \"run_id=${{ inputs.artifact_run_id }}\" >> \"$GITHUB_OUTPUT\"\necho \"commit_sha=${{ inputs.commit_sha }}\" >> \"$GITHUB_OUTPUT\"\nelse\necho \"name=velocity-validated-${{ github.event.workflow_run.head_sha }}\" >> \"$GITHUB_OUTPUT\"\necho \"run_id=${{ github.event.workflow_run.id }}\" >> \"$GITHUB_OUTPUT\"\necho \"commit_sha=${{ github.event.workflow_run.head_sha }}\" >> \"$GITHUB_OUTPUT\"\nfi",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
         {
           "command": "node scripts/prepare_distribution_from_attestation.js",
           "status": "PASS",
@@ -56,15 +163,45 @@
               "path": "scripts/prepare_distribution_from_attestation.js",
               "ok": true
             }
-          ]
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "python -m pip install --upgrade pip\npython -m pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "if [ -n \"${GSC_SERVICE_ACCOUNT_JSON:-}\" ]; then\nprintf '%s' \"$GSC_SERVICE_ACCOUNT_JSON\" > gsc-service-account.json\nfi",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "chmod +x distribution_scripts/*.sh\nif [ -f gsc-service-account.json ] && [ -n \"${GSC_SITE_URL:-}\" ]; then\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\" --creds gsc-service-account.json --gsc-site \"$GSC_SITE_URL\"\nelse\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\"\nfi",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         }
       ]
     },
     {
       "workflow": "postdeploy-public-audit.yml",
-      "command_count": 1,
+      "command_count": 2,
       "status": "PASS",
       "commands": [
+        {
+          "command": "npm install --no-save playwright@1.61.1\nnpx playwright install --with-deps chromium",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
         {
           "command": "npm run postdeploy:public-click-audit",
           "status": "PASS",
@@ -73,7 +210,18 @@
               "type": "npm_script",
               "name": "postdeploy:public-click-audit",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/browser/public_click_audit.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "postdeploy:public-click-audit"
+          ],
+          "transitive_npm_scripts": [
+            "postdeploy:public-click-audit"
           ]
         }
       ]
@@ -91,7 +239,18 @@
               "type": "npm_script",
               "name": "search:intelligence:closed-loop",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/search_intelligence/search_intelligence.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "search:intelligence:closed-loop"
+          ],
+          "transitive_npm_scripts": [
+            "search:intelligence:closed-loop"
           ]
         },
         {
@@ -102,41 +261,85 @@
               "type": "npm_script",
               "name": "validate:search-intelligence",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "validate:search-intelligence"
+          ],
+          "transitive_npm_scripts": [
+            "validate:search-intelligence"
           ]
         }
       ]
     },
     {
       "workflow": "validate-repo.yml",
-      "command_count": 4,
+      "command_count": 3,
       "status": "PASS",
       "commands": [
         {
           "command": "npm ci --ignore-scripts",
           "status": "PASS",
-          "checks": []
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         },
         {
-          "command": "npm run strategy:gate",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "npm_script",
-              "name": "strategy:gate",
-              "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run release:daily-citation-intelligence:preview",
+          "command": "npm run strategy:gate\nnpm run release:daily-citation-intelligence:preview",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "release:daily-citation-intelligence:preview",
               "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "strategy:gate",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/strategy/build_citation_strategy_gate.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_intelligence/trace_traffic_qualified_pipeline.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/workflows/build_workflow_yaml_inventory.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_intelligence/build_100k_citation_runway.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "release:daily-citation-intelligence:preview",
+            "strategy:gate"
+          ],
+          "transitive_npm_scripts": [
+            "citation:100k-runway",
+            "release:daily-citation-intelligence:preview",
+            "strategy:gate",
+            "trace:traffic-qualified-pipeline",
+            "validate:traffic-qualified-citation-intelligence",
+            "workflow:inventory"
           ]
         },
         {
@@ -147,25 +350,47 @@
               "type": "npm_script",
               "name": "release:ci-validate",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/release/prepush_router.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "release:ci-validate"
+          ],
+          "transitive_npm_scripts": [
+            "release:ci-validate"
           ]
         }
       ]
     },
     {
       "workflow": "velocity-content-release.yml",
-      "command_count": 10,
+      "command_count": 7,
       "status": "PASS",
       "commands": [
         {
           "command": "npm ci --ignore-scripts",
           "status": "PASS",
-          "checks": []
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "git fetch origin main\ngit checkout main\ngit reset --hard origin/main",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         },
         {
           "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
           "status": "PASS",
-          "checks": []
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         },
         {
           "command": "npm run release:daily-citation-intelligence:preview",
@@ -175,7 +400,43 @@
               "type": "npm_script",
               "name": "release:daily-citation-intelligence:preview",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/strategy/build_citation_strategy_gate.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_intelligence/trace_traffic_qualified_pipeline.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/workflows/build_workflow_yaml_inventory.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_intelligence/build_100k_citation_runway.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "release:daily-citation-intelligence:preview"
+          ],
+          "transitive_npm_scripts": [
+            "citation:100k-runway",
+            "release:daily-citation-intelligence:preview",
+            "strategy:gate",
+            "trace:traffic-qualified-pipeline",
+            "validate:traffic-qualified-citation-intelligence",
+            "workflow:inventory"
           ]
         },
         {
@@ -186,73 +447,258 @@
               "type": "npm_script",
               "name": "release:velocity-intake",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/prepare_velocity_intake_release.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/apply_html_report_contract.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/build_agent_exact_implementation_plan.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/compile_html_fix_acceptance_manifest.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/apply_agent_exact_implementation_plan.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/release/finalize_content_release.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validators/trace_agent_exact_implementation.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validators/trace_citation_agent_fixes.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/tests/test_agent_artifact_accounting.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validators/trace_agent_artifact_data_flow.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/content/build_page_opportunity_backlog.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/content/build_page_release_queue.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/velocity_content_release.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "release:velocity-intake"
+          ],
+          "transitive_npm_scripts": [
+            "citation:apply-agent-exact",
+            "citation:apply-html-report-contract",
+            "citation:compile-html-fix-acceptance",
+            "citation:plan-agent-exact",
+            "citation:prepare-velocity-intake",
+            "release:content-finalize",
+            "release:velocity-content",
+            "release:velocity-content:raw",
+            "release:velocity-intake",
+            "strategy:opportunities",
+            "strategy:release-queue",
+            "test:agent-artifact-accounting",
+            "trace:agent-artifact-data-flow",
+            "trace:agent-exact",
+            "trace:citation-agent-fixes",
+            "validate:agent-exact",
+            "validate:agent-run-intake",
+            "validate:citation-agent-fixes",
+            "validate:html-report-contract",
+            "validate:page-family-contract",
+            "validate:seo-execution",
+            "validate:validator-authority",
+            "validate:velocity-agent-duplicate-resolution",
+            "validate:velocity-agent-recommendation-driven-output",
+            "validate:velocity-agent-source-coverage",
+            "validate:velocity-intake-workflow",
+            "validate:velocity-route-resolution-self-test"
           ]
         },
         {
-          "command": "npm run build",
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"velocity content release $(date -u +%F)\"",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "for attempt in 1 2 3; do\ngit fetch origin main\ngit rebase origin/main\nnpm run build\nnpm run validate:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "build",
               "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run validate:release",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "npm_script",
-              "name": "validate:release",
-              "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run trace:agent-exact",
-          "status": "PASS",
-          "checks": [
+            },
             {
               "type": "npm_script",
               "name": "trace:agent-exact",
               "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run validate:agent-exact",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "npm_script",
-              "name": "validate:agent-exact",
-              "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run trace:citation-agent-fixes",
-          "status": "PASS",
-          "checks": [
+            },
             {
               "type": "npm_script",
               "name": "trace:citation-agent-fixes",
               "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run validate:citation-agent-fixes",
-          "status": "PASS",
-          "checks": [
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:agent-exact",
+              "ok": true
+            },
             {
               "type": "npm_script",
               "name": "validate:citation-agent-fixes",
               "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_pages_dist.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validators/trace_agent_exact_implementation.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validators/trace_citation_agent_fixes.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "build",
+            "trace:agent-exact",
+            "trace:citation-agent-fixes",
+            "validate:agent-exact",
+            "validate:citation-agent-fixes",
+            "validate:release"
+          ],
+          "transitive_npm_scripts": [
+            "build",
+            "trace:agent-exact",
+            "trace:citation-agent-fixes",
+            "validate:agent-exact",
+            "validate:citation-agent-fixes",
+            "validate:release"
           ]
         }
       ]
@@ -263,52 +709,116 @@
       "status": "PASS",
       "commands": [
         {
-          "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
+          "command": "git fetch origin main\ngit checkout main\ngit reset --hard origin/main",
           "status": "PASS",
-          "checks": []
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         },
         {
-          "command": "npm run intelligence:build",
+          "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "npm run intelligence:build\nnpm run release:full-rebuild",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "intelligence:build",
               "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run release:full-rebuild",
-          "status": "PASS",
-          "checks": [
+            },
             {
               "type": "npm_script",
               "name": "release:full-rebuild",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/strategy/build_citation_strategy_gate.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_pages_dist.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_intelligence/build_100k_citation_runway.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "intelligence:build",
+            "release:full-rebuild"
+          ],
+          "transitive_npm_scripts": [
+            "build",
+            "citation:100k-runway",
+            "intelligence:build",
+            "release:full-rebuild",
+            "strategy:gate",
+            "validate:release"
           ]
         },
         {
-          "command": "npm run build",
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"velocity full rebuild $(date -u +%F)\"",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "for attempt in 1 2 3; do\ngit fetch origin main\ngit rebase origin/main\nnpm run build\nnpm run validate:release\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "build",
               "ok": true
-            }
-          ]
-        },
-        {
-          "command": "npm run validate:release",
-          "status": "PASS",
-          "checks": [
+            },
             {
               "type": "npm_script",
               "name": "validate:release",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_pages_dist.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
             }
+          ],
+          "direct_npm_scripts": [
+            "build",
+            "validate:release"
+          ],
+          "transitive_npm_scripts": [
+            "build",
+            "validate:release"
           ]
         }
       ]
