@@ -1,7 +1,7 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-08-12
+Release date: 2026-08-13
 Target publish units: 5
 Selected units: 5
 Twin agent units: 5
@@ -13,8 +13,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | best way to compare TRT clinics in 2026 |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-015-do-i-have-to-talk-to-insurance-first.html | do i have to talk to the insurance company first after an accident |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-024-how-to-avoid-saying-the-wrong-thing-to-insurance.html | how to avoid saying the wrong thing to the insurance company |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | do i need a lawyer after a drink and drive accident |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-020-how-to-check-licensing-and-discipline.html | how to check a personal injury lawyer's licensing and discipline record |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-025-neuropsych-telehealth-what-parts-can-be-remote.html | which parts of a neuropsychological evaluation can be done via telehealth |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-026-how-to-choose-if-you-have-a-deadline.html | how to choose a neuropsych evaluator fast when I have a school deadline |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-021-how-to-use-results-for-accommodations.html | how to use neuropsych evaluation results to get school accommodations |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-007-what-to-verify-before-booking-child-neuropsych-testing.html | what should I verify before booking a neuropsych evaluation for my child |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-002-what-to-do-when-adhd-and-autism-symptoms-overlap.html | my child shows both ADHD and autism symptoms what kind of eval do I need |
