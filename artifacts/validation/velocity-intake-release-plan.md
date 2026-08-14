@@ -1,7 +1,7 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-08-13
+Release date: 2026-08-14
 Target publish units: 5
 Selected units: 5
 Twin agent units: 5
@@ -13,8 +13,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-025-neuropsych-telehealth-what-parts-can-be-remote.html | which parts of a neuropsychological evaluation can be done via telehealth |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-026-how-to-choose-if-you-have-a-deadline.html | how to choose a neuropsych evaluator fast when I have a school deadline |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-021-how-to-use-results-for-accommodations.html | how to use neuropsych evaluation results to get school accommodations |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-007-what-to-verify-before-booking-child-neuropsych-testing.html | what should I verify before booking a neuropsych evaluation for my child |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-002-what-to-do-when-adhd-and-autism-symptoms-overlap.html | my child shows both ADHD and autism symptoms what kind of eval do I need |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html | how to get the sealed I-693 medical exam envelope safely |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-cost-009-can-insurance-cover-any-part.html | does health insurance cover the immigration medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | how much does the i-693 medical exam cost in 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html | how to avoid RFE delays after submitting I-693 medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-delays-rfe-003-doctor-forgot-to-sign-what-now.html | what to do if doctor forgot to sign uscis medical exam |
