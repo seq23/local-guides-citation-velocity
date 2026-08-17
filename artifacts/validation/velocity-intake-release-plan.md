@@ -1,7 +1,7 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-08-14
+Release date: 2026-08-17
 Target publish units: 5
 Selected units: 5
 Twin agent units: 5
@@ -13,8 +13,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html | how to get the sealed I-693 medical exam envelope safely |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-cost-009-can-insurance-cover-any-part.html | does health insurance cover the immigration medical exam |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | how much does the i-693 medical exam cost in 2026 |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html | how to avoid RFE delays after submitting I-693 medical exam |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-delays-rfe-003-doctor-forgot-to-sign-what-now.html | what to do if doctor forgot to sign uscis medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | how to choose a lawyer if you missed work due to an injury |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-016-can-a-lawyer-help-with-medical-bills.html | can a personal injury lawyer help with my medical bills |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-024-how-to-avoid-saying-the-wrong-thing-to-insurance.html | how to avoid saying the wrong thing to the insurance company |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-025-what-to-do-if-the-other-driver-is-uninsured.html | what should i do if the other driver was uninsured |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-015-do-i-have-to-talk-to-insurance-first.html | do i have to talk to the insurance company first after an accident |
