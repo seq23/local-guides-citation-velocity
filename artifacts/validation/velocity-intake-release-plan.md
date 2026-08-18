@@ -1,7 +1,7 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-08-17
+Release date: 2026-08-18
 Target publish units: 5
 Selected units: 5
 Twin agent units: 5
@@ -13,8 +13,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | how to choose a lawyer if you missed work due to an injury |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-016-can-a-lawyer-help-with-medical-bills.html | can a personal injury lawyer help with my medical bills |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-024-how-to-avoid-saying-the-wrong-thing-to-insurance.html | how to avoid saying the wrong thing to the insurance company |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-025-what-to-do-if-the-other-driver-is-uninsured.html | what should i do if the other driver was uninsured |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-015-do-i-have-to-talk-to-insurance-first.html | do i have to talk to the insurance company first after an accident |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/best-top-near-me/index.html | how do I find the best dentist near me? |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/choosing-a-dentist/index.html | how to compare dentists before choosing one? |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-insurance/index.html | how much does dental work cost and what financing options exist |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/anxiety-trust/index.html | how do I find a dentist who is good with anxious patients |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/clear-aligners/index.html | average cost of clear aligners 2026 |
