@@ -1,20 +1,20 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-08-20
+Release date: 2026-08-21
 Target publish units: 5
 Selected units: 5
 Twin agent units: 5
 Social fallback units: 0
 Social fallback allowed: false
 Social fallback suppressed: 0
-Repair units: 5
-New page units: 0
+Repair units: 3
+New page units: 2
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-002-what-to-do-when-adhd-and-autism-symptoms-overlap.html | my child shows both ADHD and autism symptoms what kind of eval do I need |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-004-how-to-choose-the-right-neuropsych-evaluation-path.html | how to choose the right neuropsychological evaluation for my child |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-026-how-to-choose-if-you-have-a-deadline.html | how to choose a neuropsych evaluator fast when I have a school deadline |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-003-session-by-session-walkthrough-what-to-expect.html | what happens during each session of a neuropsychological evaluation |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-023-neuropsych-evaluation-for-adults-vs-kids.html | neuropsychological evaluation for adults vs children what is different |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | how much does the i-693 medical exam cost in 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/index.html | do i need to fast before the immigration blood test |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-vaccines-labs-004-what-bloodwork-is-usually-part-of-the-immigration-medical-exam.html | do i need to fast before the immigration blood test |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | uscis-medical | /uscis-medical/community-questions/list-of-items-to-bring-to-uscis-medical-exam-appointment-perplexity/ | list of items to bring to uscis medical exam appointment (Perplexity) |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | uscis-medical | /uscis-medical/guides/what-are-the-requirements-for-the-i-693-medical-exam-perplexity/ | what are the requirements for the I-693 medical exam (Perplexity) |
