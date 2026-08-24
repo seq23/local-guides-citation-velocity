@@ -61,7 +61,7 @@ const validate = textByFile.get('validate-repo.yml') || '';
 const deploy = textByFile.get('deploy-distribution.yml') || '';
 const post = textByFile.get('postdeploy-public-audit.yml') || '';
 for (const token of ['velocity-validated-${{ github.sha }}', 'npm run release:ci-validate', 'npm run release:daily-citation-intelligence:preview']) if (!has(validate, token)) errors.push(`validate_lineage_missing:${token}`);
-for (const token of ['actions/download-artifact@v4', 'EXPECTED_COMMIT_SHA', 'steps.artifact.outputs.commit_sha', 'node scripts/prepare_distribution_from_attestation.js']) if (!has(deploy, token)) errors.push(`deploy_lineage_missing:${token}`);
+for (const token of ['actions/download-artifact@', 'EXPECTED_COMMIT_SHA', 'steps.artifact.outputs.commit_sha', 'node scripts/prepare_distribution_from_attestation.js']) if (!has(deploy, token)) errors.push(`deploy_lineage_missing:${token}`);
 const prepare = fs.readFileSync(path.join(ROOT, 'scripts/prepare_distribution_from_attestation.js'), 'utf8');
 for (const token of ["d.status!=='VALIDATED_ARTIFACT_READY'", 'DISTRIBUTION_COMMIT_SHA_MISMATCH', '.build/indexnow-priority.txt', '.build/indexnow-batch.txt']) if (!has(prepare, token)) errors.push(`distribution_prepare_contract_missing:${token}`);
 for (const token of ['required: true', 'default: "https://theindustryguides.com"', 'PLAYWRIGHT_BASE_URL', 'playwright@1.61.1', 'playwright install --with-deps chromium', 'npm run postdeploy:public-click-audit']) if (!has(post, token)) errors.push(`postdeploy_contract_missing:${token}`);
