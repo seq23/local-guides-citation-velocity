@@ -151,8 +151,13 @@ async function assertPage(page, check, response, consoleErrors, failedRequests) 
     .locator('link[rel="canonical"]')
     .getAttribute('href')
     .catch(() => null);
-  const expectedPath = new URL(expected).pathname;
-  if (!canonical || new URL(canonical, base).pathname !== expectedPath) {
+  // Cloudflare Pages serves `foo.html` at `/foo` and 308-redirects the `.html`
+  // form, so the canonical names the extensionless URL - the one that returns
+  // 200. Comparing against the `.html` route would require the canonical to
+  // point at a redirect. Normalise both sides the way the host does.
+  const stripHtml = (p) => (p.endsWith('.html') ? p.slice(0, -5) : p);
+  const expectedPath = stripHtml(new URL(expected).pathname);
+  if (!canonical || stripHtml(new URL(canonical, base).pathname) !== expectedPath) {
     failures.push(`canonical_correct:${canonical || 'missing'}`);
   }
 
