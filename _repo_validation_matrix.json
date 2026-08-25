@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "0e3cbacdd40c48220632813fc3102e49cb7613da73a40fc60b6f120356c03e7e",
+  "registry_sha256": "ceab05a02a35d50aa293ae745ef8201cf7794832a36a67de56c591e36f2b6206",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 130,
-    "active": 102,
+    "total": 131,
+    "active": 103,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 102,
+    "hard_fail": 103,
     "strong_warning": 11,
     "soft_warning": 2,
     "info": 15
@@ -109,7 +109,8 @@
         "workflow-data-trace",
         "workflow-yaml-syntax",
         "frozen-output-integrity",
-        "no-internal-instruction-leak"
+        "no-internal-instruction-leak",
+        "content-pattern-contract"
       ],
       "execution_order": [
         "authority-contracts",
@@ -143,6 +144,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
         "render-integrity",
@@ -262,7 +264,8 @@
         "workflow-yaml-syntax",
         "query-atlas",
         "frozen-output-integrity",
-        "no-internal-instruction-leak"
+        "no-internal-instruction-leak",
+        "content-pattern-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -343,6 +346,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
         "render-integrity",
@@ -473,7 +477,8 @@
         "workflow-yaml-syntax",
         "query-atlas",
         "frozen-output-integrity",
-        "no-internal-instruction-leak"
+        "no-internal-instruction-leak",
+        "content-pattern-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -554,6 +559,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
         "render-integrity",
@@ -715,7 +721,8 @@
         "workflow-yaml-syntax",
         "query-atlas",
         "frozen-output-integrity",
-        "no-internal-instruction-leak"
+        "no-internal-instruction-leak",
+        "content-pattern-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -796,6 +803,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
         "render-integrity",
@@ -931,7 +939,8 @@
         "workflow-yaml-syntax",
         "query-atlas",
         "frozen-output-integrity",
-        "no-internal-instruction-leak"
+        "no-internal-instruction-leak",
+        "content-pattern-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1017,6 +1026,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
         "render-integrity",
@@ -1217,7 +1227,8 @@
         "workflow-data-trace",
         "workflow-yaml-syntax",
         "frozen-output-integrity",
-        "no-internal-instruction-leak"
+        "no-internal-instruction-leak",
+        "content-pattern-contract"
       ],
       "execution_order": [
         "authority-contracts",
@@ -1256,6 +1267,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
         "render-integrity",
@@ -1300,7 +1312,8 @@
         "velocity-route-resolution-self-test",
         "query-atlas",
         "frozen-output-integrity",
-        "no-internal-instruction-leak"
+        "no-internal-instruction-leak",
+        "content-pattern-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1331,6 +1344,7 @@
         "velocity-route-resolution-self-test",
         "publish-inventory",
         "page-release-law",
+        "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
         "workflow-data-trace",
@@ -1891,6 +1905,10 @@
     {
       "from": "page-release-law",
       "to": "no-internal-instruction-leak"
+    },
+    {
+      "from": "page-release-law",
+      "to": "content-pattern-contract"
     }
   ],
   "by_severity": {
@@ -5871,6 +5889,54 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Agent recommendations are internal build directives shaped like 'FILEPATH: x || CURRENT: ... || EDIT: ...'. Two generator paths rendered them as reader-facing copy - a fallback acceptance-checklist card, and target.answer via 'Citation-ready update: '. 163 published pages carried the first and 100 the second, the latter inside the direct-answer block that answer engines extract. It also caused the external agent to re-flag pages marked released, because it was reading its own instruction back off the page.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "content-pattern-contract",
+        "title": "Pages carry the blocks the review agent keeps requesting",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 3",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_content_pattern_contract.js",
+        "command": "node scripts/validators/validate_content_pattern_contract.js",
+        "depends_on": [
+          "page-release-law"
+        ],
+        "requires_files": [],
+        "prepare_commands": [
+          "npm run build"
+        ],
+        "prepare_produces_files": [
+          "sitemap.xml",
+          "index.html"
+        ],
+        "prepare_mutates_files": [
+          "**/*.html",
+          "sitemap*.xml",
+          "content/_live/**",
+          "artifacts/validation/**"
+        ],
+        "produces_files": [
+          "artifacts/validation/content-pattern-contract.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/content-pattern-contract.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Across ~2,750 external review recommendations in this repo and sprylabs, the agent asks for the same small set of blocks. 27% of distinct defects were re-reported on later runs despite being marked released - one across 8 run dates. Without a pre-publish check, new pages ship missing the same blocks and the loop repeats. Blocking checks cover the four that decide whether a page can be quoted or converted at all: direct answer, a heading carrying the query, no empty table cells, and one conversion path. The rest report as coverage gaps so a backlog is visible without stopping a release.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -10116,6 +10182,54 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Agent recommendations are internal build directives shaped like 'FILEPATH: x || CURRENT: ... || EDIT: ...'. Two generator paths rendered them as reader-facing copy - a fallback acceptance-checklist card, and target.answer via 'Citation-ready update: '. 163 published pages carried the first and 100 the second, the latter inside the direct-answer block that answer engines extract. It also caused the external agent to re-flag pages marked released, because it was reading its own instruction back off the page.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "content-pattern-contract",
+        "title": "Pages carry the blocks the review agent keeps requesting",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 3",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_content_pattern_contract.js",
+        "command": "node scripts/validators/validate_content_pattern_contract.js",
+        "depends_on": [
+          "page-release-law"
+        ],
+        "requires_files": [],
+        "prepare_commands": [
+          "npm run build"
+        ],
+        "prepare_produces_files": [
+          "sitemap.xml",
+          "index.html"
+        ],
+        "prepare_mutates_files": [
+          "**/*.html",
+          "sitemap*.xml",
+          "content/_live/**",
+          "artifacts/validation/**"
+        ],
+        "produces_files": [
+          "artifacts/validation/content-pattern-contract.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/content-pattern-contract.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Across ~2,750 external review recommendations in this repo and sprylabs, the agent asks for the same small set of blocks. 27% of distinct defects were re-reported on later runs despite being marked released - one across 8 run dates. Without a pre-publish check, new pages ship missing the same blocks and the loop repeats. Blocking checks cover the four that decide whether a page can be quoted or converted at all: direct answer, a heading carrying the query, no empty table cells, and one conversion path. The rest report as coverage gaps so a backlog is visible without stopping a release.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

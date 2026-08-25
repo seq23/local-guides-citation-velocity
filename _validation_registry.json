@@ -5740,6 +5740,61 @@
         "artifacts/validation/internal-instruction-leak.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "content-pattern-contract",
+      "title": "Pages carry the blocks the review agent keeps requesting",
+      "path": "scripts/validators/validate_content_pattern_contract.js",
+      "command": "node scripts/validators/validate_content_pattern_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 3",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "aeo",
+        "extraction",
+        "agent-artifacts"
+      ],
+      "risk_prevented": "Across ~2,750 external review recommendations in this repo and sprylabs, the agent asks for the same small set of blocks. 27% of distinct defects were re-reported on later runs despite being marked released - one across 8 run dates. Without a pre-publish check, new pages ship missing the same blocks and the loop repeats. Blocking checks cover the four that decide whether a page can be quoted or converted at all: direct answer, a heading carrying the query, no empty table cells, and one conversion path. The rest report as coverage gaps so a backlog is visible without stopping a release.",
+      "why_existing_checks_do_not_cover": "Substance validators measure length and required markers; none asserted that the specific blocks the agent repeatedly asks for are present, which is why filler containing a marker counted as a fix.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/content-pattern-contract.json",
+      "failure_action": "add the missing block to the page's generator or source; see .clarity/content-pattern-spec.json for what each block is and the evidence behind it",
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [],
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_mutates_files": [
+        "**/*.html",
+        "sitemap*.xml",
+        "content/_live/**",
+        "artifacts/validation/**"
+      ],
+      "produces_files": [
+        "artifacts/validation/content-pattern-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/content-pattern-contract.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

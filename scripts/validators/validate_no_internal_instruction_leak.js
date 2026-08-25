@@ -29,6 +29,11 @@ const PATTERNS = [
   [/Citation-ready update:/i, 'instruction appended to the answer block'],
   [/Marker-only framework cards/i, 'build policy text rendered as page copy'],
   [/Required semantic acceptance:/i, 'build policy text rendered as page copy'],
+  // Found inside direct-answer blocks on 14 pages - the exact text answer
+  // engines quote. Different phrasing from the FILEPATH form, so the original
+  // pattern set missed it.
+  [/citation-agent source patch/i, 'build text inside the answer block'],
+  [/artifact-required decision support markers/i, 'build text inside the answer block'],
 ];
 
 const offenders = [];

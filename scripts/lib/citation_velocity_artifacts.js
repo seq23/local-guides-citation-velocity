@@ -18,7 +18,29 @@ function renderList(items, ordered = false) {
 
 function renderTable(headers, rows) {
   const safeHeaders = Array.isArray(headers) ? headers.filter(Boolean) : [];
-  const safeRows = Array.isArray(rows) ? rows.filter((row) => Array.isArray(row) && row.length) : [];
+  // Rows were filtered on length alone, so ['', '', ''] passed and emitted
+  // <td></td><td></td><td></td>. 257 published pages shipped empty cells, and
+  // the review agent repeatedly flagged exactly those pages as impossible to
+  // cite - a table with no values is scaffolding, not content.
+  //
+  // A row now has to carry at least one non-empty cell to survive, and a table
+  // with no surviving rows renders as nothing at all. Emitting an empty table
+  // announces a gap rather than filling it, which is what the agent then
+  // re-reports.
+  const nonEmpty = (cell) => String(cell ?? '').trim().length > 0;
+  const safeRows = (Array.isArray(rows) ? rows : [])
+    .filter((row) => Array.isArray(row) && row.length && row.some(nonEmpty))
+    .map((row) => {
+      const width = safeHeaders.length || row.length;
+      // Ragged rows would silently shift values under the wrong header. A cell
+      // with no value renders as an explicit "not stated" rather than blank:
+      // blank reads as an authoring bug and is what the agent flags, while
+      // inventing a figure would be worse than either.
+      return Array.from({ length: width }, (_, i) => {
+        const value = String(row[i] ?? '').trim();
+        return value || 'Not stated';
+      });
+    });
   if (!safeRows.length) return '';
   const head = safeHeaders.length
     ? `<thead><tr>${safeHeaders.map((cell) => `<th>${htmlEscape(cell)}</th>`).join('')}</tr></thead>`
