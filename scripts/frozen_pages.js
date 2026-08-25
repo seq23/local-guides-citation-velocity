@@ -2,13 +2,13 @@
 'use strict';
 const {
   seedAcceptedPages, freezeRoute, freezeNewAdmitted, restoreFrozenPages, verifyFrozenPages,
-  beginMutationScope, acceptMutationScope, rollbackMutationScope, loadRegistry
-} = require('./lib/frozen_pages');
+  beginMutationScope, acceptMutationScope, rollbackMutationScope, loadRegistry, pruneFrozenCache } = require('./lib/frozen_pages');
 
 function usage() {
   console.log(`Usage:
   node scripts/frozen_pages.js seed-accepted [--missing-only]
   node scripts/frozen_pages.js restore
+  node scripts/frozen_pages.js prune [--dry-run]
   node scripts/frozen_pages.js verify
   node scripts/frozen_pages.js freeze-route <route>
   node scripts/frozen_pages.js freeze-new-admitted
@@ -26,6 +26,7 @@ try {
   else if (cmd === 'freeze-route') result = freezeRoute(args[0]);
   else if (cmd === 'freeze-new-admitted') result = freezeNewAdmitted();
   else if (cmd === 'begin') result = beginMutationScope(args.slice(1), args[0]);
+  else if (cmd === 'prune') result = pruneFrozenCache({ dryRun: args.includes('--dry-run') });
   else if (cmd === 'accept') result = acceptMutationScope();
   else if (cmd === 'rollback') result = rollbackMutationScope();
   else if (cmd === 'status') {
