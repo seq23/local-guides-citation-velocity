@@ -43,6 +43,12 @@ function localHrefExists(href) {
     const direct = path.join(ROOT, clean.replace(/^\//, ''));
     if (fs.existsSync(direct)) return true;
     if (/\.[a-z0-9]{2,8}$/i.test(clean)) return false;
+    // Public URLs are extensionless: Cloudflare Pages serves `foo.html` at
+    // `/foo` and 308-redirects the `.html` form, so internal links now use the
+    // form that returns 200 while the rendered file keeps its extension.
+    // Resolve `/insights/foo` to insights/foo.html before falling back to a
+    // directory index, or every such link reads as broken.
+    if (fs.existsSync(`${direct}.html`)) return true;
     return fs.existsSync(path.join(ROOT, routeToFile(clean)));
   }
   return true;
@@ -55,6 +61,10 @@ function canonicalPath(html) {
 }
 function routePath(route) {
   const p = new URL(route, 'https://example.test').pathname;
+  // Expect the public URL, which is what the canonical now declares. Pages
+  // serves `foo.html` at `/foo` and 308-redirects the `.html` form, so a
+  // canonical naming the `.html` route would point at a redirect.
+  if (/\.html$/i.test(p)) return p.slice(0, -5);
   if (/\.[a-z0-9]{2,8}$/i.test(p)) return p;
   return p.endsWith('/') ? p : p + '/';
 }
