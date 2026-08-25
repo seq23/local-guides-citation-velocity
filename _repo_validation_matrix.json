@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "e395ef747ab4fbce05b6fb99756e675741fa74e7200ec458266e888a2e283f6a",
+  "registry_sha256": "2be5f03b37a6ab27265eb4db8893714423da86433588f80aebe87d5a8dd4b184",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 127,
-    "active": 99,
+    "total": 128,
+    "active": 100,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 99,
+    "hard_fail": 100,
     "strong_warning": 11,
     "soft_warning": 2,
     "info": 15
@@ -255,7 +255,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "query-atlas"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -271,6 +272,7 @@
         "nap-consistency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "query-atlas",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -460,7 +462,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "query-atlas"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -476,6 +479,7 @@
         "nap-consistency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "query-atlas",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -696,7 +700,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "query-atlas"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -712,6 +717,7 @@
         "nap-consistency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "query-atlas",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -906,7 +912,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "query-atlas"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -922,6 +929,7 @@
         "nap-consistency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "query-atlas",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -1265,7 +1273,8 @@
         "velocity-agent-source-coverage",
         "velocity-commercial-pages",
         "velocity-intake-workflow",
-        "velocity-route-resolution-self-test"
+        "velocity-route-resolution-self-test",
+        "query-atlas"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1274,6 +1283,7 @@
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "portfolio-kpi-truth",
+        "query-atlas",
         "rich-new-page-contract",
         "seo-execution-contract",
         "validator-authority-contract",
@@ -1406,7 +1416,8 @@
         "velocity-commercial-pages",
         "velocity-intake-workflow",
         "velocity-route-resolution-self-test",
-        "workflow-data-trace"
+        "workflow-data-trace",
+        "query-atlas"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1420,6 +1431,7 @@
         "nap-consistency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "query-atlas",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -5685,6 +5697,44 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "query-atlas",
+        "title": "Query atlas evidence gate",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_query_atlas.js",
+        "command": "node scripts/validators/validate_agent_artifact_continuity.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/report_fixes/agent_runs",
+          "data/report_fixes/agent_exact_implementation_policy.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-artifact-continuity.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-artifact-continuity.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -8156,6 +8206,44 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A malformed workflow file can pass token-based trace checks but fail before any GitHub Actions job starts.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "query-atlas",
+        "title": "Query atlas evidence gate",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_query_atlas.js",
+        "command": "node scripts/validators/validate_agent_artifact_continuity.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/report_fixes/agent_runs",
+          "data/report_fixes/agent_exact_implementation_policy.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-artifact-continuity.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-artifact-continuity.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

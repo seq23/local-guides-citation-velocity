@@ -5,7 +5,7 @@
 // moment pages are generated from permutations carrying no demand evidence. This
 // validator is the line between the two.
 
-import fs from 'node:fs';
+const fs = require('node:fs');
 const errors = [];
 const read = (p) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; } };
 
