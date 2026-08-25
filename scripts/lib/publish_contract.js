@@ -129,6 +129,52 @@ function sentenceCase(s) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+const SLUG_ASSIGNMENTS_PATH = path.join(ROOT, 'data/release/insight_slug_assignments.json');
+
+// The insight id used to be the array position (`idx + 1`), so the URL encoded
+// where a question happened to sit in a list. Inserting, removing, or reordering
+// one question renumbered every question after it: each got a new URL, and its
+// old URL was handed to a different question or dropped entirely. Google was
+// holding 1,146 such abandoned URLs as 404s, and git showed 149 insight
+// filenames disappearing across 200 commits while 356 appeared.
+//
+// Ids are now pinned to the question. Once a title has a number under a prefix
+// it keeps it; a new title takes the lowest number not already used by that
+// prefix, and retired numbers are never reissued. The ledger was seeded from the
+// published slugs, so existing URLs are unchanged.
+let SLUG_ASSIGNMENTS = null;
+function loadSlugAssignments() {
+  if (SLUG_ASSIGNMENTS) return SLUG_ASSIGNMENTS;
+  try { SLUG_ASSIGNMENTS = JSON.parse(fs.readFileSync(SLUG_ASSIGNMENTS_PATH, 'utf8')); }
+  catch { SLUG_ASSIGNMENTS = { schema_version: '1.0', count: 0, assignments: {} }; }
+  SLUG_ASSIGNMENTS.assignments = SLUG_ASSIGNMENTS.assignments || {};
+  return SLUG_ASSIGNMENTS;
+}
+function assignedInsightNumber(prefix, titleSlug, occurrence) {
+  const led = loadSlugAssignments();
+  const forPrefix = led.assignments[prefix] || (led.assignments[prefix] = {});
+  const list = forPrefix[titleSlug] || (forPrefix[titleSlug] = []);
+  if (list[occurrence] !== undefined) return list[occurrence];
+  // A title can legitimately repeat under one prefix. Positional numbering used
+  // to separate those by accident; the occurrence index preserves it on purpose.
+  const taken = new Set();
+  for (const nums of Object.values(forPrefix)) for (const n of nums) taken.add(n);
+  let next = 1;
+  while (taken.has(next)) next += 1;
+  list[occurrence] = next;
+  led.dirty = true;
+  return next;
+}
+
+function persistSlugAssignments() {
+  const led = loadSlugAssignments();
+  if (!led.dirty) return;
+  delete led.dirty;
+  led.count = Object.values(led.assignments).reduce((n, m) => n + Object.keys(m).length, 0);
+  fs.mkdirSync(path.dirname(SLUG_ASSIGNMENTS_PATH), { recursive: true });
+  fs.writeFileSync(SLUG_ASSIGNMENTS_PATH, `${JSON.stringify(led, null, 2)}\n`);
+}
+
 function insightSlugPrefix(basePath, pageLeaf) {
   const base = slugify(basePath);
   const leaf = slugify(pageLeaf || base);
@@ -269,6 +315,7 @@ function buildInsightInventory() {
   const payload = loadJson(pagesPath);
   const pages = Array.isArray(payload.pages) ? payload.pages : [];
   const seenSlugs = new Set();
+  const slugOccurrences = new Map();
   const out = [];
 
   for (const page of pages) {
@@ -289,7 +336,10 @@ function buildInsightInventory() {
       const title = sentenceCase(rawTitle);
       const titleSlug = slugify(title).slice(0, 70) || `insight-${idx + 1}`;
       const prefix = insightSlugPrefix(cfg.basePath, pageLeaf);
-      const slug = `${prefix}-${String(idx + 1).padStart(3, '0')}-${titleSlug}`;
+      const occKey = `${prefix}|${titleSlug}`;
+      const occurrence = slugOccurrences.get(occKey) || 0;
+      slugOccurrences.set(occKey, occurrence + 1);
+      const slug = `${prefix}-${String(assignedInsightNumber(prefix, titleSlug, occurrence)).padStart(3, '0')}-${titleSlug}`;
       if (seenSlugs.has(slug)) {
         throw new Error(`Duplicate generated insight slug before write: ${slug}`);
       }
@@ -386,6 +436,9 @@ function buildInsightInventory() {
   const ledgerPath = path.join(ROOT, LEDGER_PATH);
   const ledger = exists(ledgerPath) ? loadJson(ledgerPath) : { entries: [] };
   out.forEach((item) => applyAgentExactRepairsToInsightItem(item, ledger));
+  // Write back any ids handed out to questions seen for the first time, so the
+  // next run reuses them instead of renumbering from position again.
+  persistSlugAssignments();
   return ensureUniqueInsightMetadata(dedupeInsightAtoms(out));
 }
 
