@@ -1,5 +1,15 @@
 #!/usr/bin/env node
 'use strict';
+function publicRoute(route){
+ // Cloudflare Pages serves `foo.html` at `/foo` and 308-redirects the `.html`
+ // form. PAGE_RELEASE_LAW.md §4 requires the canonical to identify the admitted
+ // route; the route is the internal identifier, and this is the public URL that
+ // actually returns 200. Comparing against the `.html` form forced every
+ // canonical and sitemap entry to name a redirect, which Google declines to
+ // index. Directory routes are already extensionless and pass through.
+ const r=String(route||'');
+ return r.endsWith('.html')?r.slice(0,-5):r;
+}
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),zlib=require('zlib');
 const ROOT=path.resolve(__dirname,'../..');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
@@ -45,7 +55,7 @@ for(const p of pages){
  const canon=[...html.matchAll(/<link\b[^>]*>/gi)].map(m=>m[0]).filter(t=>/\brel=["']canonical["']/i.test(t)).map(t=>t.match(/\bhref=["']([^"']+)["']/i)?.[1]).filter(Boolean);
  if(canon.length!==1)errors.push(`${route}:canonical_count:${canon.length}`);
  else {
-   const expected=new URL(route,contract.canonical_origin).toString();
+   const expected=new URL(publicRoute(route),contract.canonical_origin).toString();
    let canonicalOk=canon[0]===expected;
    if(!canonicalOk&&p.page_type==='Medium article'&&p.canonical_domain&&p.canonical_domain!=='theindustryguides.com'){try{canonicalOk=new URL(canon[0]).hostname===p.canonical_domain;}catch{}}
    if(!canonicalOk)errors.push(`${route}:canonical_value:${canon[0]}!=${expected}`);
@@ -54,7 +64,7 @@ for(const p of pages){
  const metaDesc=[...html.matchAll(/<meta\b[^>]*>/gi)].map(m=>m[0]).find(t=>/\bname=["']description["']/i.test(t));if(!metaDesc||!(/\bcontent=["'][\s\S]{20,}/i.test(metaDesc)))errors.push(`${route}:meta_description_missing`);
  for(const token of contract.forbidden_unresolved_tokens||[])if(html.includes(token))errors.push(`${route}:unresolved_token:${token}`);
  if(!(contract.sitemap_exempt_paths||[]).includes(route)){
-   const expected=new URL(route,contract.canonical_origin).toString();
+   const expected=new URL(publicRoute(route),contract.canonical_origin).toString();
    if(!sitemap.includes(`<loc>${expected}</loc>`))errors.push(`${route}:sitemap_missing`);
  }
 }

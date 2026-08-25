@@ -36,6 +36,12 @@ function normalizePath(href) {
       return out;
     }
   }
+  // Cloudflare Pages serves `foo.html` at `/foo` and 308-redirects the `.html`
+  // form, so the two spellings address one resource. Internal links now use the
+  // extensionless form (the one that returns 200) while routes and rendered
+  // filenames keep `.html`; without this, every link check comparing a route to
+  // a rendered anchor would report a missing link that is plainly present.
+  if (out.length > 5 && out.endsWith('.html')) out = out.slice(0, -5);
   return out;
 }
 

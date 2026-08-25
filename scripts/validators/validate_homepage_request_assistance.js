@@ -8,7 +8,12 @@ const structural=[
   ['vertical selector',/<section[^>]+id=["']vertical-routes["']/],
   ['coverage',/<section[^>]+class=["'][^"']*coverage-panel/],
   ['operations',/<section[^>]+class=["'][^"']*operations/],
-  ['methodology link',/href=["']\/methodology\.html["']/],
+  // Accepts /methodology or the legacy /methodology.html. Cloudflare Pages
+  // serves `foo.html` at `/foo` and 308-redirects the `.html` form, so the
+  // extensionless URL is the one that returns 200 and the one internal links
+  // now use. Pinning this check to `.html` would require the homepage to link
+  // through a redirect.
+  ['methodology link',/href=["']\/methodology(?:\.html)?["']/],
   ['provider action',/<a[^>]+class=["'][^"']*primary[^"']*["'][^>]+href=["']https:\/\//]
 ];
 for(const [name,re] of structural) if(!re.test(html)) errors.push(`missing homepage structure: ${name}`);

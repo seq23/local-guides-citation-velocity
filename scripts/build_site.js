@@ -215,8 +215,11 @@ function renderLayout({title, description, absUrl, bodyHtml, jsonld}){
   return tpl
     .replaceAll('{{TITLE}}', htmlEscape(title))
     .replaceAll('{{DESCRIPTION}}', htmlEscape(description))
-    .replaceAll('{{ABS_URL}}', htmlEscape(absUrl))
-    .replaceAll('{{BODY}}', `<p class="muted small editorial-byline" data-editorial-byline="true">Published by <a href="/about.html">The Industry Guides Editorial Team</a>.</p>
+    // Single choke point for the shared layout's canonical tag. Pages serves
+    // `foo.html` at `/foo`, so the `.html` form is a 308 and must not be the
+    // canonical.
+    .replaceAll('{{ABS_URL}}', htmlEscape(publicUrl(absUrl)))
+    .replaceAll('{{BODY}}', `<p class="muted small editorial-byline" data-editorial-byline="true">Published by <a href="/about">The Industry Guides Editorial Team</a>.</p>
 ${bodyHtml}`)
     .replaceAll('{{YEAR}}', nowISODate().slice(0, 4))
     .replaceAll('{{JSONLD}}', JSON.stringify(schema, null, 2));
@@ -534,7 +537,7 @@ function renderAtlasBody({ title, description, atlasConfig, allVerticals }) {
   const clusterCards = atlasConfig.clusters.map((cluster) => {
     const sampleQueries = Array.isArray(cluster.sample_queries) ? cluster.sample_queries : (Array.isArray(cluster.items) ? cluster.items : []);
     const queries = sampleQueries.map((query) => {
-      const href = query.publish_path || query.path || '#';
+      const href = publicPath(query.publish_path || query.path || '#');
       const label = query.title || query.normalized_query || query.query || href;
       return `<li><a href="${htmlEscape(href)}">${htmlEscape(label)}</a></li>`;
     }).join('');
@@ -555,7 +558,7 @@ function renderClusterKnowledgeBlock(page, registryEntry, atlasConfig, insightIt
   if (!page || !page.cluster || !registryEntry) return '';
   const items = (insightItems || []).filter((item) => item.vertical === page.vertical && item.cluster === page.cluster);
   const siblingPages = (clusterPages || []).filter((candidate) => candidate.vertical === page.vertical && candidate.cluster && candidate.cluster !== page.cluster).slice(0, 6);
-  const questionList = items.map((item) => `<li><a href="${htmlEscape(item.publish_path)}">${htmlEscape(item.title)}</a></li>`).join('');
+  const questionList = items.map((item) => `<li><a href="${htmlEscape(publicPath(item.publish_path))}">${htmlEscape(item.title)}</a></li>`).join('');
   const siblingList = siblingPages.map((candidate) => `<li><a href="${htmlEscape(candidate.slug)}">${htmlEscape(candidate.title)}</a></li>`).join('');
   return `
     <section class="card"><div class="badge">Cluster</div><h2 class="h2" style="margin-top:8px">${htmlEscape(registryEntry.title)}</h2><p class="muted">${htmlEscape(registryEntry.description)}</p>
@@ -565,6 +568,25 @@ function renderClusterKnowledgeBlock(page, registryEntry, atlasConfig, insightIt
     </section>`;
 }
 
+
+// Cloudflare Pages serves every `foo.html` at `/foo` and 308-redirects the
+// `.html` form itself. Verified live across the whole site, not just insights:
+// /about.html -> 308 -> /about, /insights/x.html -> 308 -> /insights/x.
+//
+// The route stays the internal identifier (it maps to the rendered file and
+// keys the frozen registry). This is the URL the public actually receives a 200
+// from, and it is the only one that belongs in a canonical tag, a sitemap, or
+// an internal link. Emitting the `.html` form there pointed every public signal
+// at a redirect, and Google will not index a redirecting URL - 567 routes were
+// sitting in "Page with redirect".
+function publicPath(slug){
+  const s = String(slug || '');
+  return s.endsWith('.html') ? s.slice(0, -5) : s;
+}
+function publicUrl(url){
+  const u = String(url || '');
+  return u.endsWith('.html') ? u.slice(0, -5) : u;
+}
 
 function providerDestination(canonHome){
   // The vertical config (verticals[].provider), build_site.js:1863, and
@@ -901,7 +923,7 @@ function validationContractFaqSchemaHtml(){
 }
 
 function validationEditorialBylineHtml(){
-  return `<p class="muted small editorial-byline" data-editorial-byline="true">Published by <a href="/about.html">The Industry Guides Editorial Team</a>.</p>`;
+  return `<p class="muted small editorial-byline" data-editorial-byline="true">Published by <a href="/about">The Industry Guides Editorial Team</a>.</p>`;
 }
 
 function validationReviewDateHtml(date){
@@ -1084,7 +1106,7 @@ function buildIndexPage(siteBase, toolSections = []){
   <section id="featured-guides" class="homepage-section"><div class="section-label">Featured decisions</div><h2>Start with the decision, not the sales pitch</h2><div class="feature-grid"><a href="/civil-surgeon-vs-panel-physician/">Civil surgeon vs panel physician</a><a href="/neuropsych-eval-vs-iq-test-vs-psych-eval/">Neuropsych eval vs IQ test vs psych eval</a><a href="/personal-injury-vs-workers-comp/">Personal injury vs workers comp</a><a href="/dental-insurance-vs-medical-insurance/">Dental vs medical insurance</a><a href="/trt-vs-hair-loss-treatment/">TRT vs hair-loss treatment</a><a href="/uscis-medical/states/tennessee/civil-surgeon/">Tennessee civil-surgeon guide</a></div></section>
   ${renderToolSpotlight(toolSections, 'Fast tools for comparing options before you choose')}
   <section class="homepage-section operations"><div class="section-label">Platform operations</div><h2>How The Industry Guides works</h2><div class="ops-grid"><div><h3>Who runs this site?</h3><p>The Industry Guides is an independent editorial publisher covering five regulated service categories.</p></div><div><h3>How are guides verified?</h3><p>Pages use named frameworks, visible source records, review dates, and a hard publication gate.</p></div><div><h3>How fresh is the data?</h3><p>Every page carries a source-derived modification date. Regulated claims are scheduled for recheck.</p></div><div><h3>Is this a government agency?</h3><p>No. We link to primary government and professional sources where they control the rule.</p></div></div></section>
-  <section class="methodology-band"><div><div class="section-label">Methodology</div><h2>Source first. Decision second. Provider third.</h2><p>Each programmatic page must contain a unique defensible data atom, a direct answer, visible FAQs, source provenance, internal links, and provider routing. Boilerplate-only pages do not ship.</p><a href="/methodology.html">Read the methodology</a></div></section>
+  <section class="methodology-band"><div><div class="section-label">Methodology</div><h2>Source first. Decision second. Provider third.</h2><p>Each programmatic page must contain a unique defensible data atom, a direct answer, visible FAQs, source provenance, internal links, and provider routing. Boilerplate-only pages do not ship.</p><a href="/methodology">Read the methodology</a></div></section>
   <section class="closing-provider"><h2>Find a provider in your state</h2><p>Choose the vertical that matches your situation. You will continue to the corresponding provider destination.</p><div class="provider-button-grid">${verticals.map((v)=>`<a href="${v.provider}">${v.label}<strong>Find a Provider →</strong></a>`).join('')}</div></section>`;
   return {slug:'/',title:'The Industry Guides | Source-Backed Guides and Provider Routing',description:'Source-backed guides, state pages, comparisons, and provider routing across USCIS medical, personal injury, dentistry, neuropsychology, and TRT.',bodyHtml:body,jsonld:{'@context':'https://schema.org','@type':'WebPage',name:'The Industry Guides',url:siteBase+'/',description:'Source-backed guides and provider routing across five regulated verticals.'},fanoutMeta:{slug:'/',title:'The Industry Guides',description:'Source-backed guides and provider routing.',sections:[{q:'What does The Industry Guides publish?',a:'Decision guides, question pages, state pages, and source-backed comparisons.'}],vertical:'generic',surface:'home'},vertical:'generic',surface:'home'};
 }
@@ -1443,7 +1465,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
   <section class="card sibling-links" data-sibling-links="true">
     <h2>Questions in this cluster</h2>
     <ul>${clusterItems.slice(0, 10)
-      .map((item) => `<li><a href="${htmlEscape(item.publish_path)}">${htmlEscape(item.normalized_query || item.query || item.title || item.publish_path)}</a></li>`)
+      .map((item) => `<li><a href="${htmlEscape(publicPath(item.publish_path))}">${htmlEscape(item.normalized_query || item.query || item.title || item.publish_path)}</a></li>`)
       .join('')}</ul>
   </section>
 </main>`,
@@ -1468,7 +1490,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
      </section>
      <section class="card" data-editorial-process="true"><div class="badge">How pages are produced</div>
        <p>Durable source records are mapped to primary authorities, claims, page-specific decision artifacts, and canonical provider destinations. Automated generation is used for consistent structure and coverage; source gates, similarity checks, safety boundaries, and deterministic rebuilds are used to prevent thin or fabricated pages.</p>
-       <p><a href="/methodology.html">Read the complete methodology and update policy.</a></p>
+       <p><a href="/methodology">Read the complete methodology and update policy.</a></p>
      </section>
      <section class="card" data-editorial-purpose="true"><div class="badge">Why this site exists</div>
        <p>The site helps people frame a high-stakes decision, verify the controlling source, compare the right factors, and continue to the correct provider destination. It is not a provider directory and does not fabricate rankings or local availability.</p>
@@ -2044,7 +2066,7 @@ ${m}`;
     } else {
       html = html.replace(/<title>[\s\S]*?<\/title>/i, (match) => `${match}<meta name="description" content="${htmlEscape(meta.description)}" />`);
     }
-    const canonicalUrl = `${siteBase}${meta.slug}`;
+    const canonicalUrl = `${siteBase}${publicPath(meta.slug)}`;
     html = html.replace(/<link\b[^>]*rel=(["'])canonical\1[^>]*>/i, `<link rel="canonical" href="${htmlEscape(canonicalUrl)}" />`);
     writeUtf8(outPath, injectFanoutIntoHtml(html, buildFanoutData(meta)).replace(/[ \t]+$/gm, ''));
   }
@@ -2127,13 +2149,13 @@ ${m}`;
 
   // sitemaps (split for crawl clarity) + canonical published inventory
   const mediumPublished = mediumItems.map((item) => ({
-    loc: siteBase + item.publish_path,
+    loc: siteBase + publicPath(item.publish_path),
     lastmod: String(item.lastmod || item.date_published || item.published_at || nowISODate()).slice(0, 10),
     slug: item.publish_path,
     surface: 'medium-article',
     canonical_domain: item.canonical_domain
   }));
-  const publicUrlCandidates = publicWritten.map(p=>({loc:p.url, lastmod: p.lastmod || nowISODate(), slug:p.slug, surface: p.surface || 'page', canonical_domain: p.canonical_domain || 'theindustryguides.com'}))
+  const publicUrlCandidates = publicWritten.map(p=>({loc:publicUrl(p.url), lastmod: p.lastmod || nowISODate(), slug:p.slug, surface: p.surface || 'page', canonical_domain: p.canonical_domain || 'theindustryguides.com'}))
     .concat(mediumPublished.filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug))));
   const publicUrlMap = new Map();
   for (const entry of publicUrlCandidates) publicUrlMap.set(normalizeRoute(entry.slug), entry);
