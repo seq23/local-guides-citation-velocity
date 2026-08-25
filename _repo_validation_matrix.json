@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "2be5f03b37a6ab27265eb4db8893714423da86433588f80aebe87d5a8dd4b184",
+  "registry_sha256": "21afd58e02d0f5969addca296e137145d02e902a8ddcadfcd0b0ceab8a5357f4",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 128,
-    "active": 100,
+    "total": 129,
+    "active": 101,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 100,
+    "hard_fail": 101,
     "strong_warning": 11,
     "soft_warning": 2,
     "info": 15
@@ -107,7 +107,8 @@
         "vertical-keys",
         "workflow-contract",
         "workflow-data-trace",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "frozen-output-integrity"
       ],
       "execution_order": [
         "authority-contracts",
@@ -141,6 +142,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "frozen-output-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
         "sitemap-parity",
@@ -256,7 +258,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "query-atlas"
+        "query-atlas",
+        "frozen-output-integrity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -337,6 +340,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "frozen-output-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
         "search-quality-basics",
@@ -463,7 +467,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "query-atlas"
+        "query-atlas",
+        "frozen-output-integrity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -544,6 +549,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "frozen-output-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
         "search-quality-basics",
@@ -701,7 +707,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "query-atlas"
+        "query-atlas",
+        "frozen-output-integrity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -782,6 +789,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "frozen-output-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
         "search-quality-basics",
@@ -913,7 +921,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "query-atlas"
+        "query-atlas",
+        "frozen-output-integrity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -999,6 +1008,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "frozen-output-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
         "search-quality-basics",
@@ -1195,7 +1205,8 @@
         "vertical-keys",
         "workflow-contract",
         "workflow-data-trace",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "frozen-output-integrity"
       ],
       "execution_order": [
         "authority-contracts",
@@ -1234,6 +1245,7 @@
         "publish-inventory",
         "full-scope-overhaul",
         "page-release-law",
+        "frozen-output-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
         "search-quality-basics",
@@ -1274,7 +1286,8 @@
         "velocity-commercial-pages",
         "velocity-intake-workflow",
         "velocity-route-resolution-self-test",
-        "query-atlas"
+        "query-atlas",
+        "frozen-output-integrity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1305,6 +1318,7 @@
         "velocity-route-resolution-self-test",
         "publish-inventory",
         "page-release-law",
+        "frozen-output-integrity",
         "workflow-data-trace",
         "content-safety",
         "workflow-contract",
@@ -1855,6 +1869,10 @@
     {
       "from": "workflow-yaml-inventory",
       "to": "workflow-topology"
+    },
+    {
+      "from": "page-release-law",
+      "to": "frozen-output-integrity"
     }
   ],
   "by_severity": {
@@ -5735,6 +5753,62 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "frozen-output-integrity",
+        "title": "Frozen accepted output matches the frozen page registry",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_frozen_output_integrity.js",
+        "command": "node scripts/validators/validate_frozen_output_integrity.js",
+        "depends_on": [
+          "page-release-law"
+        ],
+        "requires_files": [
+          "data/release/frozen_page_registry.json",
+          "docs/PAGE_RELEASE_LAW.md"
+        ],
+        "prepare_commands": [
+          "npm run build"
+        ],
+        "prepare_produces_files": [
+          "sitemap.xml",
+          "index.html"
+        ],
+        "prepare_mutates_files": [
+          "**/*.html",
+          "sitemap*.xml",
+          "feed.xml",
+          "llms.txt",
+          "robots.txt",
+          "_redirects",
+          "content/_live/**",
+          "releases/**",
+          "artifacts/validation/**"
+        ],
+        "produces_files": [
+          "artifacts/validation/frozen-output-integrity.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/frozen-output-integrity.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Rendered HTML can drift from the accepted bytes recorded in data/release/frozen_page_registry.json without any validator noticing. A hand edit to rendered output passes the rest of the chain, is silently reverted by the frozen guard at the end of the next build, and never reaches production - so CI reports green while the deployed site is unchanged. This was observed: 1,130 rendered pages were edited, the full core profile returned 42/42 PASS, and the change was inert on the live site.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -9347,6 +9421,62 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A typo in an agent target page, slug, or title could create a duplicate page or miss the intended repair.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "frozen-output-integrity",
+        "title": "Frozen accepted output matches the frozen page registry",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_frozen_output_integrity.js",
+        "command": "node scripts/validators/validate_frozen_output_integrity.js",
+        "depends_on": [
+          "page-release-law"
+        ],
+        "requires_files": [
+          "data/release/frozen_page_registry.json",
+          "docs/PAGE_RELEASE_LAW.md"
+        ],
+        "prepare_commands": [
+          "npm run build"
+        ],
+        "prepare_produces_files": [
+          "sitemap.xml",
+          "index.html"
+        ],
+        "prepare_mutates_files": [
+          "**/*.html",
+          "sitemap*.xml",
+          "feed.xml",
+          "llms.txt",
+          "robots.txt",
+          "_redirects",
+          "content/_live/**",
+          "releases/**",
+          "artifacts/validation/**"
+        ],
+        "produces_files": [
+          "artifacts/validation/frozen-output-integrity.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/frozen-output-integrity.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Rendered HTML can drift from the accepted bytes recorded in data/release/frozen_page_registry.json without any validator noticing. A hand edit to rendered output passes the rest of the chain, is silently reverted by the frozen guard at the end of the next build, and never reaches production - so CI reports green while the deployed site is unchanged. This was observed: 1,130 rendered pages were edited, the full core profile returned 42/42 PASS, and the change was inert on the live site.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

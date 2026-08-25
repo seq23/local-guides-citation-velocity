@@ -5612,6 +5612,68 @@
       "depends_on": [],
       "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
       "estimated_runtime_seconds": 20
+    },
+    {
+      "id": "frozen-output-integrity",
+      "title": "Frozen accepted output matches the frozen page registry",
+      "path": "scripts/validators/validate_frozen_output_integrity.js",
+      "command": "node scripts/validators/validate_frozen_output_integrity.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "frozen-output",
+        "page-release",
+        "integrity"
+      ],
+      "risk_prevented": "Rendered HTML can drift from the accepted bytes recorded in data/release/frozen_page_registry.json without any validator noticing. A hand edit to rendered output passes the rest of the chain, is silently reverted by the frozen guard at the end of the next build, and never reaches production - so CI reports green while the deployed site is unchanged. This was observed: 1,130 rendered pages were edited, the full core profile returned 42/42 PASS, and the change was inert on the live site.",
+      "why_existing_checks_do_not_cover": "page-release-law validates admission, canonical output, and sitemap presence for each route, but does not compare the rendered file SHA256 against the accepted SHA256 in the frozen registry. Nothing else in the core profile reads the frozen cache.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/frozen-output-integrity.json",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [
+        "data/release/frozen_page_registry.json",
+        "docs/PAGE_RELEASE_LAW.md"
+      ],
+      "produces_files": [
+        "artifacts/validation/frozen-output-integrity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/frozen-output-integrity.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_mutates_files": [
+        "**/*.html",
+        "sitemap*.xml",
+        "feed.xml",
+        "llms.txt",
+        "robots.txt",
+        "_redirects",
+        "content/_live/**",
+        "releases/**",
+        "artifacts/validation/**"
+      ]
     }
   ],
   "legacy_policy": {

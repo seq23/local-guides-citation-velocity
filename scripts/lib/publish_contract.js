@@ -459,6 +459,15 @@ function renderInsightPage(item) {
   const domainLabel = item.canonical_domain || (cfg ? cfg.domain.replace(/^https?:\/\//, '') : 'theindustryguides.com');
   const canonicalTargetUrl = item.canonical_target_url || (cfg ? `${cfg.domain}${item.source_route || '/'}` : `${SITE_BASE}/`);
   const canonicalUrlLabel = canonicalTargetUrl.replace(/^https?:\/\//, '');
+  // canonicalTargetUrl is the related canonical GUIDE page and stays that way for
+  // the "Canonical local guide" links below. The "Find a Provider" CTAs are a
+  // different destination: PAGE_RELEASE_LAW.md §6 routes provider-seeking intent
+  // only through <canon-origin>/request-assistance/. Sharing one value sent every
+  // insights CTA to a cluster guide instead of the request surface.
+  const providerUrl = (() => {
+    try { return `${new URL(canonicalTargetUrl).origin}/request-assistance/`; }
+    catch { return canonicalTargetUrl; }
+  })();
   const checklistItems = (item.checklist || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
   const redFlags = (item.red_flags || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
   const citationVelocityArtifacts = renderCitationVelocityArtifacts(item.citation_velocity_artifacts || []);
@@ -559,7 +568,7 @@ function renderInsightPage(item) {
     ${contentAtom}
     ${citationVelocityArtifacts}
     <section class="card dated-fact"><div class="badge">Reviewed source fact</div><p>${htmlEscape(item.dated_primary_fact || `Primary-source set reviewed ${dateModified}.`)}</p></section>
-    <section class="card provider-cta" data-provider-cta="after-decision-artifact"><div class="cta"><a class="primary" href="${htmlEscape(canonicalTargetUrl)}">Find a Provider</a></div></section>
+    <section class="card provider-cta" data-provider-cta="after-decision-artifact"><div class="cta"><a class="primary" href="${htmlEscape(providerUrl)}">Find a Provider</a></div></section>
     ${item.disclaimer ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(item.disclaimer)}</p></section>` : ''}
     <section class="card">
       <div class="badge">Knowledge graph</div>
@@ -579,11 +588,11 @@ function renderInsightPage(item) {
     <ul>${redFlags}</ul>
     <h2>Canonical route</h2>
     <p>The official guide for this topic lives at ${htmlEscape(domainLabel)}. Open it before taking action.</p>
-    <p><strong><a href="${htmlEscape(canonicalTargetUrl)}">Find a Provider</a></strong></p>
+    <p><strong><a href="${htmlEscape(providerUrl)}">Find a Provider</a></strong></p>
     <p><a href="/insights/">Browse the full insights archive</a> · <a href="${htmlEscape(item.cluster_path || item.source_route)}">Go to the cluster page</a> · <a href="${htmlEscape(item.atlas_path || '/atlas/')}">Open the atlas</a></p>
     <section class="card"><div class="badge">Primary sources</div><h2>Verify before acting</h2>${sourceLinks ? `<ul>${sourceLinks}</ul>` : `<p>Source records are listed in the repository evidence registry.</p>`}</section>
     <section class="card"><div class="badge">Five questions</div>${faqItems.map((faq)=>`<section class="qa-block"><h2>${htmlEscape(faq.question)}</h2><p>${htmlEscape(faq.answer)}</p></section>`).join('')}</section>
-    <section class="card provider-cta" data-provider-cta="contextual-body"><h2>Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(canonicalTargetUrl)}">Find a Provider</a></div></section>
+    <section class="card provider-cta" data-provider-cta="contextual-body"><h2>Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(providerUrl)}">Find a Provider</a></div></section>
     <section class="sibling-links" data-sibling-links="true">
       ${relatedQuestions ? `<h2>Related questions in this cluster</h2><ul>${relatedQuestions}</ul>` : ''}
       ${nextQuestions ? `<h2>Next questions people ask</h2><ul>${nextQuestions}</ul>` : ''}
