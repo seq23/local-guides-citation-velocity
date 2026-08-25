@@ -203,6 +203,39 @@ function verifyFrozenPages({ requireRenderedMatch = true } = {}) {
   }
   return { ok: errors.length === 0, errors, count: (registry.pages || []).length };
 }
+function pruneFrozenCache({ dryRun = false } = {}) {
+  // The cache is content-addressed, so every refreeze writes new blobs and the
+  // superseded ones stay on disk forever. After one full-portfolio refreeze the
+  // cache held 7,764 blobs for 2,325 accepted routes - 5,439 orphans, 28.8 MB.
+  //
+  // Keeps anything the registry points at, plus the prior bytes of any route
+  // currently mid-transaction: rollbackMutationScope restores from those, so
+  // deleting them would strip the undo out of an open repair.
+  const registry = loadRegistry();
+  const keep = new Set();
+  for (const page of registry.pages || []) {
+    if (page.cache_file) keep.add(path.join(ROOT, page.cache_file));
+    const prior = page.transaction && page.transaction.prior_html_sha256;
+    if (prior) keep.add(path.join(ROOT, cacheRelForHash(prior)));
+  }
+  const removed = [];
+  let bytes = 0;
+  const walk = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const abs = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(abs); continue; }
+      if (!entry.name.endsWith('.html.gz')) continue;
+      if (keep.has(abs)) continue;
+      bytes += fs.statSync(abs).size;
+      removed.push(path.relative(ROOT, abs));
+      if (!dryRun) fs.rmSync(abs, { force: true });
+    }
+  };
+  walk(CACHE_DIR);
+  return { dry_run: dryRun, kept: keep.size, removed: removed.length, freed_bytes: bytes };
+}
+
 function beginMutationScope(routes, releaseId = `release-${Date.now()}`) {
   const normalized = [...new Set((routes || []).map(normalizeRoute).filter(Boolean))];
   const registry = loadRegistry();
@@ -292,7 +325,7 @@ module.exports = {
   ROOT, REGISTRY_REL, ACTIVE_SCOPE_REL, PENDING_SCOPE_REL,
   normalizeRoute, implementationPathToRoute, routeToRenderedRel,
   loadRegistry, saveRegistry, seedAcceptedPages, freezeRoute, freezeNewAdmitted,
-  restoreFrozenPages, verifyFrozenPages, beginMutationScope, acceptMutationScope,
+  restoreFrozenPages, verifyFrozenPages, pruneFrozenCache, beginMutationScope, acceptMutationScope,
   rollbackMutationScope, queueMutationRoutes, consumePendingMutationRoutes,
   applyFrozenMetadataToEntries, ensureFrozenInventoryEntries
 };
