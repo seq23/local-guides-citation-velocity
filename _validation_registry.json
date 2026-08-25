@@ -1272,7 +1272,9 @@
       "mutates_files": [
         "artifacts/validation/citation-agent-fixes.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "repair_command": "npm run apply:citation-agent-fixes",
+      "repair_rationale": "Applies the agent-recommended citation fixes this validator checks for."
     },
     {
       "id": "citation-agent-fixes-2026-05",
@@ -1304,7 +1306,9 @@
       "prepare_mutates_files": [],
       "produces_files": [],
       "mutates_files": [],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "repair_command": "npm run apply:citation-agent-fixes",
+      "repair_rationale": "Same applier, dated contract variant."
     },
     {
       "id": "citation-dominance-strategy",
@@ -1790,7 +1794,9 @@
       "prepare_mutates_files": [],
       "produces_files": [],
       "mutates_files": [],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "repair_command": "npm run apply:dentistry-report-contract",
+      "repair_rationale": "Applies the dentistry report-fix contract this validator enforces."
     },
     {
       "id": "deterministic-build",
@@ -2671,7 +2677,9 @@
         "artifacts/validation/insights-manifest.json"
       ],
       "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "repair_command": "npm run repair:unmapped-insights",
+      "repair_rationale": "Re-maps insights missing from the manifest, which is what this validator fails on."
     },
     {
       "id": "live-hubs",
@@ -3505,7 +3513,9 @@
       "mutates_files": [
         "artifacts/validation/programmatic-substance.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "repair_command": "npm run content:self-heal",
+      "repair_rationale": "Repairs thin/short programmatic source, then the substance validator re-runs. This is the pairing run_source_self_heal_loop.js already performed internally; declaring it here lets the general loop use it too."
     },
     {
       "id": "provider-evidence",
@@ -3921,7 +3931,9 @@
       "mutates_files": [
         "artifacts/validation/rendered-programmatic-substance.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "repair_command": "npm run content:self-heal",
+      "repair_rationale": "Same defect class measured on rendered output rather than source."
     },
     {
       "id": "repo-hygiene",
@@ -5674,6 +5686,60 @@
         "releases/**",
         "artifacts/validation/**"
       ]
+    },
+    {
+      "id": "no-internal-instruction-leak",
+      "title": "Published pages contain no internal build instructions",
+      "path": "scripts/validators/validate_no_internal_instruction_leak.js",
+      "command": "node scripts/validators/validate_no_internal_instruction_leak.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 3",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "extraction"
+      ],
+      "risk_prevented": "Agent recommendations are internal build directives shaped like 'FILEPATH: x || CURRENT: ... || EDIT: ...'. Two generator paths rendered them as reader-facing copy - a fallback acceptance-checklist card, and target.answer via 'Citation-ready update: '. 163 published pages carried the first and 100 the second, the latter inside the direct-answer block that answer engines extract. It also caused the external agent to re-flag pages marked released, because it was reading its own instruction back off the page.",
+      "why_existing_checks_do_not_cover": "Substance and extraction validators measure whether required blocks exist; none asserted that page copy is free of build directives, so filler containing the instruction counted as content.",
+      "estimated_runtime_seconds": 8,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/internal-instruction-leak.json",
+      "failure_action": "stop the generator emitting recommendation text (scripts/lib/agent_exact_repairs.js); a fallback card announcing a content gap must not publish",
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [],
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_mutates_files": [
+        "**/*.html",
+        "sitemap*.xml",
+        "content/_live/**",
+        "artifacts/validation/**"
+      ],
+      "produces_files": [
+        "artifacts/validation/internal-instruction-leak.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/internal-instruction-leak.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {
@@ -5726,5 +5792,10 @@
       "metadata uniqueness advisories"
     ],
     "clarification": "Whitespace inside a URL or href remains a broken-link defect, not a formatting defect."
+  },
+  "self_heal_policy": {
+    "runner": "node scripts/selfheal/heal_until_clean.mjs",
+    "note": "A validator may declare repair_command when a repair exists that targets the same defect it detects. The loop runs the profile, repairs what failed, and re-validates, up to --max attempts. Validators without a repair are reported by name rather than retried, because another identical pass would not change the result.",
+    "never": "Do not pair a validator with a repair that merely makes it stop failing. A repair that hides a defect is worse than a red build."
   }
 }

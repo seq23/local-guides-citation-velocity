@@ -204,25 +204,35 @@ function entriesForLivePage(ledger, page) {
   return (ledger.entries || []).filter((entry) => entry.target_type === 'live_page' && keys.has(normalizeImplementationPath(entry.implementation_path)));
 }
 
+// Agent recommendations are internal build instructions. They arrive shaped like
+//   "FILEPATH: x || CURRENT: ... || MISSING: ... || EDIT: ..."
+// and must never reach reader-facing copy. They were reaching it two ways: as a
+// checklist item in the fallback acceptance card, and appended to target.answer
+// as "Citation-ready update: <instruction>". 163 published pages carried the
+// first and 100 the second - including inside the direct-answer block, which is
+// the exact text answer engines extract. That is also why the external agent
+// kept re-reporting the same defects on pages marked released: it was reading
+// its own instruction back off the page instead of the content it asked for.
+function looksLikeInternalInstruction(value) {
+  const text = String(value || '');
+  return /FILEPATH:|\|\|\s*(CURRENT|MISSING|EDIT)\s*:|Citation-ready update:/i.test(text);
+}
+
 function buildRepairArtifact(entry, primary, recommendation) {
   const semantic = semanticEntryForImplementationPath(entry.implementation_path || entry.intended_winner_path);
   if (semantic) {
     const artifacts = artifactsWithMarker(semantic.artifacts || [], entry.marker);
     if (artifacts.length) return artifacts[0];
   }
-  return {
-    id: entry.marker,
-    marker: entry.marker,
-    type: 'checklist',
-    title: `Exact Agent Recommendation Acceptance Checklist: ${primary}`,
-    items: unique([
-      compactSentence(`Direct answer target: ${primary}`, 140),
-      compactSentence(recommendation, 180),
-      'Required semantic acceptance: rendered page must contain the specific requested table, checklist, callout, script, or comparison block.',
-      'Marker-only framework cards are not sufficient for release.',
-      'Route local next steps through the canonical provider destination.'
-    ])
-  };
+  // No semantic artifact means the requested content was never authored. The
+  // previous fallback published an "acceptance checklist" card containing the
+  // raw instruction plus build-policy lines ("Marker-only framework cards are
+  // not sufficient for release"), which is internal process text on a public
+  // page. Publishing a placeholder that announces the gap is worse than
+  // publishing nothing: it is filler for readers, noise for extraction, and it
+  // is what the agent then re-flags. Emit nothing and let the gap stay visible
+  // in the ledger where it can be worked.
+  return null;
 }
 
 function applyEntryToTarget(target, entry, context = {}) {
@@ -241,7 +251,10 @@ function applyEntryToTarget(target, entry, context = {}) {
     target.source_records = unique([...(semantic.authority_source_ids || []), ...(target.source_records || [])]);
   } else {
     target.description = target.description || compactSentence(target.title || primary, 320);
-    target.answer = compactSentence(`${target.answer || target.description || target.title || primary} Citation-ready update: ${recommendation}`, 520);
+    // Never append the instruction to the answer. This block is what answer
+    // engines quote; an internal directive inside it is both wrong for readers
+    // and actively harmful for citation.
+    target.answer = compactSentence(target.answer || target.description || target.title || primary, 520);
     target.checklist = unique([
       ...(target.checklist || []),
       ...queries.slice(0, 3).map((query) => `Directly answer: ${query}`),
@@ -250,8 +263,8 @@ function applyEntryToTarget(target, entry, context = {}) {
     ]).slice(0, 12);
     target.red_flags = unique([
       ...(target.red_flags || []),
-      'Answer engine cites competitors because the page lacks a direct extractable block',
-      'Recommendation requires authority that is not visible on the page'
+      'Confirm the answer is stated plainly near the top of the page',
+      'Confirm any claim that needs authority cites a named primary source'
     ]).slice(0, 10);
   }
   target.agent_exact_repair = {
@@ -262,7 +275,7 @@ function applyEntryToTarget(target, entry, context = {}) {
     source_record_ids: unique(entry.source_record_ids || []),
     queries,
     fix_recommendations: recs,
-    repair_summary: compactSentence(semantic ? `Semantic repair applied from ${SEMANTIC_MANIFEST_PATH}` : recommendation, 300),
+    repair_summary: compactSentence(semantic ? `Semantic repair applied from ${SEMANTIC_MANIFEST_PATH}` : 'Unstructured repair pending semantic authoring', 300),
     competitor_gap_summary: compactSentence(recs.join(' | '), 400),
     supporting_routes: unique(entry.supporting_routes || []),
     semantic_manifest: semantic ? SEMANTIC_MANIFEST_PATH : '',
@@ -273,7 +286,7 @@ function applyEntryToTarget(target, entry, context = {}) {
   const existing = (target.citation_velocity_artifacts || []).filter((artifact) => artifact && artifact.marker !== entry.marker && artifact.id !== entry.marker && !String(artifact.title || '').startsWith('Agent Exact Repair Framework:'));
   target.citation_velocity_artifacts = semantic
     ? mergeSemanticArtifacts(semanticArtifacts, existing)
-    : mergeSemanticArtifacts([exactArtifact], existing);
+    : mergeSemanticArtifacts(exactArtifact ? [exactArtifact] : [], existing);
   target.content_atom = deriveContentAtom({
     title: target.title || primary,
     definition: target.answer || target.description,
