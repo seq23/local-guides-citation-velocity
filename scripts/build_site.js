@@ -566,8 +566,23 @@ function renderClusterKnowledgeBlock(page, registryEntry, atlasConfig, insightIt
 }
 
 
+function providerDestination(canonHome){
+  // The vertical config (verticals[].provider), build_site.js:1863, and
+  // publish_contract.js all name `<canon-origin>/request-assistance/` as the
+  // canonical provider destination, and PAGE_RELEASE_LAW.md §6 requires
+  // provider-seeking intent to route only through it.
+  //
+  // canonBlock/canonBlockBottom/canonBlockMid were instead using canonHome -
+  // the vertical hub, e.g. https://neuroevalguides.com/neuro/ - so every
+  // "Find a Provider" CTA on the insights and guide pages landed the reader on
+  // a guides index one hop short of the request surface. The CTA copy already
+  // promised "the matching provider destination"; only the href disagreed.
+  try { return `${new URL(canonHome).origin}/request-assistance/`; }
+  catch { return canonHome; }
+}
+
 function canonBlock(canonHome, canonStateHint, canonDirHint, canonLabel){
-  const destination = canonHome;
+  const destination = providerDestination(canonHome);
   return `
   <section class="card canon-warning provider-cta" data-canon-block="top" data-provider-cta="above-fold">
     <div class="badge warning-badge">Provider next step</div>
@@ -583,7 +598,7 @@ function canonBlockBottom(canonHome, canonLabel){
     <div class="badge warning-badge">Find local help</div>
     <h2 class="h2" style="margin-top:8px">Find a ${htmlEscape(canonLabel)} provider</h2>
     <p class="muted">You have the decision framework. Continue to the matching provider destination for local options and assistance.</p>
-    <div class="cta"><a class="primary" href="${canonHome}">Find a Provider</a></div>
+    <div class="cta"><a class="primary" href="${providerDestination(canonHome)}">Find a Provider</a></div>
   </section>`;
 }
 
@@ -593,7 +608,7 @@ function canonBlockMid(canonHome, canonLabel, clusterTitle='this topic'){
     <div class="badge warning-badge">Provider route</div>
     <h2 class="h2" style="margin-top:8px">Need local help with ${htmlEscape(clusterTitle)}?</h2>
     <p class="muted">Use the source-backed guide here, then continue when you are ready to compare local ${htmlEscape(canonLabel)} options.</p>
-    <div class="cta"><a class="primary" href="${canonHome}">Find a Provider</a></div>
+    <div class="cta"><a class="primary" href="${providerDestination(canonHome)}">Find a Provider</a></div>
   </section>`;
 }
 
@@ -1342,7 +1357,12 @@ function buildVelocityOnlyProgrammaticPages(siteBase){
     byVertical.get(page.vertical).push(page);
   }
   return payload.pages.map((page) => {
-    const destination = page.canonical_target_url;
+    // canonical_target_url names the related canonical GUIDE page; it is not a
+    // provider destination. Using it raw sent every "Find a Provider" CTA to a
+    // cluster guide (e.g. .../dentistry/anxiety-trust/) instead of the request
+    // surface. providerDestination() normalizes any canonical URL to its
+    // origin's /request-assistance/, per PAGE_RELEASE_LAW.md §6.
+    const destination = providerDestination(page.canonical_target_url);
     const sections = Array.isArray(page.sections) ? page.sections : [];
     if (sections.length < 3) throw new Error(`Velocity page ${page.slug} needs at least three substantive decision sections`);
     const siblings = (byVertical.get(page.vertical) || []).filter((x)=>x.slug!==page.slug).slice(0, 8);
@@ -1585,8 +1605,9 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const canon = canonMap.canon[p.vertical];
     if (!canon) throw new Error(`Unknown vertical: ${p.vertical} for ${p.slug}`);
 
-    const providerDestination = p.canonical_target_url || canon.home;
-    const topCanon = canonBlock(providerDestination, providerDestination, providerDestination, canon.label);
+    // Hub fallback would strand provider intent on a guides index; see §6.
+    const providerDestinationUrl = providerDestination(p.canonical_target_url || canon.home);
+    const topCanon = canonBlock(providerDestinationUrl, providerDestinationUrl, providerDestinationUrl, canon.label);
     const pageShape = getPageShapeConfig(p.slug);
     const shapedSections = pageShape ? assignCanonicalModules(p.sections || [], pageShape) : (p.sections || []);
 
@@ -1629,7 +1650,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
     if (relatedCandidates.length < 5) throw new Error(`Programmatic internal-link gate found fewer than five sibling pages for ${p.slug}`);
     const relatedLinks = renderRelatedLinks(relatedCandidates);
     const isQueryCompilerPage = Boolean(p.query_compiler_generated);
-    const midCanon = canonBlockMid(providerDestination, canon.label, p.title);
+    const midCanon = canonBlockMid(providerDestinationUrl, canon.label, p.title);
     const postQueryUtility = isQueryCompilerPage ? '' : toolSpotlight;
     const clusterMeta = p.cluster && clusterRegistry[p.vertical] && clusterRegistry[p.vertical].clusters ? clusterRegistry[p.vertical].clusters[p.cluster] : null;
     const atlasConfig = atlasStructures.atlas[p.vertical] || null;
@@ -1658,7 +1679,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
       ${midCanon}
       ${relatedLinks}
       ${postQueryUtility}
-      ${canonBlockBottom(providerDestination, canon.label)}
+      ${canonBlockBottom(providerDestinationUrl, canon.label)}
       <hr class="hr" />
       <p class="muted small">Last updated: ${nowISODate()}</p>
     `;
@@ -1860,7 +1881,7 @@ ${m}`;
     if (!page) return;
     page.fanoutMeta = Object.assign({}, page.fanoutMeta || {}, { slug: page.slug, title: page.title || h.title, description: page.description || h.desc, vertical: h.v, surface: 'vertical-home', canonical_url: canonMap.canon[h.v].home });
     const canon = canonMap.canon[h.v];
-    const providerDestination = page.canonical_target_url || `${canon.home.replace(/\/$/, '')}/request-assistance/`;
+    const providerDestinationUrl = providerDestination(page.canonical_target_url || canon.home);
     const fallbackToolSpotlight = toolsPageForHub
       ? renderToolSpotlight(
           toolsPageForHub.sections || [],
@@ -1886,7 +1907,7 @@ ${m}`;
     const hubDirectAnswer = `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title || h.title, page.description || h.desc, 70, page.content_atom))}</p></section>`;
     const sensitivityDisclosure = page.disclaimer ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(page.disclaimer)}</p></section>` : '';
     page.bodyHtml = `
-      ${canonBlock(providerDestination, providerDestination, providerDestination, canon.label)}
+      ${canonBlock(providerDestinationUrl, providerDestinationUrl, providerDestinationUrl, canon.label)}
       <h1 class="h1">${htmlEscape(page.title || h.title)}</h1>
       <p class="muted">${htmlEscape(page.description || h.desc)}</p>
       ${hubDirectAnswer}
@@ -1901,7 +1922,7 @@ ${m}`;
       ${qaHighlights}
       ${renderRelatedLinks(page.related_links || [])}
       ${fallbackToolSpotlight}
-      ${canonBlockBottom(providerDestination, canon.label)}
+      ${canonBlockBottom(providerDestinationUrl, canon.label)}
       <p class="muted small">Last updated: ${nowISODate()}</p>
     `;
   });
