@@ -5575,6 +5575,43 @@
         "artifacts/validation/workflow-yaml-syntax.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "query-atlas",
+      "title": "Query atlas evidence gate",
+      "path": "scripts/validators/validate_query_atlas.js",
+      "command": "node scripts/validators/validate_agent_artifact_continuity.js",
+      "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+      "requires_files": [
+        "data/report_fixes/agent_runs",
+        "data/report_fixes/agent_exact_implementation_policy.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-artifact-continuity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-artifact-continuity.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
+      "estimated_runtime_seconds": 20
     }
   ],
   "legacy_policy": {
