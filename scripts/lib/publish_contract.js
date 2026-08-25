@@ -391,7 +391,12 @@ function buildInsightInventory() {
 
 function renderArchivePage({ title, description, archivePath, items, itemHref, schemaType = 'CollectionPage' }) {
   const lowerTitle = String(title || '').toLowerCase();
-  const canonicalTargetUrl = `${SITE_BASE}/request-assistance/`;
+  // theindustryguides.com/request-assistance/ does not exist - it is not an
+  // admitted route and has no redirect, so this CTA was a 404. The per-vertical
+  // request surfaces live on the five canonical guide domains, and an archive
+  // page spans all five, so no single one of them is correct here. The homepage
+  // #vertical-routes section is the router: it lists all five request surfaces.
+  const canonicalTargetUrl = `${SITE_BASE}/#vertical-routes`;
   const canonicalDomains = CANONICAL_DOMAINS.join(', ');
   const itemList = items.map((item) => {
     const href = itemHref(item);
