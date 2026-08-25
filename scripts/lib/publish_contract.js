@@ -399,7 +399,7 @@ function renderArchivePage({ title, description, archivePath, items, itemHref, s
   const canonicalTargetUrl = `${SITE_BASE}/#vertical-routes`;
   const canonicalDomains = CANONICAL_DOMAINS.join(', ');
   const itemList = items.map((item) => {
-    const href = itemHref(item);
+    const href = toPublicUrl(itemHref(item));
     const canon = item.canonical_domain || '';
     return `<li><a href="${href}">${htmlEscape(item.title)}</a> — routes to ${htmlEscape(canon)}</li>`;
   }).join('');
@@ -418,7 +418,7 @@ function renderArchivePage({ title, description, archivePath, items, itemHref, s
     hasPart: items.slice(0, 250).map((item) => ({
       '@type': 'Article',
       headline: item.title,
-      url: `${SITE_BASE}${itemHref(item)}`,
+      url: toPublicUrl(`${SITE_BASE}${itemHref(item)}`),
       isPartOf: archiveUrl
     }))
   };
@@ -459,6 +459,14 @@ function renderArchivePage({ title, description, archivePath, items, itemHref, s
 </html>`;
 }
 
+// Cloudflare Pages serves `foo.html` at `/foo` and 308-redirects the `.html`
+// form. Public identifiers - canonical, schema @id/url/mainEntityOfPage, and
+// sitemap entries - must name the URL that returns 200, not the redirect.
+function toPublicUrl(url){
+  const u = String(url || '');
+  return u.endsWith('.html') ? u.slice(0, -5) : u;
+}
+
 function renderInsightPage(item) {
   const cfg = VERTICAL_CONFIG[item.vertical] || Object.values(VERTICAL_CONFIG).find((entry) => entry.basePath === item.base_path);
   const domainLabel = item.canonical_domain || (cfg ? cfg.domain.replace(/^https?:\/\//, '') : 'theindustryguides.com');
@@ -477,8 +485,8 @@ function renderInsightPage(item) {
   const redFlags = (item.red_flags || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
   const citationVelocityArtifacts = renderCitationVelocityArtifacts(item.citation_velocity_artifacts || []);
   const contentAtom = renderContentAtom(item.content_atom);
-  const relatedQuestions = (item.related_questions || []).slice(0, 6).map((rel) => `<li><a href="${htmlEscape(rel.publish_path)}">${htmlEscape(rel.title)}</a></li>`).join('');
-  const nextQuestions = (item.next_questions || []).slice(0, 4).map((rel) => `<li><a href="${htmlEscape(rel.publish_path)}">${htmlEscape(rel.title)}</a></li>`).join('');
+  const relatedQuestions = (item.related_questions || []).slice(0, 6).map((rel) => `<li><a href="${htmlEscape(toPublicUrl(rel.publish_path))}">${htmlEscape(rel.title)}</a></li>`).join('');
+  const nextQuestions = (item.next_questions || []).slice(0, 4).map((rel) => `<li><a href="${htmlEscape(toPublicUrl(rel.publish_path))}">${htmlEscape(rel.title)}</a></li>`).join('');
   const clusterLabel = item.cluster_title || sentenceCase(String(item.cluster || '').replace(/-/g, ' '));
   const directAnswer = buildDirectAnswer(item.title, item.answer, 70, item.content_atom);
   const dateModified = item.date_modified || '2026-06-19';
@@ -498,7 +506,7 @@ function renderInsightPage(item) {
 
   const howToSteps = atomHowToSteps(item.content_atom).slice(0, 8);
   if (howToSteps.length < 3) throw new Error(`Content atom for ${item.publish_path} did not produce three HowTo steps`);
-  const pageUrl = `${SITE_BASE}${item.publish_path}`;
+  const pageUrl = toPublicUrl(`${SITE_BASE}${item.publish_path}`);
   const schema = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -555,7 +563,7 @@ function renderInsightPage(item) {
 <header class="site-header">
   <div class="container">
     <div class="brand"><a class="brand-link" href="/">The Industry Guides</a><span class="brand-sub">Source-backed decision guides</span></div>
-    <nav class="nav" aria-label="Primary navigation"><a href="/insights/">Insights</a><a href="/atlas/">Atlas</a><a href="/methodology.html">Methodology</a><a href="/disclaimer.html">Disclaimer</a></nav>
+    <nav class="nav" aria-label="Primary navigation"><a href="/insights/">Insights</a><a href="/atlas/">Atlas</a><a href="/methodology">Methodology</a><a href="/disclaimer">Disclaimer</a></nav>
   </div>
 </header>
 <!-- CANON_TOP -->
@@ -614,7 +622,7 @@ function renderInsightPage(item) {
 <footer class="site-footer" data-disclosure="editorial">
   <div class="container">
     <p class="muted">Educational information only. No endorsement or guarantee is made. Confirm current legal, medical, pricing, and eligibility details with the appropriate official source or qualified professional.</p>
-    <p class="muted small"><a href="/about.html">About</a> · <a href="/methodology.html">Methodology</a> · <a href="/disclaimer.html">Disclaimer</a> · <a href="/privacy.html">Privacy</a></p>
+    <p class="muted small"><a href="/about">About</a> · <a href="/methodology">Methodology</a> · <a href="/disclaimer">Disclaimer</a> · <a href="/privacy">Privacy</a></p>
   </div>
 </footer>
 </body>

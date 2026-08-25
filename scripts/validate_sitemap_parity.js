@@ -20,7 +20,17 @@ function parseLocs(xml) {
 function urlToFile(url) {
   const pathname = new URL(url).pathname;
   if (pathname.endsWith('/')) return path.join(ROOT, pathname.replace(/^\//, ''), 'index.html');
-  return path.join(ROOT, pathname.replace(/^\//, ''));
+  const direct = path.join(ROOT, pathname.replace(/^\//, ''));
+  if (fs.existsSync(direct)) return direct;
+  // Public URLs are extensionless because Cloudflare Pages serves `foo.html` at
+  // `/foo` and 308-redirects the `.html` form. The rendered file keeps its
+  // extension, so resolve `/insights/foo` back to `insights/foo.html`, and fall
+  // back to a directory index for `/foo` -> `foo/index.html`.
+  const withHtml = `${direct}.html`;
+  if (fs.existsSync(withHtml)) return withHtml;
+  const asIndex = path.join(direct, 'index.html');
+  if (fs.existsSync(asIndex)) return asIndex;
+  return withHtml;
 }
 
 if (!fs.existsSync(PUBLISHED_URLS_PATH)) fail('Missing content/_live/published_urls.json');
