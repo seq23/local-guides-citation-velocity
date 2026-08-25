@@ -52,6 +52,21 @@ jobs:
         run: echo "SOURCE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
       - name: Run planning-only citation intelligence before Safe Harbor content release
         run: npm run release:daily-citation-intelligence:preview
+      - name: Install Search Console client when credentials exist
+        if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON != '' }}
+        run: python3 -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null
+      - name: Refresh measured query evidence from Search Console
+        # The atlas is evidence-gated but nothing produced T1 evidence, so it ran
+        # on 5 hand-seeded modelled queries. Refreshing here rather than on a
+        # timer keeps maximum_scheduled_mutation_workflows at 0: evidence lands
+        # through the same validated release path as everything else.
+        # No credentials means the evidence file is left untouched, not emptied.
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+        run: |
+          python3 scripts/queries/ingest_gsc_evidence.py
+          npm run atlas:build
       - name: Absorb governed artifacts and run Safe Harbor content release
         run: npm run release:velocity-intake
       - name: Commit validated Velocity release

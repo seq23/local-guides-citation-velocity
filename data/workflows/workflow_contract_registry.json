@@ -5,7 +5,7 @@
     "node_version": "24",
     "node_options": "--max-old-space-size=3072",
     "maximum_workflows_on_push": 2,
-    "maximum_scheduled_mutation_workflows": 0,
+    "maximum_scheduled_mutation_workflows": 1,
     "allowed_push_workflows": [
       "validate-repo.yml",
       "velocity-content-release.yml"
@@ -26,7 +26,11 @@
       "git push to another repository",
       "LKG_REPO",
       "LKG_TOKEN"
-    ]
+    ],
+    "allowed_scheduled_mutation_workflows": [
+      "query-evidence-refresh.yml"
+    ],
+    "scheduled_mutation_policy": "Scheduled workflows may commit to main, but only those named in allowed_scheduled_mutation_workflows, and only after the full validation chain passes in the same run. This was 0 while every change arrived through an external agent-run manifest. Content-factory lanes are now permitted to write on a timer; the allowlist keeps that an explicit decision per workflow rather than a general licence for anything scheduled to push."
   },
   "workflows": [
     {
@@ -182,6 +186,46 @@
       "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
     },
     {
+      "file": "query-evidence-refresh.yml",
+      "name": "Query Evidence Refresh",
+      "lane": "query-evidence",
+      "triggers": [
+        "schedule:23-06-utc",
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": true,
+      "permissions": [
+        "contents: write"
+      ],
+      "timeout_minutes": 30,
+      "commands": [
+        "npm ci --ignore-scripts",
+        "python3 scripts/queries/ingest_gsc_evidence.py",
+        "npm run atlas:build",
+        "npm run validate"
+      ],
+      "required_inputs": [],
+      "required_secrets": [],
+      "optional_secrets": [
+        "GSC_SERVICE_ACCOUNT_JSON",
+        "GSC_SITE_URL"
+      ],
+      "consumes": [
+        "Google Search Console search-analytics query rows for the verified property",
+        "existing evidence_queries.json (merged, never replaced)"
+      ],
+      "produces": [
+        "data/queries/evidence/evidence_queries.json",
+        "data/authority_scale/query_atlas.json"
+      ],
+      "upstream": [],
+      "downstream": [
+        "velocity-content-release.yml"
+      ],
+      "failure_boundary": "Ingests measured Search Console demand, rebuilds the atlas, and commits only if the full validation chain passes in the same run. Named in allowed_scheduled_mutation_workflows. It has no page-admission authority: publishing stays gated by atlas evidence tiers and the release workflow. Missing credentials leave the evidence untouched and exit 0; a credentialed API failure is a hard error."
+    },
+    {
       "file": "search-intelligence-loop.yml",
       "name": "Search Intelligence Closed Loop",
       "lane": "search-intelligence",
@@ -279,11 +323,16 @@
         "npm run validate:agent-exact",
         "npm run validate:citation-agent-fixes",
         "npm run build",
-        "npm run validate:release"
+        "npm run validate:release",
+        "python3 scripts/queries/ingest_gsc_evidence.py",
+        "npm run atlas:build"
       ],
       "required_inputs": [],
       "required_secrets": [],
-      "optional_secrets": [],
+      "optional_secrets": [
+        "GSC_SERVICE_ACCOUNT_JSON",
+        "GSC_SITE_URL"
+      ],
       "consumes": [
         "Twin Agent ready manifests",
         "traffic-qualified preview proof",
@@ -291,7 +340,9 @@
       ],
       "produces": [
         "validated Velocity release commit",
-        "release diagnostics"
+        "release diagnostics",
+        "data/queries/evidence/evidence_queries.json",
+        "data/authority_scale/query_atlas.json"
       ],
       "upstream": [
         "validate-repo.yml"

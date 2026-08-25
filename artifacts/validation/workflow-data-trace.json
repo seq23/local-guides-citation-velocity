@@ -1,11 +1,11 @@
 {
   "validator": "workflow-data-trace",
-  "status": "FAIL",
+  "status": "PASS",
   "workflow_count": 9,
-  "manual_ready_count": 8,
-  "scheduled_count": 3,
+  "manual_ready_count": 9,
+  "scheduled_count": 4,
   "push_count": 2,
-  "scheduled_mutation_count": 0,
+  "scheduled_mutation_count": 1,
   "lineage": [
     {
       "file": "ci-health-recovery.yml",
@@ -93,6 +93,27 @@
       "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
     },
     {
+      "file": "query-evidence-refresh.yml",
+      "lane": "query-evidence",
+      "triggers": [
+        "schedule:23-06-utc",
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "Google Search Console search-analytics query rows for the verified property",
+        "existing evidence_queries.json (merged, never replaced)"
+      ],
+      "produces": [
+        "data/queries/evidence/evidence_queries.json",
+        "data/authority_scale/query_atlas.json"
+      ],
+      "upstream": [],
+      "downstream": [
+        "velocity-content-release.yml"
+      ],
+      "failure_boundary": "Ingests measured Search Console demand, rebuilds the atlas, and commits only if the full validation chain passes in the same run. Named in allowed_scheduled_mutation_workflows. It has no page-admission authority: publishing stays gated by atlas evidence tiers and the release workflow. Missing credentials leave the evidence untouched and exit 0; a credentialed API failure is a hard error."
+    },
+    {
       "file": "search-intelligence-loop.yml",
       "lane": "search-intelligence",
       "triggers": [
@@ -152,7 +173,9 @@
       ],
       "produces": [
         "validated Velocity release commit",
-        "release diagnostics"
+        "release diagnostics",
+        "data/queries/evidence/evidence_queries.json",
+        "data/authority_scale/query_atlas.json"
       ],
       "upstream": [
         "validate-repo.yml"
@@ -184,9 +207,7 @@
       "failure_boundary": "Push only after deterministic frozen-aware rebuild and release validation pass; broad self-healing is not permitted in the rebuild workflow."
     }
   ],
-  "errors": [
-    "workflow_inventory_mismatch:ci-health-recovery.yml,daily-citation-intelligence.yml,deploy-distribution.yml,postdeploy-public-audit.yml,query-evidence-refresh.yml,search-intelligence-loop.yml,validate-repo.yml,velocity-content-release.yml,velocity-full-rebuild.yml!=ci-health-recovery.yml,daily-citation-intelligence.yml,deploy-distribution.yml,postdeploy-public-audit.yml,search-intelligence-loop.yml,validate-repo.yml,velocity-content-release.yml,velocity-full-rebuild.yml"
-  ],
+  "errors": [],
   "warnings": [],
   "checked_at": "2026-08-25"
 }

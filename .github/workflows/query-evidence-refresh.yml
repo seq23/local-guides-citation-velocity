@@ -10,6 +10,10 @@ name: Query Evidence Refresh
 # This ingests what people actually searched, rebuilds the atlas from it, and
 # commits only if validation passes.
 
+# Scheduled and allowed to commit. workflow_contract_registry.json names this
+# file in allowed_scheduled_mutation_workflows; the cap was 0 while every change
+# arrived through an external agent-run manifest. It commits only if the full
+# validation chain passes in the same run.
 on:
   schedule:
     - cron: "23 6 * * *"
@@ -28,14 +32,18 @@ concurrency:
   group: query-evidence-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: "24"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

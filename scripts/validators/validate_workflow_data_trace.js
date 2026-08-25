@@ -56,6 +56,12 @@ if (velocityPush) {
 }
 const scheduledMutation = (reg.workflows || []).filter((w) => w.mutates_repo && (w.triggers || []).some((t) => t.startsWith('schedule:')));
 if (scheduledMutation.length > reg.global_contract.maximum_scheduled_mutation_workflows) errors.push(`too_many_scheduled_mutation_workflows:${scheduledMutation.length}`);
+// The cap alone would let any workflow take the slot. Committing to main on a
+// timer is a per-workflow decision, so each one must also be named.
+const allowedScheduledMutation = new Set(reg.global_contract.allowed_scheduled_mutation_workflows || []);
+for (const w of scheduledMutation) {
+  if (!allowedScheduledMutation.has(w.file)) errors.push(`scheduled_mutation_not_allowlisted:${w.file}`);
+}
 for (const f of reg.global_contract.retired_workflows || []) if (files.includes(f)) errors.push(`retired_workflow_present:${f}`);
 const validate = textByFile.get('validate-repo.yml') || '';
 const deploy = textByFile.get('deploy-distribution.yml') || '';
