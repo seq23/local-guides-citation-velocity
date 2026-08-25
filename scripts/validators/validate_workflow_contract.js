@@ -12,8 +12,11 @@ const required = ['daily-citation-intelligence.yml','validate-repo.yml','velocit
 for (const f of files) {
   const text = fs.readFileSync(path.join(dir, f), 'utf8');
   fingerprints.push({file: f, sha256: crypto.createHash('sha256').update(text).digest('hex')});
-  if (/actions\/checkout@(?!v4)/.test(text)) errors.push(`${f}:checkout-version`);
-  if (/actions\/setup-node@(?!v4)/.test(text)) errors.push(`${f}:setup-node-version`);
+  // Require a pinned major version rather than one specific version. Asserting v4
+  // exactly meant the deprecated Node 20 actions could never be upgraded without
+  // failing this contract. Floating refs (@main, @master) are still rejected.
+  if (/actions\/checkout@(?!v\d+)/.test(text)) errors.push(`${f}:checkout-version`);
+  if (/actions\/setup-node@(?!v\d+)/.test(text)) errors.push(`${f}:setup-node-version`);
   const versions = [...text.matchAll(/node-version:\s*["']?([^"'\s#]+)/g)].map((m) => m[1]);
   if (!versions.length || versions.some((v) => !/^24(?:\.|$)/.test(v))) errors.push(`${f}:node-version`);
   if (/create-pull-request|LKG_REPO|LKG_TOKEN|lkg:candidates/i.test(text)) errors.push(`${f}:cross-repo-lkg-surface`);
@@ -36,7 +39,7 @@ if (!/validate:html-report-contract/.test(releaseIntake)) errors.push('release:v
 if (!/release:ci-validate/.test(validate)) errors.push('validate-repo:central-command');
 if (!/include-hidden-files:\s*true/.test(validate)) errors.push('validate-repo:validated-artifact-must-include-hidden-files');
 if (/npm run build|distribution:prepare/.test(dist)) errors.push('deploy-distribution:must-not-rebuild');
-if (!/download-artifact@v4/.test(dist)) errors.push('deploy-distribution:download-validated-artifact');
+if (!/download-artifact@v\d+/.test(dist)) errors.push('deploy-distribution:download-validated-artifact');
 if (!/run-id:\s*\$\{\{ steps\.artifact\.outputs\.run_id \}\}/.test(dist)) errors.push('deploy-distribution:must-download-exact-run-id');
 if (!/node scripts\/prepare_distribution_from_attestation\.js/.test(dist)) errors.push('deploy-distribution:must-verify-attestation-before-deploy');
 if (!/PLAYWRIGHT_BASE_URL/.test(post) || !/playwright@1\.61\.1/.test(post) || !/postdeploy:public-click-audit/.test(post)) errors.push('postdeploy-public-audit:real-browser-contract-missing');
