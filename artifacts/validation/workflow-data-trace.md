@@ -1,7 +1,7 @@
 # Workflow Data Trace
 
-Status: **PASS**
-Workflows: 8 · Manual-ready: 8 · Scheduled: 3 · Push-triggered: 2
+Status: **FAIL**
+Workflows: 9 · Manual-ready: 8 · Scheduled: 3 · Push-triggered: 2
 
 | Workflow | Lane | Triggers | Consumes | Produces | Failure boundary |
 |---|---|---|---|---|---|

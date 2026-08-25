@@ -1,0 +1,73 @@
+name: Query Evidence Refresh
+
+# Closes the loop the query atlas was missing.
+#
+# The atlas is evidence-gated - a query only earns a page if it carries demand
+# evidence - but nothing ever produced T1 (measured) evidence. The evidence file
+# held 5 hand-seeded modelled rows and no process refreshed it, so the site was
+# published against guesses while real query data sat unread in Search Console.
+#
+# This ingests what people actually searched, rebuilds the atlas from it, and
+# commits only if validation passes.
+
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: "Search Console lookback window in days"
+        required: false
+        default: "90"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: query-evidence-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci --ignore-scripts
+      - name: Install Search Console client
+        run: python -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null
+
+      - name: Ingest measured queries from Search Console
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+          GSC_LOOKBACK_DAYS: ${{ inputs.lookback_days || '90' }}
+        run: python3 scripts/queries/ingest_gsc_evidence.py
+
+      - name: Rebuild the query atlas from refreshed evidence
+        run: npm run atlas:build
+
+      - name: Validate before publishing anything
+        run: npm run validate
+
+      - name: Commit refreshed evidence and atlas
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "query evidence refresh: measured GSC demand -> atlas"
+          file_pattern: "data/queries/evidence/*.json data/authority_scale/query_atlas.json artifacts/validation/*.json"
+
+      - name: Upload evidence snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: query-evidence-${{ github.run_id }}
+          path: |
+            data/queries/evidence/evidence_queries.json
+            data/authority_scale/query_atlas.json
+          if-no-files-found: ignore
