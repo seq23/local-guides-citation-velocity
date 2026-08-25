@@ -1,0 +1,8 @@
+# Python dependencies for the local validation chain.
+#
+# PyYAML backs scripts/validators/validate_workflow_yaml.py. It was previously
+# undeclared and only ever satisfied by the GitHub runner image's preinstalled
+# copy, so the check passed in CI and hard-failed on any developer machine -
+# blocking 35 downstream validators behind it. Declared here so the local
+# self-healing loop runs the same checks CI does.
+PyYAML>=6.0
