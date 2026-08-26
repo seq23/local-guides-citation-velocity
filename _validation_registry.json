@@ -5875,6 +5875,51 @@
         "artifacts/validation/page-record-identity.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "frozen-content-recoverability",
+      "title": "Frozen content recoverability contract",
+      "path": "scripts/validators/validate_frozen_content_recoverability.js",
+      "command": "node scripts/validators/validate_frozen_content_recoverability.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content",
+        "data-integrity",
+        "release"
+      ],
+      "risk_prevented": "Thawing a frozen route whose accepted bytes hold content the generator can no longer produce deletes that content on the next build, with no error and no reviewable diff.",
+      "why_existing_checks_do_not_cover": "The frozen guard confirms bytes match after a build; it cannot tell a route it is confirming from a route it is silently substituting for, and nothing warns while the route stays frozen.",
+      "estimated_runtime_seconds": 15,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/frozen-content-recoverability.json",
+      "failure_action": "recover the content into content/_live/pages.json before thawing",
+      "depends_on": [],
+      "requires_files": [
+        "data/release/frozen_page_registry.json",
+        "content/_live/pages.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/frozen-content-recoverability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/frozen-content-recoverability.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "6018c30bab32076b81be4950f781bb14cd33478952728d08ee5a5850625a2470",
+  "registry_sha256": "1d23878c5f7f3350303e4a8fdc3e6168fdcc7b46d181092e237f3c22254c0ee6",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,13 +53,13 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 133,
-    "active": 105,
+    "total": 134,
+    "active": 106,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
     "hard_fail": 105,
-    "strong_warning": 11,
+    "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
   },
@@ -112,7 +112,8 @@
         "no-internal-instruction-leak",
         "content-pattern-contract",
         "operator-doc-currency",
-        "page-record-identity"
+        "page-record-identity",
+        "frozen-content-recoverability"
       ],
       "execution_order": [
         "authority-contracts",
@@ -134,6 +135,7 @@
         "medium-articles",
         "agent-run-artifact-intake",
         "citation-velocity-master-plan",
+        "frozen-content-recoverability",
         "homepage-request-assistance",
         "homepage-schema",
         "html-report-contract",
@@ -271,7 +273,8 @@
         "no-internal-instruction-leak",
         "content-pattern-contract",
         "operator-doc-currency",
-        "page-record-identity"
+        "page-record-identity",
+        "frozen-content-recoverability"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -335,6 +338,7 @@
         "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
+        "frozen-content-recoverability",
         "homepage-request-assistance",
         "homepage-schema",
         "html-report-contract",
@@ -488,7 +492,8 @@
         "no-internal-instruction-leak",
         "content-pattern-contract",
         "operator-doc-currency",
-        "page-record-identity"
+        "page-record-identity",
+        "frozen-content-recoverability"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -552,6 +557,7 @@
         "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
+        "frozen-content-recoverability",
         "homepage-request-assistance",
         "homepage-schema",
         "html-report-contract",
@@ -736,7 +742,8 @@
         "no-internal-instruction-leak",
         "content-pattern-contract",
         "operator-doc-currency",
-        "page-record-identity"
+        "page-record-identity",
+        "frozen-content-recoverability"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -800,6 +807,7 @@
         "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
+        "frozen-content-recoverability",
         "homepage-request-assistance",
         "homepage-schema",
         "html-report-contract",
@@ -958,7 +966,8 @@
         "no-internal-instruction-leak",
         "content-pattern-contract",
         "operator-doc-currency",
-        "page-record-identity"
+        "page-record-identity",
+        "frozen-content-recoverability"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1022,6 +1031,7 @@
         "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
+        "frozen-content-recoverability",
         "homepage-request-assistance",
         "homepage-schema",
         "html-report-contract",
@@ -1249,7 +1259,8 @@
         "frozen-output-integrity",
         "no-internal-instruction-leak",
         "content-pattern-contract",
-        "page-record-identity"
+        "page-record-identity",
+        "frozen-content-recoverability"
       ],
       "execution_order": [
         "authority-contracts",
@@ -1275,6 +1286,7 @@
         "agent-exact-implementation",
         "citation-agent-fixes",
         "citation-velocity-master-plan",
+        "frozen-content-recoverability",
         "homepage-request-assistance",
         "homepage-schema",
         "html-report-contract",
@@ -1336,7 +1348,8 @@
         "frozen-output-integrity",
         "no-internal-instruction-leak",
         "content-pattern-contract",
-        "page-record-identity"
+        "page-record-identity",
+        "frozen-content-recoverability"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1357,6 +1370,7 @@
         "html-fix-acceptance-compiler",
         "agent-exact-implementation-trace",
         "agent-exact-acceptance-manifest",
+        "frozen-content-recoverability",
         "html-report-contract",
         "page-family-contract",
         "page-record-identity",
@@ -6433,6 +6447,45 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "frozen-content-recoverability",
+        "title": "Frozen content recoverability contract",
+        "status": "ACTIVE",
+        "severity": "STRONG_WARNING",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_frozen_content_recoverability.js",
+        "command": "node scripts/validators/validate_frozen_content_recoverability.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/release/frozen_page_registry.json",
+          "content/_live/pages.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/frozen-content-recoverability.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/frozen-content-recoverability.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Thawing a frozen route whose accepted bytes hold content the generator can no longer produce deletes that content on the next build, with no error and no reviewable diff.",
+        "default_behavior": "WARN_CONTINUE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "SOFT_WARNING": [
@@ -9776,6 +9829,45 @@
         "enforce_no_source_mutation": true,
         "risk_prevented": "Two records could claim one route, so a slug-keyed consumer picks a winner by iteration order and a repair script can write content into the empty record instead of the real page.",
         "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "frozen-content-recoverability",
+        "title": "Frozen content recoverability contract",
+        "status": "ACTIVE",
+        "severity": "STRONG_WARNING",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_frozen_content_recoverability.js",
+        "command": "node scripts/validators/validate_frozen_content_recoverability.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/release/frozen_page_registry.json",
+          "content/_live/pages.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/frozen-content-recoverability.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/frozen-content-recoverability.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Thawing a frozen route whose accepted bytes hold content the generator can no longer produce deletes that content on the next build, with no error and no reviewable diff.",
+        "default_behavior": "WARN_CONTINUE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
