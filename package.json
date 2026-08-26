@@ -3,7 +3,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/build_pages_dist.js",
+    "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js",
     "validate": "node scripts/validation/run_validation_registry.js --profile core",
     "release:batch": "node scripts/release_batch.js 10",
     "release:batch20": "node scripts/release_batch.js 20",
@@ -257,7 +257,8 @@
     "atlas:build": "node scripts/atlas/build_query_atlas.mjs",
     "freeze:prune": "node scripts/frozen_pages.js prune",
     "selfheal": "node scripts/selfheal/heal_until_clean.mjs",
-    "selfheal:dry": "node scripts/selfheal/heal_until_clean.mjs --dry-run"
+    "selfheal:dry": "node scripts/selfheal/heal_until_clean.mjs --dry-run",
+    "clarity:install": "node scripts/install_clarity.js"
   },
   "engines": {
     "node": "24.x"
