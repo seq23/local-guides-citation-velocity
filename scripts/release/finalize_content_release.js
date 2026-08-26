@@ -12,7 +12,7 @@ function writeJson(relPath,value){const out=path.join(ROOT,relPath);fs.mkdirSync
 function fileHash(relPath){const p=path.join(ROOT,relPath);if(!fs.existsSync(p))return null;return require('crypto').createHash('sha256').update(fs.readFileSync(p)).digest('hex');}
 function currentRepairSpecs(){
  const plan=readJson('data/report_fixes/agent_exact_implementation_plan.json',{specs:[]});
- return (plan.specs||[]).filter((spec)=>spec.operation==='REPAIR_INTENDED_WINNER_PAGE'&&spec.status!=='BLOCKED');
+ return (plan.specs||[]).filter((spec)=>spec.operation==='REPAIR_INTENDED_WINNER_PAGE'&&spec.status==='PLANNED');
 }
 function repairRoute(spec){return implementationPathToRoute(spec.target_route||spec.implementation_path||'');}
 function markCompletedAgentRepairs(acceptedRoutes){

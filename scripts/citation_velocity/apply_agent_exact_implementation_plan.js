@@ -76,6 +76,17 @@ function main() {
       results.push({ ...spec, status: 'BLOCKED', blocked_reason: spec.blocked_reason || 'blocked_by_plan' });
       continue;
     }
+    // CARRIED rows are recorded by the plan so nothing disappears silently, but they are
+    // explicitly outside the processing budget and must never be worked.
+    if (spec.status === 'CARRIED') {
+      results.push({ ...spec, status: 'CARRIED_NOT_WORKED', carried_reason: spec.carried_reason || 'carried_by_plan' });
+      continue;
+    }
+    // Default-deny: only specs the plan actually planned are eligible to be applied.
+    if (spec.status !== 'PLANNED') {
+      results.push({ ...spec, status: 'NOT_APPLIED_UNPLANNED_STATUS', blocked_reason: `unplanned_status:${spec.status || 'UNKNOWN'}` });
+      continue;
+    }
     if (spec.operation !== 'REPAIR_INTENDED_WINNER_PAGE') {
       results.push({ ...spec, status: 'NOT_APPLIED_NON_REPAIR' });
       continue;

@@ -21,7 +21,7 @@ function fileText(p) { try { return fs.readFileSync(rel(p), 'utf8'); } catch { r
 function plannedPathSet(plan) {
   const out = new Set();
   for (const spec of plan.specs || []) {
-    if (spec.operation === 'REPAIR_INTENDED_WINNER_PAGE' && spec.status !== 'BLOCKED') out.add(normalizePath(spec.implementation_path || spec.intended_winner_path || spec.target_route));
+    if (spec.operation === 'REPAIR_INTENDED_WINNER_PAGE' && spec.status === 'PLANNED') out.add(normalizePath(spec.implementation_path || spec.intended_winner_path || spec.target_route));
   }
   return out;
 }

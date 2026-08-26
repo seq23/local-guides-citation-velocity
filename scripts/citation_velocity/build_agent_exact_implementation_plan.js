@@ -79,6 +79,27 @@ function main(){
     rowIds.add(row.id);
     rows.push(row);
   }
+  // A row that is neither selected, nor a sibling of a selected repair target, nor
+  // blocked used to enter no set at all: not planned, not blocked, not ledgered, and
+  // nowhere recorded. That silent drop is the single largest accounting hole in this
+  // pipeline. Carry those rows into the plan as an explicitly unworked state so the
+  // processing budget still bounds what gets applied, but nothing vanishes unrecorded.
+  const isPreCutover=(row)=>policy.retroactive_processing===false && row.run_date && policy.effective_from && row.run_date < policy.effective_from;
+  // Rows already proven by a previous pass live in the durable exact-implementation
+  // ledger and are done, not pending. Only rows still awaiting work are carried.
+  const exactLedger=readJson('data/report_fixes/agent_exact_implementation_ledger.json',{entries:[]});
+  const ledgeredIds=new Set();
+  for(const entry of exactLedger.entries||[]){
+    for(const key of ['record_ids','source_record_ids']){
+      for(const id of entry[key]||[]) if(id) ledgeredIds.add(String(id));
+    }
+    if(entry.record_id) ledgeredIds.add(String(entry.record_id));
+  }
+  const isCarryable=(row)=>!rowIds.has(row.id)
+    && !isPreCutover(row)
+    && String(row.status||'')==='READY_TO_RELEASE'
+    && !ledgeredIds.has(String(row.id));
+  const carriedRows=allRows.filter(isCarryable);
   const specs=[];
   const groupedRepairs=new Map();
   for(const row of rows){
@@ -135,9 +156,27 @@ function main(){
     const row=group.row;
     specs.push({record_id:group.record_ids[0], record_ids:group.record_ids, run_date:row.run_date, query:group.queries[0], queries:[...new Set(group.queries)], intended_winner_page:row.intended_winner_page||'', intended_winner_path:implementationPath, target_route:row.target_route||`/${implementationPath}`, implementation_path:implementationPath, supporting_route:row.supporting_route||'', operation:'REPAIR_INTENDED_WINNER_PAGE', ...compactSourceFields({...row, source_record_ids: group.source_record_ids || [], source_artifacts: group.source_artifacts || {}, normalized_path: [...new Set(group.normalized_paths || [])].join('|')}), before_hash:fileHash(implementationPath), after_hash:null, status:'PLANNED', blocked_reason:'', target_resolution_status:group.target_resolution_status || 'EXACT_EXISTS', route_family: routeFamilyForPath(implementationPath), canonicalized_from:[...new Set(group.canonicalized_from || [])], fix_recommendations:[...new Set(group.recommendations)]});
   }
-  const report={schema_version:'1.1', status:'PASS', generated_at:DATE, policy_path:POLICY_PATH, release_plan:'artifacts/validation/velocity-intake-release-plan.json', selected_agent_rows:selectedRows.length, considered_agent_rows:rows.length, selected_repair_targets:selectedRepairTargets.size, blocked_agent_rows_carried:specs.filter(x=>x.status==='BLOCKED').length, repair_count:specs.filter(x=>x.operation==='REPAIR_INTENDED_WINNER_PAGE').length, new_page_count:specs.filter(x=>x.operation==='CREATE_NEW_TARGET_PAGE').length, blocked_count:specs.filter(x=>x.status==='BLOCKED').length, specs:specs.sort((a,b)=>String(a.implementation_path||a.target_route).localeCompare(String(b.implementation_path||b.target_route)))};
+  for(const row of carriedRows){
+    specs.push({
+      record_id:row.id,
+      run_date:row.run_date,
+      vertical:row.vertical||'',
+      query:row.query||'',
+      operation:row.operation||'',
+      intended_winner_page:row.intended_winner_page||'',
+      intended_winner_path:row.intended_winner_path||'',
+      target_route:row.target_route||'',
+      implementation_path:'',
+      status:'CARRIED',
+      carried_reason:'UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET',
+      source_status:row.status||'',
+      normalized_path:row.normalized_path||''
+    });
+  }
+  const carriedCount=specs.filter((x)=>x.status==='CARRIED').length;
+  const report={schema_version:'1.2', status:'PASS', generated_at:DATE, policy_path:POLICY_PATH, release_plan:'artifacts/validation/velocity-intake-release-plan.json', selected_agent_rows:selectedRows.length, considered_agent_rows:rows.length, selected_repair_targets:selectedRepairTargets.size, blocked_agent_rows_carried:specs.filter(x=>x.status==='BLOCKED').length, repair_count:specs.filter(x=>x.operation==='REPAIR_INTENDED_WINNER_PAGE' && x.status!=='CARRIED').length, new_page_count:specs.filter(x=>x.operation==='CREATE_NEW_TARGET_PAGE' && x.status!=='CARRIED').length, blocked_count:specs.filter(x=>x.status==='BLOCKED').length, carried_count:carriedCount, carried_policy:'CARRIED rows are recorded but never applied; the processing budget still bounds worked rows', post_cutover_row_accounting:{total_rows:allRows.filter((row)=>!isPreCutover(row)).length, worked_rows:rows.filter((row)=>!isPreCutover(row)).length, carried_rows:carriedCount, previously_ledgered_rows:allRows.filter((row)=>!isPreCutover(row) && !rowIds.has(row.id) && ledgeredIds.has(String(row.id))).length, unaccounted_rows:allRows.filter((row)=>!isPreCutover(row) && !rowIds.has(row.id) && !ledgeredIds.has(String(row.id)) && !isCarryable(row)).length}, specs:specs.sort((a,b)=>String(a.implementation_path||a.target_route).localeCompare(String(b.implementation_path||b.target_route)))};
   writeJson('artifacts/validation/agent-exact-implementation-plan.json', report);
   writeJson('data/report_fixes/agent_exact_implementation_plan.json', report);
-  console.log(`AGENT EXACT IMPLEMENTATION PLAN PASS: repairs=${report.repair_count}; new_pages=${report.new_page_count}; blocked=${report.blocked_count}`);
+  console.log(`AGENT EXACT IMPLEMENTATION PLAN PASS: repairs=${report.repair_count}; new_pages=${report.new_page_count}; blocked=${report.blocked_count}; carried=${report.carried_count}; unaccounted=${report.post_cutover_row_accounting.unaccounted_rows}`);
 }
 main();

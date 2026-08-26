@@ -8,7 +8,7 @@ const semantic=readJson('data/report_fixes/agent_exact_semantic_acceptance_manif
 const ledger=readJson('data/report_fixes/agent_exact_implementation_ledger.json',{entries:[]});
 const plan=readJson('artifacts/validation/agent-exact-implementation-plan.json',{specs:[]});
 const activePlanPaths=new Set((plan.specs||[])
-  .filter(spec=>spec.status!=='BLOCKED')
+  .filter(spec=>spec.status==='PLANNED')
   .map(spec=>norm(spec.implementation_path||spec.intended_winner_path||''))
   .filter(Boolean));
 const scopedLedgerEntries=activePlanPaths.size

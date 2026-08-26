@@ -27,7 +27,7 @@ function inferVertical(spec) {
 }
 function main() {
   const plan = readJson(PLAN_PATH, { specs: [] });
-  const specs = (plan.specs || []).filter((spec) => spec && spec.status !== 'BLOCKED' && spec.operation === 'REPAIR_INTENDED_WINNER_PAGE');
+  const specs = (plan.specs || []).filter((spec) => spec && spec.status === 'PLANNED' && spec.operation === 'REPAIR_INTENDED_WINNER_PAGE');
   const compile = (spec) => authorityGroundedEntryForSpec(spec) || compileEntryFromSpec(spec);
   const entries = specs.map(compile);
   const manifest = {
