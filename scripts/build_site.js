@@ -1517,7 +1517,12 @@ function exportFanoutArtifacts(entries){
  * three named guides, not one undifferentiated list.
  */
 function renderStateDirectory(vertical, verticalTitle, pages) {
-  const prefix = `/${vertical}/states/`;
+  // The vertical key and the route spelling disagree: personal injury is
+  // 'personal_injury' as a key and '/personal-injury/' as a path. Matching on
+  // the raw key silently produced an empty directory for the one vertical with
+  // the most state pages, and an empty directory looks identical to a vertical
+  // that simply has none.
+  const prefix = `/${String(vertical).replace(/_/g, '-')}/states/`;
   const byState = new Map();
   for (const page of pages) {
     const slug = String(page.slug || '');
