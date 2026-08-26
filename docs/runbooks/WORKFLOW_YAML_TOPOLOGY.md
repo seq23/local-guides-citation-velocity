@@ -28,11 +28,11 @@ Each workflow maps to exactly one lane:
 
 ## Replaced / retired workflows
 
-- `.github/workflows/validate.yml` replaced by `.github/workflows/validate-repo.yml`
-- `.github/workflows/velocity_content_release.yml` replaced by `.github/workflows/velocity-content-release.yml`
+- `.github/workflows/validate-repo.yml` replaced by `.github/workflows/validate-repo.yml`
+- `.github/workflows/velocity-content-release.yml` replaced by `.github/workflows/velocity-content-release.yml`
 - `.github/workflows/release_batch.yml` merged into the manual input path of `.github/workflows/velocity-content-release.yml`
-- `.github/workflows/velocity_full_rebuild.yml` replaced by `.github/workflows/velocity-full-rebuild.yml`
-- `.github/workflows/postdeploy_public_audit.yml` replaced by `.github/workflows/postdeploy-public-audit.yml`
+- `.github/workflows/velocity-full-rebuild.yml` replaced by `.github/workflows/velocity-full-rebuild.yml`
+- `.github/workflows/postdeploy-public-audit.yml` replaced by `.github/workflows/postdeploy-public-audit.yml`
 
 ## Runtime mutation law
 

@@ -30,7 +30,7 @@ Twin Agent measures citations
 The repo uses the existing consolidated workflow:
 
 ```text
-.github/workflows/velocity_content_release.yml
+.github/workflows/velocity-content-release.yml
 ```
 
 No separate `agent_run_absorption.yml` workflow is used.
