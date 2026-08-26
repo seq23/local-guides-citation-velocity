@@ -24,11 +24,23 @@ concurrency:
   group: postdeploy-public-audit-${{ inputs.base_url || 'https://theindustryguides.com' }}
   cancel-in-progress: false
 
+# Coverage note: this audit is exhaustive, not sampled. Every case in
+# _browser_suite_contract.json - all 18 public routes x desktop and mobile, 36
+# cases, 12 assertions each - runs on every single run. There is no route
+# rotation and no long-tail slice, so nothing is deferred to a later run. The
+# speed came from removing waste, not from checking less:
+#   * the runner waits for `load` plus a bounded settle instead of `networkidle`,
+#     which never went quiet on a page carrying provider analytics and so burned
+#     the full 45s navigation timeout on every attempt;
+#   * the 36 independent cases run through a bounded worker pool rather than
+#     strictly one at a time;
+#   * a repeating failure signature stops being retried, because a retry can
+#     only rescue a flake and a systemic failure was tripling the whole run.
 jobs:
   audit:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -36,13 +48,21 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Cache Playwright browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright@1.61.1-chromium
       - name: Install Playwright runtime
-        run: |
-          npm install --no-save playwright@1.61.1
-          npx playwright install --with-deps chromium
+        # playwright@1.61.1 is a devDependency, so `npm ci` already placed the
+        # library; only the browser binary and its system libraries are missing,
+        # and the binary comes from the cache above on a hit.
+        run: npx playwright install --with-deps chromium
       - name: Run deployed click, CTA, schema, and route audit
         env:
           PLAYWRIGHT_BASE_URL: ${{ inputs.base_url || 'https://theindustryguides.com' }}
+          PUBLIC_CLICK_AUDIT_CONCURRENCY: "6"
         run: npm run postdeploy:public-click-audit
       - name: Upload click-audit evidence
         if: always()

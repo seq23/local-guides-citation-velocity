@@ -48,9 +48,51 @@ const IMPLEMENTED_ASSERTIONS = new Set([
 const RETRIES = Number(process.env.PUBLIC_CLICK_AUDIT_RETRIES || 2);
 const RETRY_DELAY_MS = Number(process.env.PUBLIC_CLICK_AUDIT_RETRY_DELAY_MS || 2500);
 const NAVIGATION_TIMEOUT_MS = Number(process.env.PUBLIC_CLICK_AUDIT_TIMEOUT_MS || 45000);
+// `networkidle` was the single largest cost in this audit. The deployed site
+// carries provider analytics (Cloudflare Insights, Clarity/Bing sync) that keep
+// issuing requests indefinitely, so the 500ms-quiet condition never arrived and
+// every navigation burned the full 45s timeout, three times per case. Waiting
+// for `load` proves exactly the same thing for all twelve assertions - `load`
+// means the document and every subresource, images included, have finished -
+// and a bounded settle window afterwards still catches the late provider
+// console errors, which measurably all arrive within ~1s of `load`.
+const LOAD_STATE_TIMEOUT_MS = Number(process.env.PUBLIC_CLICK_AUDIT_LOAD_TIMEOUT_MS || 20000);
+const SETTLE_MS = Number(process.env.PUBLIC_CLICK_AUDIT_SETTLE_MS || 2500);
+// Cases are independent - each already gets its own browser context - so they
+// run through a bounded worker pool instead of one at a time. Results are
+// written back by index, so the report stays byte-identical in ordering.
+const CONCURRENCY = Math.max(1, Number(process.env.PUBLIC_CLICK_AUDIT_CONCURRENCY || 6));
+// A retry only ever rescues a flaky case. When the same failure signature keeps
+// repeating it is systemic, and retrying it just multiplies the runtime by the
+// retry count without changing a single verdict. Once a signature has failed
+// this many distinct cases, later cases carrying it are not retried.
+const SYSTEMIC_THRESHOLD = Math.max(2, Number(process.env.PUBLIC_CLICK_AUDIT_SYSTEMIC_THRESHOLD || 3));
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Signature = the set of failing assertion codes, ignoring the variable detail
+// after the colon (status codes, cache-busting query strings, request ids).
+function failureSignature(result) {
+  return [...new Set((result.failures || []).map(entry => String(entry).split(':')[0].trim()))]
+    .sort()
+    .join('+') || 'unknown';
+}
+
+async function runPool(items, limit, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  const lanes = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (;;) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) return;
+      results[index] = await worker(items[index], index);
+    }
+  });
+  await Promise.all(lanes);
+  return results;
 }
 
 function writeSummary(report) {
@@ -224,10 +266,21 @@ async function runCheck(browser, check, attempt) {
 
   try {
     const response = await page.goto(targetUrl(check.route), {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout: NAVIGATION_TIMEOUT_MS,
     });
+    let loadStateTimedOut = false;
+    try {
+      await page.waitForLoadState('load', { timeout: LOAD_STATE_TIMEOUT_MS });
+    } catch {
+      loadStateTimedOut = true;
+    }
+    await sleep(SETTLE_MS);
     const failures = await assertPage(page, check, response, consoleErrors, failedRequests);
+    // Under the old `networkidle` wait a page that never reached `load` threw and
+    // failed the case. Keep that verdict rather than silently asserting against a
+    // half-loaded document.
+    if (loadStateTimedOut) failures.unshift('route_loads:load_state_timeout');
     return {
       ...check,
       status: failures.length ? 'FAIL' : 'PASS',
@@ -247,8 +300,9 @@ async function runCheck(browser, check, attempt) {
   }
 }
 
-async function runCheckWithRetry(browser, check) {
+async function runCheckWithRetry(browser, check, systemic) {
   const attempts = [];
+  let suppressed = null;
   for (let attempt = 1; attempt <= RETRIES + 1; attempt += 1) {
     const result = await runCheck(browser, check, attempt);
     attempts.push(result);
@@ -257,13 +311,39 @@ async function runCheckWithRetry(browser, check) {
         ? result
         : { ...result, recovered_after_attempts: attempts.length, previous_failures: attempts.slice(0, -1) };
     }
-    if (attempt <= RETRIES) {
-      console.error(`PUBLIC CLICK AUDIT RETRY ${attempt}/${RETRIES}: ${failureLine(result)}`);
-      await sleep(RETRY_DELAY_MS);
+
+    const signature = failureSignature(result);
+    if (!systemic.has(signature)) systemic.set(signature, new Set());
+    systemic.get(signature).add(check.id || `${check.device}:${check.route}`);
+
+    if (attempt > RETRIES) break;
+
+    // Same signature twice in a row is a deterministic failure, not a flake. A
+    // third identical attempt cannot change the verdict, only the clock.
+    if (attempts.length > 1 && failureSignature(attempts[attempts.length - 2]) === signature) {
+      suppressed = 'deterministic';
+      break;
     }
+    // The signature is already failing across the suite. Retrying it on every
+    // remaining case is what turned a one-pass audit into a timeout.
+    if (systemic.get(signature).size >= SYSTEMIC_THRESHOLD) {
+      suppressed = 'systemic';
+      break;
+    }
+
+    console.error(`PUBLIC CLICK AUDIT RETRY ${attempt}/${RETRIES}: ${failureLine(result)}`);
+    await sleep(RETRY_DELAY_MS);
   }
   const last = attempts[attempts.length - 1];
-  return { ...last, attempts };
+  if (suppressed) {
+    console.error(`PUBLIC CLICK AUDIT RETRY SUPPRESSED (${suppressed}): ${failureLine(last)}`);
+  }
+  return {
+    ...last,
+    attempts,
+    failure_signature: failureSignature(last),
+    ...(suppressed ? { retry_suppressed: suppressed } : {}),
+  };
 }
 
 (async () => {
@@ -282,15 +362,22 @@ async function runCheckWithRetry(browser, check) {
   }
 
   const browser = await chromium.launch({ headless: true });
-  const results = [];
+  const systemic = new Map();
+  const startedAt = Date.now();
+  let results = [];
 
   try {
-    for (const check of contract.checks) {
-      results.push(await runCheckWithRetry(browser, check));
-    }
+    // Every case in the contract runs on every run. This audit is bounded at 36
+    // cases by the contract's count policy, so it is exhaustive, not sampled -
+    // no route rotation, no long-tail slice, nothing skipped.
+    results = await runPool(contract.checks, CONCURRENCY, check =>
+      runCheckWithRetry(browser, check, systemic)
+    );
   } finally {
     await browser.close();
   }
+
+  const wallMs = Date.now() - startedAt;
 
   const failed = results.filter(result => result.status === 'FAIL');
   const recovered = results.filter(result => result.recovered_after_attempts);
@@ -304,11 +391,22 @@ async function runCheckWithRetry(browser, check) {
     recovered_count: recovered.length,
     provider_console_warning_count: providerWarnings.length,
     provider_console_warnings: providerWarnings,
+    coverage_mode: 'exhaustive',
+    sampled: false,
+    wall_ms: wallMs,
+    concurrency: CONCURRENCY,
     retry_policy: {
       retries: RETRIES,
       retry_delay_ms: RETRY_DELAY_MS,
       navigation_timeout_ms: NAVIGATION_TIMEOUT_MS,
+      load_state_timeout_ms: LOAD_STATE_TIMEOUT_MS,
+      settle_ms: SETTLE_MS,
+      systemic_threshold: SYSTEMIC_THRESHOLD,
     },
+    attempt_count: results.reduce((total, result) => total + (result.attempts ? result.attempts.length : (result.previous_failures || []).length + 1), 0),
+    systemic_signatures: [...systemic.entries()]
+      .filter(([, cases]) => cases.size >= SYSTEMIC_THRESHOLD)
+      .map(([signature, cases]) => ({ signature, case_count: cases.size })),
     skipped_count: 0,
     base_url: base,
     failed_routes: failed.map(failureLine),
@@ -319,7 +417,7 @@ async function runCheckWithRetry(browser, check) {
   writeSummary(report);
 
   if (failed.length) {
-    console.error(`PUBLIC CLICK AUDIT FAIL: ${failed.length}/${results.length}`);
+    console.error(`PUBLIC CLICK AUDIT FAIL: ${failed.length}/${results.length} in ${Math.round(wallMs / 1000)}s at concurrency ${CONCURRENCY}`);
     for (const result of failed) {
       console.error(`PUBLIC CLICK AUDIT FAILURE: ${failureLine(result)}`);
     }
@@ -330,7 +428,7 @@ async function runCheckWithRetry(browser, check) {
   if (recovered.length) {
     console.log(`PUBLIC CLICK AUDIT RECOVERED: ${recovered.length}/${results.length} cases passed after retry`);
   }
-  console.log(`PUBLIC CLICK AUDIT PASS: ${results.length} cases, ${results.length * contract.assertions_per_case} assertions`);
+  console.log(`PUBLIC CLICK AUDIT PASS: ${results.length} cases, ${results.length * contract.assertions_per_case} assertions in ${Math.round(wallMs / 1000)}s at concurrency ${CONCURRENCY}`);
 })().catch(error => {
   const report = {
     status: 'ERROR',
