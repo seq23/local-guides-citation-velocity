@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 /**
  * Operator documentation currency.
  *
@@ -16,8 +17,8 @@
  *
  * Usage: node validate_operator_doc_currency.mjs [docGlobDir ...]
  */
-import fs from 'node:fs';
-import path from 'node:path';
+const fs = require('node:fs');
+const path = require('node:path');
 
 const ROOT = process.cwd();
 const DIRS = process.argv.slice(2).filter((a) => !a.startsWith('--'));

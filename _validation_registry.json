@@ -5795,6 +5795,42 @@
         "artifacts/validation/content-pattern-contract.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "operator-doc-currency",
+      "title": "Operator documentation still describes this repository",
+      "path": "scripts/validation/validate_operator_doc_currency.js",
+      "command": "node scripts/validation/validate_operator_doc_currency.js docs/runbooks",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "documentation",
+        "operator",
+        "drift"
+      ],
+      "risk_prevented": "An operator guide silently stops matching the repository. Runbooks kept pointing at /coverage/ after it was renamed to /knowledge-map/, and at workflow files that had been renamed, because nothing asserted that documented paths still resolve.",
+      "timeout_seconds": 60,
+      "estimated_runtime_seconds": 2,
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "requires_files": [
+        "docs/runbooks"
+      ],
+      "produces_files": [],
+      "prepare_commands": [],
+      "prepare_mutates_files": [],
+      "prepare_produces_files": [],
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Every other validator asserts something about code, data or rendered pages. None asserts that the prose an operator reads still matches the repository, which is how the runbooks came to point at /coverage/ months after it was renamed to /knowledge-map/, and at workflow filenames that had been changed."
     }
   ],
   "legacy_policy": {

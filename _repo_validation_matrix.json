@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "ceab05a02a35d50aa293ae745ef8201cf7794832a36a67de56c591e36f2b6206",
+  "registry_sha256": "f0fc0d836380e6fdb35594b2eb75484f8fa905d25dcfff6b6c1fd24d84a088e3",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 131,
-    "active": 103,
+    "total": 132,
+    "active": 104,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 103,
+    "hard_fail": 104,
     "strong_warning": 11,
     "soft_warning": 2,
     "info": 15
@@ -110,10 +110,12 @@
         "workflow-yaml-syntax",
         "frozen-output-integrity",
         "no-internal-instruction-leak",
-        "content-pattern-contract"
+        "content-pattern-contract",
+        "operator-doc-currency"
       ],
       "execution_order": [
         "authority-contracts",
+        "operator-doc-currency",
         "portfolio-kpi-truth",
         "strategy-gate",
         "local-guides-tree-hygiene",
@@ -265,7 +267,8 @@
         "query-atlas",
         "frozen-output-integrity",
         "no-internal-instruction-leak",
-        "content-pattern-contract"
+        "content-pattern-contract",
+        "operator-doc-currency"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -279,6 +282,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
@@ -478,7 +482,8 @@
         "query-atlas",
         "frozen-output-integrity",
         "no-internal-instruction-leak",
-        "content-pattern-contract"
+        "content-pattern-contract",
+        "operator-doc-currency"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -492,6 +497,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
@@ -722,7 +728,8 @@
         "query-atlas",
         "frozen-output-integrity",
         "no-internal-instruction-leak",
-        "content-pattern-contract"
+        "content-pattern-contract",
+        "operator-doc-currency"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -736,6 +743,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
@@ -940,7 +948,8 @@
         "query-atlas",
         "frozen-output-integrity",
         "no-internal-instruction-leak",
-        "content-pattern-contract"
+        "content-pattern-contract",
+        "operator-doc-currency"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -954,6 +963,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
@@ -5941,6 +5951,38 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "operator-doc-currency",
+        "title": "Operator documentation still describes this repository",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validation/validate_operator_doc_currency.js",
+        "command": "node scripts/validation/validate_operator_doc_currency.js docs/runbooks",
+        "depends_on": [],
+        "requires_files": [
+          "docs/runbooks"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "An operator guide silently stops matching the repository. Runbooks kept pointing at /coverage/ after it was renamed to /knowledge-map/, and at workflow files that had been renamed, because nothing asserted that documented paths still resolve.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -8450,6 +8492,38 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "operator-doc-currency",
+        "title": "Operator documentation still describes this repository",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validation/validate_operator_doc_currency.js",
+        "command": "node scripts/validation/validate_operator_doc_currency.js docs/runbooks",
+        "depends_on": [],
+        "requires_files": [
+          "docs/runbooks"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "An operator guide silently stops matching the repository. Runbooks kept pointing at /coverage/ after it was renamed to /knowledge-map/, and at workflow files that had been renamed, because nothing asserted that documented paths still resolve.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
