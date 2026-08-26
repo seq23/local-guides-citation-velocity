@@ -53,7 +53,13 @@ jobs:
       - name: Run planning-only citation intelligence before Safe Harbor content release
         run: npm run release:daily-citation-intelligence:preview
       - name: Install Search Console client when credentials exist
-        if: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON != '' }}
+        # The secrets context is not available to a step-level if:. Testing it there
+        # does not evaluate false - it fails the whole workflow at startup with no
+        # jobs created, which is why this workflow has never completed a run.
+        # Bind the secret to env and test that instead.
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+        if: ${{ env.GSC_SERVICE_ACCOUNT_JSON != '' }}
         run: python3 -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null
       - name: Refresh measured query evidence from Search Console
         # The atlas is evidence-gated but nothing produced T1 evidence, so it ran
