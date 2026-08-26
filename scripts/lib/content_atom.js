@@ -344,7 +344,11 @@ function buildDirectAnswer(title, answer, maxWords = 70, atom = null) {
 
   if (!generic) {
     const shaped = shapeAnswer({ raw: stripped, topic, extend, min: 40, max: band });
-    if (shaped.answer && shaped.status !== 'not_page_specific') return shaped.answer;
+    // A stored answer that was nothing but its own title leaves almost nothing
+    // once the restatement is dropped. "Implant, bridge, and cosmetic dentistry
+    // comparison framework. Cost Longevity Candidacy" reduces to three words.
+    // Fall through to the atom rather than ship a fragment.
+    if (shaped.answer && shaped.status !== 'not_page_specific' && shaped.words >= 20) return shaped.answer;
   }
 
   // The page's own text could not carry a page-specific answer on its own, so

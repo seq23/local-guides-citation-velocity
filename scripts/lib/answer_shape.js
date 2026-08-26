@@ -47,7 +47,11 @@ function wordCount(value) {
 // the renderer added another. The words after the colon are the page's own; the
 // echo in front of them is template scaffolding that spends the opening of the
 // answer restating what the heading just said.
-const QUERY_SCAFFOLD = /^for\s+[“‘"']([\s\S]{4,}?)[”’"']\s*[:,;—-]?\s*/i;
+// The closing quote has to match the opening one. With a single character class
+// on both ends, `For "My dilemma ... this "long-term stability concept": ...`
+// closed on the straight quote inside the title and left the second half of the
+// title standing at the front of the answer, on live pages.
+const QUERY_SCAFFOLD = /^for\s+(?:“[\s\S]{4,}?”|‘[\s\S]{4,}?’|"[\s\S]{4,}?"|'[\s\S]{4,}?')\s*[:,;—-]?\s*/i;
 const LABEL_PREFIX = /^(short answer|quick answer|direct answer|answer|bottom line|summary|tl;?dr)\s*[:—-]\s*/i;
 
 /** Strip stacked query echoes and answer labels. Idempotent by construction. */
@@ -102,6 +106,25 @@ function isLiftable(sentence, { first = false } = {}) {
   return true;
 }
 
+/**
+ * True when a sentence is the heading said again.
+ *
+ * Some stored answers open by restating their own title - "CareCredit vs dental
+ * school vs payment plans vs Medicaid." - which tells a reader nothing they did
+ * not just read in the h1, and gives an answer engine a span with no answer in
+ * it. The restatement is dropped; what follows it is the actual answer.
+ */
+function restatesTopic(sentence, topic) {
+  const topicTokens = tokens(topic);
+  if (topicTokens.length < 2) return false;
+  const sentenceTokens = tokens(sentence);
+  if (!sentenceTokens.length) return true;
+  const topicSet = new Set(topicTokens);
+  const extra = sentenceTokens.filter((token) => !topicSet.has(token));
+  const covered = topicTokens.filter((token) => sentenceTokens.includes(token)).length;
+  return covered >= Math.min(topicTokens.length, 2) && covered / topicTokens.length >= 0.8 && extra.length < 5;
+}
+
 /* ------------------------------------------------------------------ *
  * Direct answer
  * ------------------------------------------------------------------ */
@@ -126,6 +149,9 @@ function shapeAnswer({ raw, topic, extend = [], min = 40, max = 60 } = {}) {
   const usable = [];
   for (const sentence of candidates) {
     if (!isLiftable(sentence, { first: usable.length === 0 })) continue;
+    // Only drop a restatement while it is still the opening. Later in the span
+    // the same words can be doing real work in a longer sentence.
+    if (usable.length === 0 && restatesTopic(sentence, topic)) continue;
     usable.push(sentence);
   }
 
@@ -363,6 +389,7 @@ function headingFor(route, title) {
 module.exports = {
   clean,
   decapitalize,
+  restatesTopic,
   getHeadingPlan,
   headingFor,
   planHeadings,

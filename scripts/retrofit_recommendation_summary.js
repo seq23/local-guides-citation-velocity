@@ -88,6 +88,13 @@ const BOILERPLATE = [
   /^open the visible primary sources/i,
   /^service area focus/i,
   /^this page is intentionally/i,
+  // The canon block sits above the article on every medium page and is the first
+  // paragraph the extractor reaches. Quoting it as the recommendation puts the
+  // same routing sentence at the top of fourteen pages and buries each article's
+  // actual lede, which is the sentence directly below it.
+  /^(the (full|definitive) local (guide|rules)|this article is a summary)/i,
+  /^read the source-backed answer/i,
+  /^browse (published|the full)/i,
 ];
 const isBoilerplate = (s) => BOILERPLATE.some((re) => re.test(String(s || '').trim()));
 
@@ -275,8 +282,14 @@ function insert(html, block) {
   const h1end = html.search(/<\/h1>/i);
   if (h1end < 0) return null;
   const close = html.indexOf('</div>', h1end);
-  if (close < 0) return null;
-  return html.slice(0, close + 6) + block + html.slice(close + 6);
+  if (close >= 0) return html.slice(0, close + 6) + block + html.slice(close + 6);
+  // Last resort: directly after the h1. The medium article pages wrap their body
+  // in <article> and <section> with no div after the heading, and their answer
+  // panel sits ABOVE the h1 - so every anchor above missed and the block was
+  // dropped entirely on all fourteen of them. An h1 is a block-level sibling in
+  // any of these templates, so following it is structurally safe.
+  const afterH1 = h1end + '</h1>'.length;
+  return html.slice(0, afterH1) + block + html.slice(afterH1);
 }
 
 function walk(dir, out = []) {

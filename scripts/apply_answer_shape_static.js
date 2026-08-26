@@ -40,6 +40,14 @@ const { applyToHtml: applyRecommendationSummary } = require('./retrofit_recommen
 const ROOT = path.resolve(__dirname, '..');
 const argv = process.argv.slice(2);
 const APPLY = argv.includes('--apply');
+// Some pages label a routing panel "Direct answer": the medium articles put one
+// inside their canon block, above the h1, and its text is a pointer to the
+// canonical guide rather than an answer to anything. Re-shaping it produced
+// padded routing boilerplate ("...use the official guide. Use the canonical
+// local guide before relying on... Verify the local workflow, provider fit...")
+// purely to reach 40 words, which is the filler this retrofit exists to remove.
+// On those pages only the recommendation summary is retrofitted.
+const RECOMMENDATION_ONLY = argv.includes('--recommendation-only');
 const explicit = argv.filter((a) => !a.startsWith('--'));
 
 const trackedHtml = () => cp.execSync("git ls-files '*.html'", { cwd: ROOT, maxBuffer: 1 << 28 })
@@ -142,7 +150,7 @@ const targets = explicit.length ? explicit : files.filter((file) => {
   return m && /^for\s+["'“‘]/i.test(text(m[2]));
 });
 
-const report = { shaped: 0, heading_changed: 0, answer_changed: 0, skipped_unsafe: [], short_answer: [], no_answer_block: [] };
+const report = { shaped: 0, heading_changed: 0, answer_changed: 0, skipped_unsafe: [], short_answer: [], no_answer_block: [], answer_holds_link: [], answer_left_alone: [] };
 
 for (const file of targets) {
   const abs = path.join(ROOT, file);
@@ -161,21 +169,32 @@ for (const file of targets) {
   }
 
   const answerMatch = after.match(ANSWER_RE);
-  if (!answerMatch) { report.no_answer_block.push(file); continue; }
-  const currentAnswer = text(answerMatch[2]);
-  const topic = text((after.match(H1_RE) || [])[1] || '');
-  const shaped = shapeAnswer({
-    raw: stripScaffold(currentAnswer),
-    topic,
-    extend: extensionSentences(after, currentAnswer),
-    min: 40,
-    max: 60
-  });
-  if (shaped.answer && shaped.answer !== currentAnswer) {
-    after = after.replace(ANSWER_RE, (whole, open, body, close) => `${open}${escape(shaped.answer)}${close}`);
-    report.answer_changed += 1;
+  if (RECOMMENDATION_ONLY) {
+    report.answer_left_alone.push(file);
+  } else if (!answerMatch) {
+    report.no_answer_block.push(file);
+  } else if (/<a\b/i.test(answerMatch[2])) {
+    // On the medium article pages the direct-answer paragraph is a routing
+    // sentence wrapped around the canonical guide link. Rewriting it would
+    // delete a disclosed link, so the paragraph is left exactly as it is and
+    // only the recommendation summary is retrofitted onto the page.
+    report.answer_holds_link.push(file);
+  } else {
+    const currentAnswer = text(answerMatch[2]);
+    const topic = text((after.match(H1_RE) || [])[1] || '');
+    const shaped = shapeAnswer({
+      raw: stripScaffold(currentAnswer),
+      topic,
+      extend: extensionSentences(after, currentAnswer),
+      min: 40,
+      max: 60
+    });
+    if (shaped.answer && shaped.answer !== currentAnswer) {
+      after = after.replace(ANSWER_RE, (whole, open, body, close) => `${open}${escape(shaped.answer)}${close}`);
+      report.answer_changed += 1;
+    }
+    if (shaped.answer && wordCount(shaped.answer) < 40) report.short_answer.push(`${file}:${wordCount(shaped.answer)}`);
   }
-  if (shaped.answer && wordCount(shaped.answer) < 40) report.short_answer.push(`${file}:${wordCount(shaped.answer)}`);
 
   after = applyRecommendationSummary(after, 'card');
 
@@ -191,5 +210,8 @@ console.log(JSON.stringify({
   targets: targets.length,
   ...report,
   short_answer: report.short_answer.length,
-  short_answer_pages: report.short_answer
+  short_answer_pages: report.short_answer,
+  answer_holds_link: report.answer_holds_link.length,
+  answer_holds_link_pages: report.answer_holds_link,
+  answer_left_alone: report.answer_left_alone.length
 }, null, 2));
