@@ -5,6 +5,10 @@
 const fs = require('fs');
 const path = require('path');
 const { guardedWriteUtf8 } = require('./lib/canonical_data_guard');
+// recommendation_summary is the most-requested block in the agent corpus (913 of
+// 913). Seating it here, in the per-page contract pass, is what makes it survive
+// a regeneration - a retrofit alone is undone by the next build.
+const { applyToHtml: applyRecommendationSummary } = require('./retrofit_recommendation_summary');
 
 const ROOT = path.resolve(__dirname, '..');
 const LAYOUT = path.join(ROOT, 'templates', 'layout.html');
@@ -1021,6 +1025,10 @@ ${validationEditorialBylineHtml()}`);
   if ((out.includes('class="accordion"') || out.includes('class="qa-stack"')) && !out.includes('FAQPage')) {
     out = out.replace(/<\/head>/i, `${validationContractFaqSchemaHtml()}\n</head>`);
   }
+  // After the answer panel is guaranteed to exist, so the summary has the anchor
+  // it is seated against. A page whose own recommendation cannot be located is
+  // returned untouched rather than given a placeholder.
+  out = applyRecommendationSummary(out, 'card');
   out = splitLongParagraphsForValidation(out);
   return out;
 }
