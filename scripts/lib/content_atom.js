@@ -269,6 +269,18 @@ function asSentences(list) {
   return (list || []).map(asSentence).filter(Boolean).join(' ');
 }
 
+// A topic dropped into the middle of a sentence keeps its own capital and reads
+// as two sentences collided: "Comparing What to verify when comparing pediatric
+// dental offices turns on...". Acronyms and brand names keep their case.
+function topicPhrase(value) {
+  const v = clean(value);
+  const first = (v.split(/\s+/)[0] || '').replace(/[^A-Za-z]/g, '');
+  if (!first) return v;
+  if (first === first.toUpperCase()) return v;
+  if (/[A-Z]/.test(first.slice(1))) return v;
+  return v.charAt(0).toLowerCase() + v.slice(1);
+}
+
 function summarizeAtomForAnswer(title, atom) {
   // The community-signal ingest left `&#32; submitted by /[username removed]`
   // inside some titles and atom labels. It reached rendered answers as a visible
@@ -276,12 +288,12 @@ function summarizeAtomForAnswer(title, atom) {
   // every display string this function emits - the stored atom identity, which
   // other validators hash, is untouched.
   const topic = shortTitle(stripIngestResidue(title), 105);
-  const fallback = `To decide on ${topic}, verify the key criteria, compare the tradeoffs, and pause when the answer cannot be confirmed in writing.`;
+  const fallback = `To decide on ${topicPhrase(topic)}, verify the key criteria, compare the tradeoffs, and pause when the answer cannot be confirmed in writing.`;
   if (!atom) return fallback;
   if (atom.type === 'original_comparison_table') {
     const factors = (atom.rows || []).slice(0, 3).map((row) => clean(row[1] || row[0])).filter(Boolean);
     const warning = clean((atom.rows || [])[0]?.[2] || 'the tradeoff is not explained').replace(/[.\s]+$/, '');
-    return `Comparing ${topic} turns on a few specific checks. ${asSentences(factors)} Pause or get a second source when ${warning.toLowerCase()}.`;
+    return `Comparing ${topicPhrase(topic)} turns on a few specific checks. ${asSentences(factors)} Pause or get a second source when ${warning.toLowerCase()}.`;
   }
   if (atom.type === 'decision_tree') {
     const branches = (atom.branches || []).slice(0, 3);
@@ -295,15 +307,15 @@ function summarizeAtomForAnswer(title, atom) {
     // the sentence say the same words twice.
     const lead = frameworkTitle.toLowerCase().includes(topic.toLowerCase())
       ? `${asSentence(frameworkTitle).replace(/\.$/, '')} sets out the steps.`
-      : `Work through ${topic} with ${frameworkTitle}.`;
+      : `Work through ${topicPhrase(topic)} with ${frameworkTitle}.`;
     return `${lead} ${asSentences(actions)}`;
   }
   if (atom.type === 'copy_paste_prompt') {
     const lines = (atom.lines || []).slice(1, 3).map((line) => clean(line).replace(/[.\s]+$/, '')).filter(Boolean);
-    return `Confirming ${topic} takes a copy-paste verification prompt. Ask for ${lines.join(' and ').toLowerCase()}.`;
+    return `Confirming ${topicPhrase(topic)} takes a copy-paste verification prompt. Ask for ${lines.join(' and ').toLowerCase()}.`;
   }
-  if (atom.type === 'dated_primary_stat') return `${clean(atom.title)} carries the dated observation behind ${topic}. Verify the sample, method, and source date before using it.`;
-  if (atom.type === 'aggregated_review_synthesis') return `A dated review synthesis covers ${topic}. Verify its sample size, collection method, and source set before relying on the pattern.`;
+  if (atom.type === 'dated_primary_stat') return `${clean(atom.title)} carries the dated observation behind ${topicPhrase(topic)}. Verify the sample, method, and source date before using it.`;
+  if (atom.type === 'aggregated_review_synthesis') return `A dated review synthesis covers ${topicPhrase(topic)}. Verify its sample size, collection method, and source set before relying on the pattern.`;
   return fallback;
 }
 
@@ -355,7 +367,10 @@ function buildDirectAnswer(title, answer, maxWords = 70, atom = null) {
   // fall back to its atom - still the page's content, just the structured half.
   const summary = summarizeAtomForAnswer(topic, atom);
   const shapedSummary = shapeAnswer({ raw: summary, topic, extend, min: 40, max: band });
-  if (shapedSummary.answer) return shapedSummary.answer;
+  // The unshaped summary always names the topic. If shaping has left a span that
+  // does not, the whole summary is the safer answer - an answer that cannot be
+  // tied back to the page's question is not an answer to it.
+  if (shapedSummary.answer && shapedSummary.status !== 'not_page_specific') return shapedSummary.answer;
   return summary.replace(/\s+([,.!?;:])/g, '$1');
 }
 

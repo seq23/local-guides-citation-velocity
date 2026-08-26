@@ -147,13 +147,26 @@ function shapeAnswer({ raw, topic, extend = [], min = 40, max = 60 } = {}) {
   const candidates = splitSentences(base);
 
   const usable = [];
+  const droppedRestatements = [];
   for (const sentence of candidates) {
     if (!isLiftable(sentence, { first: usable.length === 0 })) continue;
     // Only drop a restatement while it is still the opening. Later in the span
     // the same words can be doing real work in a longer sentence.
-    if (usable.length === 0 && restatesTopic(sentence, topic)) continue;
+    if (usable.length === 0 && restatesTopic(sentence, topic)) { droppedRestatements.push(sentence); continue; }
     usable.push(sentence);
   }
+  // The restatement is sometimes the only sentence naming the subject. Dropping
+  // it left "How treatment is explained at the child's age level. Whether
+  // parents can be present..." on a page about comparing pediatric dental
+  // offices - true, and about nothing identifiable. When that happens the
+  // opening goes back in; a span that does not name its subject cannot be lifted.
+  const topicTokenSet = new Set(tokens(topic));
+  const namesTopic = (list) => {
+    if (topicTokenSet.size < 2) return true;
+    const seen = new Set(tokens(list.join(' ')));
+    return [...topicTokenSet].some((token) => seen.has(token));
+  };
+  if (droppedRestatements.length && !namesTopic(usable)) usable.unshift(droppedRestatements[0]);
 
   const picked = [];
   let words = 0;
