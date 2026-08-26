@@ -432,6 +432,18 @@ function tokenizeForSimilarity(value){
  */
 function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
   const pages = (allPages || []).filter((p) => p && p.slug);
+  // Some routes render less than their accepted output holds - their source no
+  // longer carries everything that was published from it. Adopting onto one of
+  // those forces a rebuild that silently drops the difference, which is how
+  // /dentistry/sedation-fear/ lost a callout and a comparison table. Hosting is
+  // a free choice among many candidates, so simply never choose those.
+  const unsafeHosts = new Set();
+  try {
+    const report = loadJson(path.join(ROOT, 'artifacts/validation/frozen-content-recoverability.json'));
+    for (const row of [...(report.confirmed || []), ...(report.suspected || [])]) {
+      if (row && row.route) unsafeHosts.add(row.route);
+    }
+  } catch { /* no report yet: fall through and host anywhere */ }
   const chosen = new Map();
   for (const page of pages) {
     const explicit = Array.isArray(page.related_links)
@@ -458,7 +470,7 @@ function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
     // orphan's own ranking of the corpus - the relationship is symmetric enough
     // for this and it costs one pass rather than N.
     const candidates = buildAutoRelatedLinks(orphan, pages, 40)
-      .filter((c) => c.slug !== orphan.slug);
+      .filter((c) => c.slug !== orphan.slug && !unsafeHosts.has(c.slug));
     let host = candidates.find((c) => (load.get(c.slug) || 0) < maxAdoptionsPerHost);
     if (!host) host = candidates.sort((a, b) =>
       (load.get(a.slug) || 0) - (load.get(b.slug) || 0))[0];
@@ -831,6 +843,25 @@ function renderRelatedLinks(links){
   if (!items.length) return '';
   const body = items.slice(0,6).map((item)=>`<li><a href="${item.slug}">${htmlEscape(item.label)}</a></li>`).join('');
   return `<section class="card related-links sibling-links" data-sibling-links="true"><div class="badge">Related questions</div><h2 class="h2" style="margin-top:8px">Compare the next closest questions</h2><p class="muted">Use these pages to pressure-test the decision from another angle before you click off-site.</p><ul>${body}</ul></section>`;
+}
+
+/**
+ * The small block that carries pages nothing else would link to.
+ *
+ * These cannot go in the related-links list: that list renders six items and
+ * appending to it simply pushed the adopted pages past the cut, while sorting
+ * them to the front cost 140 pages a link they already had. A separate block
+ * keeps both sets intact, and it is honest about what it is - a few nearby
+ * questions from the same vertical rather than the closest matches.
+ */
+function renderAdoptedLinks(links){
+  const items = Array.isArray(links) ? links.filter((item)=> item && item.slug && item.label) : [];
+  if (!items.length) return '';
+  const body = items.slice(0, 4).map((item)=>`<li><a href="${item.slug}">${htmlEscape(item.label)}</a></li>`).join('');
+  return `<section class="card related-links adopted-links" data-adopted-links="true"><div class="badge">Also in this guide</div>`
+    + `<h2 class="h2" style="margin-top:8px">Less common questions people ask next</h2>`
+    + `<p class="muted">These come up less often than the questions above, but they sit on the same decision.</p>`
+    + `<ul>${body}</ul></section>`;
 }
 
 function buildFaqSchema(siteBase, title, absUrl, description, sections){
@@ -1961,19 +1992,25 @@ for (const [vertical, meta] of Object.entries(registry)) {
     // Relevance ranking alone leaves pages unreachable: ties break
     // alphabetically, so the same early-alphabet pages win every contest and
     // hundreds of others are never anyone's sibling. Pages that nothing else
-    // links to are placed here, on the page most similar to them, before the
-    // list is trimmed - otherwise the trim is exactly what drops them.
-    for (const adopted of linkCoverage.get(p.slug) || []) {
-      if (adopted.slug !== p.slug && !relatedMap.has(adopted.slug)) {
-        relatedMap.set(adopted.slug, adopted);
-      }
-    }
-    const forced = new Set((linkCoverage.get(p.slug) || []).map((x) => x.slug));
-    const ordered = [...relatedMap.values()].sort((a, b) =>
-      (forced.has(b.slug) ? 1 : 0) - (forced.has(a.slug) ? 1 : 0));
-    const relatedCandidates = ordered.slice(0, Math.max(6, forced.size + 4));
+    // links to are placed here, on the page most similar to them.
+    //
+    // They are appended to the six this page would have shown rather than
+    // ranked among them. Sorting adopted pages to the front looked tidier and
+    // cost 140 host pages a link they already had, since the trim then fell on
+    // the originals: a fix for unreachable pages that makes other pages less
+    // reachable has not fixed anything.
+    // Deduplicate against what actually renders, not against the full candidate
+    // pool: an adopted page is usually already somewhere in that pool, just past
+    // the cut. Filtering on the pool dropped it as a duplicate and the trim then
+    // dropped the copy too, so the page stayed orphaned while the plan claimed
+    // it had been placed.
+    const relatedCandidates = [...relatedMap.values()].slice(0, 6);
+    const primarySlugs = new Set(relatedCandidates.map((item) => item.slug));
+    const adoptedCandidates = (linkCoverage.get(p.slug) || [])
+      .filter((item) => item.slug !== p.slug && !primarySlugs.has(item.slug));
     if (relatedCandidates.length < 5) throw new Error(`Programmatic internal-link gate found fewer than five sibling pages for ${p.slug}`);
     const relatedLinks = renderRelatedLinks(relatedCandidates);
+    const adoptedLinks = renderAdoptedLinks(adoptedCandidates);
     const isQueryCompilerPage = Boolean(p.query_compiler_generated);
     const midCanon = canonBlockMid(providerDestinationUrl, canon.label, p.title);
     const postQueryUtility = isQueryCompilerPage ? '' : toolSpotlight;
@@ -2003,6 +2040,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
       <section class="card"><div class="badge">Quick answers</div>${acc}</section>
       ${midCanon}
       ${relatedLinks}
+      ${adoptedLinks}
       ${postQueryUtility}
       ${canonBlockBottom(providerDestinationUrl, canon.label)}
       <hr class="hr" />
