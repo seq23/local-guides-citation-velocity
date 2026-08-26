@@ -1393,6 +1393,131 @@ function exportFanoutArtifacts(entries){
 }
 
 
+/**
+ * Decide which sibling guides each Velocity page links to.
+ *
+ * The previous rule took the first eight pages of the vertical, which is the
+ * same eight pages for every page in that vertical. Alabama and Alaska
+ * collected roughly a hundred inbound links each and everything from California
+ * onward collected none: 354 of the 400 state pages had no inbound internal link
+ * at all, which is most of this library's orphan problem in one line.
+ *
+ * Two relationships replace it, both of which a reader would actually follow:
+ *
+ *   - the same state's other guides, across verticals - someone reading about
+ *     Texas Medicaid dental cover is plausibly also asking about Texas dental
+ *     insurance or a Texas civil surgeon;
+ *   - the neighbouring states in the same page family, as a ring ordered by
+ *     state name.
+ *
+ * The ring is what makes the guarantee hold. Every page in a family is the
+ * predecessor of exactly one other page and the successor of exactly one more,
+ * so every page receives at least two inbound links no matter how the alphabet
+ * falls, and no page can be stranded.
+ */
+/**
+ * A state directory for a vertical hub.
+ *
+ * The sibling ring guarantees every state page has inbound links, but a ring is
+ * a chain: following it from the root took up to 27 clicks to reach the far side
+ * of the alphabet, and depth is what decides whether these pages get crawled at
+ * all. One directory on the vertical hub collapses that to two clicks for every
+ * state, because the hub itself sits one click from the root.
+ *
+ * It is grouped by state and the anchors name the guide, so it reads as a
+ * directory someone would use rather than a wall of links: fifty rows of two or
+ * three named guides, not one undifferentiated list.
+ */
+function renderStateDirectory(vertical, verticalTitle, pages) {
+  const prefix = `/${vertical}/states/`;
+  const byState = new Map();
+  for (const page of pages) {
+    const slug = String(page.slug || '');
+    if (!slug.startsWith(prefix)) continue;
+    const parts = slug.split('/').filter(Boolean); // vertical, states, state, family
+    if (parts.length < 4) continue;
+    const stateSlug = parts[2];
+    if (!byState.has(stateSlug)) byState.set(stateSlug, []);
+    byState.get(stateSlug).push(page);
+  }
+  if (byState.size < 2) return '';
+  const stateName = (slug) => slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  // The state's name already leads the row, so an anchor that repeats it reads
+  // as noise; the guide's own subject is the useful part of the label.
+  const guideLabel = (page, name) => String(page.title || '')
+    .replace(new RegExp(`\\s+in\\s+${name}$`, 'i'), '')
+    .replace(new RegExp(`^${name}\\s+`, 'i'), '')
+    .replace(new RegExp(`\\s+${name}$`, 'i'), '')
+    .trim() || page.title;
+  const rows = [...byState.entries()]
+    .sort((a, b) => stateName(a[0]).localeCompare(stateName(b[0])))
+    .map(([slug, list]) => {
+      const name = stateName(slug);
+      const links = list
+        .sort((a, b) => String(a.title).localeCompare(String(b.title)))
+        .map((p) => `<a href="${htmlEscape(p.slug)}">${htmlEscape(guideLabel(p, name))}</a>`)
+        .join(', ');
+      return `<li><strong>${htmlEscape(name)}</strong>: ${links}</li>`;
+    }).join('');
+  return `<section class="card state-directory" data-state-directory="true"><div class="badge">By state</div>`
+    + `<h2 class="h2" style="margin-top:8px">${htmlEscape(verticalTitle)} guides by state</h2>`
+    + `<p class="muted">Rules, coverage, and licensing differ by state. Open your state to see what applies where you are, `
+    + `then verify it against the official source the guide names.</p>`
+    + `<ul class="state-directory-list">${rows}</ul></section>`;
+}
+
+function buildVelocitySiblingPlan(pages, byVertical) {
+  const plan = new Map();
+  const stateePages = pages.filter((p) => p.state && p.state.slug);
+  const byState = new Map();
+  const byFamily = new Map();
+  for (const page of stateePages) {
+    if (!byState.has(page.state.slug)) byState.set(page.state.slug, []);
+    byState.get(page.state.slug).push(page);
+    const family = page.page_family || page.vertical;
+    if (!byFamily.has(family)) byFamily.set(family, []);
+    byFamily.get(family).push(page);
+  }
+  for (const list of byFamily.values()) {
+    list.sort((a, b) => a.state.name.localeCompare(b.state.name));
+  }
+  for (const list of byState.values()) {
+    list.sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  for (const page of pages) {
+    const picked = new Map();
+    const add = (candidate) => {
+      if (candidate && candidate.slug !== page.slug && !picked.has(candidate.slug)) {
+        picked.set(candidate.slug, candidate);
+      }
+    };
+
+    if (page.state && page.state.slug) {
+      const family = page.page_family || page.vertical;
+      const ring = byFamily.get(family) || [];
+      const index = ring.findIndex((x) => x.slug === page.slug);
+      if (index !== -1 && ring.length > 1) {
+        add(ring[(index - 1 + ring.length) % ring.length]);
+        add(ring[(index + 1) % ring.length]);
+      }
+      for (const peer of byState.get(page.state.slug) || []) add(peer);
+    }
+
+    // Support pages keep a vertical-wide selection, but offset by their own
+    // position so the pages they promote differ from page to page.
+    if (picked.size < 8) {
+      const pool = (byVertical.get(page.vertical) || []).filter((x) => x.slug !== page.slug);
+      const start = pool.findIndex((x) => x.slug === page.slug) + 1;
+      for (let i = 0; i < pool.length && picked.size < 8; i += 1) {
+        add(pool[(start + i) % pool.length]);
+      }
+    }
+    plan.set(page.slug, [...picked.values()].slice(0, 9));
+  }
+  return plan;
+}
+
 function buildVelocityOnlyProgrammaticPages(siteBase){
   const sourcePath = path.join(ROOT, 'data', 'page_families', 'velocity_page_specs.json');
   if (!exists(sourcePath)) throw new Error('Missing Velocity-only page-family source');
@@ -1403,6 +1528,7 @@ function buildVelocityOnlyProgrammaticPages(siteBase){
     if (!byVertical.has(page.vertical)) byVertical.set(page.vertical, []);
     byVertical.get(page.vertical).push(page);
   }
+  const relatedFor = buildVelocitySiblingPlan(payload.pages, byVertical);
   return payload.pages.map((page) => {
     // canonical_target_url names the related canonical GUIDE page; it is not a
     // provider destination. Using it raw sent every "Find a Provider" CTA to a
@@ -1412,7 +1538,7 @@ function buildVelocityOnlyProgrammaticPages(siteBase){
     const destination = providerDestination(page.canonical_target_url);
     const sections = Array.isArray(page.sections) ? page.sections : [];
     if (sections.length < 3) throw new Error(`Velocity page ${page.slug} needs at least three substantive decision sections`);
-    const siblings = (byVertical.get(page.vertical) || []).filter((x)=>x.slug!==page.slug).slice(0, 8);
+    const siblings = relatedFor.get(page.slug) || [];
     const sourceRegistry = loadJson(path.join(ROOT,'data','evidence','source_registry.json'));
     const sourceMap = new Map((sourceRegistry.sources || []).map((src)=>[src.source_id,src]));
     const sourceLinks = (page.source_records || []).map((id)=>sourceMap.get(id)).filter(Boolean).map((src)=>`<li><a href="${htmlEscape(src.url)}">${htmlEscape(src.title || src.publisher)}</a> <span class="muted">— ${htmlEscape(src.authority_scope || src.publisher)}; reviewed ${htmlEscape(src.retrieved_at || page.date_modified)}</span></li>`).join('');
@@ -2036,6 +2162,7 @@ ${m}`;
         <p>Use the cluster pages in the navigation for common questions. For local directories, go to the official guide.</p>
       </section>
       ${rootClusterKnowledge}
+      ${renderStateDirectory(h.v, h.title, pages)}
       ${qaHighlights}
       ${renderRelatedLinks(page.related_links || [])}
       ${fallbackToolSpotlight}
