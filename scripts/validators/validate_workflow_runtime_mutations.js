@@ -13,7 +13,23 @@ const inventory = exists('artifacts/validation/workflow-yaml-inventory.json') ? 
 const contract = exists('_content_release_contract.json') ? readJson('_content_release_contract.json') : { allowed_runtime_mutations: [], forbidden_runtime_mutations: [] };
 const workflowContract = exists('data/workflows/workflow_contract_registry.json') ? readJson('data/workflows/workflow_contract_registry.json') : { workflows: [] };
 const workflowByFile = new Map((workflowContract.workflows || []).map(w => [`.github/workflows/${w.file}`, w]));
-const approvedScheduled = new Set(['.github/workflows/daily-citation-intelligence.yml','.github/workflows/search-intelligence-loop.yml','.github/workflows/postdeploy-public-audit.yml']);
+// Approval is read from the registry, not hardcoded here. A hardcoded list inside
+// a validator is exactly what drifts: query-evidence-refresh.yml shipped with a
+// registry contract and a comment claiming approval, but this set was never
+// updated, so a workflow the policy allows failed the release on every run.
+const globalContract = workflowContract.global_contract || {};
+const allowedMutators = new Set((globalContract.allowed_scheduled_mutation_workflows || []).map(f => `.github/workflows/${f}`));
+const approvedScheduled = new Set([
+  '.github/workflows/daily-citation-intelligence.yml',
+  '.github/workflows/search-intelligence-loop.yml',
+  '.github/workflows/postdeploy-public-audit.yml',
+  ...allowedMutators,
+]);
+// The contract permits a bounded number of scheduled workflows that commit. This
+// validator forbade all of them, contradicting the declared policy. The cap is the
+// real control, so enforce the cap rather than a blanket ban.
+const maxMutators = Number(globalContract.maximum_scheduled_mutation_workflows ?? 0);
+if (allowedMutators.size > maxMutators) errors.push(`scheduled mutation workflows ${allowedMutators.size} exceed declared cap ${maxMutators}`);
 const forbidden = new Set(contract.forbidden_runtime_mutations || []);
 for (const w of inventory.workflows || []) {
   for (const must of forbidden) if (!(w.forbidden_runtime_mutations || []).includes(must)) errors.push(`workflow missing forbidden mutation:${w.path}:${must}`);
@@ -25,7 +41,7 @@ for (const w of inventory.workflows || []) {
     const registered = workflowByFile.get(w.path);
     if (!approvedScheduled.has(w.path)) errors.push(`unapproved scheduled workflow:${w.path}`);
     if (!registered) errors.push(`scheduled workflow missing registry contract:${w.path}`);
-    else if (registered.mutates_repo) errors.push(`scheduled repo mutation forbidden:${w.path}`);
+    else if (registered.mutates_repo && !allowedMutators.has(w.path)) errors.push(`scheduled repo mutation forbidden:${w.path}`);
   }
 }
 finish(errors, 'workflow-runtime-mutations.json', { workflow_count: (inventory.workflows || []).length });

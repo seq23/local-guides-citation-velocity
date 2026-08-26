@@ -30,7 +30,8 @@
     "allowed_scheduled_mutation_workflows": [
       "query-evidence-refresh.yml"
     ],
-    "scheduled_mutation_policy": "Scheduled workflows may commit to main, but only those named in allowed_scheduled_mutation_workflows, and only after the full validation chain passes in the same run. This was 0 while every change arrived through an external agent-run manifest. Content-factory lanes are now permitted to write on a timer; the allowlist keeps that an explicit decision per workflow rather than a general licence for anything scheduled to push."
+    "scheduled_mutation_policy": "Scheduled workflows may commit to main, but only those named in allowed_scheduled_mutation_workflows, and only after the full validation chain passes in the same run. This was 0 while every change arrived through an external agent-run manifest. Content-factory lanes are now permitted to write on a timer; the allowlist keeps that an explicit decision per workflow rather than a general licence for anything scheduled to push.",
+    "scheduled_mutation_rationale": "Search Console evidence has to be refreshed on a cadence or the query atlas publishes against stale, modelled demand. This workflow commits only when the full validation chain passes in the same run. The cap of 1 is the control: any second scheduled mutator needs an explicit decision, not another file."
   },
   "workflows": [
     {
