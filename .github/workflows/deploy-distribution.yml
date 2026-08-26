@@ -81,7 +81,7 @@ jobs:
           GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
         run: |
           if [ -n "${GSC_SERVICE_ACCOUNT_JSON:-}" ]; then
-            printf '%s' "$GSC_SERVICE_ACCOUNT_JSON" > gsc-service-account.json
+            printf '%s' "$GSC_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/gsc-service-account.json"
           fi
       - name: Deploy validated distribution payload
         env:
@@ -89,8 +89,8 @@ jobs:
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
         run: |
           chmod +x distribution_scripts/*.sh
-          if [ -f gsc-service-account.json ] && [ -n "${GSC_SITE_URL:-}" ]; then
-            ./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key "${INDEXNOW_KEY:-}" --creds gsc-service-account.json --gsc-site "$GSC_SITE_URL"
+          if [ -f "$RUNNER_TEMP/gsc-service-account.json" ] && [ -n "${GSC_SITE_URL:-}" ]; then
+            ./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key "${INDEXNOW_KEY:-}" --creds "$RUNNER_TEMP/gsc-service-account.json" --gsc-site "$GSC_SITE_URL"
           else
             ./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key "${INDEXNOW_KEY:-}"
           fi
