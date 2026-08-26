@@ -413,6 +413,63 @@ function tokenizeForSimilarity(value){
     .filter((token)=> token && token.length > 2);
 }
 
+/**
+ * Work out which pages nothing would otherwise link to, and give each one a home.
+ *
+ * buildAutoRelatedLinks ranks by token overlap and breaks ties alphabetically.
+ * That is a stable ranking, which is the problem: the same early-alphabet pages
+ * win every contest, so a handful accumulate hundreds of inbound links while
+ * 288 pages are never anyone's sibling. Ranking cannot fix this on its own,
+ * because being relevant to something is not the same as being the most
+ * relevant thing to it.
+ *
+ * So the graph is simulated first - who would link to whom under the existing
+ * rules - and only the pages left with nothing are placed, each onto the page it
+ * most resembles. A host takes on a small number of these before it starts
+ * refusing more, so no page turns into a link dump; if every good host is full
+ * the least-loaded relevant page takes it, because an imperfect placement still
+ * beats an unreachable page.
+ */
+function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
+  const pages = (allPages || []).filter((p) => p && p.slug);
+  const chosen = new Map();
+  for (const page of pages) {
+    const explicit = Array.isArray(page.related_links)
+      ? page.related_links.filter((i) => i && i.slug && i.label) : [];
+    const auto = buildAutoRelatedLinks(page, pages, 10);
+    const seen = new Map();
+    for (const item of [...explicit, ...auto]) {
+      if (item.slug !== page.slug && !seen.has(item.slug)) seen.set(item.slug, item);
+    }
+    chosen.set(page.slug, [...seen.keys()].slice(0, limit));
+  }
+
+  const inbound = new Map(pages.map((p) => [p.slug, 0]));
+  for (const targets of chosen.values()) {
+    for (const t of targets) if (inbound.has(t)) inbound.set(t, inbound.get(t) + 1);
+  }
+
+  const label = (p) => p.short_label || p.nav_label || p.title;
+  const plan = new Map();
+  const load = new Map();
+  const orphans = pages.filter((p) => inbound.get(p.slug) === 0);
+  for (const orphan of orphans) {
+    // Rank candidate hosts by how much they resemble the orphan, using the
+    // orphan's own ranking of the corpus - the relationship is symmetric enough
+    // for this and it costs one pass rather than N.
+    const candidates = buildAutoRelatedLinks(orphan, pages, 40)
+      .filter((c) => c.slug !== orphan.slug);
+    let host = candidates.find((c) => (load.get(c.slug) || 0) < maxAdoptionsPerHost);
+    if (!host) host = candidates.sort((a, b) =>
+      (load.get(a.slug) || 0) - (load.get(b.slug) || 0))[0];
+    if (!host) continue;
+    if (!plan.has(host.slug)) plan.set(host.slug, []);
+    plan.get(host.slug).push({ slug: orphan.slug, label: label(orphan) });
+    load.set(host.slug, (load.get(host.slug) || 0) + 1);
+  }
+  return plan;
+}
+
 function buildAutoRelatedLinks(currentPage, allPages, limit = 6){
   if (!currentPage || !Array.isArray(allPages)) return [];
   const currentTokens = new Set([
@@ -1801,6 +1858,18 @@ for (const [vertical, meta] of Object.entries(registry)) {
     .filter((page) => page && page.publication_status !== 'EVIDENCE_ONLY' && !(typeof page.path === 'string' && page.path.startsWith('/insights/')))
     .map((page) => applyAgentExactRepairsToPage(page, loadAgentExactLedger()));
   pagesPayload.data.pages = atlasPages;
+  const linkCoverage = buildLinkCoveragePlan(atlasPages);
+  // The frozen-output law needs the affected routes named before the rebuild
+  // that changes them, so the plan is written where it can be read first.
+  try {
+    const planPath = path.join(ROOT, '.build', 'link_coverage_plan.json');
+    fs.mkdirSync(path.dirname(planPath), { recursive: true });
+    writeUtf8(planPath, JSON.stringify({
+      hosts: [...linkCoverage.keys()].sort(),
+      adopted_count: [...linkCoverage.values()].reduce((n, v) => n + v.length, 0),
+      plan: Object.fromEntries([...linkCoverage.entries()].map(([k, v]) => [k, v.map((x) => x.slug)])),
+    }, null, 2));
+  } catch { /* diagnostic only; never block a build on it */ }
   const atlasInsightItems = buildMergedInsightItems();
   const clusterPages = atlasPages.filter((page) => page && page.cluster);
   const atlasStructures = buildAtlasStructures(clusterRegistry, clusterPages, atlasInsightItems);
@@ -1889,7 +1958,20 @@ for (const [vertical, meta] of Object.entries(registry)) {
     [...explicitRelated, ...autoRelated].forEach((item) => {
       if (item.slug !== p.slug && !relatedMap.has(item.slug)) relatedMap.set(item.slug, item);
     });
-    const relatedCandidates = [...relatedMap.values()].slice(0, 6);
+    // Relevance ranking alone leaves pages unreachable: ties break
+    // alphabetically, so the same early-alphabet pages win every contest and
+    // hundreds of others are never anyone's sibling. Pages that nothing else
+    // links to are placed here, on the page most similar to them, before the
+    // list is trimmed - otherwise the trim is exactly what drops them.
+    for (const adopted of linkCoverage.get(p.slug) || []) {
+      if (adopted.slug !== p.slug && !relatedMap.has(adopted.slug)) {
+        relatedMap.set(adopted.slug, adopted);
+      }
+    }
+    const forced = new Set((linkCoverage.get(p.slug) || []).map((x) => x.slug));
+    const ordered = [...relatedMap.values()].sort((a, b) =>
+      (forced.has(b.slug) ? 1 : 0) - (forced.has(a.slug) ? 1 : 0));
+    const relatedCandidates = ordered.slice(0, Math.max(6, forced.size + 4));
     if (relatedCandidates.length < 5) throw new Error(`Programmatic internal-link gate found fewer than five sibling pages for ${p.slug}`);
     const relatedLinks = renderRelatedLinks(relatedCandidates);
     const isQueryCompilerPage = Boolean(p.query_compiler_generated);
