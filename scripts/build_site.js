@@ -2301,7 +2301,14 @@ ${m}`;
   // sitemap index (served at /sitemap.xml)
   const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     files
-      .filter(f=>f.name!=='sitemap_all.xml') // keep index small & focused
+      // sitemap_all.xml stays in the index on purpose. The split children are
+      // built from slug-prefix predicates (isCore/isCluster/isInsight/isUtil/...)
+      // that do not cover every publishable route: root-level comparison pages
+      // ("/trt-vs-peptide-therapy/") and "/medium-articles/**" match none of
+      // them, so 34 live URLs were reachable only via sitemap_all.xml and were
+      // therefore invisible to any crawler that entered through /sitemap.xml.
+      // Keeping the complete child in the index makes the categorisation gap
+      // non-fatal: a route that no predicate claims is still announced.
       .map(f=>`  <sitemap><loc>${htmlEscape(siteBase + '/sitemaps/' + f.name)}</loc><lastmod>${now}</lastmod></sitemap>`)
       .join('\n') +
     `\n</sitemapindex>\n`;
