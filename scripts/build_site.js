@@ -47,6 +47,9 @@ const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContent
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
 const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute } = require('./lib/frozen_pages');
+// Answer shape: the heading a searcher would have typed, decided for the whole
+// inventory at once so that re-shaping cannot collide two routes on one h1.
+const { headingFor, planHeadings, setHeadingPlan } = require('./lib/answer_shape');
 
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
@@ -1416,14 +1419,54 @@ function buildVelocityOnlyProgrammaticPages(siteBase){
     const authorityCard = page.state_authority ? `<section class="card authority-path" data-state-authority="true"><div class="badge">State authority path</div><h2 class="h2">${htmlEscape(page.state_authority.authority_name)}</h2><p>${htmlEscape(page.state_authority.selection_instruction)}</p><p class="muted">Reviewed ${htmlEscape(page.state_authority.reviewed_at)}. ${htmlEscape(page.state_authority.recheck_policy || '')}</p><div class="cta"><a href="${htmlEscape(page.state_authority.authority_url)}">Open the authority source</a></div></section>` : '';
     const related = siblings.map((rel)=>`<li><a href="${htmlEscape(rel.slug)}">${htmlEscape(rel.title)}</a></li>`).join('');
     const midCta = `<section class="card provider-cta" data-provider-cta="after-decision-artifact"><div class="badge">Local next step</div><h2 class="h2">Ready to compare providers?</h2><p>Use the source-backed framework above, then continue to the matching provider destination.</p><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section>`;
-    const body = `${canonBlock(destination,destination,destination,(page.title || '').split(' in ')[0])}<article id="guide-content"><h1 class="h1">${htmlEscape(page.title)}</h1><p class="muted">${htmlEscape(page.description)}</p><section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title,page.description,70,page.content_atom))}</p></section><section class="card dated-fact"><div class="badge">Reviewed source fact</div><p>${htmlEscape(page.dated_primary_fact || `Primary sources reviewed ${page.date_modified}.`)}</p></section>${renderProgrammaticContentAtom(page.content_atom,page.title)}${authorityCard}${midCta}<section class="card"><div class="badge">Primary sources</div><h2 class="h2">Verify the rule before acting</h2><ul>${sourceLinks}</ul></section><section class="card"><div class="badge">Decision questions</div>${renderAccordion(sections)}</section><section class="card provider-cta" data-provider-cta="contextual-body"><h2 class="h2">Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section><section class="card sibling-links" data-sibling-links="true"><div class="badge">Related Velocity guides</div><ul>${related}</ul></section></article>${canonBlockBottom(destination,(page.title || '').split(' in ')[0])}<p class="muted small">Last updated: ${htmlEscape(page.date_modified)}</p>`;
+    const body = `${canonBlock(destination,destination,destination,(page.title || '').split(' in ')[0])}<article id="guide-content"><h1 class="h1">${htmlEscape(headingFor(page.slug, page.title))}</h1><p class="muted">${htmlEscape(page.description)}</p><section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title,page.description,70,page.content_atom))}</p></section><section class="card dated-fact"><div class="badge">Reviewed source fact</div><p>${htmlEscape(page.dated_primary_fact || `Primary sources reviewed ${page.date_modified}.`)}</p></section>${renderProgrammaticContentAtom(page.content_atom,page.title)}${authorityCard}${midCta}<section class="card"><div class="badge">Primary sources</div><h2 class="h2">Verify the rule before acting</h2><ul>${sourceLinks}</ul></section><section class="card"><div class="badge">Decision questions</div>${renderAccordion(sections)}</section><section class="card provider-cta" data-provider-cta="contextual-body"><h2 class="h2">Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section><section class="card sibling-links" data-sibling-links="true"><div class="badge">Related Velocity guides</div><ul>${related}</ul></section></article>${canonBlockBottom(destination,(page.title || '').split(' in ')[0])}<p class="muted small">Last updated: ${htmlEscape(page.date_modified)}</p>`;
     return {slug:page.slug,path:page.path,title:page.title,description:page.description,bodyHtml:body,jsonld:buildProgrammaticPageSchemas({siteBase,page,absUrl:toAbsUrl(siteBase,page.slug),sections}),vertical:page.vertical,related_links:siblings.map((rel)=>({slug:rel.slug,label:rel.title})),content_atom:page.content_atom,date_modified:page.date_modified,source_records:page.source_records,editorial_review:{status:'VELOCITY_ONLY_RELEASED',reviewed_at:page.date_modified},fanoutMeta:{slug:page.slug,title:page.title,description:page.description,vertical:page.vertical,sections,surface:'velocity-state-or-support'}};
   });
+}
+
+/**
+ * Decide the question heading for every route before anything renders.
+ *
+ * The renderers reach the same route from four different surfaces, so the
+ * decision cannot be made per-surface: two near-duplicate routes shaped in
+ * isolation converge on one h1, and a duplicate h1 is a blocking release
+ * finding. Reading the canonical inventories once, up front, is what lets the
+ * plan revert the second route to its original title instead.
+ */
+function seedHeadingPlan(){
+  const entries = [];
+  const push = (route, title) => { if (route && title) entries.push({ route: String(route), title: String(title) }); };
+
+  const live = exists(path.join(ACTIVE_CONTENT_DIR, 'pages.json')) ? loadJson(path.join(ACTIVE_CONTENT_DIR, 'pages.json')) : { pages: [] };
+  for (const page of live.pages || []) {
+    if (page.publication_status === 'EVIDENCE_ONLY') continue;
+    push(typeof page.path === 'string' && page.path.startsWith('/insights/') ? page.path : page.slug, page.title);
+  }
+
+  const insights = exists(path.join(ACTIVE_CONTENT_DIR, 'insights.json')) ? loadJson(path.join(ACTIVE_CONTENT_DIR, 'insights.json')) : { items: [] };
+  for (const item of insights.items || []) push(item.publish_path, item.title);
+
+  const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
+  const clusterRegistry = exists(clusterRegistryPath) ? loadJson(clusterRegistryPath) : {};
+  for (const meta of Object.values(clusterRegistry)) {
+    for (const [slug, cmeta] of Object.entries(meta.clusters || {})) push(cmeta.path, cmeta.title || slug);
+  }
+
+  const velocityPath = path.join(ROOT, 'data', 'page_families', 'velocity_page_specs.json');
+  if (exists(velocityPath)) {
+    for (const page of loadJson(velocityPath).pages || []) push(page.slug, page.title);
+  }
+
+  const plan = planHeadings(entries);
+  const shaped = [...plan.values()].filter((entry) => entry.heading !== entry.title).length;
+  console.log(`Answer-shape headings planned: ${plan.size} routes; ${shaped} re-shaped into question form.`);
+  return setHeadingPlan(plan);
 }
 
 function main(){
   const canonMap = loadJson(CANON_MAP);
   const siteBase = canonMap.site_base;
+  seedHeadingPlan();
   const verticalSlugMap = buildVerticalSlugMap();
 
   // Build never promotes staged content implicitly. Promotion is an explicit validated release action.
@@ -1505,7 +1548,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
         bodyHtml: `<!-- FORCE_ALL_REGISTRY_CLUSTERS_GENERATED_WITH_LINK_CONTRACT -->
 <main>
   <section class="card">
-    <h1>${htmlEscape(clusterTitle)}</h1>
+    <h1>${htmlEscape(headingFor(pathSlug, clusterTitle))}</h1>
     <p>${htmlEscape(clusterDescription)}</p>
       ${liveAnswer || `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(clusterDirectAnswer)}</p></section>`}
     ${clusterAtomHtml}
@@ -1685,7 +1728,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const pageShape = getPageShapeConfig(p.slug);
     const shapedSections = pageShape ? assignCanonicalModules(p.sections || [], pageShape) : (p.sections || []);
 
-    const heading = `<h1 class="h1">${htmlEscape(p.title)}</h1><p class="muted">${htmlEscape(p.description)}</p>`;
+    const heading = `<h1 class="h1">${htmlEscape(headingFor(p.slug, p.title))}</h1><p class="muted">${htmlEscape(p.description)}</p>`;
     const pageAtom = renderProgrammaticContentAtom(p.content_atom, p.title);
     const firstAnswer = (shapedSections.find((section) => String(section && (section.a || section.answer || '')).trim()) || {}).a || p.description;
     const directAnswerBlock = `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(p.title, firstAnswer, 70, p.content_atom))}</p></section>`;
@@ -1982,7 +2025,7 @@ ${m}`;
     const sensitivityDisclosure = page.disclaimer ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(page.disclaimer)}</p></section>` : '';
     page.bodyHtml = `
       ${canonBlock(providerDestinationUrl, providerDestinationUrl, providerDestinationUrl, canon.label)}
-      <h1 class="h1">${htmlEscape(page.title || h.title)}</h1>
+      <h1 class="h1">${htmlEscape(headingFor(page.slug || h.slug, page.title || h.title))}</h1>
       <p class="muted">${htmlEscape(page.description || h.desc)}</p>
       ${hubDirectAnswer}
       ${pageAtom}

@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { shapeAnswer, stripIngestResidue, stripScaffold } = require('./answer_shape');
 
 const ALLOWED_ATOM_TYPES = Object.freeze([
   'original_comparison_table',
@@ -243,50 +244,115 @@ function atomToCitationArtifact(atom) {
   return null;
 }
 
+/**
+ * The page's atom, said as prose.
+ *
+ * These openings used to echo the query back - `For "<topic>," compare ...`.
+ * That form spends the first words of the answer restating the heading, and it
+ * stacked: 2,228 stored answers already carried an echo of their own, so the
+ * rendered answer read `For "X": for "X" begin with ...`. The topic still
+ * appears - it has to, the answer is about it - but as the subject of a sentence
+ * that can be quoted on its own.
+ */
+// Atom fragments arrive in two shapes that do not mix: imperative sentences
+// ("Verify the governing agency.") and bare noun phrases ("Credentials match the
+// treatment you need"). Joining them under one lead-in produced "comes down to
+// Use Dental implant only when its defined purpose and setting match.;" - so
+// each fragment is finished as its own sentence instead.
+function asSentence(value) {
+  const trimmed = clean(stripIngestResidue(value)).replace(/[;,\s]+$/, '');
+  if (!trimmed) return '';
+  const cased = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return /[.!?]["'”’)\]]?$/.test(cased) ? cased : `${cased}.`;
+}
+function asSentences(list) {
+  return (list || []).map(asSentence).filter(Boolean).join(' ');
+}
+
 function summarizeAtomForAnswer(title, atom) {
-  const topic = shortTitle(title, 105);
-  if (!atom) return `For “${topic},” verify the key criteria, compare the tradeoffs, and pause when the answer cannot be confirmed in writing.`;
+  // The community-signal ingest left `&#32; submitted by /[username removed]`
+  // inside some titles and atom labels. It reached rendered answers as a visible
+  // `&#32;`. Nothing downstream of here should carry it, so it is removed from
+  // every display string this function emits - the stored atom identity, which
+  // other validators hash, is untouched.
+  const topic = shortTitle(stripIngestResidue(title), 105);
+  const fallback = `To decide on ${topic}, verify the key criteria, compare the tradeoffs, and pause when the answer cannot be confirmed in writing.`;
+  if (!atom) return fallback;
   if (atom.type === 'original_comparison_table') {
     const factors = (atom.rows || []).slice(0, 3).map((row) => clean(row[1] || row[0])).filter(Boolean);
-    const warning = clean((atom.rows || [])[0]?.[2] || 'the tradeoff is not explained');
-    return `For “${topic},” compare ${factors.join('; ')}. Pause or get a second source when ${warning.toLowerCase()}.`;
+    const warning = clean((atom.rows || [])[0]?.[2] || 'the tradeoff is not explained').replace(/[.\s]+$/, '');
+    return `Comparing ${topic} turns on a few specific checks. ${asSentences(factors)} Pause or get a second source when ${warning.toLowerCase()}.`;
   }
   if (atom.type === 'decision_tree') {
     const branches = (atom.branches || []).slice(0, 3);
-    return `For “${topic},” use three paths: proceed when ${clean(branches[0]?.condition || 'the core requirement is confirmed').toLowerCase()}; compare when ${clean(branches[1]?.condition || 'important information is incomplete').toLowerCase()}; and pause when ${clean(branches[2]?.condition || 'a warning sign appears').toLowerCase()}.`;
+    const at = (index, fallbackText) => clean(branches[index]?.condition || fallbackText).replace(/[.\s]+$/, '').toLowerCase();
+    return `${topic} resolves along three paths. Proceed when ${at(0, 'the core requirement is confirmed')}. Compare when ${at(1, 'important information is incomplete')}. Pause when ${at(2, 'a warning sign appears')}.`;
   }
   if (atom.type === 'named_framework') {
     const actions = (atom.steps || []).slice(0, 3).map((step) => clean(step.action)).filter(Boolean);
-    return `For “${topic},” use ${clean(atom.title)}: ${actions.join('; ')}.`;
+    const frameworkTitle = clean(stripIngestResidue(atom.title));
+    // The atom title often already opens with the page topic. Naming both makes
+    // the sentence say the same words twice.
+    const lead = frameworkTitle.toLowerCase().includes(topic.toLowerCase())
+      ? `${asSentence(frameworkTitle).replace(/\.$/, '')} sets out the steps.`
+      : `Work through ${topic} with ${frameworkTitle}.`;
+    return `${lead} ${asSentences(actions)}`;
   }
   if (atom.type === 'copy_paste_prompt') {
-    const lines = (atom.lines || []).slice(1, 3).map(clean).filter(Boolean);
-    return `For “${topic},” use the copy-paste verification prompt below to ask for ${lines.join(' and ').toLowerCase()}.`;
+    const lines = (atom.lines || []).slice(1, 3).map((line) => clean(line).replace(/[.\s]+$/, '')).filter(Boolean);
+    return `Confirming ${topic} takes a copy-paste verification prompt. Ask for ${lines.join(' and ').toLowerCase()}.`;
   }
-  if (atom.type === 'dated_primary_stat') return `For “${topic},” start with the dated observation in ${clean(atom.title)} and verify the sample, method, and source date before using it.`;
-  if (atom.type === 'aggregated_review_synthesis') return `For “${topic},” use the dated review synthesis below, then verify its sample size, collection method, and source set before relying on the pattern.`;
-  return `For “${topic},” verify the key criteria, compare the tradeoffs, and pause when the answer cannot be confirmed in writing.`;
+  if (atom.type === 'dated_primary_stat') return `${clean(atom.title)} carries the dated observation behind ${topic}. Verify the sample, method, and source date before using it.`;
+  if (atom.type === 'aggregated_review_synthesis') return `A dated review synthesis covers ${topic}. Verify its sample size, collection method, and source set before relying on the pattern.`;
+  return fallback;
 }
 
+/**
+ * The direct answer: a self-contained span an answer engine can lift.
+ *
+ * Three things changed here, all of them shape rather than substance:
+ *
+ *   - The `For "<query>":` echo is gone. It was scaffolding, it stacked, and it
+ *     spent the opening of every answer on words the heading already said.
+ *   - Whole sentences only. The previous version clipped at a word budget and
+ *     appended a full stop, which shipped live answers ending "...and confirm
+ *     that it." A sentence kept whole and slightly over budget is quotable; one
+ *     cut mid-clause is not, at any length.
+ *   - A 40-60 word band, assembled from the page's own sentences, and extended
+ *     when needed from the framework steps the same page already renders.
+ *
+ * No sentence is written here that the page did not already carry.
+ *
+ * @param {number} maxWords upper edge of the target band. Retained as the third
+ *   positional argument for the existing call sites; the answer may still run
+ *   past it when the page's own first sentence does, because truncating it would
+ *   be worse.
+ */
 function buildDirectAnswer(title, answer, maxWords = 70, atom = null) {
-  const rawAnswer = clean(answer);
-  const topic = shortTitle(title, 105);
+  const rawAnswer = clean(stripIngestResidue(answer));
+  const topic = shortTitle(stripIngestResidue(title), 105);
   const titleTokens = words(topic).slice(0, 6);
-  const rawLower = rawAnswer.toLowerCase();
-  const generic = !rawAnswer
-    || rawAnswer.split(/\s+/).filter(Boolean).length < 8
-    || /this page gives a short|short framing answer|short routing answer|official local workflow|typically comes down to cost, timeline|start with a quick checklist, then use the official/i.test(rawAnswer)
-    || (titleTokens.length && !titleTokens.some((token) => rawLower.includes(token)));
-  let combined = generic ? summarizeAtomForAnswer(topic, atom) : rawAnswer;
-  const normalizedCombined = clean(combined).toLowerCase();
-  const normalizedTopic = clean(topic).toLowerCase();
-  if (!normalizedCombined.startsWith(normalizedTopic) && !normalizedCombined.startsWith(`for “${normalizedTopic}”`)) {
-    combined = `For “${topic}”: ${combined.charAt(0).toLowerCase()}${combined.slice(1)}`;
+  const stripped = stripScaffold(rawAnswer);
+  const strippedLower = stripped.toLowerCase();
+  const generic = !stripped
+    || stripped.split(/\s+/).filter(Boolean).length < 8
+    || /this page gives a short|short framing answer|short routing answer|official local workflow|typically comes down to cost, timeline|start with a quick checklist, then use the official/i.test(stripped)
+    || (titleTokens.length && !titleTokens.some((token) => strippedLower.includes(token)));
+
+  const band = Math.min(60, Math.max(40, maxWords));
+  const extend = atomHowToSteps(atom).map((step) => clean(stripIngestResidue(step.text))).filter(Boolean);
+
+  if (!generic) {
+    const shaped = shapeAnswer({ raw: stripped, topic, extend, min: 40, max: band });
+    if (shaped.answer && shaped.status !== 'not_page_specific') return shaped.answer;
   }
-  const parts = combined.split(/\s+/).filter(Boolean);
-  if (parts.length <= maxWords) return combined.replace(/\s+([,.!?;:])/g, '$1');
-  const clipped = parts.slice(0, maxWords).join(' ').replace(/[,;:]?$/, '');
-  return `${clipped}.`;
+
+  // The page's own text could not carry a page-specific answer on its own, so
+  // fall back to its atom - still the page's content, just the structured half.
+  const summary = summarizeAtomForAnswer(topic, atom);
+  const shapedSummary = shapeAnswer({ raw: summary, topic, extend, min: 40, max: band });
+  if (shapedSummary.answer) return shapedSummary.answer;
+  return summary.replace(/\s+([,.!?;:])/g, '$1');
 }
 
 function atomHowToSteps(atom) {

@@ -11,6 +11,7 @@ function ensureMetaDescription(desc, title) {
 const { renderCitationVelocityArtifacts } = require('./citation_velocity_artifacts');
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, validateContentAtom } = require('./content_atom');
 const { LEDGER_PATH, applyAgentExactRepairsToInsightItem } = require('./agent_exact_repairs');
+const { headingFor } = require('./answer_shape');
 const { mergeSchema } = require('./network_schema');
 
 const fs = require('fs');
@@ -629,7 +630,7 @@ function renderInsightPage(item) {
 </section>
 <main id="main-content" class="container">
   <article>
-    <h1>${htmlEscape(item.title)}</h1>
+    <h1>${htmlEscape(headingFor(item.publish_path, item.title))}</h1>
     <section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(directAnswer)}</p></section>
     ${contentAtom}
     ${citationVelocityArtifacts}
