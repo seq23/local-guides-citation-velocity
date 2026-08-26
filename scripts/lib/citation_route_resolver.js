@@ -54,10 +54,15 @@ function walkHtml(dir, prefix='', out=[]) {
 }
 function titleOf(file) { try { const text=fs.readFileSync(rel(file),'utf8'); return (text.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)||text.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)||[])[1]?.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim() || ''; } catch { return ''; } }
 let ROUTE_REGISTRY_CACHE = null;
+const BUILD_OUTPUT_PREFIX = /^(?:dist|\.pages-output|node_modules|artifacts|coverage)\//;
 function buildRouteRegistry() {
   if (ROUTE_REGISTRY_CACHE) return ROUTE_REGISTRY_CACHE;
   const files = [...walkHtml('insights'), ...walkHtml('guides'), ...walkHtml('compare'), ...walkHtml('near-me'), ...walkHtml('')]
-    .filter((f, i, arr) => f && !f.includes('node_modules/') && arr.indexOf(f) === i && fs.existsSync(rel(f)));
+    // Build output is the same page again under another prefix. Leaving it in
+    // the registry made every title match tie with itself (dist/insights/x.html
+    // scoring 1.000 against insights/x.html), so a perfectly identifiable page
+    // was reported BLOCKED_AMBIGUOUS_FUZZY_ROUTE.
+    .filter((f, i, arr) => f && !BUILD_OUTPUT_PREFIX.test(f) && arr.indexOf(f) === i && fs.existsSync(rel(f)));
   ROUTE_REGISTRY_CACHE = files.map(file => {
     const title = titleOf(file);
     return { implementation_path: normalizeImplementationPath(file), comparable_path: normalizeSlugComparable(file), title, comparable_title: normalizeSlugComparable(title) };
@@ -124,7 +129,31 @@ function resolveDistinctiveSection(raw) {
   return hits.length === 1 ? `${parent}${hits[0]}/index.html` : '';
 }
 
+// The agent does not always hand back a path. Two shapes arrive often enough to
+// be worth canonicalizing rather than reporting TARGET_NOT_FOUND:
+//
+//   "Best%20TRT%20Clinic%20Near%20Me/index.html"   a page title, percent-encoded
+//   "FILEPATH: trt/index.html || CURRENT: ..."     the whole recommendation line
+//
+// Percent-encoding is the more damaging of the two. normalizeSlugComparable
+// turns %20 into the literal "20", so "best trt clinic near me" compared as
+// "best-20trt-20clinic-20near-20me" and could not score against any real title
+// - which is why every one of these was reported as an unresolvable target on
+// run after run. Decoding restores the title, and the existing title similarity
+// scoring (with its tie check) then does the matching, so an ambiguous title
+// still blocks rather than guessing.
+function canonicalizeRawTarget(raw) {
+  let text = String(raw || '').trim();
+  const filepath = text.match(/FILEPATH:\s*([^|]+?)\s*(?:\|\||$)/i);
+  if (filepath) text = filepath[1].trim();
+  if (/%[0-9a-f]{2}/i.test(text)) {
+    try { text = decodeURIComponent(text); } catch { /* leave as-is if malformed */ }
+  }
+  return text;
+}
+
 function resolveFuzzyRoute(raw, options = {}) {
+  raw = canonicalizeRawTarget(raw);
   const stemMatch = resolveNumberedStem(raw);
   if (stemMatch) return { implementation_path: stemMatch, status: 'STEM_ROUTE_RESOLVED', block_reason: '', route_family: routeFamilyForPath(stemMatch), canonicalized_from: raw };
   const sectionMatch = resolveDistinctiveSection(raw);
@@ -141,7 +170,7 @@ function resolveFuzzyRoute(raw, options = {}) {
 }
 function resolveTargetPath(value) {
   const input = value && typeof value === 'object' ? value : { value };
-  const raw = normalizeImplementationPath(input.value || input.path || input.url || input.target || value);
+  const raw = normalizeImplementationPath(canonicalizeRawTarget(input.value || input.path || input.url || input.target || value));
   const op = input.operation || '';
   if (!raw) return { implementation_path: '', status: 'TARGET_NOT_FOUND', block_reason: 'TARGET_NOT_FOUND', route_family: 'UNKNOWN', canonicalized_from: [] };
   if (op === 'CREATE_NEW_TARGET_PAGE') {
@@ -164,4 +193,4 @@ function resolveTargetPath(value) {
   return { implementation_path: raw, status: 'TARGET_NOT_FOUND', block_reason: 'TARGET_NOT_FOUND', route_family: routeFamilyForPath(raw), canonicalized_from: [] };
 }
 function routeFromPath(p) { return p ? `/${normalizeImplementationPath(p)}` : ''; }
-module.exports = { normalizeImplementationPath, normalizeSlugComparable, similarityScore, buildRouteRegistry, resolveFuzzyRoute, routeFamilyForPath, resolveTargetPath, routeFromPath };
+module.exports = { canonicalizeRawTarget, normalizeImplementationPath, normalizeSlugComparable, similarityScore, buildRouteRegistry, resolveFuzzyRoute, routeFamilyForPath, resolveTargetPath, routeFromPath };
