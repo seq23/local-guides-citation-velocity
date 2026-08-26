@@ -1,20 +1,16 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-08-25
-Target publish units: 5
-Selected units: 5
-Twin agent units: 5
+Release date: 2026-08-26
+Target publish units: 1
+Selected units: 1
+Twin agent units: 1
 Social fallback units: 0
-Social fallback allowed: false
+Social fallback allowed: true
 Social fallback suppressed: 0
-Repair units: 5
+Repair units: 1
 New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/best-top-near-me/index.html | how do I find the best dentist near me? |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/anxiety-trust/index.html | how do I find a dentist who is good with anxious patients |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/choosing-a-dentist/index.html | how to compare dentists before choosing one? |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/dental-bridge-vs-implant/index.html | dental bridge vs implant which is better |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/clear-aligners/index.html | average cost of clear aligners 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | does testosterone therapy raise blood pressure |
