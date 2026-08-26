@@ -71,6 +71,15 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           CITATION_PROBE_MODE: grounded
         run: node scripts/llm_citation_probe.mjs --limit 25
+      - name: Apply bounded self-healing repairs
+        # selfheal and selfheal:dry shipped here and no workflow invoked either,
+        # so the loop never ran. It runs in this lane rather than a new one
+        # because the contract allows exactly one scheduled workflow to commit
+        # to main, and this is it. The validate step below is what makes the
+        # repair safe: nothing is committed unless the repo validates after it.
+        run: |
+          npm run selfheal:dry
+          npm run selfheal
       - name: Validate before publishing anything
         run: npm run validate
 
