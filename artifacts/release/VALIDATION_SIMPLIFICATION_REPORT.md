@@ -12,11 +12,11 @@ Result: **PASS**
 
 ## Inventory
 
-- Registered checks: 129
-- Active checks: 101
+- Registered checks: 131
+- Active checks: 103
 - On-demand checks: 11
 - Retired checks: 17
-- Hard-fail registrations: 101
+- Hard-fail registrations: 103
 - Strong-warning registrations: 11
 - Soft-warning registrations: 2
 - Informational registrations: 15

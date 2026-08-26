@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-25T13:39:02.942Z",
+  "generated_at": "2026-08-26T04:39:16.038Z",
   "status": "PASS",
-  "workflow_count": 8,
+  "workflow_count": 9,
   "errors": [],
   "warnings": [],
   "lifecycle_checks": [
@@ -116,6 +116,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/install_clarity.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/validation/run_validation_registry.js",
               "ok": true
             },
@@ -175,14 +180,14 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "if [ -n \"${GSC_SERVICE_ACCOUNT_JSON:-}\" ]; then\nprintf '%s' \"$GSC_SERVICE_ACCOUNT_JSON\" > gsc-service-account.json\nfi",
+          "command": "if [ -n \"${GSC_SERVICE_ACCOUNT_JSON:-}\" ]; then\nprintf '%s' \"$GSC_SERVICE_ACCOUNT_JSON\" > \"$RUNNER_TEMP/gsc-service-account.json\"\nfi",
           "status": "PASS",
           "checks": [],
           "direct_npm_scripts": [],
           "transitive_npm_scripts": []
         },
         {
-          "command": "chmod +x distribution_scripts/*.sh\nif [ -f gsc-service-account.json ] && [ -n \"${GSC_SITE_URL:-}\" ]; then\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\" --creds gsc-service-account.json --gsc-site \"$GSC_SITE_URL\"\nelse\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\"\nfi",
+          "command": "chmod +x distribution_scripts/*.sh\nif [ -f \"$RUNNER_TEMP/gsc-service-account.json\" ] && [ -n \"${GSC_SITE_URL:-}\" ]; then\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\" --creds \"$RUNNER_TEMP/gsc-service-account.json\" --gsc-site \"$GSC_SITE_URL\"\nelse\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\"\nfi",
           "status": "PASS",
           "checks": [],
           "direct_npm_scripts": [],
@@ -222,6 +227,77 @@
           ],
           "transitive_npm_scripts": [
             "postdeploy:public-click-audit"
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "query-evidence-refresh.yml",
+      "command_count": 4,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "python -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "python3 scripts/queries/ingest_gsc_evidence.py",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/queries/ingest_gsc_evidence.py",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "npm run atlas:build",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "atlas:build",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/atlas/build_query_atlas.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "atlas:build"
+          ],
+          "transitive_npm_scripts": [
+            "atlas:build"
+          ]
+        },
+        {
+          "command": "npm run validate",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "validate"
+          ],
+          "transitive_npm_scripts": [
+            "validate"
           ]
         }
       ]
@@ -368,7 +444,7 @@
     },
     {
       "workflow": "velocity-content-release.yml",
-      "command_count": 7,
+      "command_count": 9,
       "status": "PASS",
       "commands": [
         {
@@ -437,6 +513,40 @@
             "trace:traffic-qualified-pipeline",
             "validate:traffic-qualified-citation-intelligence",
             "workflow:inventory"
+          ]
+        },
+        {
+          "command": "python3 -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "python3 scripts/queries/ingest_gsc_evidence.py\nnpm run atlas:build",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "atlas:build",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/queries/ingest_gsc_evidence.py",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/atlas/build_query_atlas.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "atlas:build"
+          ],
+          "transitive_npm_scripts": [
+            "atlas:build"
           ]
         },
         {
@@ -660,6 +770,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/install_clarity.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/validators/trace_agent_exact_implementation.js",
               "ok": true
             },
@@ -753,6 +868,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/install_clarity.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/validation/run_validation_registry.js",
               "ok": true
             },
@@ -804,6 +924,11 @@
             {
               "type": "file",
               "path": "scripts/build_pages_dist.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/install_clarity.js",
               "ok": true
             },
             {
