@@ -5653,7 +5653,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -5831,6 +5831,50 @@
       "prepare_produces_files": [],
       "depends_on": [],
       "why_existing_checks_do_not_cover": "Every other validator asserts something about code, data or rendered pages. None asserts that the prose an operator reads still matches the repository, which is how the runbooks came to point at /coverage/ months after it was renamed to /knowledge-map/, and at workflow filenames that had been changed."
+    },
+    {
+      "id": "page-record-identity",
+      "title": "Page record identity contract",
+      "path": "scripts/validators/validate_page_record_identity.js",
+      "command": "node scripts/validators/validate_page_record_identity.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content",
+        "data-integrity"
+      ],
+      "risk_prevented": "Two records could claim one route, so a slug-keyed consumer picks a winner by iteration order and a repair script can write content into the empty record instead of the real page.",
+      "why_existing_checks_do_not_cover": "The admission and substance gates read whichever record they reach first; neither asserts that a route is described exactly once.",
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/page-record-identity.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "content/_live/pages.json",
+        "content/_staged/pages.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/page-record-identity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/page-record-identity.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

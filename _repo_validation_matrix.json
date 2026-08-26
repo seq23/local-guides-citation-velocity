@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "f0fc0d836380e6fdb35594b2eb75484f8fa905d25dcfff6b6c1fd24d84a088e3",
+  "registry_sha256": "6018c30bab32076b81be4950f781bb14cd33478952728d08ee5a5850625a2470",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 132,
-    "active": 104,
+    "total": 133,
+    "active": 105,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 104,
+    "hard_fail": 105,
     "strong_warning": 11,
     "soft_warning": 2,
     "info": 15
@@ -111,7 +111,8 @@
         "frozen-output-integrity",
         "no-internal-instruction-leak",
         "content-pattern-contract",
-        "operator-doc-currency"
+        "operator-doc-currency",
+        "page-record-identity"
       ],
       "execution_order": [
         "authority-contracts",
@@ -137,6 +138,7 @@
         "homepage-schema",
         "html-report-contract",
         "insights-manifest",
+        "page-record-identity",
         "programmatic-substance",
         "generated-content-gate",
         "rendered-programmatic-substance",
@@ -268,7 +270,8 @@
         "frozen-output-integrity",
         "no-internal-instruction-leak",
         "content-pattern-contract",
-        "operator-doc-currency"
+        "operator-doc-currency",
+        "page-record-identity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -337,6 +340,7 @@
         "html-report-contract",
         "page-family-contract",
         "insights-manifest",
+        "page-record-identity",
         "programmatic-substance",
         "generated-content-gate",
         "rendered-programmatic-substance",
@@ -483,7 +487,8 @@
         "frozen-output-integrity",
         "no-internal-instruction-leak",
         "content-pattern-contract",
-        "operator-doc-currency"
+        "operator-doc-currency",
+        "page-record-identity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -552,6 +557,7 @@
         "html-report-contract",
         "page-family-contract",
         "insights-manifest",
+        "page-record-identity",
         "programmatic-substance",
         "generated-content-gate",
         "rendered-programmatic-substance",
@@ -729,7 +735,8 @@
         "frozen-output-integrity",
         "no-internal-instruction-leak",
         "content-pattern-contract",
-        "operator-doc-currency"
+        "operator-doc-currency",
+        "page-record-identity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -798,6 +805,7 @@
         "html-report-contract",
         "page-family-contract",
         "insights-manifest",
+        "page-record-identity",
         "programmatic-substance",
         "generated-content-gate",
         "rendered-programmatic-substance",
@@ -949,7 +957,8 @@
         "frozen-output-integrity",
         "no-internal-instruction-leak",
         "content-pattern-contract",
-        "operator-doc-currency"
+        "operator-doc-currency",
+        "page-record-identity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1022,6 +1031,7 @@
         "answer-blocks",
         "citation-targets",
         "entity-graph",
+        "page-record-identity",
         "programmatic-substance",
         "generated-content-gate",
         "rendered-programmatic-substance",
@@ -1238,7 +1248,8 @@
         "workflow-yaml-syntax",
         "frozen-output-integrity",
         "no-internal-instruction-leak",
-        "content-pattern-contract"
+        "content-pattern-contract",
+        "page-record-identity"
       ],
       "execution_order": [
         "authority-contracts",
@@ -1268,6 +1279,7 @@
         "homepage-schema",
         "html-report-contract",
         "insights-manifest",
+        "page-record-identity",
         "programmatic-substance",
         "generated-content-gate",
         "rendered-programmatic-substance",
@@ -1323,7 +1335,8 @@
         "query-atlas",
         "frozen-output-integrity",
         "no-internal-instruction-leak",
-        "content-pattern-contract"
+        "content-pattern-contract",
+        "page-record-identity"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1346,6 +1359,7 @@
         "agent-exact-acceptance-manifest",
         "html-report-contract",
         "page-family-contract",
+        "page-record-identity",
         "programmatic-substance",
         "generated-content-gate",
         "velocity-agent-source-coverage",
@@ -5983,6 +5997,45 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "page-record-identity",
+        "title": "Page record identity contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_page_record_identity.js",
+        "command": "node scripts/validators/validate_page_record_identity.js",
+        "depends_on": [],
+        "requires_files": [
+          "content/_live/pages.json",
+          "content/_staged/pages.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/page-record-identity.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/page-record-identity.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Two records could claim one route, so a slug-keyed consumer picks a winner by iteration order and a repair script can write content into the empty record instead of the real page.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -9683,6 +9736,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Rendered HTML can drift from the accepted bytes recorded in data/release/frozen_page_registry.json without any validator noticing. A hand edit to rendered output passes the rest of the chain, is silently reverted by the frozen guard at the end of the next build, and never reaches production - so CI reports green while the deployed site is unchanged. This was observed: 1,130 rendered pages were edited, the full core profile returned 42/42 PASS, and the change was inert on the live site.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "page-record-identity",
+        "title": "Page record identity contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_page_record_identity.js",
+        "command": "node scripts/validators/validate_page_record_identity.js",
+        "depends_on": [],
+        "requires_files": [
+          "content/_live/pages.json",
+          "content/_staged/pages.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/page-record-identity.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/page-record-identity.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Two records could claim one route, so a slug-keyed consumer picks a winner by iteration order and a repair script can write content into the empty record instead of the real page.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

@@ -93,6 +93,18 @@ function applyCitationAgentFixes(options = {}) {
     if (!fs.existsSync(absTarget)) continue;
     const payload = readJson(absTarget);
     const pages = payload.pages || [];
+    // Map keeps the LAST entry for a repeated key. When two records claimed one
+    // route - a real page and a zero-section stub - the stub won here purely by
+    // sitting later in the file, and the fix below pushed a generated section
+    // into the empty record while the real page went unpatched. Refuse to guess.
+    const duplicateSlugs = [...pages.reduce((counts, page) => counts.set(page.slug, (counts.get(page.slug) || 0) + 1), new Map())]
+      .filter(([slug, count]) => slug && count > 1)
+      .map(([slug]) => slug);
+    if (duplicateSlugs.length) {
+      throw new Error(
+        `${relTarget} has ${duplicateSlugs.length} slug(s) claimed by more than one record, so the target for a fix is ambiguous: ${duplicateSlugs.slice(0, 5).join(', ')}`,
+      );
+    }
     const bySlug = new Map(pages.map((page) => [page.slug, page]));
     let changed = false;
 
