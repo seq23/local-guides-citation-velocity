@@ -50,6 +50,41 @@ const SKIP_FILES = new Set(['404.html', 'about.html', 'privacy.html', 'disclaime
 const text = (html) => html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
   .replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
+
+// The spec was named in this validator's output as its provenance while nothing
+// read it, so editing the spec changed nothing. It is now loaded and enforced as
+// the contract it claims to be: every block the spec asks for must have a test
+// here, and every pattern it forbids must have one too. Adding a block to the
+// spec and forgetting to implement it fails loudly instead of passing silently.
+const SPEC_PATH = '.clarity/content-pattern-spec.json';
+const __specRoot = typeof ROOT !== 'undefined' ? ROOT : process.cwd();
+const spec = JSON.parse(fs.readFileSync(path.join(__specRoot, SPEC_PATH), 'utf8'));
+const specBlockIds = (spec.blocks || []).map((b) => b.id);
+
+// Forbidden patterns, listed in the spec from the start and never enforced -
+// which is how pages came to publish "What to add: n/a" and blocks whose entire
+// body was "n/a".
+const FORBIDDEN = {
+  empty_table_cells: {
+    test: (h) => /<t[dh][^>]*>\s*<\/t[dh]>/i.test(h),
+    why: 'empty table cell - an extracted table with a hole in it reads as broken' },
+  internal_instruction_leak: {
+    test: (h) => /FILEPATH:|<strong>What to add:|Direct answer target|Agent recommendation|Source FIX instruction|agent-instruction|What this page should clarify|>\s*n\/a\s*</i.test(h),
+    why: 'build instruction or placeholder rendered for readers - an answer engine will quote it' },
+  fabricated_statistics: {
+    // A statistic with nothing sourcing it is the shape of a fabricated one.
+    // Reported rather than blocking, because a real figure can be sourced
+    // off-page and a heuristic should not fail a release on its own.
+    test: (h) => {
+      const body = String(h).replace(/<[^>]+>/g, ' ');
+      const stat = /\b\d{1,3}(?:\.\d+)?%|\br\s*=\s*0?\.\d+|\b\d+x\s+(?:more|less|higher|lower)/i;
+      if (!stat.test(body)) return false;
+      return !/<a[^>]+href="https?:\/\//i.test(h)
+        && !/\b(?:source|according to|per the|study|survey|report)\b/i.test(body);
+    },
+    why: 'statistic presented with no source on the page or beside it' },
+};
+
 const CHECKS = [
   { id: 'direct_answer', blocking: true,
     test: (h) => /data-direct-answer=|class="[^"]*answer-box/i.test(h),
@@ -99,7 +134,34 @@ const CHECKS = [
     test: (h) => /data-bhpc-agent-block="trust_block"|class="[^"]*(?:trust|author|byline)|rel="author"|itemprop="author"/i.test(h),
     why: 'no trust or authorship block (agent requested 215 times) - entity clarity is a citation factor' },
 
+  // Named in the spec and never checked, so coverage silently omitted them.
+  { id: 'source_block', blocking: false,
+    test: (h) => /data-(?:bhpc-)?(?:agent-block|content-block)="source_block"|class="[^"]*(?:source-block|sources|citation)|<h[23][^>]*>\s*(?:Sources?|References?)/i.test(h) || /<a[^>]+href="https?:\/\//i.test(h),
+    why: 'no sources block - a claim with no visible provenance is the first thing an engine discounts' },
+  { id: 'protocol', blocking: false,
+    test: (h) => /data-(?:bhpc-)?(?:agent-block|content-block)="protocol"|class="[^"]*protocol|<h[23][^>]*>[^<]*(?:Protocol|Step-by-step|How to)\b/i.test(h) || /<ol[\s>]/i.test(h),
+    why: 'no ordered protocol - ordered steps are what gets lifted for "how do I"' },
+  { id: 'cta_callout', blocking: false,
+    test: (h) => /data-(?:bhpc-)?(?:agent-block|content-block)="cta_callout"|class="[^"]*(?:cta|next-step)|<h[23][^>]*>\s*Next step/i.test(h),
+    why: 'no next-step callout - the conversion link may exist but nothing frames it as the next action' },
+  { id: 'prompt_template', blocking: false,
+    test: (h) => /data-(?:bhpc-)?(?:agent-block|content-block)="prompt_template"|class="[^"]*(?:copy-paste-prompt|prompt-template)|<pre[^>]*>[\s\S]*?<code/i.test(h),
+    why: 'no copy-ready prompt - the artifact this audience actually reuses' },
 ];
+
+// The spec is the contract. If it asks for a block this validator cannot check,
+// the contract is not being enforced and reporting PASS would be false.
+const __implemented = new Set(CHECKS.map((c) => c.id));
+const __unimplemented = specBlockIds.filter((id) => !__implemented.has(id));
+const __unenforced = (spec.forbidden || [])
+  .map((f) => (typeof f === 'string' ? f : f && f.id))
+  .filter((id) => id && !FORBIDDEN[id]);
+if (__unimplemented.length || __unenforced.length) {
+  for (const id of __unimplemented) console.log(`  spec block "${id}" has no check - the spec is not enforced`);
+  for (const id of __unenforced) console.log(`  spec forbids "${id}" but nothing detects it`);
+  console.log('CONTENT PATTERN CONTRACT FAIL: spec is not fully enforced');
+  process.exit(1);
+}
 
 const pages = [];
 (function walk(dir) {
