@@ -86,6 +86,19 @@ const CHECKS = [
   { id: 'structured_data', blocking: false,
     test: (h) => /application\/ld\+json/i.test(h),
     why: 'no JSON-LD structured data (agent request #10)' },
+  // Added from the empirical spec (.clarity/content-pattern-spec.json v2.0), which
+  // counts what the review agent actually asked for across 913 accepted
+  // recommendations. These three were being missed entirely by the earlier list.
+  { id: 'recommendation_summary', blocking: false,
+    test: (h) => /data-bhpc-agent-block="recommendation_summary"|class="[^"]*recommendation-summary|<h[23][^>]*>\s*(?:What (?:we|this page) recommends?|Recommendation|Bottom line)/i.test(h),
+    why: 'no recommendation summary - asked for on 913 of 913 agent recommendations, the single most requested block' },
+  { id: 'definition_callout', blocking: false,
+    test: (h) => /class="[^"]*citation-definition|data-bhpc-agent-block="definition_callout"|<(?:p|div)[^>]*>\s*<strong>[^<]{40,}<\/strong>/i.test(h),
+    why: 'no definition callout (agent requested 196 times) - this is what an answer engine lifts for "what is X"' },
+  { id: 'trust_block', blocking: false,
+    test: (h) => /data-bhpc-agent-block="trust_block"|class="[^"]*(?:trust|author|byline)|rel="author"|itemprop="author"/i.test(h),
+    why: 'no trust or authorship block (agent requested 215 times) - entity clarity is a citation factor' },
+
 ];
 
 const pages = [];

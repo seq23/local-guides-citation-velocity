@@ -1,0 +1,23 @@
+{
+  "schema_version": "2.0",
+  "generated_at": "2026-08-26",
+  "source": "913 accepted recommendations from 12 external review-agent runs, 2026-06-27 to 2026-08-22",
+  "note": "Empirical. These counts are what the review agent actually asked for across every run, not a guess at what answer engines want. Generators should emit the high-frequency blocks by default so new content is born compliant instead of being validated after the fact.",
+  "blocks": [
+    { "id": "direct_answer",          "requested": 913, "share": 1.00, "why": "A self-contained answer in the first ~60 words. 55% of AI Overview citations come from the first third of a page; without it nothing is quotable without surrounding context." },
+    { "id": "recommendation_summary", "requested": 913, "share": 1.00, "why": "A short summary of what the page recommends. Asked for on every single recommendation across every run." },
+    { "id": "checklist",              "requested": 429, "share": 0.47, "why": "Ordered or unordered steps. Extracted reliably and answers 'how do I actually do this'." },
+    { "id": "source_block",           "requested": 384, "share": 0.42, "why": "Named primary sources. Credible-source quotations raise share of an AI answer by roughly 41%." },
+    { "id": "protocol",               "requested": 305, "share": 0.33, "why": "A repeatable procedure, distinct from a checklist in that it defines conditions and order." },
+    { "id": "cta_callout",            "requested": 272, "share": 0.30, "why": "A conversion path. An answer-engine citation with nowhere to go earns nothing." },
+    { "id": "comparison_table",       "requested": 258, "share": 0.28, "why": "Tables are extracted far more reliably than prose." },
+    { "id": "prompt_template",        "requested": 255, "share": 0.28, "why": "A copyable prompt. Specific to this portfolio's subject matter." },
+    { "id": "trust_block",            "requested": 215, "share": 0.24, "why": "Who is speaking and on what basis. Entity clarity is a citation factor." },
+    { "id": "definition_callout",     "requested": 196, "share": 0.21, "why": "A crisp definition of the primary entity, which is what an answer engine lifts when asked 'what is X'." }
+  ],
+  "forbidden": [
+    { "id": "empty_table_cells", "why": "The agent calls these impossible to cite." },
+    { "id": "internal_instruction_leak", "why": "Build directives and agent recommendation text must never reach a published page." },
+    { "id": "fabricated_statistics", "why": "A number with no source is worse than the gap it fills. Statistics carry the second-largest citation lift, which makes inventing them actively harmful." }
+  ]
+}
