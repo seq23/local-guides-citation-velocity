@@ -30,6 +30,8 @@ const ROOT = process.cwd();
 const argv = process.argv.slice(2);
 const arg = (name, dflt) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : dflt; };
 const DRY = argv.includes('--dry-run');
+const MODE = arg('--mode', process.env.CITATION_PROBE_MODE || 'knowledge');
+const GROUNDED = MODE === 'grounded';
 const LIMIT = Number(arg('--limit', '25'));
 const OUT = 'data/signals/llm_citation_observations.json';
 
@@ -54,11 +56,24 @@ function loadQueries() {
 
 const hostOf = (u) => { try { return new URL(u).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
 
-async function ask(query, key, model) {
+// Two modes, kept distinct because they measure different things and conflating
+// them would overstate what is known.
+//
+//   knowledge (default) - ask without tools and see whether the model names us
+//     unprompted. This measures whether we exist in the model's answer at all.
+//     It is free.
+//   grounded - ask with Google Search grounding and read the sources the answer
+//     was actually built from. This is a real citation observation, and it is
+//     the stronger signal, but grounding is not free-tier eligible: it returns
+//     quota errors on this key today.
+//
+// Default is knowledge, because a probe that cannot run costs more than a weaker
+// probe that does.
+async function ask(query, key, model, grounded) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
   const body = {
     contents: [{ role: 'user', parts: [{ text: query }] }],
-    tools: [{ google_search: {} }],
+    ...(grounded ? { tools: [{ google_search: {} }] } : {}),
     generationConfig: { temperature: 0 },
   };
   const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -82,52 +97,113 @@ async function ask(query, key, model) {
 const queries = loadQueries();
 if (!queries.length) { console.error('citation probe: no queries found'); process.exit(1); }
 
+// OpenRouter is preferred when a key is present: its :free models cost nothing
+// and asking several of them is a better sample than asking one. Gemini remains
+// supported because it is the only one of the two that can ground an answer in
+// live search, which is the stronger measurement when its quota allows.
+const orKey = process.env.OPENROUTER_API_KEY || '';
 const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || '';
-const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const PROVIDER = arg('--provider', orKey && !GROUNDED ? 'openrouter' : 'gemini');
+// Three small models rather than one, because a single model's idiosyncrasies
+// are not a measurement.
+//
+// These are the cheapest tier that actually answers, around two to three cents
+// per million tokens - a full portfolio run costs roughly a cent. The genuinely
+// free tier was tried first and is not usable for this: several :free models are
+// agentic-harness only, others return upstream provider errors or hang with no
+// response. A probe that silently reports zero because every model failed is
+// worse than one that costs a cent and runs, so reliability wins here. Set
+// OPENROUTER_MODELS to override, including back to :free variants.
+const OR_MODELS = (process.env.OPENROUTER_MODELS || (config.openrouter_models || []).join(',') ||
+  'ibm-granite/granite-4.0-h-micro,inclusionai/ling-3.0-flash,mistralai/mistral-nemo')
+  .split(',').map((m) => m.trim()).filter(Boolean);
+
+// Free models are heavily shared and some hang. Without a deadline one slow
+// model stalls the whole run, which is how a measurement quietly stops being
+// taken. A timed-out model is recorded as an error against that model, not as
+// an absence of citations.
+const REQUEST_TIMEOUT_MS = Number(process.env.PROBE_TIMEOUT_MS || 25000);
+async function withTimeout(fn) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+  try { return await fn(ctrl.signal); }
+  finally { clearTimeout(t); }
+}
+
+async function askOpenRouter(query, model) {
+  const res = await withTimeout((signal) => fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    signal,
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${orKey}` },
+    body: JSON.stringify({ model, temperature: 0, max_tokens: 400, messages: [{ role: 'user', content: query }] }),
+  }));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+  const answer = data?.choices?.[0]?.message?.content || '';
+  return { ok: true, answer, uris: [] };
+}
+const model = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const now = new Date().toISOString();
 
-if (!key || DRY) {
+const haveKey = PROVIDER === 'openrouter' ? Boolean(orKey) : Boolean(key);
+if (!haveKey || DRY) {
   const reason = DRY ? 'dry_run' : 'no_api_key';
-  console.log(`citation probe: skipped (${reason}); ${queries.length} queries ready, owned domains: ${OWNED.join(', ')}`);
+  console.log(`citation probe: skipped (${reason}); mode=${MODE}; ${queries.length} queries ready, owned domains: ${OWNED.join(', ')}`);
   process.exit(0);
 }
 
 const observations = [];
+// One model can be idiosyncratic. Asking several and reporting each separately
+// says more than averaging them into a single number would.
+const engines = PROVIDER === 'openrouter' ? OR_MODELS : [model];
 for (const q of queries) {
+ for (const engineModel of engines) {
   let r;
-  try { r = await ask(q, key, model); }
-  catch (e) { r = { ok: false, error: String(e.message || e) }; }
+  try {
+    r = PROVIDER === 'openrouter' ? await askOpenRouter(q, engineModel) : await ask(q, key, engineModel, GROUNDED);
+  } catch (e) { r = { ok: false, error: String(e.message || e) }; }
   if (!r.ok) {
-    observations.push({ query: q, engine: `gemini:${model}`, observed_at: now, status: 'provider_error', error: r.error });
-    console.log(`  ERROR  ${q} :: ${r.error}`);
+    observations.push({ query: q, engine: `${PROVIDER}:${engineModel}`, mode: MODE, observed_at: now, status: 'provider_error', error: r.error });
+    console.log(`  ERROR  ${engineModel} :: ${q} :: ${String(r.error).slice(0, 70)}`);
     continue;
   }
   const domains = [...new Set(r.uris.map(hostOf).filter(Boolean))];
   const ours = domains.filter((d) => OWNED.some((o) => d === o || d.endsWith(`.${o}`)));
+  // In knowledge mode there are no grounded sources, so presence means the model
+  // named the brand or domain in its own answer.
+  const answerLower = (r.answer || '').toLowerCase();
+  const named = OWNED.filter((o) => answerLower.includes(o) || answerLower.includes(o.split('.')[0]));
   observations.push({
-    query: q, engine: `gemini:${model}`, observed_at: now,
+    query: q, engine: `${PROVIDER}:${engineModel}`, mode: MODE, observed_at: now,
     status: 'observed',
     cited_domains: domains,
     cited_ours: ours,
-    self_cited: ours.length > 0,
-    answer_mentions_brand: OWNED.some((o) => (r.answer || '').toLowerCase().includes(o.split('.')[0])),
+    self_cited: GROUNDED ? ours.length > 0 : named.length > 0,
+    named_in_answer: named,
+    answer_mentions_brand: named.length > 0,
   });
-  console.log(`  ${ours.length ? 'CITED ' : '  --  '} ${q} :: ${domains.length} sources${ours.length ? ` (ours: ${ours.join(', ')})` : ''}`);
+  const hit = GROUNDED ? ours.length > 0 : named.length > 0;
+  console.log(`  ${hit ? 'PRESENT' : '   --  '} ${engineModel.split('/').pop()} :: ${q}${hit ? ` (${(GROUNDED ? ours : named).join(', ')})` : ''}`);
+ }
 }
 
 const prior = fs.existsSync(path.join(ROOT, OUT))
   ? JSON.parse(fs.readFileSync(path.join(ROOT, OUT), 'utf8'))
   : { schema_version: '1.0', runs: [] };
 prior.runs = (prior.runs || []).slice(-49);
-prior.runs.push({ run_at: now, engine: `gemini:${model}`, queries: queries.length, observations });
+prior.runs.push({ run_at: now, provider: PROVIDER, engines, mode: MODE, queries: queries.length, observations });
 
 const cited = observations.filter((o) => o.self_cited).length;
 const errored = observations.filter((o) => o.status === 'provider_error').length;
 prior.latest_summary = {
-  run_at: now, queries: queries.length, self_cited: cited, errored,
-  self_cited_rate_pct: queries.length ? Number(((100 * cited) / queries.length).toFixed(1)) : 0,
+  run_at: now, provider: PROVIDER, engines, mode: MODE,
+  queries: queries.length, observations: observations.length, self_cited: cited, errored,
+  _mode_note: GROUNDED
+    ? 'grounded: counted when the answer was built from one of our pages'
+    : 'knowledge: counted when the model named us unprompted, with no retrieval. Weaker than a citation and must not be reported as one.',
+  self_cited_rate_pct: observations.length ? Number(((100 * cited) / observations.length).toFixed(1)) : 0,
 };
 
 fs.mkdirSync(path.join(ROOT, path.dirname(OUT)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, OUT), JSON.stringify(prior, null, 2) + '\n');
-console.log(`citation probe: ${cited}/${queries.length} queries cited one of our domains (${prior.latest_summary.self_cited_rate_pct}%); ${errored} provider error(s). Recorded in ${OUT}`);
+console.log(`citation probe [${PROVIDER}/${MODE}]: ${cited}/${observations.length} observations named one of our domains (${prior.latest_summary.self_cited_rate_pct}%); ${errored} provider error(s). Recorded in ${OUT}`);
