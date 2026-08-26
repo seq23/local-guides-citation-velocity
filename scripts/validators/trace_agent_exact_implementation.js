@@ -19,7 +19,29 @@ function rel(p) { return path.join(ROOT, p); }
 function readJson(p, f = null) { try { return JSON.parse(fs.readFileSync(rel(p), 'utf8')); } catch { return f; } }
 function writeJson(p, v) { const out = rel(p); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, JSON.stringify(v, null, 2) + '\n'); }
 function readTextIfExists(p) { try { return fs.readFileSync(rel(p), 'utf8'); } catch { return ''; } }
-function normalize(v) { return String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+const NAMED_ENTITIES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“',
+  mdash: '—', ndash: '–', hellip: '…', middot: '·'
+};
+// Rendered HTML entity-encodes characters that appear literally in the manifest's
+// required_strings. Without decoding, `it&#39;s` normalizes to "it 39 s" and can never
+// match "it's", so the semantic assertion silently degrades to the weaker query needle.
+function decodeEntities(value) {
+  let out = String(value || '');
+  // Numeric entities first, then named; repeat once to catch double-encoded (&amp;#39;).
+  for (let pass = 0; pass < 2; pass += 1) {
+    out = out
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+      .replace(/&([a-z][a-z0-9]*);/gi, (match, name) => {
+        const key = String(name).toLowerCase();
+        return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, key) ? NAMED_ENTITIES[key] : match;
+      });
+  }
+  return out;
+}
+function normalize(v) { return decodeEntities(v).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
 function queryNeedle(spec) { return normalize((spec.queries || [spec.query])[0]).split(' ').slice(0, 5).join(' '); }
 function semanticNeedlesFound(implementationPath, html) {
   const semantic = semanticEntryForImplementationPath(implementationPath);
@@ -56,9 +78,18 @@ const traces = [];
 const errors = [];
 
 for (const spec of plan.specs || []) {
+  if (spec.status === 'CARRIED') {
+    // Recorded but deliberately unworked (outside the processing budget). Not proven,
+    // not a failure — it must simply never be invisible again.
+    traces.push({ ...spec, trace_status: 'CARRIED', proven: false });
+    continue;
+  }
+
   if (spec.status === 'BLOCKED') {
+    // Blocked work is carried, not landed. Policy keeps it from failing the build, but
+    // it must never be counted as PASS: a blocked spec proves nothing shipped.
     const ok = Boolean(spec.blocked_reason);
-    traces.push({ ...spec, trace_status: ok ? 'PASS' : 'FAIL' });
+    traces.push({ ...spec, trace_status: ok ? 'BLOCKED' : 'FAIL', proven: false });
     if (!ok) errors.push(`${spec.record_id}:blocked row missing blocked_reason`);
     continue;
   }
@@ -114,13 +145,28 @@ for (const spec of plan.specs || []) {
   }
 }
 
+const countBy = (status) => traces.filter((t) => t.trace_status === status).length;
+const provenCount = countBy('PASS');
+const blockedCount = countBy('BLOCKED');
+const deferredCount = countBy('DEFERRED_BY_DAILY_CEILING');
+const carriedCount = countBy('CARRIED');
+const failedCount = countBy('FAIL');
+
 const report = {
-  schema_version: '1.1',
+  schema_version: '1.2',
   status: errors.length ? 'FAIL' : 'PASS',
   checked_at: DATE,
   ledger_path: LEDGER_PATH,
   ledger_count: (ledger.entries || []).length,
   plan_count: (plan.specs || []).length,
+  // Distinct outcomes. `proven_count` is the only figure that means work landed;
+  // blocked and deferred specs are carried, not shipped.
+  proven_count: provenCount,
+  blocked_count: blockedCount,
+  deferred_count: deferredCount,
+  carried_count: carriedCount,
+  failed_count: failedCount,
+  blocked_policy: 'BLOCKED and CARRIED specs do not fail the build, and are never counted as proven',
   traces,
   errors
 };
@@ -130,4 +176,4 @@ if (errors.length) {
   errors.forEach((error) => console.error(`- ${error}`));
   process.exit(1);
 }
-console.log(`AGENT EXACT IMPLEMENTATION TRACE PASS: ${traces.length} spec(s)`);
+console.log(`AGENT EXACT IMPLEMENTATION TRACE PASS: ${traces.length} spec(s); proven=${provenCount}; blocked=${blockedCount}; carried=${carriedCount}; deferred=${deferredCount}`);
