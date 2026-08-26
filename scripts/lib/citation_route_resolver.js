@@ -73,7 +73,62 @@ function routeFamilyForPath(value) {
   if (p.endsWith('/index.html')) return 'LIVE_PAGE';
   return 'STATIC_FILE';
 }
+// A numbered stem, and a distinctive section token, are identities rather than
+// fuzzy guesses.
+//
+// The review agent refers to pages by stable stem or by topic:
+// insights/trt-002.html for
+// insights/trt-002-how-to-compare-trt-clinics-in-2026.html, and
+// dentistry/pediatric-dentistry/ for dentistry/pediatric-family/. Similarity
+// scoring never cleared the 0.78 threshold on either shape, so both were
+// reported TARGET_NOT_FOUND and the same recommendations were re-issued run
+// after run - 111 blocked entries against just seven real pages.
+//
+// Both rules resolve only when exactly one published page matches, so
+// dentistry/dental-implants/ correctly stays unresolved: "dental" matches three
+// siblings and there is no honest way to choose. Generic words are excluded so
+// "cost" or "treatment" can never carry a match alone.
+const GENERIC_ROUTE_TOKENS = new Set([
+  'dentistry','dental','treatment','planning','guide','guides','near','best','top',
+  'cost','costs','care','services','service','options','local','index','html'
+]);
+function resolveNumberedStem(raw) {
+  const p = normalizeImplementationPath(raw);
+  const m = p.match(/^(.*?)([a-z]+-\d{2,})(?:[-.].*)?\.html$/i);
+  if (!m) return '';
+  const [, dir, stem] = m;
+  const matches = buildRouteRegistry().map(r => r.implementation_path)
+    .filter(f => f.startsWith(`${dir}${stem}-`) && f.endsWith('.html'));
+  return matches.length === 1 ? matches[0] : '';
+}
+function resolveDistinctiveSection(raw) {
+  const p = normalizeImplementationPath(raw);
+  const m = p.match(/^(.*?\/)([^/]+)\/index\.html$/i);
+  if (!m) return '';
+  const [, parent, requested] = m;
+  const tokens = requested.toLowerCase().split(/[^a-z0-9]+/)
+    .map(t => t.replace(/s$/, ''))
+    .filter(t => t.length >= 5 && !GENERIC_ROUTE_TOKENS.has(t));
+  if (!tokens.length) return '';
+  // Direct children only. Matching any descendant pulled in
+  // <section>/community-questions/<question>/index.html, so a topic token hit a
+  // dozen unrelated Q&A pages and every candidate looked ambiguous.
+  const siblings = [...new Set(buildRouteRegistry().map(r => r.implementation_path)
+    .filter(f => f.startsWith(parent) && f.endsWith('/index.html'))
+    .map(f => f.slice(parent.length).replace(/\/index\.html$/, ''))
+    .filter(sec => sec && !sec.includes('/')))];
+  const hits = siblings.filter(sib => {
+    const sibTokens = sib.toLowerCase().split(/[^a-z0-9]+/).map(t => t.replace(/s$/, ''));
+    return tokens.some(t => sibTokens.includes(t));
+  });
+  return hits.length === 1 ? `${parent}${hits[0]}/index.html` : '';
+}
+
 function resolveFuzzyRoute(raw, options = {}) {
+  const stemMatch = resolveNumberedStem(raw);
+  if (stemMatch) return { implementation_path: stemMatch, status: 'STEM_ROUTE_RESOLVED', block_reason: '', route_family: routeFamilyForPath(stemMatch), canonicalized_from: raw };
+  const sectionMatch = resolveDistinctiveSection(raw);
+  if (sectionMatch) return { implementation_path: sectionMatch, status: 'SECTION_ROUTE_RESOLVED', block_reason: '', route_family: routeFamilyForPath(sectionMatch), canonicalized_from: raw };
   const registry = buildRouteRegistry();
   const hay = [raw, options.query, options.title].filter(Boolean).join(' ');
   const target = normalizeSlugComparable(hay || raw);
