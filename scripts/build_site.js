@@ -558,6 +558,20 @@ function renderAtlasBody({ title, description, atlasConfig, allVerticals }) {
     <div class="grid">${clusterCards}</div>`;
 }
 
+// Live page records keyed by public path. Loaded once; the cluster builder runs
+// before the pages payload is available to it.
+let __livePageRecordCache = null;
+function livePageRecordByPath(routePath) {
+  if (!__livePageRecordCache) {
+    __livePageRecordCache = new Map();
+    try {
+      const lp = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', '_live', 'pages.json'), 'utf8'));
+      for (const rec of lp.pages || []) if (rec && rec.path) __livePageRecordCache.set(String(rec.path), rec);
+    } catch { /* no live payload; cluster pages fall back to registry metadata */ }
+  }
+  return __livePageRecordCache.get(String(routePath)) || null;
+}
+
 function renderClusterKnowledgeBlock(page, registryEntry, atlasConfig, insightItems, clusterPages) {
   if (!page || !page.cluster || !registryEntry) return '';
   const items = (insightItems || []).filter((item) => item.vertical === page.vertical && item.cluster === page.cluster);
@@ -1443,6 +1457,18 @@ for (const [vertical, meta] of Object.entries(registry)) {
   for (const [slug, cmeta] of Object.entries(meta.clusters || {})) {
     const pathSlug = cmeta.path;
 
+    // A cluster route can also be a real content page. 19 routes have a record in
+    // content/_live/pages.json carrying an answer, a checklist and authored
+    // citation artifacts, and this builder was emitting a registry-metadata
+    // skeleton for them - about 12KB against a 29KB accepted page. It only showed
+    // when a route was thawed, because the frozen guard restored the accepted
+    // bytes on every build and hid it. Any thaw silently destroyed the content,
+    // and the guard was the only thing preserving it.
+    //
+    // Read directly, because this loop runs before pages.json reaches `pages` -
+    // which is also why the pages.find guard below never fires for these routes.
+    const liveRecord = livePageRecordByPath(pathSlug);
+
     if (!pages.find(p => p.slug === pathSlug)) {
       const clusterItems = clusterQueryMapBootstrap.filter((item) => item.vertical === vertical && item.cluster === slug);
       const clusterTitle = cmeta.title || slug;
@@ -1455,6 +1481,21 @@ for (const [vertical, meta] of Object.entries(registry)) {
       }, { sourceRoute:pathSlug, title:clusterTitle });
       const clusterDirectAnswer = buildDirectAnswer(clusterTitle, clusterDescription, 70, clusterAtom);
       const clusterAtomHtml = renderProgrammaticContentAtom(clusterAtom, clusterTitle);
+      // Where a live record owns this route, its authored content is the page. The
+      // registry knows only a title and a description; the record carries the
+      // direct answer, the decision checklist and the citation artifacts that make
+      // the page worth citing in the first place.
+      const liveRepaired = liveRecord ? applyAgentExactRepairsToPage(JSON.parse(JSON.stringify(liveRecord)), loadAgentExactLedger()) : null;
+      const liveArtifacts = liveRepaired ? renderCitationVelocityArtifacts(liveRepaired.citation_velocity_artifacts || []) : '';
+      const liveAnswer = liveRepaired && liveRepaired.answer
+        ? `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(liveRepaired.answer)}</p></section>`
+        : '';
+      const liveChecklist = liveRepaired && (liveRepaired.checklist || []).length
+        ? renderDecisionChecklist(`Before you act on ${clusterTitle}`, '', liveRepaired.checklist)
+        : '';
+      const liveDisclaimer = liveRepaired && liveRepaired.disclaimer
+        ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(liveRepaired.disclaimer)}</p></section>`
+        : '';
       const clusterPage = {
         slug: pathSlug,
         title: clusterTitle,
@@ -1466,10 +1507,13 @@ for (const [vertical, meta] of Object.entries(registry)) {
   <section class="card">
     <h1>${htmlEscape(clusterTitle)}</h1>
     <p>${htmlEscape(clusterDescription)}</p>
-    <section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(clusterDirectAnswer)}</p></section>
+      ${liveAnswer || `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(clusterDirectAnswer)}</p></section>`}
     ${clusterAtomHtml}
     <p><a href="${htmlEscape(meta.atlas_path || `/atlas/${meta.base_path || vertical}/`)}">View the ${htmlEscape(meta.label || vertical)} atlas</a></p>
   </section>
+    ${liveChecklist}
+    ${liveArtifacts}
+    ${liveDisclaimer}
   <section class="card sibling-links" data-sibling-links="true">
     <h2>Questions in this cluster</h2>
     <ul>${clusterItems.slice(0, 10)
