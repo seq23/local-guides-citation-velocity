@@ -44,8 +44,16 @@ if (!Object.keys(projects).length) {
 
 // One loader for every page. It picks the project by host so a shared tree cannot
 // report one domain's sessions under another domain's project.
-const snippet = `<script ${MARKER}>(function(w,d,m){var h=(w.location.hostname||"").toLowerCase().replace(/^www\\./,"");var id=m[h];if(!id)return;w.clarity=w.clarity||function(){(w.clarity.q=w.clarity.q||[]).push(arguments)};var s=d.createElement("script");s.async=1;s.src="https://www.clarity.ms/tag/"+id;var f=d.getElementsByTagName("script")[0];f.parentNode.insertBefore(s,f)})(window,document,${JSON.stringify(projects)})</script>`;
+// The loader used to be inline. This repo serves a strict CSP (script-src
+// 'self'), so the browser refused to execute it and Clarity collected nothing -
+// the tag was in the HTML on every page and the project stayed empty. Writing
+// the loader to a same-origin file makes it satisfy 'self' without weakening the
+// policy with 'unsafe-inline'.
+const LOADER_REL = 'assets/clarity-loader.js';
+const loaderJs = `(function(w,d,m){var h=(w.location.hostname||"").toLowerCase().replace(/^www\\./,"");var id=m[h];if(!id)return;w.clarity=w.clarity||function(){(w.clarity.q=w.clarity.q||[]).push(arguments)};var s=d.createElement("script");s.async=1;s.src="https://www.clarity.ms/tag/"+id;var f=d.getElementsByTagName("script")[0];f.parentNode.insertBefore(s,f)})(window,document,${JSON.stringify(projects)})`;
+const snippet = `<script ${MARKER} src="/${LOADER_REL}" defer></script>`;
 
+let upgraded = 0;
 let touched = 0;
 let already = 0;
 let skipped = 0;
@@ -59,12 +67,33 @@ function walk(dir, depth) {
     const rel = path.relative(outDir, abs).replace(/\\/g, '/');
     if (skipFiles.has(rel) || skipFiles.has(entry.name)) { skipped += 1; continue; }
     const html = fs.readFileSync(abs, 'utf8');
+    // Pages carrying the older inline loader are upgraded rather than skipped.
+    // Leaving them would leave a tag the CSP refuses to execute, which is
+    // indistinguishable from having no tag at all.
+    const inlineLoader = new RegExp(`<script ${MARKER}>[\\s\\S]*?<\\/script>`, 'i');
+    if (inlineLoader.test(html)) {
+      fs.writeFileSync(abs, html.replace(inlineLoader, snippet));
+      upgraded += 1;
+      continue;
+    }
     if (html.includes(MARKER)) { already += 1; continue; }
     if (!/<\/head>/i.test(html)) { skipped += 1; continue; }
     fs.writeFileSync(abs, html.replace(/<\/head>/i, `${snippet}</head>`));
     touched += 1;
   }
 }
+// The loader must exist at the same origin it is requested from, so write it
+// into the output tree before pages are rewritten to reference it.
+// Written to the source assets directory as well as the output tree. The source
+// copy is what makes it a declared public file that the build copies and that
+// the internal-href validator can resolve; writing only into dist leaves a page
+// referencing a file the repo does not know about.
+for (const base of new Set([ROOT, outDir])) {
+  const loaderAbs = path.join(base, LOADER_REL);
+  fs.mkdirSync(path.dirname(loaderAbs), { recursive: true });
+  fs.writeFileSync(loaderAbs, loaderJs + '\n');
+}
+
 walk(outDir, 0);
 
-console.log(`clarity: installed on ${touched} page(s); ${already} already had it; ${skipped} skipped`);
+console.log(`clarity: installed on ${touched} page(s); upgraded ${upgraded} from the inline loader; ${already} already correct; ${skipped} skipped`);
