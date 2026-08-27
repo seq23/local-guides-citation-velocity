@@ -320,6 +320,7 @@
       "commands": [
         "npm ci --ignore-scripts",
         "npm run release:daily-citation-intelligence:preview",
+        "npm run citation:prepare-velocity-intake",
         "npm run release:velocity-intake",
         "npm run validate:agent-exact",
         "npm run validate:citation-agent-fixes",
@@ -340,6 +341,7 @@
         "staged Velocity source"
       ],
       "produces": [
+        "absorbed agent run commit",
         "validated Velocity release commit",
         "release diagnostics",
         "data/queries/evidence/evidence_queries.json",
@@ -351,7 +353,7 @@
       "downstream": [
         "deploy-distribution.yml"
       ],
-      "failure_boundary": "Push only after Safe Harbor/transactional release finalization, deterministic rebuild, release validation, exact-agent validation, and citation-fix validation pass."
+      "failure_boundary": "Absorption pushes on its own commit once the release gate passes on the normalized artifacts alone, so a content-release failure cannot un-absorb a landed agent run. The content release then pushes only after Safe Harbor/transactional release finalization, deterministic rebuild, release validation, exact-agent validation, and citation-fix validation pass."
     },
     {
       "file": "velocity-full-rebuild.yml",

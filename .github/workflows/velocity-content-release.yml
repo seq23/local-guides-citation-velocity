@@ -73,6 +73,41 @@ jobs:
         run: |
           python3 scripts/queries/ingest_gsc_evidence.py
           npm run atlas:build
+      - name: Normalize landed agent runs and validate the absorption alone
+        # Absorption used to be inseparable from the content release. Intake
+        # normalized the run, but the normalized artifact was only ever pushed if
+        # the whole content release also revalidated. When it did not - 2026-08-26
+        # TRT, 2026-08-27 neuro, both failing on deterministic-build - the
+        # normalized artifact was thrown away with the rest of the release, the raw
+        # run stayed READY_FOR_ABSORPTION with no normalized output, and
+        # agent-artifact-continuity held main red until a human ran the intake by
+        # hand. Nothing retried, because this workflow only triggers on a new
+        # manifest and that manifest had already landed.
+        #
+        # Normalization touches only data/report_fixes/**; it publishes no page and
+        # is independently provable against the same release gate. So it lands on
+        # its own validated commit first, and a later content-release failure can
+        # no longer un-absorb a run that is already on disk.
+        run: |
+          npm run citation:prepare-velocity-intake
+          npm run build
+          npm run validate:release
+      - name: Commit and push the validated absorption
+        id: absorption
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          git commit -m "absorb agent runs $(date -u +%F)"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 15))
+          done
+          exit 1
       - name: Absorb governed artifacts and run Safe Harbor content release
         run: npm run release:velocity-intake
       - name: Commit validated Velocity release
