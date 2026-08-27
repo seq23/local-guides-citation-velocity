@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-27T15:59:53.164Z",
+  "generated_at": "2026-08-27T18:35:43.676Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -525,7 +525,7 @@
     },
     {
       "workflow": "velocity-content-release.yml",
-      "command_count": 9,
+      "command_count": 11,
       "status": "PASS",
       "commands": [
         {
@@ -629,6 +629,69 @@
           "transitive_npm_scripts": [
             "atlas:build"
           ]
+        },
+        {
+          "command": "npm run citation:prepare-velocity-intake\nnpm run build\nnpm run validate:release",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "build",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "citation:prepare-velocity-intake",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_pages_dist.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/install_clarity.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/prepare_velocity_intake_release.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "build",
+            "citation:prepare-velocity-intake",
+            "validate:release"
+          ],
+          "transitive_npm_scripts": [
+            "build",
+            "citation:prepare-velocity-intake",
+            "validate:release"
+          ]
+        },
+        {
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"absorb agent runs $(date -u +%F)\"\nfor attempt in 1 2 3; do\ngit fetch origin main\ngit rebase origin/main\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         },
         {
           "command": "npm run release:velocity-intake",

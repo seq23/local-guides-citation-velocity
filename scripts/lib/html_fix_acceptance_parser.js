@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { DEFAULT_HEADERS, canonicalBlockType } = require('./html_fix_block_schema');
+const { isInternalInstructionText, containsInternalInstruction } = require('./internal_instruction_text');
 
 function normalizeSpace(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 function compact(value, max = 220) {
@@ -19,12 +20,16 @@ function stripPrefixes(value) {
   const edit = raw.match(/(?:^|\|\|)\s*(?:EDIT|FIX|RECOMMENDATION)\s*:\s*(.+)$/i);
   return normalizeSpace(edit ? edit[1] : raw);
 }
+// An agent quotes two different kinds of thing: copy it wants on the page, and copy
+// it found on the page and is complaining about. Only the first is usable. A quoted
+// phrase that is itself an internal build directive is always the second kind, so it
+// is dropped here rather than at each of the six call sites downstream.
 function quotedPhrases(value) {
   const out = [];
   const re = /['“"]([^'”"]{4,120})['”"]/g;
   let m;
   while ((m = re.exec(String(value || '')))) out.push(normalizeSpace(m[1]));
-  return unique(out);
+  return unique(out).filter((phrase) => !isInternalInstructionText(phrase));
 }
 function isWorkflowInstruction(value) {
   const v = normalizeSpace(value).toLowerCase();
@@ -69,19 +74,26 @@ function extractInstructionRequirements(edit) {
     ...(raw.match(/compare\s+[^.;]+/gi) || []),
     ...(raw.match(/explain\s+[^.;]+/gi) || []),
     ...(raw.match(/define\s+[^.;]+/gi) || [])
-  ]).filter((item) => !isWorkflowInstruction(item)).slice(0, 12);
+  ]).filter(usableAsCopy).slice(0, 12);
 }
 
+// A title becomes an <h2> on a public page and a required_string the trace then
+// enforces, so every candidate has to clear both filters: workflow imperatives
+// ("add an h2...") and internal build directives. The final fallback is derived from
+// the query, so refusing a candidate degrades to a readable heading, never to none.
+function usableAsCopy(value) {
+  return Boolean(normalizeSpace(value)) && !isWorkflowInstruction(value) && !isInternalInstructionText(value);
+}
 function titleFromFix(edit, query, index = 0) {
   const titled = String(edit || '').match(/(?:h2|h3|section|block|callout|table|checklist|part [ab])[^.;]{0,80}?titled\s+['"“]([^'"”]{4,100})['"”]/i) || String(edit || '').match(/titled\s+['"“]([^'"”]{4,100})['"”]/i);
-  if (titled && !isWorkflowInstruction(titled[1])) return normalizeSpace(titled[1]);
-  const quoted = quotedPhrases(edit).filter((q) => !isWorkflowInstruction(q));
+  if (titled && usableAsCopy(titled[1])) return normalizeSpace(titled[1]);
+  const quoted = quotedPhrases(edit).filter(usableAsCopy);
   const hTitle = quoted.find((q) => /[A-Za-z]/.test(q) && q.split(/\s+/).length >= 2 && q.length <= 90);
   if (hTitle) return hTitle;
   const h2On = String(edit || '').match(/\badd\s+(?:a\s+|an\s+)?h[23]\s+section\s+on\s+([^.;]{8,90})/i);
-  if (h2On && !isWorkflowInstruction(h2On[1])) return sentenceCase(h2On[1]);
+  if (h2On && usableAsCopy(h2On[1])) return sentenceCase(h2On[1]);
   const afterAdd = edit.match(/(?:add|insert|create|open with|replace with)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:h2|h3|section|block|callout|table|checklist|script|scorecard|matrix)[^:.]*[:.]?\s*([^.;]{10,90})/i);
-  if (afterAdd && !isWorkflowInstruction(afterAdd[1])) return sentenceCase(afterAdd[1]);
+  if (afterAdd && usableAsCopy(afterAdd[1])) return sentenceCase(afterAdd[1]);
   return sentenceCase(`${query || 'Agent recommendation'} — acceptance block ${index + 1}`);
 }
 function typeFromFix(edit) {
@@ -231,7 +243,7 @@ function artifactFromFix({ recommendation, query, recordId, index = 0 }) {
       query ? `Answer directly: ${query}` : '',
       'Verify the evidence before treating the answer as settled.',
       'Flag any jurisdiction, provider, or policy limits that could change the answer.'
-    ]).filter((item) => !isWorkflowInstruction(item)).slice(0, Math.max(minRows, 4));
+    ]).filter(usableAsCopy).slice(0, Math.max(minRows, 4));
   } else if (['comparison_table','decision_matrix','cost_table','timeline_table','scorecard','worksheet','severity_matrix'].includes(type)) {
     artifact.headers = headers;
     artifact.rows = rowsFromFix(edit, query, headers, minRows);
@@ -250,7 +262,9 @@ function requiredStringsForArtifact(artifact, recommendation) {
   if (Array.isArray(artifact.extracted_requirements)) out.push(...artifact.extracted_requirements.filter((item) => String(item || '').length <= 90).slice(0, 10));
   if (Array.isArray(artifact.items)) out.push(...artifact.items.filter((item) => String(item || '').length <= 90).slice(0, 10));
   if (Array.isArray(artifact.lines)) out.push(...artifact.lines.filter((line) => String(line || '').length <= 90).slice(0, 10));
-  return unique(out).slice(0, 30);
+  // A required_string is a promise the trace enforces against the rendered page.
+  // Requiring a build directive would compel the renderer to publish one.
+  return unique(out).filter((value) => !isInternalInstructionText(value)).slice(0, 30);
 }
 function rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index = 0 }) {
   const artifact = artifactFromFix({ recommendation, query, recordId, index });
@@ -271,7 +285,7 @@ function rowRequirementFromFix({ recommendation, query, recordId, implementation
   };
 }
 function mergeArtifacts(artifacts) {
-  return (artifacts || []).filter((artifact) => artifact && artifact.type && artifact.title);
+  return (artifacts || []).filter((artifact) => artifact && artifact.type && artifact.title && !containsInternalInstruction(artifact));
 }
 function compileEntryFromSpec(spec) {
   const implementationPath = spec.implementation_path || spec.intended_winner_path || '';
