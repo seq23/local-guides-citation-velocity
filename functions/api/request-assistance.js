@@ -97,6 +97,16 @@ function parseUnknownFieldName(text) {
   }
 }
 
+// Airtable quotes offending values back in some of its error messages, and
+// those messages are the thing worth logging. Mask anything shaped like a
+// submitted contact detail first, so diagnosing a vendor error can never be
+// the reason a lead's email or phone number ends up in a log.
+function redactForLog(text) {
+  return String(text || '')
+    .replace(/[^\s"'<>@]+@[^\s"'<>@]+\.[^\s"'<>@]+/g, '[email]')
+    .replace(/\+?[\d][\d()\-. ]{7,}\d/g, '[phone]');
+}
+
 function formatDroppedFields(dropped) {
   return Object.entries(dropped)
     .filter(([, v]) => String(v == null ? '' : v).trim() !== '')
@@ -292,7 +302,7 @@ export async function onRequestPost(context) {
         'request-assistance airtable failure',
         at.reason || 'unknown',
         `status=${at.status || 0}`,
-        at.details || ''
+        redactForLog(at.details)
       );
     } else if (at.droppedFields && at.droppedFields.length) {
       // The write landed, but the table is missing columns we tried to fill.

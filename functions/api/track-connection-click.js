@@ -57,7 +57,13 @@ async function writeToAirtable({ env, record }) {
     if (!unknown || !Object.prototype.hasOwnProperty.call(fields, unknown)) {
       // Telemetry must never break the site, so this stays silent about the
       // record and logs only why the vendor refused it.
-      console.warn('track-connection-click airtable rejected', `status=${res.status}`, text);
+      // Airtable quotes offending values back in some errors. Clicks carry no
+      // contact details today, but mask anyway so that stays true if the
+      // telemetry payload ever grows.
+      const safe = text
+        .replace(/[^\s"'<>@]+@[^\s"'<>@]+\.[^\s"'<>@]+/g, '[email]')
+        .replace(/\+?[\d][\d()\-. ]{7,}\d/g, '[phone]');
+      console.warn('track-connection-click airtable rejected', `status=${res.status}`, safe);
       return { ok: false };
     }
     delete fields[unknown];
