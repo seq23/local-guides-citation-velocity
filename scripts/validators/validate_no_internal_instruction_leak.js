@@ -39,12 +39,12 @@ const PATTERNS = [
   // Imperative shapes, found on 148 published pages on 2026-08-27. Every pattern
   // above is a noun phrase from the build vocabulary; these read like prose,
   // which is why they survived. See scripts/lib/internal_instruction_text.js.
-  // "acceptance block" is deliberately absent even though 28 pages render it -
-  // the compiler emits it as its own heading_exact. See the note in
-  // scripts/lib/internal_instruction_text.js.
   [/\bDirectly answer\s*:/i, 'instruction to write the answer, printed instead of the answer', 'directly-answer'],
   [/\bAnswer directly\s*:/i, 'instruction to write the answer, printed instead of the answer', 'answer-directly'],
   [/does not include the exact requested (?:heading|table|checklist|script|callout)/i, "a validator's own failure message rendered as reader-facing advice", 'validator-failure-message'],
+  // Held out until the compiler stopped authoring "<query> - acceptance block 1"
+  // as its fallback heading; see scripts/lib/internal_instruction_text.js.
+  [/\bacceptance block\b/i, 'the compiler naming its own block, rendered as a heading', 'acceptance-block'],
 ];
 
 // Pages exempted from the gate because they already carried a directive when the

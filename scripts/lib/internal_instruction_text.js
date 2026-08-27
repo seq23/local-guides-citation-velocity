@@ -44,20 +44,23 @@ const INTERNAL_INSTRUCTION_PATTERNS = [
   // reader "The rendered page does not include the exact requested heading,
   // table, checklist, script, or callout" as though it were advice.
   //
-  // NOT INCLUDED, deliberately: /\bacceptance block\b/. 28 pages render that
-  // phrase and it is just as much build vocabulary as the rest - but the
-  // compiler in html_fix_acceptance_parser.js legitimately names its own blocks
-  // "<query> - acceptance block 1" and emits that as heading_exact. Adding the
-  // pattern makes check 3 of validate_generator_instruction_refusal fail, and it
-  // fails CORRECTLY: it is reporting that the compiler still produces a leaky
-  // heading. Fixing that means renaming the block, which changes required_strings
-  // inside the frozen acceptance manifests and fails
-  // validate_agent_exact_implementation on those routes. That is its own
-  // transaction. Recorded here so the next person does not add the pattern, watch
-  // check 3 fail, and conclude the pattern was wrong.
   /\bDirectly answer\s*:/i,
   /\bAnswer directly\s*:/i,
-  /does not include the exact requested (?:heading|table|checklist|script|callout)/i
+  /does not include the exact requested (?:heading|table|checklist|script|callout)/i,
+  // "acceptance block" was held out of this list on 2026-08-27 for a good reason:
+  // the compiler's own fallback heading was "<query> - acceptance block 1", so
+  // adding the pattern made check 3 of validate_generator_instruction_refusal
+  // fail, and it failed CORRECTLY - it was reporting that the compiler still
+  // authored a leaky heading. Narrowing the pattern to get past that would have
+  // been sanding down the smoke detector.
+  //
+  // The right fix was the one the note said it was: rename the block. The
+  // fallback in html_fix_acceptance_parser.js now names the block by what it does
+  // for the reader ("How much does TRT cost? - what it costs and what to check"),
+  // the manifests were recompiled, and the 20 pages that rendered the old heading
+  // were thawed, rebuilt and refrozen. With no producer emitting it, the pattern
+  // can finally join the list.
+  /\bacceptance block\b/i
 ];
 
 function isInternalInstructionText(value) {

@@ -84,7 +84,48 @@ function extractInstructionRequirements(edit) {
 function usableAsCopy(value) {
   return Boolean(normalizeSpace(value)) && !isWorkflowInstruction(value) && !isInternalInstructionText(value);
 }
-function titleFromFix(edit, query, index = 0) {
+// Fallback heading, used when the EDIT text names no title of its own.
+//
+// It used to be `<query> — acceptance block N`: the compiler naming its own
+// output. That name went out as a visible <h2>, as the schema.org HowTo `name`,
+// and as a required_string on 20 pages, so a reader who asked "how much does TRT
+// cost" met a heading about the build system's blocks. Name the block by what it
+// does for the reader instead - the same move readerIntroForArtifact already
+// makes one line further on - and the heading stops being internal vocabulary.
+//
+// Keyed by the same block types typeFromFix returns, so a new type gets a real
+// heading by adding one line here rather than by falling back to a generic one.
+const FALLBACK_TITLE_BY_TYPE = {
+  cost_table: 'what it costs and what to check',
+  comparison_table: 'how to compare your options',
+  decision_matrix: 'how to compare your options',
+  timeline_table: 'what happens, and when',
+  severity_matrix: 'how urgent it is, and what to do',
+  scorecard: 'how to score each option',
+  worksheet: 'work it through',
+  script: 'what to ask, word for word',
+  checklist: 'what to check before you act',
+  callout: 'what to know before you act',
+  protocol: 'how to decide, step by step',
+  source_block: 'which sources to verify',
+  agent_directive: 'what to verify before you act'
+};
+// `fallbackSeq` is a per-page Map the caller owns. Several recommendations for one
+// page can all fall back to the same heading, and two identical <h2>s are worse for
+// a reader than a numbered pair. Numbering off the recommendation index instead
+// produced "(9)", "(13)", "(22)" - a counter of something the reader cannot see,
+// which is the same mistake as the name it replaced. This counts only the headings
+// that actually collide, so the first is unnumbered and the rest run 2, 3, 4.
+function fallbackTitle(query, type, fallbackSeq) {
+  const subject = sentenceCase(query || 'This decision');
+  const suffix = FALLBACK_TITLE_BY_TYPE[type] || FALLBACK_TITLE_BY_TYPE.agent_directive;
+  const base = `${subject} — ${suffix}`;
+  if (!fallbackSeq) return base;
+  const n = (fallbackSeq.get(base) || 0) + 1;
+  fallbackSeq.set(base, n);
+  return n > 1 ? `${base} (${n})` : base;
+}
+function titleFromFix(edit, query, index = 0, type = 'agent_directive', fallbackSeq = null) {
   const titled = String(edit || '').match(/(?:h2|h3|section|block|callout|table|checklist|part [ab])[^.;]{0,80}?titled\s+['"“]([^'"”]{4,100})['"”]/i) || String(edit || '').match(/titled\s+['"“]([^'"”]{4,100})['"”]/i);
   if (titled && usableAsCopy(titled[1])) return normalizeSpace(titled[1]);
   const quoted = quotedPhrases(edit).filter(usableAsCopy);
@@ -94,7 +135,7 @@ function titleFromFix(edit, query, index = 0) {
   if (h2On && usableAsCopy(h2On[1])) return sentenceCase(h2On[1]);
   const afterAdd = edit.match(/(?:add|insert|create|open with|replace with)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:h2|h3|section|block|callout|table|checklist|script|scorecard|matrix)[^:.]*[:.]?\s*([^.;]{10,90})/i);
   if (afterAdd && usableAsCopy(afterAdd[1])) return sentenceCase(afterAdd[1]);
-  return sentenceCase(`${query || 'Agent recommendation'} — acceptance block ${index + 1}`);
+  return fallbackTitle(query, type, fallbackSeq);
 }
 function typeFromFix(edit) {
   const v = edit.toLowerCase();
@@ -223,10 +264,10 @@ function scriptLinesFromFix(edit, query, count) {
   ];
   return itemsFromFix(edit, query, count).slice(0, Math.max(0, count - base.length)).concat(base).slice(0, Math.max(count, 4));
 }
-function artifactFromFix({ recommendation, query, recordId, index = 0 }) {
+function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null }) {
   const edit = stripPrefixes(recommendation);
   const type = typeFromFix(edit);
-  const title = titleFromFix(edit, query, index);
+  const title = titleFromFix(edit, query, index, type, fallbackSeq);
   const minRows = rowCountFromFix(edit, type);
   const headers = headersFromFix(edit, type);
   const artifact = {
@@ -269,21 +310,24 @@ function requiredStringsForArtifact(artifact, recommendation) {
   // Requiring a build directive would compel the renderer to publish one.
   return unique(out).filter((value) => !isInternalInstructionText(value)).slice(0, 30);
 }
-function rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index = 0 }) {
-  const artifact = artifactFromFix({ recommendation, query, recordId, index });
+// `artifact` lets a caller that has already compiled the artifact reuse it. Building
+// it twice would advance the shared fallback-heading counter twice and number the
+// page's headings 2, 4, 6.
+function rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index = 0, artifact = null }) {
+  const built = artifact || artifactFromFix({ recommendation, query, recordId, index });
   return {
     row_id: recordId || '',
     query: query || '',
     implementation_path: implementationPath || '',
     source_fix: recommendation || '',
     required_blocks: [{
-      type: artifact.type,
-      heading_exact: artifact.title,
-      columns_exact: artifact.headers || [],
-      min_rows: Array.isArray(artifact.rows) ? artifact.rows.length : (artifact.items || artifact.lines || []).length,
+      type: built.type,
+      heading_exact: built.title,
+      columns_exact: built.headers || [],
+      min_rows: Array.isArray(built.rows) ? built.rows.length : (built.items || built.lines || []).length,
       placement: /first screen|top|after the direct answer|immediately after/i.test(recommendation || '') ? 'near_top_or_requested_location' : 'rendered_content'
     }],
-    required_strings: requiredStringsForArtifact(artifact, recommendation),
+    required_strings: requiredStringsForArtifact(built, recommendation),
     block_reason_if_not_possible: 'VALIDATION_FAILED'
   };
 }
@@ -297,12 +341,15 @@ function compileEntryFromSpec(spec) {
   const rowIds = unique(spec.record_ids || [spec.record_id]);
   const rowRequirements = [];
   const artifacts = [];
+  // One counter for the whole page, so colliding fallback headings are numbered
+  // 1..n across its recommendations rather than restarting per recommendation.
+  const fallbackSeq = new Map();
   recommendations.forEach((recommendation, index) => {
     const query = queries[index] || queries[0] || spec.query || '';
     const recordId = rowIds[index] || rowIds[0] || spec.record_id || `${implementationPath}:${index}`;
-    const artifact = artifactFromFix({ recommendation, query, recordId, index });
+    const artifact = artifactFromFix({ recommendation, query, recordId, index, fallbackSeq });
     artifacts.push(artifact);
-    rowRequirements.push(rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index }));
+    rowRequirements.push(rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index, artifact }));
   });
   const mergedArtifacts = mergeArtifacts(artifacts);
   const requiredStrings = unique(
