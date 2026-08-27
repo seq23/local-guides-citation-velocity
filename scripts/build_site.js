@@ -2570,6 +2570,16 @@ ${m}`;
   const crawlerPolicyPath = path.join(ROOT, 'data', 'network', 'crawler_policy.json');
   const crawlerPolicy = exists(crawlerPolicyPath) ? loadJson(crawlerPolicyPath) : { agents:[{agent:'*',directive:'Allow',path:'/'}], sitemap:`${siteBase}/sitemap.xml` };
   const robotsLines = [];
+  // The registry's header_comment explains why the per-agent Allow groups are
+  // spelled out: Cloudflare's zone-level managed robots.txt prepends a blanket
+  // Disallow for the AI agents, and only a same-named explicit Allow overrides
+  // it. Emitting the rationale into the served file keeps the next person from
+  // "simplifying" the list back down to `User-agent: *`.
+  const headerComment = Array.isArray(crawlerPolicy.header_comment) ? crawlerPolicy.header_comment : [];
+  if (headerComment.length) {
+    for (const line of headerComment) robotsLines.push(line);
+    robotsLines.push('');
+  }
   for (const entry of crawlerPolicy.agents || []) {
     robotsLines.push(`User-agent: ${entry.agent}`);
     robotsLines.push(`${entry.directive || 'Allow'}: ${entry.path || '/'}`);
