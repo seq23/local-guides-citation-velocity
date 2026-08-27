@@ -47,18 +47,23 @@ const PATTERNS = [
   [/does not include the exact requested (?:heading|table|checklist|script|callout)/i, "a validator's own failure message rendered as reader-facing advice", 'validator-failure-message'],
 ];
 
-// The 148 pages already carrying one of the four imperative shapes above.
+// Pages exempted from the gate because they already carried a directive when the
+// pattern that sees it was added.
 //
 // A zero-tolerance gate that fails on 148 pages the moment it learns to see them
-// is a gate someone switches off. This seals what exists so the gate blocks the
+// is a gate someone switches off. Sealing what existed let the gate block the
 // 149th, exactly as data/content/route_topic_quality_baseline.json does for
-// routes. It is NOT an allowlist to edit: the entries are recorded defects, and
-// the remedy note below is the work they are waiting on.
+// routes. It was never an allowlist to edit: the entries were recorded defects.
 //
-// Removing them is not a text edit. The same strings are required_strings inside
-// the agent acceptance manifests, so deleting them from a page fails
-// validate_agent_exact_implementation on frozen routes. Repairing them means
-// reworking that contract, which is its own transaction and its own review.
+// The seal is now empty. All 148 were repaired on 2026-08-27, because removing
+// the text was never a text edit: the same strings were required_strings inside
+// the agent acceptance manifests and the pages are frozen accepted output, so it
+// took one transaction - recompile the manifests, thaw the routes, rebuild,
+// refreeze, reseal. The recipe is in the baseline file's remedy field, and
+// --reseal below is the last step of it.
+//
+// Keep the file even at zero. An empty seal is the visible proof that the gate is
+// running with no exemptions.
 const BASELINE = path.join(ROOT, 'data/content/internal_instruction_leak_baseline.json');
 const baseline = fs.existsSync(BASELINE)
   ? new Set((JSON.parse(fs.readFileSync(BASELINE, 'utf8')).pages || []).map((p) => p.path))
@@ -138,8 +143,10 @@ if (process.argv.includes('--reseal')) {
     .sort((a, b) => a.path.localeCompare(b.path));
   const cleared = (prior.pages || []).length - kept.length;
   const sourceCount = writeBaseline(kept, {
-    note: 'Published pages that STILL render an internal build instruction as visible copy. Read count_source_pages for the size of the remaining work; the other entries are dist/ build mirrors of the same pages. Written by --reseal, which only removes entries, so this file shrinks as pages are repaired and never grows. DO NOT add entries here to get a build green.',
-    remedy: prior.remedy,
+    note: kept.length
+      ? 'Published pages that STILL render an internal build instruction as visible copy. Read count_source_pages for the size of the remaining work; the other entries are dist/ build mirrors of the same pages. Written by --reseal, which only removes entries, so this file shrinks as pages are repaired and never grows. DO NOT add entries here to get a build green.'
+      : 'Empty: every sealed page has been repaired and the gate is enforcing with no exemptions. Keep the file. An empty seal is the proof that nothing is exempt; deleting it would make the next --reseal look like it started from nothing. DO NOT add entries here to get a build green.',
+    remedy: 'A sealed page is repaired by one transaction, not by editing it: recompile the acceptance manifests (scripts/citation_velocity/compile_html_fix_acceptance_manifest.js) so the required_string is reader copy, then scripts/frozen_pages.js begin <release-id> <routes> -> npm run build -> accept -> npm run build (the second build settles the post-accept lastmod, or deterministic-build fails on feed/sitemaps) -> this validator with --reseal.',
     sealed_at: prior.sealed_at,
     resealed_at: new Date().toISOString().slice(0, 10),
     originally_sealed_source_pages: prior.originally_sealed_source_pages || prior.count_source_pages || null,
