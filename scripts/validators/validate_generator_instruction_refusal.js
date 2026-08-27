@@ -59,9 +59,24 @@ const PROBES = [
   // The compiler's own former fallback heading. Check 3 below compiles the recorded
   // 2026-07-16 directive, which takes exactly that fallback path, so this probe and
   // that assertion together are what stop the old name coming back.
-  'How much does TRT cost — acceptance block 1'
+  'How much does TRT cost — acceptance block 1',
+  // The other three build-ACCEPTANCE criteria. compileEntryFromSpec emitted all
+  // four into `red_flags`, a reader field, and only the first was ever in the gate.
+  // 20 pages rendered these under a visible "Red flags to watch" heading, so a
+  // reader comparing TRT clinics was told to watch out for the build's own
+  // route-resolution failure.
+  'The page substitutes a generic framework for concrete decision-support content',
+  'The target route cannot be resolved deterministically',
+  'Visible content tells the reader to follow internal workflow notes instead of answering the query'
 ];
 const CLEAN_PROBES = [
+  // Genuine reader-facing red flags, authored per vertical. These are what the
+  // "Red flags to watch" list is for, and they must survive the filter that strips
+  // build-acceptance criteria -- otherwise the fix for the leak would have quietly
+  // emptied the section on every page that had real warnings.
+  'Starts treatment before reviewing baseline labs',
+  'Quotes one number but cannot explain total annual cost',
+  'Only sells speed',
   'How to quickly compare neuropsych evaluation providers in my area',
   'What to verify before booking an evaluation',
   'Compare total planned testing hours and whether feedback is included'

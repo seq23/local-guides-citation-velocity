@@ -52,6 +52,7 @@ const { isPubliclyAdmitted, isEvidenceOnly, admittedRoutes, renderedButNotPublic
 // inventory at once so that re-shaping cannot collide two routes on one h1.
 const { headingFor, planHeadings, setHeadingPlan } = require('./lib/answer_shape');
 
+const { withoutBuildAcceptanceCriteria } = require('./lib/internal_instruction_text');
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
 function writeJsonAtomic(p, data){
@@ -323,7 +324,12 @@ function mergeSectionSignals(sections){
     return [getVisibleQuestion(section), section.q, ...vars].filter(Boolean);
   }));
   const checklists = uniq((sections || []).flatMap((section) => Array.isArray(section.checklist) ? section.checklist : []));
-  const redFlags = uniq((sections || []).flatMap((section) => Array.isArray(section.red_flags) ? section.red_flags : []));
+  // Build-acceptance criteria are not reader content. Filtering here covers both
+  // module paths below (authored+merged, and the leftovers bucket), so a criterion
+  // cannot reach the visible "Red flags to watch" list by either route.
+  const redFlags = withoutBuildAcceptanceCriteria(
+    uniq((sections || []).flatMap((section) => Array.isArray(section.red_flags) ? section.red_flags : []))
+  );
   return { allQueryVariants, checklists, redFlags };
 }
 

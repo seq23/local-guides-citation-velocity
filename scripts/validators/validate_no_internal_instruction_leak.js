@@ -45,7 +45,35 @@ const PATTERNS = [
   // Held out until the compiler stopped authoring "<query> - acceptance block 1"
   // as its fallback heading; see scripts/lib/internal_instruction_text.js.
   [/\bacceptance block\b/i, 'the compiler naming its own block, rendered as a heading', 'acceptance-block'],
+  // The three siblings of 'validator-failure-message' above, found on 20 pages on
+  // 2026-08-27. compileEntryFromSpec emitted four build-ACCEPTANCE criteria into
+  // `red_flags`, which build_site.js renders under a visible "Red flags to watch"
+  // heading. Only the first of the four was ever matched here, so a reader
+  // comparing TRT clinics was warned about "The target route cannot be resolved
+  // deterministically" while this gate reported zero leaks.
+  [/substitutes a generic framework for concrete decision-support content/i, 'build-acceptance criterion rendered as a reader red flag', 'build-criterion-generic-framework'],
+  [/target route cannot be resolved deterministically/i, 'build-acceptance criterion rendered as a reader red flag', 'build-criterion-route-resolution'],
+  [/tells the reader to follow internal workflow notes instead of answering the query/i, 'build-acceptance criterion rendered as a reader red flag', 'build-criterion-workflow-notes'],
 ];
+
+// This gate kept its own copy of the pattern list while the producers filtered on
+// scripts/lib/internal_instruction_text.js. Two lists, no link: adding a pattern to
+// the library did nothing here, which is why three of the four build-acceptance
+// criteria stayed invisible to this gate after the fourth was caught.
+//
+// They remain two lists -- the gate needs a reason/shape-id tuple the library has no
+// use for -- but they can no longer disagree silently.
+(function assertPatternParity() {
+  const { BUILD_ACCEPTANCE_CRITERIA } = require('../lib/internal_instruction_text');
+  const mine = PATTERNS.map(([re]) => re.source);
+  const missing = BUILD_ACCEPTANCE_CRITERIA.filter((re) => !mine.includes(re.source));
+  if (missing.length) {
+    console.error(`internal-instruction-leak gate is missing ${missing.length} pattern(s) the producers filter on:`);
+    for (const re of missing) console.error(`  ${re.source}`);
+    console.error('Add them to PATTERNS above, or the producers will strip text this gate cannot see.');
+    process.exit(2);
+  }
+})();
 
 // Pages exempted from the gate because they already carried a directive when the
 // pattern that sees it was added.

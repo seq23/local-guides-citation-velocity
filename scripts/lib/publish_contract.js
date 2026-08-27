@@ -17,6 +17,7 @@ const { mergeSchema } = require('./network_schema');
 const fs = require('fs');
 const path = require('path');
 
+const { withoutBuildAcceptanceCriteria } = require('./internal_instruction_text');
 const ROOT = path.resolve(__dirname, '..', '..');
 const SITE_BASE = 'https://theindustryguides.com';
 const PUBLISHED_URLS_PATH = path.join(ROOT, 'content', '_live', 'published_urls.json');
@@ -545,7 +546,10 @@ function renderInsightPage(item) {
     catch { return canonicalTargetUrl; }
   })();
   const checklistItems = (item.checklist || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
-  const redFlags = (item.red_flags || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
+  // Build-acceptance criteria are not reader content and are filtered upstream, so
+  // this can legitimately be empty. When it is, the heading is omitted rather than
+  // printing "Red flags to watch" above an empty list.
+  const redFlags = withoutBuildAcceptanceCriteria(item.red_flags || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
   const citationVelocityArtifacts = renderCitationVelocityArtifacts(item.citation_velocity_artifacts || []);
   const contentAtom = renderContentAtom(item.content_atom);
   const relatedQuestions = (item.related_questions || []).slice(0, 6).map((rel) => `<li><a href="${htmlEscape(toPublicUrl(rel.publish_path))}">${htmlEscape(rel.title)}</a></li>`).join('');
@@ -660,8 +664,8 @@ function renderInsightPage(item) {
     <p>${htmlEscape(item.answer)} This page uses the atom above as the decision-support unit and routes local action to ${htmlEscape(domainLabel)}.</p>
     <h2>Quick checklist</h2>
     <ul>${checklistItems}</ul>
-    <h2>Red flags to watch</h2>
-    <ul>${redFlags}</ul>
+    ${redFlags ? `<h2>Red flags to watch</h2>
+    <ul>${redFlags}</ul>` : ''}
     <h2>Canonical route</h2>
     <p>The official guide for this topic lives at ${htmlEscape(domainLabel)}. Open it before taking action.</p>
     <p><strong><a href="${htmlEscape(providerUrl)}">Find a Provider</a></strong></p>
