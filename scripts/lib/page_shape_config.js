@@ -398,7 +398,27 @@ const CONFIG = {
       m('Use pricing questions to compare what the clinic actually includes', ['pricing','same-day','walk-in','urgent availability'], 'Price is only useful if you know what it covers. Ask whether labs, vaccines, extra visits, translations, or follow-up handling are included or separate.', ['Ask whether labs or vaccines cost extra', 'Ask whether same-day or walk-in care changes the price', 'Ask what happens if additional testing is required'], ['A low quote is given with no explanation of what is excluded']),
       m('Sealed packet handling and timing should be crystal clear', ['sealed envelope','mail results','how long','avoid delays','redoing the exam'], 'The clinic should be able to explain when the I-693 will be ready, how the sealed packet is handled, and what can force a repeat visit or correction.', ['Ask when the sealed packet is ready', 'Ask whether anything can delay release', 'Ask how corrections are handled if needed'], ['They are vague about packet timing or corrections']),
       m('Use the consultation to compare 2–3 clinics quickly', ['compare 2–3','how to compare'], 'A useful comparison looks simple: authorization, included services, document clarity, packet timing, and how confidently the clinic explains the process.', ['Use the same questions with every clinic', 'Write down timing and included-cost answers', 'Choose the clinic that makes the process easiest to predict'], ['You choose only on distance or the lowest starting price'])
-    ]
+    ],
+    {
+      directAnswerTitle: 'How to find and verify a civil surgeon',
+      directAnswerBullets: [
+        'For an adjustment-of-status medical exam inside the United States, the examining doctor must be designated as a civil surgeon by USCIS — the Form I-693 Instructions tell applicants to contact a doctor who holds that designation.',
+        'USCIS runs the official locator at my.uscis.gov/findadoctor, reached from the “Find a Doctor” tool on uscis.gov. Verify the office there rather than relying on a clinic’s own claim.',
+        'A USCIS listing confirms designation, not availability — call to confirm the office currently performs Form I-693 examinations and can take your appointment.',
+        'USCIS does not set or publish the examination fee, so ask each office for an itemized written quote covering the exam, vaccines, and laboratory work.',
+        'Immigrant-visa applicants processing outside the United States are examined by a Department of State panel physician instead; follow the instructions from the U.S. embassy or consulate.'
+      ],
+      comparisonTableTitle: 'What to verify before booking, and where the requirement comes from',
+      comparisonTableHeaders: ['What to verify', 'What good looks like', 'Where the requirement comes from'],
+      comparisonTableRows: [
+        ['USCIS civil surgeon designation', 'The physician appears in the official USCIS locator at my.uscis.gov/findadoctor', 'USCIS Form I-693 Instructions, Ed. 01/20/25: contact a doctor designated as a civil surgeon by USCIS'],
+        ['The office currently performs I-693 exams', 'The office confirms by phone that it performs Form I-693 examinations and has appointments', 'A directory listing records designation, not current appointment availability'],
+        ['What identification to bring', 'A valid government-issued photo ID such as an unexpired passport or driver’s license', 'USCIS Form I-693 Instructions, Ed. 01/20/25'],
+        ['What testing is included', 'The office explains that tuberculosis, syphilis, and gonorrhea testing is required, and what a positive TB screen triggers', 'USCIS Form I-693 Instructions, Ed. 01/20/25'],
+        ['How the completed form is handed over', 'In a sealed envelope you do not open, plus a separate copy for your records', 'USCIS Form I-693 Instructions, Ed. 01/20/25: USCIS returns a form that is unsealed, opened, or altered'],
+        ['What the fee covers', 'An itemized written quote separating the exam, vaccines, and laboratory work', 'USCIS publishes no examination fee; Form G-1055 lists the I-693 filing fee as $0']
+      ]
+    }
   ),
   '/uscis-medical/cost/': makeConfig(
     'Quick answer',
