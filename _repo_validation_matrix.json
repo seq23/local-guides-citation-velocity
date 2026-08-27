@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "b21e30599bf01bcde006fc5f3c01dd29cb0223483a6ed12514f7e79cecf952e3",
+  "registry_sha256": "c2695ca26e9c5236329de6cbc4c93a02f13fd8d3c4a4834199c8e51fe774b210",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 135,
-    "active": 107,
+    "total": 136,
+    "active": 108,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 106,
+    "hard_fail": 107,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -101,6 +101,8 @@
         "portfolio-kpi-truth",
         "programmatic-substance",
         "publish-inventory",
+        "query-atlas",
+        "atlas-unit-contract",
         "render-integrity",
         "rendered-internal-hrefs",
         "rendered-programmatic-substance",
@@ -120,6 +122,8 @@
         "authority-contracts",
         "operator-doc-currency",
         "portfolio-kpi-truth",
+        "query-atlas",
+        "atlas-unit-contract",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "validation-policy",
@@ -240,6 +244,7 @@
         "provider-evidence",
         "publish-inventory",
         "query-atlas",
+        "atlas-unit-contract",
         "release-plan-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -295,6 +300,7 @@
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
+        "atlas-unit-contract",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -461,6 +467,7 @@
         "provider-evidence",
         "publish-inventory",
         "query-atlas",
+        "atlas-unit-contract",
         "release-plan-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -516,6 +523,7 @@
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
+        "atlas-unit-contract",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -713,6 +721,7 @@
         "public-click-audit",
         "publish-inventory",
         "query-atlas",
+        "atlas-unit-contract",
         "release-plan-integrity",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -768,6 +777,7 @@
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
+        "atlas-unit-contract",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -937,6 +947,7 @@
         "public-click-audit",
         "publish-inventory",
         "query-atlas",
+        "atlas-unit-contract",
         "release-batch-workflow",
         "release-plan-integrity",
         "render-integrity",
@@ -994,6 +1005,7 @@
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
+        "atlas-unit-contract",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -1353,6 +1365,7 @@
         "portfolio-kpi-truth",
         "provider-evidence",
         "query-atlas",
+        "atlas-unit-contract",
         "rich-new-page-contract",
         "seo-execution-contract",
         "validator-authority-contract",
@@ -1371,6 +1384,7 @@
         "generated-content-finalization-contract",
         "portfolio-kpi-truth",
         "query-atlas",
+        "atlas-unit-contract",
         "rich-new-page-contract",
         "seo-execution-contract",
         "validator-authority-contract",
@@ -1493,6 +1507,7 @@
         "page-family-contract",
         "provider-evidence",
         "query-atlas",
+        "atlas-unit-contract",
         "rich-new-page-contract",
         "search-intelligence-agent-separation",
         "search-intelligence-contract",
@@ -1524,6 +1539,7 @@
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
+        "atlas-unit-contract",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -1859,6 +1875,10 @@
     {
       "from": "velocity-commercial-pages",
       "to": "provider-evidence"
+    },
+    {
+      "from": "query-atlas",
+      "to": "atlas-unit-contract"
     },
     {
       "from": "signal-normalization",
@@ -4447,29 +4467,63 @@
         "profiles": [
           "audit",
           "content-release",
+          "core",
           "full-audit",
           "local",
           "release",
           "strict"
         ],
         "path": "scripts/validators/validate_query_atlas.js",
-        "command": "node scripts/validators/validate_agent_artifact_continuity.js",
+        "command": "node scripts/validators/validate_query_atlas.js",
         "depends_on": [],
         "requires_files": [
-          "data/report_fixes/agent_runs",
-          "data/report_fixes/agent_exact_implementation_policy.json"
+          "data/queries/evidence/evidence_queries.json",
+          "data/authority_scale/query_atlas.json"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
         "prepare_mutates_files": [],
-        "produces_files": [
-          "artifacts/validation/agent-artifact-continuity.json"
-        ],
-        "mutates_files": [
-          "artifacts/validation/agent-artifact-continuity.json"
-        ],
+        "produces_files": [],
+        "mutates_files": [],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+        "risk_prevented": "Prevents pages from being generated against query-atlas entries that carry no demand evidence in either declared unit, and prevents evidence rows from shipping without an evidence_tier, a source_type, or a stated intent_method. Publishing off evidence-free permutations is the scaled-content-abuse pattern.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "atlas-unit-contract",
+        "title": "Query atlas demand-unit contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_atlas_units.js",
+        "command": "node scripts/validators/validate_atlas_units.js",
+        "depends_on": [
+          "query-atlas"
+        ],
+        "requires_files": [
+          "data/queries/evidence/evidence_queries.json",
+          "data/authority_scale/query_atlas.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -7992,29 +8046,63 @@
         "profiles": [
           "audit",
           "content-release",
+          "core",
           "full-audit",
           "local",
           "release",
           "strict"
         ],
         "path": "scripts/validators/validate_query_atlas.js",
-        "command": "node scripts/validators/validate_agent_artifact_continuity.js",
+        "command": "node scripts/validators/validate_query_atlas.js",
         "depends_on": [],
         "requires_files": [
-          "data/report_fixes/agent_runs",
-          "data/report_fixes/agent_exact_implementation_policy.json"
+          "data/queries/evidence/evidence_queries.json",
+          "data/authority_scale/query_atlas.json"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
         "prepare_mutates_files": [],
-        "produces_files": [
-          "artifacts/validation/agent-artifact-continuity.json"
-        ],
-        "mutates_files": [
-          "artifacts/validation/agent-artifact-continuity.json"
-        ],
+        "produces_files": [],
+        "mutates_files": [],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+        "risk_prevented": "Prevents pages from being generated against query-atlas entries that carry no demand evidence in either declared unit, and prevents evidence rows from shipping without an evidence_tier, a source_type, or a stated intent_method. Publishing off evidence-free permutations is the scaled-content-abuse pattern.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "atlas-unit-contract",
+        "title": "Query atlas demand-unit contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_atlas_units.js",
+        "command": "node scripts/validators/validate_atlas_units.js",
+        "depends_on": [
+          "query-atlas"
+        ],
+        "requires_files": [
+          "data/queries/evidence/evidence_queries.json",
+          "data/authority_scale/query_atlas.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

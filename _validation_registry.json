@@ -3985,6 +3985,7 @@
       "profiles": [
         "audit",
         "content-release",
+        "core",
         "full-audit",
         "local",
         "release",
@@ -3997,22 +3998,54 @@
       "id": "query-atlas",
       "title": "Query atlas evidence gate",
       "path": "scripts/validators/validate_query_atlas.js",
-      "command": "node scripts/validators/validate_agent_artifact_continuity.js",
-      "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+      "command": "node scripts/validators/validate_query_atlas.js",
+      "risk_prevented": "Prevents pages from being generated against query-atlas entries that carry no demand evidence in either declared unit, and prevents evidence rows from shipping without an evidence_tier, a source_type, or a stated intent_method. Publishing off evidence-free permutations is the scaled-content-abuse pattern.",
       "requires_files": [
-        "data/report_fixes/agent_runs",
-        "data/report_fixes/agent_exact_implementation_policy.json"
+        "data/queries/evidence/evidence_queries.json",
+        "data/authority_scale/query_atlas.json"
       ],
-      "produces_files": [
-        "artifacts/validation/agent-artifact-continuity.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/agent-artifact-continuity.json"
-      ],
+      "produces_files": [],
+      "mutates_files": [],
       "timeout_seconds": 180,
       "depends_on": [],
-      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
-      "estimated_runtime_seconds": 20
+      "why_existing_checks_do_not_cover": "No other registered validator reads the query atlas or the query evidence file, so nothing else can tell a demand-backed publishable entry from an evidence-free permutation.",
+      "estimated_runtime_seconds": 5
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "atlas-unit-contract",
+      "title": "Query atlas demand-unit contract",
+      "path": "scripts/validators/validate_atlas_units.js",
+      "command": "node scripts/validators/validate_atlas_units.js",
+      "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
+      "requires_files": [
+        "data/queries/evidence/evidence_queries.json",
+        "data/authority_scale/query_atlas.json"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "timeout_seconds": 180,
+      "depends_on": [
+        "query-atlas"
+      ],
+      "why_existing_checks_do_not_cover": "The query-atlas gate checks that demand evidence exists; it cannot check what unit that evidence is in, and no other validator inspects search_volume, impressions_90d, demand_basis, or rank_band at all.",
+      "estimated_runtime_seconds": 5
     },
     {
       "id": "query-compiler",
