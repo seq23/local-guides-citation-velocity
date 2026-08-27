@@ -55,7 +55,11 @@ const PROBES = [
   // block; the last is a validator's own failure message printed as advice.
   'Directly answer: how much does a dental implant cost without insurance',
   'Answer directly: what are the common side effects of TRT to watch for',
-  'The rendered page does not include the exact requested heading, table, checklist, script, or callout'
+  'The rendered page does not include the exact requested heading, table, checklist, script, or callout',
+  // The compiler's own former fallback heading. Check 3 below compiles the recorded
+  // 2026-07-16 directive, which takes exactly that fallback path, so this probe and
+  // that assertion together are what stop the old name coming back.
+  'How much does TRT cost — acceptance block 1'
 ];
 const CLEAN_PROBES = [
   'How to quickly compare neuropsych evaluation providers in my area',
