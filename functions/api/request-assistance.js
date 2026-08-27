@@ -181,9 +181,19 @@ async function writeToAirtable({ env, record, notesField = '' }) {
 
 async function relayLeadByEmail({ env, record, stored, reason }) {
   const key = String(env.RESEND_API_KEY || '').trim();
-  const to = String(env.LEAD_TO || env.EMAIL_REPLY_TO || '').trim();
+  // LEAD_TO accepts a comma-separated list. A lead notification that reaches
+  // one mailbox is one spam filter away from reaching nobody, and that is not
+  // hypothetical: every notification to info@spryvc.com was accepted by Resend
+  // and marked Delivered, and every one landed in spam. That address forwards,
+  // the forward breaks SPF alignment, and a joinwestpeek.com sender addressing
+  // a spryvc.com recipient reads as a spoof. Sending to each address directly
+  // removes both the forwarding hop and the single point of failure.
+  const to = String(env.LEAD_TO || env.EMAIL_REPLY_TO || '')
+    .split(',')
+    .map((addr) => addr.trim())
+    .filter(Boolean);
   const from = String(env.EMAIL_FROM || '').trim();
-  if (!key || !to || !from) return { ok: false, reason: 'missing_email_env' };
+  if (!key || !to.length || !from) return { ok: false, reason: 'missing_email_env' };
 
   const lines = Object.entries(record).map(([k, v]) => `${k}: ${v}`).join('\n');
   const where = record.market_slug || record.source_domain || '';
@@ -199,7 +209,7 @@ async function relayLeadByEmail({ env, record, stored, reason }) {
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       from,
-      to: [to],
+      to,
       subject,
       text: `${preamble}\n${lines}\n`
     })
