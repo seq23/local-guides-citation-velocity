@@ -125,10 +125,17 @@ def main():
             "query": term,
             "evidence_tier": "T1",
             "source_type": "gsc_search_analytics",
-            # `volume` is what the atlas ranks on. Impressions are this property's
-            # own measured demand, not a market-wide estimate - a smaller and far
-            # more honest number than a modelled volume.
-            "volume": impressions,
+            # Impressions are this property's OWN measured demand over the lookback
+            # window. They are NOT monthly search volume and must never be written to
+            # a field that a keyword-tool volume also writes to. Doing exactly that is
+            # what silently destroyed the modelled volume on superseded rows: the old
+            # code set `volume = impressions` here, so the setdefault() merge below
+            # could never restore the prior keyword-tool volume, while
+            # keyword_difficulty -- which this block does not set -- survived.
+            #
+            # `search_volume` is deliberately NOT set here. Leaving the key absent lets
+            # the setdefault() merge below carry a prior keyword-tool volume forward.
+            "impressions_90d": impressions,
             "impressions": impressions,
             "clicks": int(r.get("clicks") or 0),
             "ctr": round(float(r.get("ctr") or 0.0), 5),
@@ -141,21 +148,47 @@ def main():
             "last_seen": today,
         }
         if prior and prior.get("evidence_tier") == "T1":
+            # Carry a previously-joined keyword-tool volume forward. A GSC refresh
+            # measures impressions; it learns nothing new about market volume.
+            for k, v in prior.items():
+                entry.setdefault(k, v)
+            entry["impressions_90d"] = impressions
             updated += 1
         elif prior:
-            # A measured query outranks a modelled one; keep the modelled fields
-            # that T1 does not supply rather than discarding them.
+            # A measured query outranks a modelled one for TIER purposes, but the
+            # modelled market volume is still the only market-volume number we have.
+            # Keep it under its own name instead of overwriting it with impressions.
             for k, v in prior.items():
                 entry.setdefault(k, v)
             entry["evidence_tier"] = "T1"
             entry["superseded_tier"] = prior.get("evidence_tier")
+            entry["impressions_90d"] = impressions
             updated += 1
         else:
             added += 1
+
+        # Explicit units. `volume` is never written again: it previously held BOTH a
+        # modelled monthly search volume and this domain's own impression count.
+        entry.pop("volume", None)
+        entry.setdefault("search_volume", None)
+        entry["demand_basis"] = (
+            "search_volume" if entry.get("search_volume") is not None
+            else "impressions_90d" if entry.get("impressions_90d") is not None
+            else "none"
+        )
         by_query[key] = entry
 
-    doc["schema_version"] = doc.get("schema_version", "1.0")
-    doc["queries"] = sorted(by_query.values(), key=lambda q: (-int(q.get("volume") or 0), q["query"]))
+    doc["schema_version"] = doc.get("schema_version", "2.0")
+    # Sort within unit, never across it: keyword-tool volume first, then own
+    # impressions. Mixing the two in one sort key is the defect this file caused.
+    doc["queries"] = sorted(
+        by_query.values(),
+        key=lambda q: (
+            0 if q.get("search_volume") is not None else 1,
+            -int(q.get("search_volume") or q.get("impressions_90d") or 0),
+            q["query"],
+        ),
+    )
     doc["last_gsc_ingest"] = {
         "at": dt.datetime.utcnow().isoformat(timespec="seconds") + "Z",
         "site": site,

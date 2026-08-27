@@ -33,7 +33,12 @@ else {
   for (const q of atlas.queries || []) {
     if (!q.publishable) continue;
     if (!PUBLISHABLE.has(q.evidence_tier)) errors.push(`publishable entry on non-publishable tier ${q.evidence_tier}: ${q.query}`);
-    if (!q.volume && q.evidence_tier !== 'T3') errors.push(`publishable entry with no volume on tier ${q.evidence_tier}: ${q.query}`);
+    // Demand must be present in ONE of the two explicit units. `volume` is gone on
+    // purpose: it used to hold either unit, so this check could pass on a number that
+    // meant the wrong thing.
+    if (q.demand_basis === 'none' && q.evidence_tier !== 'T3') {
+      errors.push(`publishable entry with no demand evidence on tier ${q.evidence_tier}: ${q.query}`);
+    }
   }
   if (!String(atlas.policy || '').includes('never publish')) errors.push('atlas policy must state that T4 permutations never publish on their own');
   if (atlas.coverage?.clusters_with_evidence === 0) errors.push('no cluster has evidence - the atlas would be a pure hypothesis pool');
