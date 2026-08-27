@@ -402,7 +402,7 @@ const CONFIG = {
   ),
   '/uscis-medical/cost/': makeConfig(
     'Quick answer',
-    'USCIS medical cost varies because some clinics bundle the exam, paperwork, vaccines, and labs differently. The safest comparison is total expected cost plus a clear explanation of what could trigger extra charges or a repeat visit.',
+    'USCIS charges $0 to file Form I-693, and it does not set or publish a price for the medical examination itself — each designated civil surgeon sets their own fee, so no official national figure exists. What varies between clinics is the examination charge and whether paperwork, vaccines, and labs are bundled or billed separately, which makes an itemized written quote the only reliable way to compare.',
     'How to compare USCIS exam cost',
     'Use this page to compare the exam fee, common add-ons, and what a low quote may be leaving out.',
     ['Ask whether the quoted price includes form handling', 'Ask whether vaccines or labs are extra', 'Ask whether repeat visits or corrections cost more', 'Ask when payment is due and what is refundable', 'Compare total expected cost, not just the entry price'],
@@ -412,8 +412,27 @@ const CONFIG = {
       m('Start with what the clinic says the quote includes', ['cost','price'], 'The quoted number may include only the visit, or it may include paperwork handling, some labs, and parts of the vaccine review. Ask exactly what is included before you compare clinics.', ['Ask whether the quote includes I-693 handling', 'Ask whether the quote includes any labs or vaccines', 'Ask whether a review of existing records is included'], ['No one can explain the quote clearly']),
       m('Vaccines, labs, and extra visits are the usual add-ons', ['vaccines','labs'], 'Extra cost often comes from missing vaccines, required labs, or the need to return. Those add-ons should not be treated like surprises.', ['Ask which labs are commonly extra', 'Ask what happens if vaccines are missing', 'Ask whether follow-up visits cost more'], ['The clinic downplays common add-ons']),
       m('Use low-price offers carefully', ['cheap','low'], 'A low entry price can still be reasonable, but only if the clinic is clear about what the number does and does not cover. Compare transparency, not just the quote.', ['Ask what could raise the total', 'Ask whether corrections or reprints cost more', 'Ask whether the clinic expects another visit'], ['The quote sounds unusually low and no one explains why']),
-      m('Timing and correction handling can make a “cheap” exam expensive', ['delay','correction'], 'If paperwork handling is sloppy, the cheapest clinic can become the most expensive through delays and repeat visits. Cost comparison should include process reliability.', ['Ask how corrections are handled', 'Ask what happens if something is missing', 'Ask whether the clinic has a standard process for rework'], ['No correction or rework process is explained'])
-    ]
+      m('Timing and correction handling can make a “cheap” exam expensive', ['delay','correction'], 'If paperwork handling is sloppy, the cheapest clinic can become the most expensive through delays and repeat visits. Cost comparison should include process reliability.', ['Ask how corrections are handled', 'Ask what happens if something is missing', 'Ask whether the clinic has a standard process for rework'], ['No correction or rework process is explained']),
+      m('Whether health insurance pays is decided by your plan, not by USCIS', ['insurance','covered','coverage','hsa','fsa'], 'USCIS does not publish any insurance-coverage rule for the immigration medical examination. The exam is performed to satisfy an immigration filing requirement rather than being ordered to treat a condition, and plans differ in how they handle that, so coverage has to be confirmed against your own plan documents. Vaccines, laboratory tests, and TB testing are frequently billed as separate line items and may be adjudicated differently from the examination itself.', ['Ask the clinic for the billing codes it will submit for the exam, vaccines, and labs', 'Ask your plan whether those specific codes are covered before the appointment', 'Ask which items the clinic bills separately from the examination fee', 'Get the plan answer in writing or note the reference number for the call'], ['The clinic promises your insurance will cover the exam without checking your plan', 'No one will tell you which items are billed separately'])
+    ],
+    {
+      directAnswerTitle: 'What the government actually charges',
+      directAnswerBullets: [
+        'USCIS charges no filing fee for Form I-693: Form G-1055 lists the I-693 general filing fee as $0.',
+        'USCIS does not set or publish a price for the medical examination itself. Each USCIS-designated civil surgeon sets their own charge, so there is no official national figure to quote.',
+        'The published immigration fee most applicants pay alongside the exam is the Form I-485 filing fee: $1,440 by paper or $1,390 online for an applicant over 14.',
+        'Because no federal price list exists for the exam, the only reliable comparison is a written, itemized quote from each civil surgeon office.'
+      ],
+      costTableTitle: 'USCIS immigration medical exam: what is published and what is not',
+      costTableHeaders: ['Cost item', 'Published amount', 'Where the amount comes from'],
+      costTableRows: [
+        ['Form I-693 filing fee', '$0', 'USCIS Form G-1055 Fee Schedule, Edition 05/29/26'],
+        ['Civil surgeon examination fee', 'Not published — each designated civil surgeon sets their own charge', 'USCIS publishes no exam price; Form I-693 Instructions (Ed. 01/20/25) direct readers to G-1055 for fees, and G-1055 lists only the $0 filing fee'],
+        ['Vaccines, laboratory work, and TB testing', 'Not published — billed by the clinic, often as separate line items', 'No USCIS fee schedule covers these; ask the clinic for an itemized written quote'],
+        ['Form I-485, applicant over 14 (filed with the exam)', '$1,440 paper filing / $1,390 online filing', 'USCIS Form G-1055 Fee Schedule, Edition 05/29/26'],
+        ['Form I-485, applicant under 14 filed with a parent’s I-485', '$950 paper filing / $900 online filing', 'USCIS Form G-1055 Fee Schedule, Edition 05/29/26']
+      ]
+    }
   ),
   '/uscis-medical/delays-rfe/': makeConfig(
     'Quick answer',
