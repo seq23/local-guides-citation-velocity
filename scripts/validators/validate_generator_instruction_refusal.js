@@ -48,7 +48,14 @@ const PROBES = [
   'Marker-only framework cards are not sufficient for release',
   'Required semantic acceptance: the page must carry the marker',
   'Apply the citation-agent source patch to this route',
-  'Page is missing artifact-required decision support markers'
+  'Page is missing artifact-required decision support markers',
+  // The four imperative shapes. 148 published pages carried one on 2026-08-27 -
+  // more than the original leak this whole mechanism was built to close. The
+  // first is the instruction to write the answer, printed inside the answer
+  // block; the last is a validator's own failure message printed as advice.
+  'Directly answer: how much does a dental implant cost without insurance',
+  'Answer directly: what are the common side effects of TRT to watch for',
+  'The rendered page does not include the exact requested heading, table, checklist, script, or callout'
 ];
 const CLEAN_PROBES = [
   'How to quickly compare neuropsych evaluation providers in my area',

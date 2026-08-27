@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { deriveContentAtom } = require('./content_atom');
-const { isInternalInstructionText, containsInternalInstruction } = require('./internal_instruction_text');
+const { isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt } = require('./internal_instruction_text');
 
 const ROOT = path.resolve(__dirname, '../..');
 const LEDGER_PATH = 'data/report_fixes/agent_exact_implementation_ledger.json';
@@ -269,7 +269,10 @@ function applyEntryToTarget(target, entry, context = {}) {
     target.answer = compactSentence(target.answer || target.description || target.title || primary, 520);
     target.checklist = unique([
       ...(target.checklist || []),
-      ...queries.slice(0, 3).map((query) => `Directly answer: ${query}`),
+      // Was `Directly answer: ${query}` - the instruction, published as a
+      // checklist item. This is the site that put three of them inside the
+      // dentistry cost hub's own Direct answer block.
+      ...queries.slice(0, 3).map((query) => readerFacingQueryPrompt(query)),
       'Verify current primary source and jurisdiction before acting',
       'Preserve distinction between general guidance and fact-specific advice'
     ]).slice(0, 12);

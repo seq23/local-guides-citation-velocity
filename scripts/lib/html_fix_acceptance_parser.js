@@ -2,7 +2,7 @@
 
 const crypto = require('crypto');
 const { DEFAULT_HEADERS, canonicalBlockType } = require('./html_fix_block_schema');
-const { isInternalInstructionText, containsInternalInstruction } = require('./internal_instruction_text');
+const { isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt } = require('./internal_instruction_text');
 
 function normalizeSpace(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 function compact(value, max = 220) {
@@ -177,7 +177,9 @@ function requirementsFromFix(edit, query, count) {
   if (/comparison|compare|shortlist/i.test(`${query} ${text}`)) {
     out.push('Compare every option with the same criteria', 'Ask for specifics instead of accepting ranking language');
   }
-  if (query) out.push(`Directly answer: ${query}`);
+  // Was `Directly answer: ${query}` - an instruction to the generator, published
+  // as reader copy on 133 pages. Ask the question instead; same intent, right audience.
+  if (query) out.push(readerFacingQueryPrompt(query));
   while (out.length < count) out.push(`Concrete verification point ${out.length + 1}`);
   return unique(out).slice(0, Math.max(count, 4));
 }
@@ -240,7 +242,8 @@ function artifactFromFix({ recommendation, query, recordId, index = 0 }) {
     artifact.extracted_requirements = extractInstructionRequirements(edit);
     artifact.items = unique([
       ...artifact.extracted_requirements,
-      query ? `Answer directly: ${query}` : '',
+      // Was `Answer directly: ${query}` - see readerFacingQueryPrompt.
+      query ? readerFacingQueryPrompt(query) : '',
       'Verify the evidence before treating the answer as settled.',
       'Flag any jurisdiction, provider, or policy limits that could change the answer.'
     ]).filter(usableAsCopy).slice(0, Math.max(minRows, 4));
