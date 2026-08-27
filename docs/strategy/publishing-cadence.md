@@ -134,3 +134,97 @@ so on the page and answers the cost question with the questions that produce a
 real number from a clinic instead.
 
 Reviewed: 2026-08-27.
+
+### 2026-08-27 (second run) — 2 new URLs against a cap of 2, 12 queued
+
+Commissioned to mirror onto this site the 15 guides added to the canonical packs
+in `local-guides-generator` (`f9671a9`, merged `de7dcc9`). Fifteen pages against
+a cap of two, so the cap decided the shape of the work: **two published, one
+reconciled, twelve queued.** The cap was not raised.
+
+**The duplication strategy is (a) differentiate, and the canonical stays the
+canonical.** Both new pages `rel=canonical` to their own `theindustryguides.com`
+URL. Neither declares a cross-domain canonical, because that would hand citation
+credit back to the domain this site feeds, which is the opposite of the point.
+The pages therefore had to answer a *different question* from their canonical
+namesake, not the same question in other words. The rule applied was
+Sørensen–Dice on `<main>` word bigrams, target < 0.80 against the canonical
+source:
+
+| Velocity route | Canonical source | Dice vs canonical | Peak Dice vs all 2,151 admitted routes |
+|---|---|---|---|
+| `/uscis-medical/guides/n-400-checklist/` | `guides_n-400-checklist.json` | **0.1189** | 0.3190 vs `/uscis-medical/guides/citizenship-test-2026/` |
+| `/neuro/guides/hospital-vs-private-neuropsych-testing/` | `guides_hospital-vs-private-neuropsych-testing.json` | **0.1240** | 0.2894 vs `/school-iep-evaluation-vs-private-neuropsych-evaluation/` |
+| `/trt/guides/hormone-replacement-therapy-near-me/` (pre-existing) | `guides_trt_hormone-replacement-therapy-near-me.json` | **0.0772** | 0.2730 vs `/trt/community-questions/how-to-naturally-raise-testosterone-before-considering-trt/` |
+
+| Route | Evidence | The feeder angle that made it not a duplicate |
+|---|---|---|
+| `/uscis-medical/guides/n-400-checklist/` | `n-400 checklist` — owner-approved seed, `data/demand/measured_demand.json`, `volume: null`. The commissioning instruction states 170/mo at KD 30; no packet under `data/` reproduces that figure, and the canonical repo records that no volume, KD or CPC figure exists anywhere in its data. Carried as an owner seed per `owner_seed_policy`; **no page prints it**. | The canonical answers *what goes in the envelope*. This answers *which forms your filing is even made of* — N-400 vs N-648 vs I-693 — because readers arrive at a USCIS **medical-exam** site believing the immigration medical examination is a naturalization step. It is not. Eight-row comparison across the three forms, then it routes to the canonical for the document list itself. |
+| `/neuro/guides/hospital-vs-private-neuropsych-testing/` | `hospital vs private neuropsych testing` — T1, Google Search Console, already in `data/demand/measured_demand.json`. No new demand record needed. | The canonical answers *what the price difference is*, code by code, from CMS CY2024. This answers *which setting to call first*, keyed to who requested the evaluation — and two of the five answers are not clinics at all: under IDEA the school district evaluates for educational eligibility, and SSA arranges a consultative examination when it needs evidence. It prints **no dollar figure** and points at the canonical for the published comparison. |
+
+`/trt/guides/hormone-replacement-therapy-near-me/` was **reconciled, not
+duplicated**. It already existed here, authored independently earlier the same
+day, and scores 0.0772 against the canonical page of the same slug. Nothing was
+created and nothing was overwritten.
+
+Every figure on the two new pages was re-verified against the primary source
+today rather than carried across on trust: `$760` paper / `$710` online / `$380`
+reduced fee / `$0` with an approved I-912, and the "optional tool", "Do not send
+original documents" and biometrics sentences, all read from
+`https://www.uscis.gov/n-400` on 2026-08-27; the G-1055 edition `05/29/26` from
+`https://www.uscis.gov/g-1055`; the N-648 certifier professions, examination
+mode and "no filing fee" from `https://www.uscis.gov/n-648`; and the hospital
+outpatient copayment sentence from
+`https://www.medicare.gov/basics/costs/medicare-costs`. All five are registered
+in `data/evidence/source_registry.json` with a retrieval date and an allowed
+claim class.
+
+**Leads.** No lead-capture surface was built here. `functions/api/request-assistance.js`
+already exists in this repo and is functionally identical to the canonical one,
+with `AIRTABLE_BASE_ID`, `Lead Requests`, `LEAD_TO` and `EMAIL_FROM` committed in
+`wrangler.toml` — the endpoint is not missing, the **page and form** are. Three
+things argued against building them in this change: `docs/PAGE_RELEASE_LAW.md` §6
+requires provider-seeking intent to route *only* through the canonical Find a
+Provider destination; `wrangler.toml` records that `RESEND_API_KEY` is still
+absent on this Pages project, so the email fallback cannot fire; and a
+zero-search-demand conversion route cannot be admitted without failing
+`validate:demand-backed-pages` (HARD_FAIL) or consuming a cadence slot. Both new
+pages therefore route to `https://uscisexam.com/request-assistance/` and
+`https://neuroevalguides.com/request-assistance/` through the existing three
+canon blocks, which is the pattern the 2026-08-27 commit `53ca85f28` established
+and called "the feeder pattern working, not duplication". Standing lead capture
+up on this domain is a live and worthwhile option, but it needs an owner decision
+on §6 plus the missing secret, not a silent change.
+
+#### Queued — 12 routes, cap-bound, not evidence-bound
+
+These are the remaining canonical guides. They are **not blocked on merit**; they
+are blocked on `new_pages_per_week: 2`. Each carries the differentiated feeder
+angle it should be built to, so the next cycle does not have to re-derive it. Ten
+of the twelve also need a demand record before they can clear
+`validate:demand-backed-pages`, which is a HARD_FAIL: only
+`hospital-vs-private-neuropsych-testing` (taken here) and
+`what-a-personal-injury-case-costs-you` (matches the T1 record `case-costs`,
+1/mo) currently match a measured query.
+
+| Canonical guide | Velocity route to build | Feeder angle (so it is not a duplicate) | Demand status |
+|---|---|---|---|
+| `uscis-medical-exam-cost` | `/uscis-medical/guides/uscis-medical-exam-cost/` | Canonical separates the published $0 filing fee from the unpublished civil-surgeon fee. Feeder: *which of the two fees are you actually asking about*, and which guide answers each. | Needs record |
+| `n-648-medical-waiver` | `/uscis-medical/guides/n-648-medical-waiver/` | Canonical is the form's own requirements. Feeder: *how to find and vet a clinician who may certify it* — three professions, state medical board check, in-person vs telehealth. Owner states 50/mo, KD 19. | Needs record |
+| `uscis-interview-checklist` | `/uscis-medical/guides/uscis-interview-checklist/` | Canonical is the checklist. Feeder: *what the interview decides that the paperwork already settled*, routing to the civics-test and I-693 guides. Owner states 20/mo, KD 0. | Needs record |
+| `hormone-therapy-cost-what-is-published` | `/trt/guides/hormone-therapy-cost-what-is-published/` | Canonical prints the CMS CY2024 lab and procedure table. Feeder: *how to compare two clinic monthly fees* when neither publishes contents — pairs with the existing HRT page, which declines to quote a price. | Needs record |
+| `peptide-and-compounded-therapy-claims` | `/trt/guides/peptide-and-compounded-therapy-claims/` | Canonical declines to publish a results timeline. Feeder: *how to tell an approved product from a compounded one before you are prescribed it*. | Needs record |
+| `dental-implant-and-oral-surgery-cost` | `/dentistry/guides/dental-implant-and-oral-surgery-cost/` | Canonical leads with the ADA being barred from quoting fees. Feeder: *which of the dentistry cost guides applies to the quote in your hand*. | Needs record |
+| `dental-procedure-cost-comparison` | `/dentistry/guides/dental-procedure-cost-comparison/` | Canonical compares procedures on published data. Feeder: *how to make two dentists' quotes comparable at all* — line items, not totals. | Needs record |
+| `upfront-dental-pricing-checklist` | `/dentistry/guides/upfront-dental-pricing-checklist/` | Canonical is the checklist. Feeder: *which practices are structurally able to quote upfront*, and what to ask when one will not. | Needs record |
+| `neuropsychological-evaluation-cost` | `/neuro/guides/neuropsychological-evaluation-cost/` | Canonical prints the CMS figures. Feeder: *which evaluation you are being quoted for* — neuropsych vs psychoeducational vs ADHD-only vs autism-specific — since the label drives the number. | Needs record |
+| `neuropsych-testing-cost-by-state` | `/neuro/guides/neuropsych-testing-cost-by-state/` | Canonical is the state table. Feeder: *what state actually changes and what it does not*, against this site's existing `/neuro/states/` pages. | Needs record |
+| `medical-bills-behind-a-settlement` | `/personal-injury/guides/medical-bills-behind-a-settlement/` | Canonical explains liens and IRS Pub 4345. Feeder: *who is going to send you a bill, and in what order*. | Needs record |
+| `what-a-personal-injury-case-costs-you` | `/personal-injury/guides/what-a-personal-injury-case-costs-you/` | Canonical prices the case, incl. 28 U.S.C. § 1914(a) filing fees. Feeder: *which costs come out of your settlement and which come out of your pocket*. | **Matches** `case-costs`, T1, 1/mo |
+
+The queue is deliberately not a promise to build all twelve. Six of them land in
+`/personal-injury/` and `/dentistry/`, and the library is already 1,826 pages
+above its maintainable ceiling of 325. Each should have to earn its slot against
+a measured query at the time it is taken, exactly as these two did.
+
+Reviewed: 2026-08-27.
