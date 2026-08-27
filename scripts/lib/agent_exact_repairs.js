@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { deriveContentAtom } = require('./content_atom');
+const { isInternalInstructionText, containsInternalInstruction } = require('./internal_instruction_text');
 
 const ROOT = path.resolve(__dirname, '../..');
 const LEDGER_PATH = 'data/report_fixes/agent_exact_implementation_ledger.json';
@@ -38,7 +39,7 @@ function semanticEntryForImplementationPath(implementationPath) {
 }
 
 function artifactsWithMarker(artifacts, marker) {
-  const safe = (artifacts || []).filter((artifact) => artifact && artifact.type && artifact.title).map((artifact) => ({ ...artifact }));
+  const safe = (artifacts || []).filter((artifact) => artifact && artifact.type && artifact.title && !containsInternalInstruction(artifact)).map((artifact) => ({ ...artifact }));
   if (safe.length && marker) {
     safe[0].id = marker;
     safe[0].marker = marker;
@@ -51,6 +52,10 @@ function mergeSemanticArtifacts(requiredArtifacts, existingArtifacts) {
   for (const artifact of [...(requiredArtifacts || []), ...(existingArtifacts || [])]) {
     if (!artifact || !artifact.type || !artifact.title) continue;
     if (String(artifact.title || '').startsWith('Agent Exact Repair Framework:')) continue;
+    // Last line before render. A stale manifest - one imported by a baseline
+    // snapshot rather than recompiled - can still carry a directive the current
+    // compiler would never author.
+    if (containsInternalInstruction(artifact)) continue;
     const key = artifact.marker || artifact.id || `${artifact.type}|${artifact.title}`;
     if (!byKey.has(key)) byKey.set(key, artifact);
   }
@@ -213,10 +218,15 @@ function entriesForLivePage(ledger, page) {
 // the exact text answer engines extract. That is also why the external agent
 // kept re-reporting the same defects on pages marked released: it was reading
 // its own instruction back off the page instead of the content it asked for.
-function looksLikeInternalInstruction(value) {
-  const text = String(value || '');
-  return /FILEPATH:|\|\|\s*(CURRENT|MISSING|EDIT)\s*:|Citation-ready update:/i.test(text);
-}
+//
+// 2026-08-27: this predicate existed here, with that comment, and was never called
+// from anywhere. Removing the two known leak sites fixed the two known leaks and left
+// nothing standing between any *other* producer and a published page. A semantic
+// manifest compiled from an agent report that quotes the directive back at us walked
+// straight through, and insights/neuro-013 shipped an <h2> reading
+// "Citation-ready update: FILEPATH...". The pattern list now lives in one module
+// shared with the published-page gate, and the checks below actually run.
+const looksLikeInternalInstruction = isInternalInstructionText;
 
 function buildRepairArtifact(entry, primary, recommendation) {
   const semantic = semanticEntryForImplementationPath(entry.implementation_path || entry.intended_winner_path);
@@ -244,10 +254,12 @@ function applyEntryToTarget(target, entry, context = {}) {
   const semantic = semanticEntryForImplementationPath(entry.implementation_path || entry.intended_winner_path);
   target.date_modified = entry.applied_at || target.date_modified;
   if (semantic) {
-    if (semantic.description) target.description = compactSentence(semantic.description, 320);
-    target.answer = semantic.answer || target.answer;
-    target.checklist = unique([...(semantic.checklist || []), ...(target.checklist || [])]).slice(0, 14);
-    target.red_flags = unique([...(semantic.red_flags || []), ...(target.red_flags || [])]).slice(0, 14);
+    // Each field is taken only if it is reader copy. A rejected field falls back to
+    // what the page already had rather than to a directive.
+    if (semantic.description && !looksLikeInternalInstruction(semantic.description)) target.description = compactSentence(semantic.description, 320);
+    if (semantic.answer && !looksLikeInternalInstruction(semantic.answer)) target.answer = semantic.answer;
+    target.checklist = unique([...(semantic.checklist || []), ...(target.checklist || [])]).filter((item) => !looksLikeInternalInstruction(item)).slice(0, 14);
+    target.red_flags = unique([...(semantic.red_flags || []), ...(target.red_flags || [])]).filter((item) => !looksLikeInternalInstruction(item)).slice(0, 14);
     target.source_records = unique([...(semantic.authority_source_ids || []), ...(target.source_records || [])]);
   } else {
     target.description = target.description || compactSentence(target.title || primary, 320);
