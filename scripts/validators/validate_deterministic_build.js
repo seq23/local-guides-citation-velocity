@@ -14,7 +14,27 @@ const SOURCE_DATE=inferSourceDate();
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'velocity-determinism-'));
 const rebuilt=path.join(tmp,'rebuilt');
 const excludes=new Set(['.git','node_modules','.build','dist','reports','artifacts']);
-function copy(dst){fs.cpSync(ROOT,dst,{recursive:true,filter:(src)=>{const rel=path.relative(ROOT,src);if(!rel)return true;return !rel.split(path.sep).some(x=>excludes.has(x));}});}
+// artifacts/ is excluded because almost all of it is generated - 8109 files, of
+// which 260 are tracked. But the build reads one of those tracked files:
+// buildLinkCoveragePlan() loads artifacts/validation/frozen-content-recoverability.json
+// to learn which routes lose content when rebuilt, and refuses to adopt links
+// onto them. Copying the tree without it meant the rebuild hosted adopted links
+// somewhere else than the baseline build did, and this validator reported that
+// as nondeterminism when the build is in fact deterministic - two builds of the
+// same tree agree exactly. Restore every tracked file under artifacts/ after the
+// bulk copy: tracked is the line between source and output here.
+function copy(dst){
+  fs.cpSync(ROOT,dst,{recursive:true,filter:(src)=>{const rel=path.relative(ROOT,src);if(!rel)return true;return !rel.split(path.sep).some(x=>excludes.has(x));}});
+  let tracked=[];
+  try{tracked=cp.execSync('git ls-files -z artifacts',{cwd:ROOT,encoding:'utf8',maxBuffer:16*1024*1024}).split('\0').filter(Boolean);}catch{}
+  for(const rel of tracked){
+    const src=path.join(ROOT,rel);
+    if(!fs.existsSync(src))continue;
+    const dest=path.join(dst,rel);
+    fs.mkdirSync(path.dirname(dest),{recursive:true});
+    fs.copyFileSync(src,dest);
+  }
+}
 function run(dir){const r=cp.spawnSync(process.execPath,['scripts/build_site.js'],{cwd:dir,env:{...process.env,ALLOW_CANONICAL_DATA_REGEN:'1',SOURCE_DATE},encoding:'utf8',maxBuffer:64*1024*1024});if(r.status!==0)throw new Error(`build failed in ${dir}:\n${r.stdout}\n${r.stderr}`);}
 function hashFile(file){return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');}
 function fingerprint(dir){const roots=['index.html','sitemap.xml','feed.xml','feed.json','llms.txt','robots.txt','personal-injury','trt','dentistry','neuro','uscis-medical','insights','atlas','medium','sitemaps'];const out={};function walk(abs){if(!fs.existsSync(abs))return;const st=fs.statSync(abs);if(st.isFile()){out[path.relative(dir,abs)]=hashFile(abs);return;}for(const name of fs.readdirSync(abs).sort())walk(path.join(abs,name));}for(const rel of roots)walk(path.join(dir,rel));return out;}
