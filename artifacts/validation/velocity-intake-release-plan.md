@@ -13,8 +13,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /neuro/community-questions/we-actually-only-uncovered-the-asd-in-a-recent-neuropsych-evaluation-because-he-is-highly-/index.html | we only discovered ASD through neuropsych evaluation because my child is highly functioning |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-003-session-by-session-walkthrough-what-to-expect.html | what happens during each session of a neuropsychological evaluation |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-021-how-to-use-results-for-accommodations.html | how to use neuropsych evaluation results to get school accommodations |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-002-what-to-do-when-adhd-and-autism-symptoms-overlap.html | my child shows both ADHD and autism symptoms what kind of eval do I need |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-001-decision-tree-adhd-vs-autism-vs-broader-neuro-evaluation.html | how to decide between ADHD testing autism evaluation or full neuropsych eval |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-007-what-to-verify-before-booking-child-neuropsych-testing.html | what should I verify before booking a neuropsych evaluation for my child |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-008-what-to-verify-before-booking-concussion-testing.html | what to confirm before booking concussion testing with a neuropsychologist |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-023-neuropsych-evaluation-for-adults-vs-kids.html | neuropsychological evaluation for adults vs children what is different |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-013-how-to-compare-providers-fast.html | how to quickly compare neuropsych evaluation providers in my area |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-004-how-to-choose-the-right-neuropsych-evaluation-path.html | how to choose the right neuropsychological evaluation for my child |
