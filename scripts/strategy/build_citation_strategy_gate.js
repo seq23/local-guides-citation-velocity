@@ -14,13 +14,24 @@ function run() {
   if (profile.repo !== 'seq23/local-guides-citation-velocity') errors.push('profile repo mismatch');
   if (profile.primary_kpi?.name !== 'monthly_visitors') errors.push('primary KPI must be monthly_visitors');
   if (profile.primary_kpi?.validator_claim_allowed !== false) errors.push('validators must not claim external traffic');
-  if ((growth.target?.citation_ready_opportunities_or_surfaces || 0) < 100000) errors.push('100K citation-ready target missing');
+  // Three assertions here demanded 100,000 - a floor on the citation-ready
+  // target, a floor on generated fanout records, and an exact equality on the
+  // shard index - eight lines above `publication quota must be disabled`. A
+  // floor on a count is satisfiable only by manufacture: when the real
+  // opportunity space is smaller you keep emitting cartesian strings until the
+  // number is met. The 100,000 records here are template concatenations of
+  // 5 verticals x 50 states x 10 intents x 8 entities x 8 situations x 20
+  // modifiers x 8 page families, against 68 queries in this repo that have a
+  // measured volume. What is worth asserting is that the artifact does not
+  // misreport its own size, and that the target is declared rather than a
+  // specific figure.
+  if (!(Number(growth.target?.citation_ready_opportunities_or_surfaces) > 0)) errors.push('citation-ready target must be declared and positive');
   if ((growth.target?.time_horizon_days || 9999) > 180) errors.push('citation-ready horizon must be 180 days or less');
   if (growth.target?.hard_guarantee !== false) errors.push('citation-ready target must not be a hard guarantee');
   if (growth.target?.target_is_external_citation_claim !== false) errors.push('target must not be labelled as an external citation claim');
-  if ((scoreboard.generated_fanout_records || 0) < 100000) errors.push('100K fanout opportunity universe missing');
+  if (!(Number(scoreboard.generated_fanout_records) > 0)) errors.push('fanout opportunity universe missing');
   if (scoreboard.buckets?.opportunities_are_not_wins !== true) errors.push('citation honesty bucket boundary missing');
-  if (Number(shardIndex.record_count||0)!==100000) errors.push('100K sharded fanout index missing or incomplete');
+  if (Number(shardIndex.record_count||0) !== Number(scoreboard.generated_fanout_records||0)) errors.push(`shard index claims ${shardIndex.record_count} records, scoreboard claims ${scoreboard.generated_fanout_records}`);
   if (fs.existsSync('data/queries/citation_fanout_opportunities_100k.json')) errors.push('legacy 100K monolith is forbidden');
   if (intelligence.live_firehose_enabled !== false) errors.push('live firehose must be disabled in this implementation');
   if (release.runtime_autonomy_model !== 'FULL_SAFE_AUTONOMY') errors.push('release runtime must use FULL_SAFE_AUTONOMY');

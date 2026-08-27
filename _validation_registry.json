@@ -1573,6 +1573,61 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "content-pattern-contract",
+      "title": "Pages carry the blocks the review agent keeps requesting",
+      "path": "scripts/validators/validate_content_pattern_contract.js",
+      "command": "node scripts/validators/validate_content_pattern_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 3",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "aeo",
+        "extraction",
+        "agent-artifacts"
+      ],
+      "risk_prevented": "Across ~2,750 external review recommendations in this repo and sprylabs, the agent asks for the same small set of blocks. 27% of distinct defects were re-reported on later runs despite being marked released - one across 8 run dates. Without a pre-publish check, new pages ship missing the same blocks and the loop repeats. Blocking checks cover the four that decide whether a page can be quoted or converted at all: direct answer, a heading carrying the query, no empty table cells, and one conversion path. The rest report as coverage gaps so a backlog is visible without stopping a release.",
+      "why_existing_checks_do_not_cover": "Substance validators measure length and required markers; none asserted that the specific blocks the agent repeatedly asks for are present, which is why filler containing a marker counted as a fix.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/content-pattern-contract.json",
+      "failure_action": "add the missing block to the page's generator or source; see .clarity/content-pattern-spec.json for what each block is and the evidence behind it",
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [],
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_mutates_files": [
+        "**/*.html",
+        "sitemap*.xml",
+        "content/_live/**",
+        "artifacts/validation/**"
+      ],
+      "produces_files": [
+        "artifacts/validation/content-pattern-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/content-pattern-contract.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "content-safety",
       "title": "Content safety boundaries",
       "path": "scripts/validators/validate_content_safety_boundaries.js",
@@ -1763,6 +1818,52 @@
         "reports/deep-workflow-data-trace.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "demand-backed-pages",
+      "title": "Demand-backed page admission",
+      "path": "scripts/validation/validate_demand_backed_pages.js",
+      "command": "node scripts/validation/validate_demand_backed_pages.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 5",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "admission",
+        "demand",
+        "fanout",
+        "future-proof"
+      ],
+      "risk_prevented": "A sitemap URL can point at nothing, a rendered route can reach no public surface, and the admitted corpus can grow on fan-out planning records rather than on a query with measured volume.",
+      "why_existing_checks_do_not_cover": "Sitemap parity and publish inventory prove a route is advertised consistently; neither asks whether the route was admitted against measured demand or whether the 100,000-row fan-out planning set has crossed into the site.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/demand-backed-pages.json",
+      "failure_action": "stop release; admit routes only against a measured query in data/demand/measured_demand.json",
+      "depends_on": [
+        "publish-inventory",
+        "sitemap-parity"
+      ],
+      "requires_files": [
+        "data/demand/measured_demand.json",
+        "data/demand/pre_gate_admission_baseline.json",
+        "data/content/page_admission_registry.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
     },
     {
       "id": "dentistry-report-fixes-2026-04-28",
@@ -2177,6 +2278,113 @@
         "artifacts/validation/firehose-source-contract.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "id": "frozen-content-recoverability",
+      "title": "Frozen content recoverability contract",
+      "path": "scripts/validators/validate_frozen_content_recoverability.js",
+      "command": "node scripts/validators/validate_frozen_content_recoverability.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content",
+        "data-integrity",
+        "release"
+      ],
+      "risk_prevented": "Thawing a frozen route whose accepted bytes hold content the generator can no longer produce deletes that content on the next build, with no error and no reviewable diff.",
+      "why_existing_checks_do_not_cover": "The frozen guard confirms bytes match after a build; it cannot tell a route it is confirming from a route it is silently substituting for, and nothing warns while the route stays frozen.",
+      "estimated_runtime_seconds": 15,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/frozen-content-recoverability.json",
+      "failure_action": "recover the content into content/_live/pages.json before thawing",
+      "depends_on": [],
+      "requires_files": [
+        "data/release/frozen_page_registry.json",
+        "content/_live/pages.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/frozen-content-recoverability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/frozen-content-recoverability.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "frozen-output-integrity",
+      "title": "Frozen accepted output matches the frozen page registry",
+      "path": "scripts/validators/validate_frozen_output_integrity.js",
+      "command": "node scripts/validators/validate_frozen_output_integrity.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "frozen-output",
+        "page-release",
+        "integrity"
+      ],
+      "risk_prevented": "Rendered HTML can drift from the accepted bytes recorded in data/release/frozen_page_registry.json without any validator noticing. A hand edit to rendered output passes the rest of the chain, is silently reverted by the frozen guard at the end of the next build, and never reaches production - so CI reports green while the deployed site is unchanged. This was observed: 1,130 rendered pages were edited, the full core profile returned 42/42 PASS, and the change was inert on the live site.",
+      "why_existing_checks_do_not_cover": "page-release-law validates admission, canonical output, and sitemap presence for each route, but does not compare the rendered file SHA256 against the accepted SHA256 in the frozen registry. Nothing else in the core profile reads the frozen cache.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/frozen-output-integrity.json",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [
+        "data/release/frozen_page_registry.json",
+        "docs/PAGE_RELEASE_LAW.md"
+      ],
+      "produces_files": [
+        "artifacts/validation/frozen-output-integrity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/frozen-output-integrity.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_mutates_files": [
+        "**/*.html",
+        "sitemap*.xml",
+        "feed.xml",
+        "llms.txt",
+        "robots.txt",
+        "_redirects",
+        "content/_live/**",
+        "releases/**",
+        "artifacts/validation/**"
+      ]
     },
     {
       "id": "full-scope-overhaul",
@@ -3221,6 +3429,96 @@
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
     },
     {
+      "id": "no-internal-instruction-leak",
+      "title": "Published pages contain no internal build instructions",
+      "path": "scripts/validators/validate_no_internal_instruction_leak.js",
+      "command": "node scripts/validators/validate_no_internal_instruction_leak.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 3",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "extraction"
+      ],
+      "risk_prevented": "Agent recommendations are internal build directives shaped like 'FILEPATH: x || CURRENT: ... || EDIT: ...'. Two generator paths rendered them as reader-facing copy - a fallback acceptance-checklist card, and target.answer via 'Citation-ready update: '. 163 published pages carried the first and 100 the second, the latter inside the direct-answer block that answer engines extract. It also caused the external agent to re-flag pages marked released, because it was reading its own instruction back off the page.",
+      "why_existing_checks_do_not_cover": "Substance and extraction validators measure whether required blocks exist; none asserted that page copy is free of build directives, so filler containing the instruction counted as content.",
+      "estimated_runtime_seconds": 8,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/internal-instruction-leak.json",
+      "failure_action": "stop the generator emitting recommendation text (scripts/lib/agent_exact_repairs.js); a fallback card announcing a content gap must not publish",
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [],
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_mutates_files": [
+        "**/*.html",
+        "sitemap*.xml",
+        "content/_live/**",
+        "artifacts/validation/**"
+      ],
+      "produces_files": [
+        "artifacts/validation/internal-instruction-leak.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/internal-instruction-leak.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "operator-doc-currency",
+      "title": "Operator documentation still describes this repository",
+      "path": "scripts/validation/validate_operator_doc_currency.js",
+      "command": "node scripts/validation/validate_operator_doc_currency.js docs/runbooks",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "documentation",
+        "operator",
+        "drift"
+      ],
+      "risk_prevented": "An operator guide silently stops matching the repository. Runbooks kept pointing at /coverage/ after it was renamed to /knowledge-map/, and at workflow files that had been renamed, because nothing asserted that documented paths still resolve.",
+      "timeout_seconds": 60,
+      "estimated_runtime_seconds": 2,
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "requires_files": [
+        "docs/runbooks"
+      ],
+      "produces_files": [],
+      "prepare_commands": [],
+      "prepare_mutates_files": [],
+      "prepare_produces_files": [],
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Every other validator asserts something about code, data or rendered pages. None asserts that the prose an operator reads still matches the repository, which is how the runbooks came to point at /coverage/ months after it was renamed to /knowledge-map/, and at workflow filenames that had been changed."
+    },
+    {
       "id": "page-cluster-contract",
       "title": "Legacy page/cluster contract",
       "path": "scripts/validate_page_cluster_contract.js",
@@ -3322,6 +3620,50 @@
       "prepare_mutates_files": [],
       "produces_files": [],
       "mutates_files": [],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "page-record-identity",
+      "title": "Page record identity contract",
+      "path": "scripts/validators/validate_page_record_identity.js",
+      "command": "node scripts/validators/validate_page_record_identity.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content",
+        "data-integrity"
+      ],
+      "risk_prevented": "Two records could claim one route, so a slug-keyed consumer picks a winner by iteration order and a repair script can write content into the empty record instead of the real page.",
+      "why_existing_checks_do_not_cover": "The admission and substance gates read whichever record they reach first; neither asserts that a route is described exactly once.",
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/page-record-identity.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "content/_live/pages.json",
+        "content/_staged/pages.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/page-record-identity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/page-record-identity.json"
+      ],
       "enforce_no_source_mutation": true
     },
     {
@@ -3634,6 +3976,43 @@
       ],
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "query-atlas",
+      "title": "Query atlas evidence gate",
+      "path": "scripts/validators/validate_query_atlas.js",
+      "command": "node scripts/validators/validate_agent_artifact_continuity.js",
+      "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+      "requires_files": [
+        "data/report_fixes/agent_runs",
+        "data/report_fixes/agent_exact_implementation_policy.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-artifact-continuity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-artifact-continuity.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
+      "estimated_runtime_seconds": 20
     },
     {
       "id": "query-compiler",
@@ -5585,339 +5964,6 @@
       ],
       "mutates_files": [
         "artifacts/validation/workflow-yaml-syntax.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "query-atlas",
-      "title": "Query atlas evidence gate",
-      "path": "scripts/validators/validate_query_atlas.js",
-      "command": "node scripts/validators/validate_agent_artifact_continuity.js",
-      "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
-      "requires_files": [
-        "data/report_fixes/agent_runs",
-        "data/report_fixes/agent_exact_implementation_policy.json"
-      ],
-      "produces_files": [
-        "artifacts/validation/agent-artifact-continuity.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/agent-artifact-continuity.json"
-      ],
-      "timeout_seconds": 180,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
-      "estimated_runtime_seconds": 20
-    },
-    {
-      "id": "frozen-output-integrity",
-      "title": "Frozen accepted output matches the frozen page registry",
-      "path": "scripts/validators/validate_frozen_output_integrity.js",
-      "command": "node scripts/validators/validate_frozen_output_integrity.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "frozen-output",
-        "page-release",
-        "integrity"
-      ],
-      "risk_prevented": "Rendered HTML can drift from the accepted bytes recorded in data/release/frozen_page_registry.json without any validator noticing. A hand edit to rendered output passes the rest of the chain, is silently reverted by the frozen guard at the end of the next build, and never reaches production - so CI reports green while the deployed site is unchanged. This was observed: 1,130 rendered pages were edited, the full core profile returned 42/42 PASS, and the change was inert on the live site.",
-      "why_existing_checks_do_not_cover": "page-release-law validates admission, canonical output, and sitemap presence for each route, but does not compare the rendered file SHA256 against the accepted SHA256 in the frozen registry. Nothing else in the core profile reads the frozen cache.",
-      "estimated_runtime_seconds": 10,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
-      "depends_on": [
-        "page-release-law"
-      ],
-      "requires_files": [
-        "data/release/frozen_page_registry.json",
-        "docs/PAGE_RELEASE_LAW.md"
-      ],
-      "produces_files": [
-        "artifacts/validation/frozen-output-integrity.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/frozen-output-integrity.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
-        "sitemap.xml",
-        "index.html"
-      ],
-      "prepare_mutates_files": [
-        "**/*.html",
-        "sitemap*.xml",
-        "feed.xml",
-        "llms.txt",
-        "robots.txt",
-        "_redirects",
-        "content/_live/**",
-        "releases/**",
-        "artifacts/validation/**"
-      ]
-    },
-    {
-      "id": "no-internal-instruction-leak",
-      "title": "Published pages contain no internal build instructions",
-      "path": "scripts/validators/validate_no_internal_instruction_leak.js",
-      "command": "node scripts/validators/validate_no_internal_instruction_leak.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 3",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "content-quality",
-        "agent-artifacts",
-        "extraction"
-      ],
-      "risk_prevented": "Agent recommendations are internal build directives shaped like 'FILEPATH: x || CURRENT: ... || EDIT: ...'. Two generator paths rendered them as reader-facing copy - a fallback acceptance-checklist card, and target.answer via 'Citation-ready update: '. 163 published pages carried the first and 100 the second, the latter inside the direct-answer block that answer engines extract. It also caused the external agent to re-flag pages marked released, because it was reading its own instruction back off the page.",
-      "why_existing_checks_do_not_cover": "Substance and extraction validators measure whether required blocks exist; none asserted that page copy is free of build directives, so filler containing the instruction counted as content.",
-      "estimated_runtime_seconds": 8,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/internal-instruction-leak.json",
-      "failure_action": "stop the generator emitting recommendation text (scripts/lib/agent_exact_repairs.js); a fallback card announcing a content gap must not publish",
-      "depends_on": [
-        "page-release-law"
-      ],
-      "requires_files": [],
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
-        "sitemap.xml",
-        "index.html"
-      ],
-      "prepare_mutates_files": [
-        "**/*.html",
-        "sitemap*.xml",
-        "content/_live/**",
-        "artifacts/validation/**"
-      ],
-      "produces_files": [
-        "artifacts/validation/internal-instruction-leak.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/internal-instruction-leak.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "content-pattern-contract",
-      "title": "Pages carry the blocks the review agent keeps requesting",
-      "path": "scripts/validators/validate_content_pattern_contract.js",
-      "command": "node scripts/validators/validate_content_pattern_contract.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 3",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "content-quality",
-        "aeo",
-        "extraction",
-        "agent-artifacts"
-      ],
-      "risk_prevented": "Across ~2,750 external review recommendations in this repo and sprylabs, the agent asks for the same small set of blocks. 27% of distinct defects were re-reported on later runs despite being marked released - one across 8 run dates. Without a pre-publish check, new pages ship missing the same blocks and the loop repeats. Blocking checks cover the four that decide whether a page can be quoted or converted at all: direct answer, a heading carrying the query, no empty table cells, and one conversion path. The rest report as coverage gaps so a backlog is visible without stopping a release.",
-      "why_existing_checks_do_not_cover": "Substance validators measure length and required markers; none asserted that the specific blocks the agent repeatedly asks for are present, which is why filler containing a marker counted as a fix.",
-      "estimated_runtime_seconds": 20,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/content-pattern-contract.json",
-      "failure_action": "add the missing block to the page's generator or source; see .clarity/content-pattern-spec.json for what each block is and the evidence behind it",
-      "depends_on": [
-        "page-release-law"
-      ],
-      "requires_files": [],
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
-        "sitemap.xml",
-        "index.html"
-      ],
-      "prepare_mutates_files": [
-        "**/*.html",
-        "sitemap*.xml",
-        "content/_live/**",
-        "artifacts/validation/**"
-      ],
-      "produces_files": [
-        "artifacts/validation/content-pattern-contract.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/content-pattern-contract.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "operator-doc-currency",
-      "title": "Operator documentation still describes this repository",
-      "path": "scripts/validation/validate_operator_doc_currency.js",
-      "command": "node scripts/validation/validate_operator_doc_currency.js docs/runbooks",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "documentation",
-        "operator",
-        "drift"
-      ],
-      "risk_prevented": "An operator guide silently stops matching the repository. Runbooks kept pointing at /coverage/ after it was renamed to /knowledge-map/, and at workflow files that had been renamed, because nothing asserted that documented paths still resolve.",
-      "timeout_seconds": 60,
-      "estimated_runtime_seconds": 2,
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "requires_files": [
-        "docs/runbooks"
-      ],
-      "produces_files": [],
-      "prepare_commands": [],
-      "prepare_mutates_files": [],
-      "prepare_produces_files": [],
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "Every other validator asserts something about code, data or rendered pages. None asserts that the prose an operator reads still matches the repository, which is how the runbooks came to point at /coverage/ months after it was renamed to /knowledge-map/, and at workflow filenames that had been changed."
-    },
-    {
-      "id": "page-record-identity",
-      "title": "Page record identity contract",
-      "path": "scripts/validators/validate_page_record_identity.js",
-      "command": "node scripts/validators/validate_page_record_identity.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "content",
-        "data-integrity"
-      ],
-      "risk_prevented": "Two records could claim one route, so a slug-keyed consumer picks a winner by iteration order and a repair script can write content into the empty record instead of the real page.",
-      "why_existing_checks_do_not_cover": "The admission and substance gates read whichever record they reach first; neither asserts that a route is described exactly once.",
-      "estimated_runtime_seconds": 5,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/page-record-identity.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [
-        "content/_live/pages.json",
-        "content/_staged/pages.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/page-record-identity.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/page-record-identity.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "frozen-content-recoverability",
-      "title": "Frozen content recoverability contract",
-      "path": "scripts/validators/validate_frozen_content_recoverability.js",
-      "command": "node scripts/validators/validate_frozen_content_recoverability.js",
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "content",
-        "data-integrity",
-        "release"
-      ],
-      "risk_prevented": "Thawing a frozen route whose accepted bytes hold content the generator can no longer produce deletes that content on the next build, with no error and no reviewable diff.",
-      "why_existing_checks_do_not_cover": "The frozen guard confirms bytes match after a build; it cannot tell a route it is confirming from a route it is silently substituting for, and nothing warns while the route stays frozen.",
-      "estimated_runtime_seconds": 15,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/frozen-content-recoverability.json",
-      "failure_action": "recover the content into content/_live/pages.json before thawing",
-      "depends_on": [],
-      "requires_files": [
-        "data/release/frozen_page_registry.json",
-        "content/_live/pages.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/frozen-content-recoverability.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/frozen-content-recoverability.json"
       ],
       "enforce_no_source_mutation": true
     }
