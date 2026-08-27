@@ -1,3 +1,24 @@
 name = "local-guides-citation-velocity"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-07-24"
+
+# Because this file exists, Cloudflare Pages treats it as the source of truth
+# for configuration and drops any plain-text variable set through the
+# dashboard or API on the next build. Setting AIRTABLE_BASE_ID and friends
+# through the API looked like it worked -- the API echoed them back and a
+# re-read confirmed them -- and then every deployment silently wiped them,
+# which is why /api/request-assistance answered 503 while the five vertical
+# sites (which have no wrangler.toml) were fine on the identical handler.
+# Non-secret lead-capture config therefore lives here, in version control.
+#
+# AIRTABLE_API_TOKEN is deliberately absent: secrets are not managed by this
+# file, so it stays an encrypted Pages secret and survives these builds.
+# RESEND_API_KEY is likewise a secret and is still missing on this project,
+# so the email fallback cannot fire here until the owner adds it.
+[vars]
+AIRTABLE_BASE_ID = "appDgpv4F5ORCtUU3"
+AIRTABLE_TABLE_NAME = "Lead Requests"
+AIRTABLE_CLICKS_TABLE_NAME = "Lead Clicks"
+LEAD_TO = "info@spryvc.com"
+EMAIL_FROM = "Lead Notification <hello@joinwestpeek.com>"
+SITE_URL = "https://theindustryguides.com"
