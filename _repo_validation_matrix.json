@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "60e5d2433ed3a9982579528ffdffc1dd0c329a470a1eb820d92a1599788a17ca",
+  "registry_sha256": "b1004db62ff0a921cf959a6585198a60e642531ae4a7569a9df4445c3c1e8fb2",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 137,
-    "active": 109,
+    "total": 138,
+    "active": 110,
     "on_demand": 11,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 108,
+    "hard_fail": 109,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -96,6 +96,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "generator-instruction-refusal",
         "operator-doc-currency",
         "page-record-identity",
         "page-release-law",
@@ -121,6 +122,7 @@
       ],
       "execution_order": [
         "authority-contracts",
+        "generator-instruction-refusal",
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "query-atlas",
@@ -238,6 +240,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "generator-instruction-refusal",
         "operator-doc-currency",
         "page-family-contract",
         "page-record-identity",
@@ -296,6 +299,7 @@
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
+        "generator-instruction-refusal",
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
@@ -463,6 +467,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "generator-instruction-refusal",
         "operator-doc-currency",
         "page-family-contract",
         "page-record-identity",
@@ -521,6 +526,7 @@
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
+        "generator-instruction-refusal",
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
@@ -718,6 +724,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "generator-instruction-refusal",
         "operator-doc-currency",
         "page-family-contract",
         "page-record-identity",
@@ -777,6 +784,7 @@
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
+        "generator-instruction-refusal",
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
@@ -946,6 +954,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "generator-instruction-refusal",
         "operator-doc-currency",
         "page-family-contract",
         "page-record-identity",
@@ -1007,6 +1016,7 @@
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
+        "generator-instruction-refusal",
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
@@ -1274,6 +1284,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "generator-instruction-refusal",
         "page-record-identity",
         "page-release-law",
         "portfolio-kpi-truth",
@@ -1297,6 +1308,7 @@
       ],
       "execution_order": [
         "authority-contracts",
+        "generator-instruction-refusal",
         "portfolio-kpi-truth",
         "validation-policy",
         "validation-registry",
@@ -1370,6 +1382,7 @@
         "generated-content-gate",
         "html-report-contract",
         "no-internal-instruction-leak",
+        "generator-instruction-refusal",
         "page-family-contract",
         "page-record-identity",
         "page-release-law",
@@ -1392,6 +1405,7 @@
         "agent-improvement-capability",
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
+        "generator-instruction-refusal",
         "portfolio-kpi-truth",
         "query-atlas",
         "atlas-unit-contract",
@@ -4145,6 +4159,46 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Agent recommendations are internal build directives shaped like 'FILEPATH: x || CURRENT: ... || EDIT: ...'. Two generator paths rendered them as reader-facing copy - a fallback acceptance-checklist card, and target.answer via 'Citation-ready update: '. 163 published pages carried the first and 100 the second, the latter inside the direct-answer block that answer engines extract. It also caused the external agent to re-flag pages marked released, because it was reading its own instruction back off the page.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "generator-instruction-refusal",
+        "title": "Generators refuse internal build instructions at source",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_generator_instruction_refusal.js",
+        "command": "node scripts/validators/validate_generator_instruction_refusal.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/lib/internal_instruction_text.js",
+          "scripts/lib/html_fix_acceptance_parser.js",
+          "scripts/lib/agent_exact_repairs.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/generator-instruction-refusal.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/generator-instruction-refusal.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "no-internal-instruction-leak scans published HTML, so it fires only after a generator has already written a build directive into a page, on whatever run happens to rebuild it. a5bd62cc8 removed the two known render sites, added looksLikeInternalInstruction() to agent_exact_repairs.js and never called it, and never touched the compiler; html_fix_acceptance_parser.js went on lifting an agent's quoted example of the defect into an artifact title and a required_string, which is how insights/neuro-013 shipped an <h2> reading 'Citation-ready update: FILEPATH...'. This asserts both producers import the shared predicate and call it, and that the gate's pattern set and the generator's refusal set cannot drift apart.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -7965,6 +8019,46 @@
         "enforce_no_source_mutation": false,
         "risk_prevented": "Prevents pantry or workflow expansion from shipping without executable governance and data trace proof.",
         "default_behavior": "WARN_CONTINUE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "generator-instruction-refusal",
+        "title": "Generators refuse internal build instructions at source",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_generator_instruction_refusal.js",
+        "command": "node scripts/validators/validate_generator_instruction_refusal.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/lib/internal_instruction_text.js",
+          "scripts/lib/html_fix_acceptance_parser.js",
+          "scripts/lib/agent_exact_repairs.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/generator-instruction-refusal.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/generator-instruction-refusal.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "no-internal-instruction-leak scans published HTML, so it fires only after a generator has already written a build directive into a page, on whatever run happens to rebuild it. a5bd62cc8 removed the two known render sites, added looksLikeInternalInstruction() to agent_exact_repairs.js and never called it, and never touched the compiler; html_fix_acceptance_parser.js went on lifting an agent's quoted example of the defect into an artifact title and a required_string, which is how insights/neuro-013 shipped an <h2> reading 'Citation-ready update: FILEPATH...'. This asserts both producers import the shared predicate and call it, and that the gate's pattern set and the generator's refusal set cannot drift apart.",
+        "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
