@@ -3519,6 +3519,52 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "generator-instruction-refusal",
+      "title": "Generators refuse internal build instructions at source",
+      "path": "scripts/validators/validate_generator_instruction_refusal.js",
+      "command": "node scripts/validators/validate_generator_instruction_refusal.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "generator"
+      ],
+      "risk_prevented": "no-internal-instruction-leak scans published HTML, so it fires only after a generator has already written a build directive into a page, on whatever run happens to rebuild it. a5bd62cc8 removed the two known render sites, added looksLikeInternalInstruction() to agent_exact_repairs.js and never called it, and never touched the compiler; html_fix_acceptance_parser.js went on lifting an agent's quoted example of the defect into an artifact title and a required_string, which is how insights/neuro-013 shipped an <h2> reading 'Citation-ready update: FILEPATH...'. This asserts both producers import the shared predicate and call it, and that the gate's pattern set and the generator's refusal set cannot drift apart.",
+      "why_existing_checks_do_not_cover": "The published-page scan proves a rendered page is clean on the run it happens to execute; it cannot prove the compiler will refuse to author the directive as acceptance criteria, nor that a guard function is invoked rather than merely defined.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/generator-instruction-refusal.json",
+      "failure_action": "restore the shared refusal in scripts/lib/internal_instruction_text.js and its call sites in the compiler and renderer; do not widen the published-page gate instead",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/lib/internal_instruction_text.js",
+        "scripts/lib/html_fix_acceptance_parser.js",
+        "scripts/lib/agent_exact_repairs.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/generator-instruction-refusal.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/generator-instruction-refusal.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "operator-doc-currency",
       "title": "Operator documentation still describes this repository",
       "path": "scripts/validation/validate_operator_doc_currency.js",
