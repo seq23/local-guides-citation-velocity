@@ -363,23 +363,32 @@ function buildInsightInventory() {
         source_page_title: page.title || pageSlug,
         description,
         archive_inclusion: true,
-        answer: stripTags(section.a || section.answer || page.description || page.title || '').trim() || `Use ${canonicalDomain} for the official local workflow and next-step routing.`,
-        checklist: Array.isArray(section.checklist) && section.checklist.length ? section.checklist.slice(0, 5) : [
-          'Use the official local guide first',
-          'Verify the current workflow',
-          'Confirm local next steps in writing',
-          'Compare red flags before choosing',
-          'Do not rely on a generic summary alone'
-        ],
+        // Pass through what the section actually says. Nothing is substituted.
+        //
+        // These three fields used to fall back to fixed universal text when a
+        // section had none - "Use the official local guide first / Verify the
+        // current workflow / Confirm local next steps in writing", the same five
+        // lines under any question on any vertical. A reader cannot tell a
+        // substituted checklist from a written one, which is what makes it worse
+        // than an absent one: it reads as advice about this topic and is not.
+        //
+        // Measured across content/_live/pages.json: 5,558 sections, 0 without a
+        // checklist, 0 without an answer, 15 without red_flags. So the fallback was
+        // almost never reached - it was a trap waiting for the first thin section
+        // rather than an active source of filler. Removing it costs 15 red-flag
+        // blocks and closes the trap.
+        //
+        // renderAccordion() in scripts/build_site.js already omits either block
+        // when it is empty, and assertGeneratedHtmlBeforeWrite() still enforces the
+        // 280-word floor, so a section too thin to stand without invented bullets
+        // fails the build instead of being padded up to length.
+        answer: stripTags(section.a || section.answer || page.description || page.title || '').trim(),
+        checklist: Array.isArray(section.checklist) ? section.checklist.slice(0, 5) : [],
         citation_velocity_artifacts: Array.isArray(section.citation_velocity_artifacts) ? section.citation_velocity_artifacts : [],
         content_atom: section.content_atom,
         date_modified: section.date_modified || page.date_modified || null,
         disclaimer: page.disclaimer || '',
-        red_flags: Array.isArray(section.red_flags) && section.red_flags.length ? section.red_flags.slice(0, 5) : [
-          'Pressure before you understand the process',
-          'No written next-step explanation',
-          'Vague pricing or eligibility language'
-        ],
+        red_flags: Array.isArray(section.red_flags) ? section.red_flags.slice(0, 5) : [],
         page_description: stripTags(page.description || '').trim(),
         publish_path: `/insights/${slug}.html`,
         archive_path: '/insights/'
