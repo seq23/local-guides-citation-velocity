@@ -47,6 +47,7 @@ const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContent
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
 const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute } = require('./lib/frozen_pages');
+const { isPubliclyAdmitted, isEvidenceOnly, admittedRoutes, renderedButNotPublic } = require('./lib/page_admission');
 // Answer shape: the heading a searcher would have typed, decided for the whole
 // inventory at once so that re-shaping cannot collide two routes on one h1.
 const { headingFor, planHeadings, setHeadingPlan } = require('./lib/answer_shape');
@@ -1960,7 +1961,12 @@ for (const [vertical, meta] of Object.entries(registry)) {
   const clusterRegistryPath = path.join(ROOT, 'content', '_shared', 'query_cluster_registry.json');
   const clusterRegistry = exists(clusterRegistryPath) ? JSON.parse(readUtf8(clusterRegistryPath)) : {};
   const atlasPages = normalizePageClusters(pagesPayload.data.pages || [], clusterRegistry)
-    .filter((page) => page && page.publication_status !== 'EVIDENCE_ONLY' && !(typeof page.path === 'string' && page.path.startsWith('/insights/')))
+    // `publication_status !== 'EVIDENCE_ONLY'` used to be written inline here.
+    // Zero of the 865 entries in pages.json carry that value, so it read like a
+    // gate and excluded nothing, while the sitemap 500 lines below applied a
+    // completely different test - admission-registry membership. The two
+    // disagreed on 190 routes. Both sides now call the same function.
+    .filter((page) => page && !isEvidenceOnly(page) && !(typeof page.path === 'string' && page.path.startsWith('/insights/')))
     .map((page) => applyAgentExactRepairsToPage(page, loadAgentExactLedger()));
   pagesPayload.data.pages = atlasPages;
   const linkCoverage = buildLinkCoveragePlan(atlasPages);
@@ -2506,9 +2512,16 @@ ${m}`;
   // Public discovery surfaces are admission-driven. Generators may render staging or
   // rejected candidates locally, but only ADMITTED routes may enter published_urls,
   // sitemaps, feeds, llms exports, distribution artifacts, or deployment inventory.
-  const admissionRegistryForPublicInventory = loadJson(path.join(ROOT, 'data', 'content', 'page_admission_registry.json'));
-  const admittedPublicRoutes = new Set((admissionRegistryForPublicInventory.pages || []).map((page) => normalizeRoute(page.path)));
-  const publicWritten = written.filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug)));
+  const admittedPublicRoutes = admittedRoutes();
+  const publicWritten = written.filter((entry) => isPubliclyAdmitted(entry.slug));
+  // Rendered and advertised are now decided by one function, so they cannot
+  // drift. What they still disagree on is reported rather than hidden: a page
+  // written to disk that no sitemap, feed or llms export names is work that
+  // nobody can find, which is the same waste as a 404 pointed the other way.
+  const orphanedRoutes = renderedButNotPublic(written.map((entry) => entry.slug));
+  if (orphanedRoutes.length) {
+    console.warn(`[build] ${orphanedRoutes.length} rendered route(s) are in no public surface, e.g. ${orphanedRoutes.slice(0, 3).join(', ')}`);
+  }
 
 // robots.txt
 
