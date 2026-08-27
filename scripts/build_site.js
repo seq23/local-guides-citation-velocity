@@ -2055,7 +2055,14 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const decisionChecklist = pageShape ? renderDecisionChecklist(pageShape.checklistTitle, pageShape.checklistIntro, pageShape.checklistItems) : '';
     const directAnswer = pageShape ? renderDirectAnswer(pageShape.directAnswerTitle, pageShape.directAnswerBullets) : '';
     const comparisonTable = pageShape ? renderComparisonTable(pageShape.comparisonTableTitle, pageShape.comparisonTableHeaders, pageShape.comparisonTableRows, 'Comparison table') : '';
-    const costTable = pageShape ? renderComparisonTable(pageShape.costTableTitle || pageShape.comparisonTableTitle, pageShape.costTableHeaders || pageShape.comparisonTableHeaders, pageShape.costTableRows || pageShape.comparisonTableRows, 'Cost table') : '';
+    // The cost table is a distinct artifact, not a second badge on the comparison
+    // table. Falling back to comparisonTableRows here published the same rows twice
+    // on every route that defined only a comparison table - once under "Comparison
+    // table" and again under "Cost table" - which reads as padding to a human and as
+    // duplicate content to a crawler. Render it only when cost rows actually exist.
+    const costTable = pageShape && Array.isArray(pageShape.costTableRows) && pageShape.costTableRows.length
+      ? renderComparisonTable(pageShape.costTableTitle, pageShape.costTableHeaders, pageShape.costTableRows, 'Cost table')
+      : '';
     const frameworkBox = pageShape ? renderFrameworkBox(pageShape.frameworkTitle, pageShape.frameworkBullets) : '';
     const citationVelocityArtifacts = renderCitationVelocityArtifacts(p.citation_velocity_artifacts || []);
     const sensitivityDisclosure = p.disclaimer ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(p.disclaimer)}</p></section>` : '';

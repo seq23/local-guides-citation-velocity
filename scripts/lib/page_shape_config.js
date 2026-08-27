@@ -434,6 +434,77 @@ const CONFIG = {
       ]
     }
   ),
+  '/uscis-medical/exam-day-documents/': makeConfig(
+    'Quick answer',
+    'Bring a valid government-issued photo ID and every vaccination and medical record you already have. The civil surgeon verifies your identity, reviews your history, performs the required testing, completes Form I-693, and hands it to you in a sealed envelope that you must not open.',
+    'What to have with you on exam day',
+    'The Form I-693 Instructions name the documents the civil surgeon needs; everything else is clinic preference.',
+    ['Bring an unexpired government-issued photo ID such as a passport or driver’s license', 'Bring your vaccination records and any medical records you already hold', 'Do not sign Form I-693 before the appointment — you must sign in the civil surgeon’s presence', 'Do not accept the completed form unless it is in a sealed envelope', 'Keep the copy of the completed form the civil surgeon gives you'],
+    'What the exam day actually involves',
+    ['Identity verification comes first and requires government-issued photo ID.', 'The civil surgeon must test for tuberculosis, syphilis, and gonorrhea and review your vaccination history.', 'The form is only usable if it reaches USCIS in an unopened, unaltered sealed envelope.'],
+    [
+      m('What to bring to the immigration medical exam', ['what should i bring','bring to the immigration medical'], 'The instructions are specific: a valid government-issued photo identification, and any medical records including vaccination records that you already have. Applicants under 14 may prove identity with documents showing name, date and place of birth, and parents’ full names, such as a birth certificate or affidavit.', ['Bring an unexpired passport or driver’s license', 'Bring vaccination records to the first appointment', 'For a child under 14, bring a birth certificate with a translation if needed'], ['The clinic cannot tell you what identification it will accept']),
+      m('Whether passport photos are needed for the I-693', ['passport photos','photos'], 'The Form I-693 Instructions do not list passport photographs among the items you must bring. What they do require is a valid government-issued form of photo identification so the civil surgeon can verify that the person examined is the applicant. Some clinics ask for photographs as their own office practice, so confirm with the office rather than assuming either way.', ['Confirm with the clinic whether it asks for photographs as office practice', 'Bring the photo ID the instructions require regardless'], ['A clinic insists photographs are a USCIS requirement without pointing to where it is stated']),
+      m('Whether copies can replace original vaccine records', ['copies instead of vaccine originals','vaccine originals','copies'], 'The instructions tell applicants to take their vaccination records to the appointment so the civil surgeon can evaluate what has already been given. Because the civil surgeon has to be satisfied with the evidence in front of them, whether a copy is enough is a judgment the examining office makes — ask before the visit rather than at check-in.', ['Ask the clinic in advance whether it will accept copies', 'Bring originals if you can obtain them', 'Ask what happens if a record cannot be verified'], ['You are told records do not matter and vaccines will simply be repeated without discussion']),
+      m('What usually happens during the appointment', ['what usually happens','during the uscis medical appointment','appointment'], 'The civil surgeon verifies identity, reviews your medical history, evaluates you for the conditions that carry health-related inadmissibility, performs the required testing, reviews vaccinations, then completes and seals Form I-693. USCIS does not publish a standard appointment length or a standard lab turnaround time, so ask the individual office what to expect.', ['Ask the office how it handles results that need follow-up', 'Ask when the sealed envelope will be ready to collect', 'Ask what happens if a test needs to be repeated'], ['The office will not explain how follow-up or repeat testing is handled']),
+      m('Getting and protecting the sealed envelope', ['sealed','envelope','safely'], 'The instructions are explicit: the civil surgeon must give you the completed form in a sealed envelope, and you should not accept it otherwise. USCIS will return the form if it is not sealed or if the envelope has been opened or altered in any way, so the envelope has to reach USCIS intact.', ['Check that the envelope is sealed before you leave the office', 'Do not open the envelope for any reason', 'Keep the separate copy the civil surgeon gives you for your own records', 'Protect the envelope from damage until it is filed'], ['Someone advises you to open the envelope to check its contents', 'The office hands you an unsealed or already-opened form'])
+    ],
+    {
+      directAnswerTitle: 'What the instructions require you to bring and do',
+      directAnswerBullets: [
+        'Bring a valid government-issued photo ID — the instructions give an unexpired passport or driver’s license as examples.',
+        'A child under 14 proves identity with documents showing name, date and place of birth, and parents’ full names, such as a birth certificate or affidavit.',
+        'Take any medical records you already have, including vaccination records, to the first appointment.',
+        'Do not sign Form I-693 in advance; you must sign it in the civil surgeon’s presence.',
+        'Except for COVID-19 vaccination, do not try to complete required vaccines before the civil surgeon evaluates you, in case a vaccine is not medically appropriate for you.',
+        'Do not accept the completed form unless it is sealed. USCIS returns a Form I-693 that is not in a sealed envelope, or whose envelope has been opened or altered.'
+      ],
+      comparisonTableTitle: 'Exam day: what is required, and by whom',
+      comparisonTableHeaders: ['Step', 'What the instructions require', 'Source'],
+      comparisonTableRows: [
+        ['Identity check', 'A valid government-issued photo identification, or other government-recognized identity documentation, presented to the civil surgeon', 'Form I-693 Instructions, Ed. 01/20/25'],
+        ['Signing the form', 'You complete Part 2 and sign in the civil surgeon’s presence — not beforehand', 'Form I-693 Instructions, Ed. 01/20/25'],
+        ['Required testing', 'Tests for tuberculosis, syphilis, and gonorrhea, plus evaluation for other sexually transmitted diseases and Hansen’s disease', 'Form I-693 Instructions, Ed. 01/20/25'],
+        ['Tuberculosis screening', 'All applicants two years of age and older receive an initial TB screening test; a positive test requires a chest X-ray, and an abnormal X-ray suggestive of TB requires referral to the health department', 'Form I-693 Instructions, Ed. 01/20/25'],
+        ['Vaccination review', 'Bring your records; apart from COVID-19, do not obtain required vaccines before the civil surgeon evaluates you', 'Form I-693 Instructions, Ed. 01/20/25'],
+        ['Receiving the form', 'The civil surgeon gives you the completed form in a sealed envelope and should also give you a copy for your records', 'Form I-693 Instructions, Ed. 01/20/25'],
+        ['Appointment length and lab turnaround', 'Not published by USCIS — ask the individual civil surgeon office', 'No USCIS source states a standard duration']
+      ]
+    }
+  ),
+  '/uscis-medical/timeline-validity/': makeConfig(
+    'Quick answer',
+    'For a Form I-693 signed by a civil surgeon on or after November 1, 2023, the old two-year expiration is no longer the governing rule. USCIS stated on June 11, 2025 that such a form is valid only while the application it was filed with is pending, and that a withdrawn or denied application leaves the form invalid for any later filing.',
+    'How to check whether your I-693 is still usable',
+    'Work from the signature date on the form, then from the status of the application you filed it with.',
+    ['Find the civil surgeon’s signature date on the form', 'Check whether that date is on or after November 1, 2023', 'Confirm the application you filed it with is still pending', 'Ask whether a withdrawal or denial has already ended its validity', 'Schedule a new exam only when the form can no longer be used'],
+    'What actually controls the validity window',
+    ['The signature date decides which rule applies.', 'For post-November 2023 forms, validity is tied to one pending application rather than to a fixed number of years.', 'A withdrawal or denial ends validity regardless of how recent the exam was.'],
+    [
+      m('How long the I-693 stays valid after the exam', ['how long','valid after the exam','validity','expire'], 'For a form signed on or after November 1, 2023, USCIS ties validity to the application it was submitted with rather than to a fixed period. The form stays usable while that application is pending and stops being usable once the application is withdrawn or denied.', ['Read the signature date before assuming a two-year window', 'Confirm the filing it was submitted with is still pending'], ['A clinic or preparer quotes a fixed expiry date without asking about your filing status']),
+      m('Whether a delayed case needs a new medical exam', ['delayed','new medical exam','case is delayed'], 'A long-pending case does not by itself invalidate a form signed on or after November 1, 2023, because validity runs with the pending application rather than with a clock. What ends validity is the application being withdrawn or denied.', ['Confirm the application is still pending rather than closed', 'Ask USCIS or your representative before paying for a repeat exam'], ['You are told to repeat the exam without anyone checking the filing status']),
+      m('What changed in the 2025 update and what it replaced', ['2025','current i-693 validity rule','pre- and post-november 2023','policy'], 'USCIS updated Volume 8 of the Policy Manual on June 11, 2025. The update narrowed an April 4, 2024 policy that had made post-November 2023 forms valid indefinitely, which USCIS determined was overly broad and a potential public-health risk.', ['Check the date of any guidance you are relying on', 'Treat guidance published before June 11, 2025 as possibly superseded'], ['Advice cites the April 2024 indefinite-validity rule as if it were still current']),
+      m('When to schedule the exam in the process', ['when should i schedule','schedule the uscis medical'], 'Because validity now runs with the pending application, timing the exam close to the filing it supports avoids the risk of a form that has already been spent on a withdrawn or denied application.', ['Ask how the clinic handles scheduling relative to your filing date', 'Keep your own copy of the completed form'], ['No one can explain how the timing relates to your specific filing'])
+    ],
+    {
+      directAnswerTitle: 'Does the I-693 still expire after two years?',
+      directAnswerBullets: [
+        'Not for a form signed on or after November 1, 2023. USCIS stated on June 11, 2025 that such a Form I-693 is valid only while the application it was submitted with is pending.',
+        'If that application is withdrawn or denied, the form is no longer valid, and a later Form I-485 must be filed with a newly completed I-693 signed by a civil surgeon.',
+        'The June 11, 2025 guidance took effect immediately and applies to applications pending or filed on or after that date.',
+        'It replaced an April 4, 2024 policy that had made those forms valid indefinitely, which USCIS concluded was overly broad.',
+        'The Form I-693 Instructions (Edition 01/20/25) still print the older two-year sentence; where the two differ, the June 11, 2025 policy update is the later statement and governs applications pending or filed on or after that date.'
+      ],
+      comparisonTableTitle: 'Which validity rule applies to your Form I-693',
+      comparisonTableHeaders: ['Situation', 'How long the form is valid', 'Source and date'],
+      comparisonTableRows: [
+        ['Signed by a civil surgeon on or after November 1, 2023', 'Only while the application it was submitted with is pending', 'USCIS, “USCIS Changes Validity Period for Any Form I-693 Signed on or after Nov. 1, 2023,” June 11, 2025'],
+        ['That application is later withdrawn or denied', 'No longer valid; a future Form I-485 requires a newly completed Form I-693', 'USCIS policy update, June 11, 2025'],
+        ['General statement printed on the form instructions', 'Two years from the date of the civil surgeon’s signature', 'USCIS Form I-693 Instructions, Edition 01/20/25'],
+        ['Guidance issued April 4, 2024 (indefinite validity)', 'Superseded — USCIS determined it was overly broad', 'USCIS policy update, June 11, 2025']
+      ]
+    }
+  ),
   '/uscis-medical/delays-rfe/': makeConfig(
     'Quick answer',
     'USCIS medical delays usually happen because records are incomplete, vaccine or lab steps are unclear, the sealed packet is mishandled, or the clinic fails to explain what is still missing. Most delays are process failures, not mysterious immigration problems.',
