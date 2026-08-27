@@ -701,6 +701,42 @@
       "enforce_no_source_mutation": true
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "atlas-unit-contract",
+      "title": "Query atlas demand-unit contract",
+      "path": "scripts/validators/validate_atlas_units.js",
+      "command": "node scripts/validators/validate_atlas_units.js",
+      "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
+      "requires_files": [
+        "data/queries/evidence/evidence_queries.json",
+        "data/authority_scale/query_atlas.json"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "timeout_seconds": 180,
+      "depends_on": [
+        "query-atlas"
+      ],
+      "why_existing_checks_do_not_cover": "The query-atlas gate checks that demand evidence exists; it cannot check what unit that evidence is in, and no other validator inspects search_volume, impressions_90d, demand_basis, or rank_band at all.",
+      "estimated_runtime_seconds": 5
+    },
+    {
       "id": "atom-contract",
       "title": "Content atom contract",
       "path": "scripts/validators/validate_atom_contract.js",
@@ -4012,42 +4048,6 @@
       "estimated_runtime_seconds": 5
     },
     {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "atlas-unit-contract",
-      "title": "Query atlas demand-unit contract",
-      "path": "scripts/validators/validate_atlas_units.js",
-      "command": "node scripts/validators/validate_atlas_units.js",
-      "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
-      "requires_files": [
-        "data/queries/evidence/evidence_queries.json",
-        "data/authority_scale/query_atlas.json"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "timeout_seconds": 180,
-      "depends_on": [
-        "query-atlas"
-      ],
-      "why_existing_checks_do_not_cover": "The query-atlas gate checks that demand evidence exists; it cannot check what unit that evidence is in, and no other validator inspects search_volume, impressions_90d, demand_basis, or rank_band at all.",
-      "estimated_runtime_seconds": 5
-    },
-    {
       "id": "query-compiler",
       "title": "Query compiler contract",
       "path": "scripts/validate_query_compiler.js",
@@ -4424,6 +4424,41 @@
       "depends_on": [],
       "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
       "estimated_runtime_seconds": 20
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "route-topic-quality",
+      "title": "Route topic quality contract",
+      "path": "scripts/validators/validate_route_topic_quality.js",
+      "command": "node scripts/validators/validate_route_topic_quality.js",
+      "risk_prevented": "Prevents a new page from shipping on a route that has no topic - a verbatim scraped forum-post title truncated mid-word, a sentence fragment with no subject, an unexpanded template slot, or a route carrying the name of the language model that produced the observation.",
+      "requires_files": [
+        "data/content/route_topic_quality_baseline.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/route-topic-quality.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/route-topic-quality.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "The programmatic content and admission gates check that a page has required artifacts, sources and schema, but never check that its route names a real topic; every one of the 485 defective routes passes those gates today.",
+      "estimated_runtime_seconds": 12
     },
     {
       "id": "search-intelligence-agent-separation",
