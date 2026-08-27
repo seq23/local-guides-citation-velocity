@@ -106,3 +106,31 @@ its maintainable ceiling of 325, so an unused cadence slot costs nothing and an
 unearned page costs refresh capacity forever.
 
 Reviewed: 2026-08-26.
+
+### 2026-08-27 — 2 new URLs against a cap of 2
+
+Both slots taken, because for the first time both were earned by a query with a
+measured volume rather than by a gap in our own coverage. Five measured queries
+in `data/demand/measured_demand.json` map to a canonical domain this site feeds.
+Two of them — `uscis civil surgeon` (5,400/mo) and `civil surgeon near me`
+(2,400/mo) — already have owned surfaces. Three did not. Two were taken.
+
+| Route | Query and evidence | Shape, and why it was taken |
+|---|---|---|
+| `/uscis-medical/guides/citizenship-test-2026/` | `citizenship test 2026` — **170/mo**, KD 31, weak-incumbent 0.69, Semrush Keyword Magic, `data/demand/measured_demand.json`. Grounded AI-answer observation 2026-08-26 returned uscis.gov and nnuimmigration.com; no owned surface. | **Comparison + checklist** (64% and 76% of unbranded slots open across 65 grounded observations). The query is dated by year, but USCIS sets the test version by an N-400 filing date of Oct. 20, 2025, so the year-shaped answer everyone else gives is the wrong axis. Answerable in full from USCIS, *Study for the Test*, and Policy Manual Vol. 12 Pt. E Ch. 2. |
+| `/trt/guides/hormone-replacement-therapy-near-me/` | `hormone replacement therapy near me` — **8,100/mo**, KD 22, weak-incumbent 0.78, CPC $7.90, commercial intent. Grounded observation 2026-08-26 returned five clinic sites (losangelesprimarycare.com, evexianp.com, healthcare.utah.edu, taylormedicalgroup.net, georgedelaneymd.com) and no institutional source. | **Geo-modified + comparison** (68% and 64% open). Highest measured volume mapped to this site by a factor of 47. The five incumbents are single clinics; none separates the two FDA product families the query collapses together, and the FDA statement that no approved testosterone product is approved for men with low testosterone lacking an associated medical condition appears on none of them. |
+
+The third uncovered query, `personal injury guide` (**40/mo**), was **not taken**.
+It is a bare head term, the shape that closes at 44% across the observation set,
+it carries the lowest measured volume of the three, and it would land in
+`/personal-injury/`, the section holding 166 of the 190 routes that render into
+no public surface. A page there has to earn its way past that, and 40/mo does not.
+
+Neither page quotes a price. The cost/price shape is the strongest available at
+100% of slots open, and it was deliberately not built as a standalone page,
+because no primary source publishes a price for either hormone therapy or the
+naturalization test, and an invented range is worse than none. The HRT page says
+so on the page and answers the cost question with the questions that produce a
+real number from a clinic instead.
+
+Reviewed: 2026-08-27.

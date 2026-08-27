@@ -4,7 +4,7 @@
   "type": "commonjs",
   "scripts": {
     "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js",
-    "validate": "node scripts/validation/run_validation_registry.js --profile core && npm run validate:demand-backed-pages",
+    "validate": "node scripts/validation/run_validation_registry.js --profile core",
     "release:batch": "node scripts/release_batch.js 10",
     "release:batch20": "node scripts/release_batch.js 20",
     "validate:medium": "node scripts/validation/run_validation_registry.js --id medium-articles",
@@ -265,7 +265,7 @@
     "validate:page-record-identity": "node scripts/validation/run_validation_registry.js --id page-record-identity",
     "cadence:template-share": "node scripts/template_share.js",
     "validate:frozen-content-recoverability": "node scripts/validation/run_validation_registry.js --id frozen-content-recoverability",
-    "validate:demand-backed-pages": "node scripts/validation/validate_demand_backed_pages.js"
+    "validate:demand-backed-pages": "node scripts/validation/run_validation_registry.js --id demand-backed-pages"
   },
   "engines": {
     "node": "24.x"
