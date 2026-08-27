@@ -60,8 +60,44 @@ const INTERNAL_INSTRUCTION_PATTERNS = [
   // the manifests were recompiled, and the 20 pages that rendered the old heading
   // were thawed, rebuilt and refrozen. With no producer emitting it, the pattern
   // can finally join the list.
-  /\bacceptance block\b/i
+  /\bacceptance block\b/i,
+  // Three siblings of the validator-failure message above, found 2026-08-27 on 20
+  // pages. compileEntryFromSpec emits four build-ACCEPTANCE criteria -- statements
+  // about whether the BUILD succeeded -- and they were being written into
+  // `red_flags`, which is a READER-facing field. The pages render them under a
+  // visible "<h2>Red flags to watch</h2>" alongside genuine warnings, so a reader
+  // comparing TRT clinics was told to watch out for "The target route cannot be
+  // resolved deterministically."
+  //
+  // Only the first of the four was filtered. These are the other three.
+  /substitutes a generic framework for concrete decision-support content/i,
+  /target route cannot be resolved deterministically/i,
+  /tells the reader to follow internal workflow notes instead of answering the query/i
 ];
+
+// The four build-acceptance criteria, as a set. These are NOT reader content: they
+// describe how a build failed, not what a person should watch out for. They are
+// legitimate as compiler output -- they are just not `red_flags`, and must never
+// reach a rendered page. Kept separate from INTERNAL_INSTRUCTION_PATTERNS because
+// that list is the leak GATE, while this one is the FILTER the producers apply.
+const BUILD_ACCEPTANCE_CRITERIA = [
+  /does not include the exact requested (?:heading|table|checklist|script|callout)/i,
+  /substitutes a generic framework for concrete decision-support content/i,
+  /target route cannot be resolved deterministically/i,
+  /tells the reader to follow internal workflow notes instead of answering the query/i
+];
+
+function isBuildAcceptanceCriterion(value) {
+  const text = String(value === undefined || value === null ? '' : value);
+  if (!text) return false;
+  return BUILD_ACCEPTANCE_CRITERIA.some((pattern) => pattern.test(text));
+}
+
+// Drop build-acceptance criteria from anything destined for a reader.
+function withoutBuildAcceptanceCriteria(values) {
+  if (!Array.isArray(values)) return [];
+  return values.filter((value) => !isBuildAcceptanceCriterion(value));
+}
 
 function isInternalInstructionText(value) {
   const text = String(value === undefined || value === null ? '' : value);
@@ -100,4 +136,7 @@ function readerFacingQueryPrompt(query) {
   return /[?.!]$/.test(capped) ? capped : `${capped}?`;
 }
 
-module.exports = { INTERNAL_INSTRUCTION_PATTERNS, isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt };
+module.exports = {
+  BUILD_ACCEPTANCE_CRITERIA,
+  isBuildAcceptanceCriterion,
+  withoutBuildAcceptanceCriteria, INTERNAL_INSTRUCTION_PATTERNS, isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt };

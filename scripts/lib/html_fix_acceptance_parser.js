@@ -360,12 +360,37 @@ function compileEntryFromSpec(spec) {
     title: mergedArtifacts[0]?.title || sentenceCase(spec.query || implementationPath),
     answer: compact(`Compare options by checking the concrete factors a user can verify: ${queries.join('; ') || implementationPath}. Do not rely on slogans, ranking labels, or vague authority claims when the page asks for side-by-side decision support.`, 520),
     checklist: unique(rowRequirements.flatMap((row) => row.required_strings || []).slice(0, 10)),
-    red_flags: unique([
+    // These four are BUILD-acceptance criteria: they state how a build failed.
+    // They lived in `red_flags` until 2026-08-27, and `red_flags` is a READER
+    // field -- build_site.js renders it under a visible "Red flags to watch"
+    // heading and content_atom.js turns it into the "Stress-test" step. So 20
+    // published pages warned a reader comparing TRT clinics to watch out for
+    // "The target route cannot be resolved deterministically."
+    //
+    // They are still emitted, because validators and reviewers need them. They
+    // are just no longer emitted into a field a reader sees.
+    build_acceptance_criteria: unique([
       'The rendered page does not include the exact requested heading, table, checklist, script, or callout.',
       'The page substitutes a generic framework for concrete decision-support content.',
       'The target route cannot be resolved deterministically.',
       'Visible content tells the reader to follow internal workflow notes instead of answering the query.'
     ]),
+    // No reader-facing red flags are authored here.
+    //
+    // A first attempt derived them from this entry's own row requirements, but
+    // those requirements are QUERIES, not decision factors, so the transform
+    // produced "You cannot get this confirmed in writing: best way to compare TRT
+    // clinics in 2026." -- a restatement of the page title dressed as a warning,
+    // and five of them stacked above the genuine ones. That is the same defect
+    // this change exists to remove, in a new costume.
+    //
+    // Genuine red flags for these pages are authored per vertical and merged in by
+    // build_site.js ("Starts treatment before reviewing baseline labs", "Quotes one
+    // number but cannot explain total annual cost"). Where a vertical has none, the
+    // renderer omits the section entirely, which is the honest outcome: this
+    // compiler knows whether a BUILD succeeded, and nothing about what a patient
+    // should watch out for.
+    red_flags: [],
     artifacts: mergedArtifacts,
     row_requirements: rowRequirements,
     required_strings: requiredStrings,

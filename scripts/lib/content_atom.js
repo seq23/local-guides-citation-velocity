@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { shapeAnswer, stripIngestResidue, stripScaffold } = require('./answer_shape');
 
+const { withoutBuildAcceptanceCriteria } = require('./internal_instruction_text');
 const ALLOWED_ATOM_TYPES = Object.freeze([
   'original_comparison_table',
   'dated_primary_stat',
@@ -71,7 +72,13 @@ function checklistFrom(input) {
 }
 
 function redFlagsFrom(input) {
-  return unique(Array.isArray(input.red_flags) ? input.red_flags : []).slice(0, 5);
+  // Build-acceptance criteria reach the reader through three atom types here --
+  // the decision tree's "Pause when this warning appears", the comparison table's
+  // "Pause or compare when" column, and the framework's "Stress-test" step. Drop
+  // them before any of those read risks[0].
+  return withoutBuildAcceptanceCriteria(
+    unique(Array.isArray(input.red_flags) ? input.red_flags : [])
+  ).slice(0, 5);
 }
 
 function ensureSpecificItems(title, checklist, redFlags) {
