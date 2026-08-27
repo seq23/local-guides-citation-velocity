@@ -71,4 +71,20 @@ for (const page of generated) {
     if (mentions < 3) fail(`Generated page missing repeated canonical routing cues: ${page.slug}`);
   }
 }
+// The registry declares produces_files: ["artifacts/validation/query-compiler.json"]
+// and fails any validator that does not produce what it promises. This script never
+// wrote it, so it failed under every profile run regardless of its own result --
+// which is why it sat ON_DEMAND in the 'query' profile alone while HARD_FAILing on
+// 9 generated sections that nothing surfaced.
+fs.mkdirSync(path.join(__dirname, '..', 'artifacts/validation'), { recursive: true });
+fs.writeFileSync(
+  path.join(__dirname, '..', 'artifacts/validation/query-compiler.json'),
+  JSON.stringify({
+    schema_version: '1.0',
+    staged_queries: stagedItems.length,
+    generated_pages: generated.length,
+    sections_checked: generated.reduce((n, pg) => n + (pg.sections || []).length, 0),
+    status: 'PASS',
+  }, null, 2) + '\n'
+);
 console.log(`Query compiler validation passed (${stagedItems.length} staged queries, ${generated.length} generated pages).`);

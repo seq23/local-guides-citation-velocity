@@ -4098,19 +4098,21 @@
       "title": "Query compiler contract",
       "path": "scripts/validate_query_compiler.js",
       "command": "node scripts/validate_query_compiler.js",
-      "status": "ON_DEMAND",
+      "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "tier": "Tier 4",
       "scope": "CONTAINER",
       "profiles": [
-        "query"
+        "full-audit",
+        "query",
+        "release"
       ],
       "tags": [
         "mutation",
         "query"
       ],
       "risk_prevented": "Compiled query pages could lose source mappings or canonical routing blocks.",
-      "why_existing_checks_do_not_cover": "Only required after query compilation or related mutation.",
+      "why_existing_checks_do_not_cover": "Only required after query compilation or related mutation -- but it was ON_DEMAND in the 'query' profile alone, so on 2026-08-27 it had been failing HARD_FAIL on 9 generated sections with no red flags and nothing surfaced it. Those are repaired; it is now ACTIVE in release so a regression is caught rather than discovered.",
       "estimated_runtime_seconds": 60,
       "timeout_seconds": 300,
       "evidence_file": "artifacts/validation/query-compiler.json",
