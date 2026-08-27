@@ -444,6 +444,18 @@ function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
       if (row && row.route) unsafeHosts.add(row.route);
     }
   } catch { /* no report yet: fall through and host anywhere */ }
+  // Some routes are unreachable on purpose. A four-regex classifier whose
+  // default branch returns 'pi' put a testosterone dosing question, a magnesium
+  // supplement question and an H-1B petition question inside /personal-injury/,
+  // and adoption would spend that vertical's internal authority on subjects it
+  // is not trying to rank for. Being orphaned is the right outcome for them, so
+  // the plan has to refuse them explicitly rather than leave it to the accident
+  // that their would-be hosts happen to be frozen.
+  const quarantined = new Set();
+  try {
+    const registry = loadJson(path.join(ROOT, 'data/content/offtopic_route_quarantine.json'));
+    for (const item of registry.items || []) if (item && item.route) quarantined.add(item.route);
+  } catch { /* no quarantine registry: nothing is deliberately unreachable */ }
   const chosen = new Map();
   for (const page of pages) {
     const explicit = Array.isArray(page.related_links)
@@ -464,7 +476,7 @@ function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
   const label = (p) => p.short_label || p.nav_label || p.title;
   const plan = new Map();
   const load = new Map();
-  const orphans = pages.filter((p) => inbound.get(p.slug) === 0);
+  const orphans = pages.filter((p) => inbound.get(p.slug) === 0 && !quarantined.has(p.slug));
   for (const orphan of orphans) {
     // Rank candidate hosts by how much they resemble the orphan, using the
     // orphan's own ranking of the corpus - the relationship is symmetric enough
@@ -1559,6 +1571,63 @@ function renderStateDirectory(vertical, verticalTitle, pages) {
     + `<ul class="state-directory-list">${rows}</ul></section>`;
 }
 
+/**
+ * The rest of the velocity page family - the guides that are not state pages.
+ *
+ * renderStateDirectory covers /<vertical>/states/*, which is 400 of the 412
+ * pages in data/page_families/velocity_page_specs.json. The other twelve sit
+ * either directly under a vertical or under /<vertical>/guides/, so no state
+ * prefix matches them and the state directory walks straight past.
+ *
+ * Nothing else could reach them either. These pages have no record in
+ * content/_live/pages.json - they are generated from the page-family spec - and
+ * buildLinkCoveragePlan only ever iterates page records, so the orphan-adoption
+ * pass that exists precisely to catch unreachable pages could not see them to
+ * adopt them. Two independent link systems, both blind to the same twelve
+ * routes, which is why they stayed at zero inbound links while every mechanism
+ * intended to prevent that reported success.
+ *
+ * Ten of them were the entire /uscis-medical/guides/ cluster, whose vertical
+ * index links two of its eighteen guides and has no cluster index of its own.
+ */
+/**
+ * Editorially chosen links on a vertical hub.
+ *
+ * This exists instead of putting the links in the hub record's related_links,
+ * which is the obvious place and the wrong one: the hub renders related_links
+ * through renderRelatedLinks, which cuts the list at six, and explicit entries
+ * sort ahead of the automatic ones. Five hand-picked links therefore evicted
+ * five the hub already had - a net gain of one link for a change meant to add
+ * five. A separate block cannot displace anything.
+ */
+function renderHubExtraLinks(links) {
+  const items = Array.isArray(links) ? links.filter((item) => item && item.slug && item.label) : [];
+  if (!items.length) return '';
+  const body = items.map((item) => `<li><a href="${htmlEscape(item.slug)}">${htmlEscape(item.label)}</a></li>`).join('');
+  return `<section class="card related-links hub-extra-links" data-hub-extra-links="true"><div class="badge">Selected questions</div>`
+    + `<h2 class="h2" style="margin-top:8px">Questions people bring to this vertical</h2>`
+    + `<p class="muted">A hand-picked entry point into the question set for this vertical.</p>`
+    + `<ul>${body}</ul></section>`;
+}
+
+function renderVelocityGuideDirectory(vertical, verticalTitle, velocityPages) {
+  const prefix = `/${String(vertical).replace(/_/g, '-')}/`;
+  const statesPrefix = `${prefix}states/`;
+  const guides = (velocityPages || [])
+    .filter((page) => page && page.slug)
+    .filter((page) => page.slug.startsWith(prefix) && !page.slug.startsWith(statesPrefix))
+    .sort((a, b) => String(a.title).localeCompare(String(b.title)));
+  if (!guides.length) return '';
+  const items = guides
+    .map((page) => `<li><a href="${htmlEscape(page.slug)}">${htmlEscape(page.title)}</a></li>`)
+    .join('');
+  return `<section class="card velocity-guide-directory" data-velocity-guide-directory="true"><div class="badge">Guides</div>`
+    + `<h2 class="h2" style="margin-top:8px">${htmlEscape(verticalTitle)} guides</h2>`
+    + `<p class="muted">Standalone guides for this vertical. Open the one that matches your question, `
+    + `then verify it against the official source the guide names.</p>`
+    + `<ul class="velocity-guide-directory-list">${items}</ul></section>`;
+}
+
 function buildVelocitySiblingPlan(pages, byVertical) {
   const plan = new Map();
   const stateePages = pages.filter((p) => p.state && p.state.slug);
@@ -2055,7 +2124,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const absUrl = toAbsUrl(siteBase, p.slug);
     const schemas = buildProgrammaticPageSchemas({ siteBase, page:p, absUrl, sections:shapedSections || [] });
 
-    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld: schemas, vertical:p.vertical, related_links: relatedCandidates, citation_velocity_artifacts:p.citation_velocity_artifacts || [], content_atom:p.content_atom, date_modified:p.date_modified || nowISODate(), disclaimer:p.disclaimer || '', monitor_governed:Boolean(p.monitor_governed), sensitivity_profile:p.sensitivity_profile || null, source_records:p.source_records || [], editorial_review:p.editorial_review || null, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:shapedSections || [], related_links: relatedCandidates, canonical_url: canon.home } });
+    pages.push({ slug:p.slug, title:p.title, description:p.description, bodyHtml: body, jsonld: schemas, vertical:p.vertical, related_links: relatedCandidates, hub_extra_links: p.hub_extra_links || null, citation_velocity_artifacts:p.citation_velocity_artifacts || [], content_atom:p.content_atom, date_modified:p.date_modified || nowISODate(), disclaimer:p.disclaimer || '', monitor_governed:Boolean(p.monitor_governed), sensitivity_profile:p.sensitivity_profile || null, source_records:p.source_records || [], editorial_review:p.editorial_review || null, fanoutMeta: { slug:p.slug, title:p.title, description:p.description, vertical:p.vertical, sections:shapedSections || [], related_links: relatedCandidates, canonical_url: canon.home } });
 
     // Also create a redirecting vertical slug page if needed
     // If /dentistry/ etc not present as vertical_atlas, we still want it.
@@ -2244,6 +2313,11 @@ ${m}`;
     throw new Error(`LIVE/pages.json is missing required hub slugs: ${missingHubSlugs.join(', ')}`);
   }
 
+  // The page-family spec, read here rather than filtered out of `pages`: it is
+  // the source these routes are generated from, and nothing in `pages` marks a
+  // velocity guide distinctly enough to recover the set by inspection.
+  const velocityFamilyPages = loadJson(path.join(ROOT, 'data', 'page_families', 'velocity_page_specs.json')).pages || [];
+
   hubs.forEach((h)=> {
     const page = pages.find((entry)=> entry.slug === h.slug);
     if (!page) return;
@@ -2288,6 +2362,8 @@ ${m}`;
       </section>
       ${rootClusterKnowledge}
       ${renderStateDirectory(h.v, h.title, pages)}
+      ${renderVelocityGuideDirectory(h.v, h.title, velocityFamilyPages)}
+      ${renderHubExtraLinks(page.hub_extra_links)}
       ${qaHighlights}
       ${renderRelatedLinks(page.related_links || [])}
       ${fallbackToolSpotlight}

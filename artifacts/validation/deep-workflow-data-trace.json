@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-26T16:55:00.778Z",
+  "generated_at": "2026-08-27T00:52:29.801Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -233,7 +233,7 @@
     },
     {
       "workflow": "query-evidence-refresh.yml",
-      "command_count": 4,
+      "command_count": 6,
       "status": "PASS",
       "commands": [
         {
@@ -276,6 +276,53 @@
           ],
           "transitive_npm_scripts": [
             "atlas:build"
+          ]
+        },
+        {
+          "command": "node scripts/llm_citation_probe.mjs --limit 25",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/llm_citation_probe.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "npm run selfheal:dry\nnpm run selfheal",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "selfheal",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "selfheal:dry",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/selfheal/heal_until_clean.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/selfheal/heal_until_clean.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "selfheal",
+            "selfheal:dry"
+          ],
+          "transitive_npm_scripts": [
+            "selfheal",
+            "selfheal:dry"
           ]
         },
         {
@@ -355,7 +402,7 @@
     },
     {
       "workflow": "validate-repo.yml",
-      "command_count": 3,
+      "command_count": 4,
       "status": "PASS",
       "commands": [
         {
@@ -438,6 +485,40 @@
           ],
           "transitive_npm_scripts": [
             "release:ci-validate"
+          ]
+        },
+        {
+          "command": "npm run cadence:gate\nnpm run cadence:template-share",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "cadence:gate",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "cadence:template-share",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/cadence_gate.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/template_share.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "cadence:gate",
+            "cadence:template-share"
+          ],
+          "transitive_npm_scripts": [
+            "cadence:gate",
+            "cadence:template-share"
           ]
         }
       ]

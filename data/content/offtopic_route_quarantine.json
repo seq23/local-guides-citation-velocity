@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "policy": "Routes listed here are published and rendered but are deliberately excluded from internal link adoption. They are topically foreign to the vertical whose path they occupy, so linking them would spend that vertical's internal authority on subjects it is not trying to rank for. Quarantine is not deletion and not noindex: the pages stay exactly as they are until the owner chooses a disposition.",
+  "reviewed_at": "2026-08-26",
+  "decision_owner": "info@spryvc.com",
+  "disposition_status": "PENDING_OWNER_DECISION",
+  "mechanism": {
+    "summary": "A four-regex text classifier whose default branch returns 'pi' overwrote the correct vertical that each signal already carried, and a capacity-driven fallback then published whatever the vertical field said.",
+    "classifier": {
+      "file": "scripts/community/map_signals_to_targets.js",
+      "lines": "2-9, 14",
+      "detail": "verticalFor(text) tests four regexes against the question text and returns 'pi' when none match. Line 14 sets vertical: verticalFor(n.normalized_query || n.preserved_query), discarding n.vertical and n.target_vertical, which are present and correct on every normalized signal. The same object never copies n.cluster, which is why all four routes have no cluster.",
+      "verified": "For all four routes the normalized signal carried the correct vertical (neuro, trt, uscis, dentistry) and cluster 'state-specific'; each question misses all four regexes and fell to the default."
+    },
+    "publisher": {
+      "file": "scripts/citation_velocity/prepare_velocity_intake_release.js",
+      "detail": "socialFallbackRecords() stamps admission_basis SOCIAL_BACKLOG_APPROVED_FALLBACK and tops up the release batch to TARGET from the social backlog, filtered only on query length and vertical membership. 'personal_injury' is on that whitelist, so a row mislabelled 'pi' by the classifier is automatically eligible. Selection is by priority_score (signal_score * 10), which has no topical component."
+    },
+    "why_the_gate_did_not_catch_them": {
+      "gate": "scripts/content/build_page_release_queue.js require_topic_fit against data/strategy/page_strategy_registry.json",
+      "detail": "The topic-fit gate rejects all four titles when run today. These pages carry velocity_only_program AUTOMATIC_PUBLIC_SIGNAL_RELEASE, a tag no current script writes, so they were published by a predecessor releaser that ran before the gate existed. Nothing re-evaluates already-live pages, so the gate was never applied retroactively."
+    }
+  },
+  "orphan_status_note": "These four routes have zero inbound internal links. That is the correct outcome and this file exists to keep it correct: buildLinkCoveragePlan in scripts/build_site.js reads this list and refuses to adopt these routes onto a host, so a future rebuild that thaws their would-be hosts cannot quietly link them.",
+  "items": [
+    {
+      "route": "/personal-injury/community-questions/should-i-up-the-dosage/",
+      "title": "Should I up the dosage?",
+      "actual_topic": "testosterone dose titration",
+      "correct_vertical": "trt",
+      "origin_source_key": "reddit_trt_testosterone",
+      "admission_source_id": "social_0d6de645f227af53",
+      "normalized_signal_index": 193,
+      "recommended_disposition": "RE_HOME_TO_TRT"
+    },
+    {
+      "route": "/personal-injury/guides/has-anyone-used-magnesium-spray-vs-the-pills-liquid-form/",
+      "title": "Has anyone used magnesium spray vs the pills/liquid form",
+      "actual_topic": "magnesium supplement form, raised in an ADHD parenting thread",
+      "correct_vertical": "neuro",
+      "origin_source_key": "reddit_neuro_adhd_parenting",
+      "admission_source_id": "social_35299a94fb3ac9f4",
+      "normalized_signal_index": 43,
+      "recommended_disposition": "REMOVE_OR_NOINDEX"
+    },
+    {
+      "route": "/personal-injury/community-questions/what-exactly-should-i-request-from-employer-a-regarding-the-approved-h-1b-petition/",
+      "title": "What exactly should I request from Employer A regarding the approved H-1B petition?",
+      "actual_topic": "H-1B petition transfer paperwork",
+      "correct_vertical": "uscis-medical",
+      "origin_source_key": "reddit_uscis_immigration",
+      "admission_source_id": "social_ed1def87c7edcd88",
+      "normalized_signal_index": 206,
+      "recommended_disposition": "RE_HOME_TO_USCIS"
+    },
+    {
+      "route": "/personal-injury/community-questions/what-is-the-best-approach-here-according-to-your-opinion/",
+      "title": "What is the best approach here according to your opinion?",
+      "actual_topic": "none identifiable from the title; the source thread is a dentistry student-loan repayment question",
+      "correct_vertical": "dentistry",
+      "origin_source_key": "reddit_dentistry_dentistry",
+      "admission_source_id": "social_822542c8e40f8f0f",
+      "normalized_signal_index": 300,
+      "recommended_disposition": "REMOVE_OR_NOINDEX"
+    }
+  ]
+}
