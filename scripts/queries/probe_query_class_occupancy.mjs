@@ -25,7 +25,7 @@
  *
  * Method
  * ------
- * One call per query, openai/gpt-4o-mini with plugins:[{id:'web',max_results:10}].
+ * One call per query, openai/gpt-4o-mini with plugins:[{id:'web', engine: WEB_ENGINE, mode: WEB_MODE,max_results:10}].
  * Read the cited hosts in the order the annotations arrive. Classify each slot:
  *   owned     - one of our own domains; we already hold it
  *   social    - reddit/youtube/tiktok/instagram/x/facebook/linkedin/medium
@@ -57,6 +57,11 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+// OpenRouter bills the web plugin per REQUEST on the parallel engine with 10
+// results included - measured at $0.00127/call on this account against ~$0.04
+// on the default engine's per-result billing. Identical url_citation schema.
+const WEB_ENGINE = process.env.OPENROUTER_WEB_ENGINE || 'parallel';
+const WEB_MODE = process.env.OPENROUTER_WEB_MODE || 'turbo';
 
 const ROOT = process.cwd();
 const argv = process.argv.slice(2);
@@ -108,7 +113,7 @@ async function citedHosts(query) {
         model: MODEL,
         temperature: 0,
         max_tokens: 400,
-        plugins: [{ id: 'web', max_results: MAX_RESULTS }],
+        plugins: [{ id: 'web', engine: WEB_ENGINE, mode: WEB_MODE, max_results: MAX_RESULTS }],
         messages: [{ role: 'user', content: query }],
       }),
     });
@@ -213,7 +218,7 @@ const out = {
   measured_at: new Date().toISOString(),
   purpose: 'Measure who holds the citation slots an answer engine builds its answer from, per query. A page can only win an open slot, so unbranded_share is the winnability signal the query atlas and the page release join consume.',
   method: {
-    channel: `OpenRouter chat/completions, model ${MODEL}, plugins:[{id:'web',max_results:${MAX_RESULTS}}]. Cited hosts are read from message.annotations[].url_citation.url in the order returned.`,
+    channel: `OpenRouter chat/completions, model ${MODEL}, plugins:[{id:'web', engine: WEB_ENGINE, mode: WEB_MODE,max_results:${MAX_RESULTS}}]. Cited hosts are read from message.annotations[].url_citation.url in the order returned.`,
     why_not_serp: 'The previous version read Bing SERP slots. Bing blocks both residential and GitHub Actions egress with a JavaScript shell, so its only run discarded 16 of 16 probes including both controls and still exited 0. A SERP slot is also the wrong unit: this repo competes for answer-engine citations, not organic rank.',
     classification: 'owned = one of our own domains; social = reddit/youtube/tiktok/instagram/x/facebook/linkedin/medium; national = national consumer brand, marketplace, publisher, or a .gov/.edu; unbranded = a slot an independent microsite can hold.',
     citation_occupancy: 'unbranded_share = unbranded_slots / slots_read. Comparable across queries because slots_read is bounded by a declared max_results.',

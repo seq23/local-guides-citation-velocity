@@ -29,6 +29,11 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+// OpenRouter bills the web plugin per REQUEST on the parallel engine with 10
+// results included - measured at $0.00127/call on this account against ~$0.04
+// on the default engine's per-result billing. Identical url_citation schema.
+const WEB_ENGINE = process.env.OPENROUTER_WEB_ENGINE || 'parallel';
+const WEB_MODE = process.env.OPENROUTER_WEB_MODE || 'turbo';
 
 const ROOT = process.cwd();
 const argv = process.argv.slice(2);
@@ -163,7 +168,7 @@ async function withTimeout(fn) {
 // slots read has to be a stated constant for occupancy shares to mean anything:
 // "2 of our pages out of an unknown number of citations" is not a share.
 const WEB_PLUGIN_MAX_RESULTS = Number(process.env.PROBE_WEB_MAX_RESULTS || 10);
-const WEB_PLUGIN = [{ id: 'web', max_results: WEB_PLUGIN_MAX_RESULTS }];
+const WEB_PLUGIN = [{ id: 'web', engine: WEB_ENGINE, mode: WEB_MODE, max_results: WEB_PLUGIN_MAX_RESULTS }];
 
 function openRouterCitations(data) {
   const message = data?.choices?.[0]?.message || {};

@@ -41,6 +41,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
+      # REFUSE_NON_MAIN: this lane pushes HEAD:main, so a dispatch from any other
+      # ref would publish that branch to main. The push target is deliberately
+      # literal - the workflow contract asserts it to prove the lane is autonomous
+      # - so the ref is gated here instead of making the target dynamic.
+      - name: Refuse to release from a non-main ref
+        run: |
+          if [ "$GITHUB_REF_NAME" != "main" ]; then
+            echo "REFUSED: this lane pushes HEAD:main; refusing to run on $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
       - name: Checkout main
         uses: actions/checkout@v7
         with:
