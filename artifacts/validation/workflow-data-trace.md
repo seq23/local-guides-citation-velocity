@@ -1,7 +1,7 @@
 # Workflow Data Trace
 
 Status: **PASS**
-Workflows: 9 · Manual-ready: 9 · Scheduled: 4 · Push-triggered: 2
+Workflows: 10 · Manual-ready: 10 · Scheduled: 4 · Push-triggered: 2
 
 | Workflow | Lane | Triggers | Consumes | Produces | Failure boundary |
 |---|---|---|---|---|---|
@@ -9,6 +9,7 @@ Workflows: 9 · Manual-ready: 9 · Scheduled: 4 · Push-triggered: 2
 | daily-citation-intelligence.yml | signal-intelligence | schedule:17-13-utc<br>workflow_dispatch | traffic-qualified fixtures<br>source registry<br>strategy contract | data/signals/**<br>artifacts/validation/**<br>reports/** | Signal intelligence may update generated state but must not commit governance or source authority files. |
 | deploy-distribution.yml | deploy | workflow_run:Validate Repo<br>workflow_dispatch | velocity-validated-{commit_sha}<br>artifacts/release/validation-attestation.json<br>.build/indexnow-priority.txt<br>.build/indexnow-batch.txt | distribution evidence | The exact artifact commit SHA must match the validation attestation before distribution. |
 | postdeploy-public-audit.yml | postdeploy-audit | workflow_run:Deploy Distribution<br>schedule:23-11-utc-tue-fri<br>workflow_dispatch | deployed Velocity base URL | artifacts/diagnostics/click-audit/** | Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute. |
+| query-class-occupancy-probe.yml | measurement | workflow_dispatch | data/signals/query_class_probe_panel.json | query class occupancy measurement artifact | Measures only. It has contents: read, commits nothing and publishes nothing; the result leaves as a run artifact. A query whose channel degrades is recorded as discarded rather than as zero occupancy, because a false zero here would read as 'no host holds this query' and is exactly the error this probe exists to avoid. |
 | query-evidence-refresh.yml | query-evidence | schedule:23-06-utc<br>workflow_dispatch | Google Search Console search-analytics query rows for the verified property<br>existing evidence_queries.json (merged, never replaced) | data/queries/evidence/evidence_queries.json<br>data/authority_scale/query_atlas.json | Ingests measured Search Console demand, rebuilds the atlas, and commits only if the full validation chain passes in the same run. Named in allowed_scheduled_mutation_workflows. It has no page-admission authority: publishing stays gated by atlas evidence tiers and the release workflow. Missing credentials leave the evidence untouched and exit 0; a credentialed API failure is a hard error. |
 | search-intelligence-loop.yml | search-intelligence | schedule:41-14-utc<br>workflow_dispatch | admitted route registry<br>read-only Agent Run normalization<br>optional provider truth evidence<br>source/claim registries | data/search_intelligence/**<br>Search Intelligence validation receipts | Scheduled lane observes, diagnoses, queues, retests, and reports only. It has no independent page-admission, cadence, or repo-commit authority. |
 | validate-repo.yml | validate | push:main<br>pull_request<br>workflow_dispatch | repository source<br>package-lock.json<br>validation registry | velocity-validated-{commit_sha}<br>validation diagnostics | No artifact is uploaded as validated unless the staged container release passes. |

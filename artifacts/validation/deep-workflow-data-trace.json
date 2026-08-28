@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-27T21:42:58.362Z",
+  "generated_at": "2026-08-28T13:48:42.584Z",
   "status": "PASS",
-  "workflow_count": 9,
+  "workflow_count": 10,
   "errors": [],
   "warnings": [],
   "lifecycle_checks": [
@@ -228,6 +228,33 @@
           "transitive_npm_scripts": [
             "postdeploy:public-click-audit"
           ]
+        }
+      ]
+    },
+    {
+      "workflow": "query-class-occupancy-probe.yml",
+      "command_count": 2,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "node scripts/queries/probe_query_class_occupancy.mjs \"${{ inputs.panel }}\" data/signals/query_class_occupancy_run.json",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/queries/probe_query_class_occupancy.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "node -e '\nconst d=require(\"./data/signals/query_class_occupancy_run.json\");\nconst pad=(s,n)=>String(s).padEnd(n);\nconsole.log(pad(\"query\",44),pad(\"slots\",6),pad(\"unbranded\",10),pad(\"social\",7),\"surfaces\");\nfor(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.unbranded_share,10),pad(p.social_share,7),JSON.stringify(p.social_by_surface));\nif(d.discarded_probes.length) console.log(\"\\nDISCARDED (channel degraded, not zero):\",d.discarded_probes.map(x=>x.query).join(\" | \"));\n'",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         }
       ]
     },
@@ -687,11 +714,60 @@
           ]
         },
         {
-          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"absorb agent runs $(date -u +%F)\"\nfor attempt in 1 2 3; do\ngit fetch origin main\ngit rebase origin/main\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"absorb agent runs $(date -u +%F)\"\n# The retry loop used to be unreachable. `git rebase` is a bare command\n# under `bash -e`, so a conflicting rebase killed the step on attempt 1\n# and attempts 2 and 3 never ran - 2026-08-27 died on\n# \"could not apply ... absorb agent runs\" with no retry and no sleep.\n#\n# Every file that conflicts here is derived: artifacts/validation/*.json\n# and content/_shared/content_state.json are outputs of the intake and\n# build below, not hand-authored state. Merging two generated versions of\n# a generated file is meaningless, so a conflict is resolved by taking\n# the newest main and re-deriving the absorption on top of it. That keeps\n# whatever the concurrent push added, which `reset --hard` before the\n# re-derive guarantees and a plain \"ours\" resolution would have dropped.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\nnpm run citation:prepare-velocity-intake\nnpm run build\nnpm run validate:release\ngit add -A\nif git diff --cached --quiet; then\necho \"changed=false\" >> \"$GITHUB_OUTPUT\"\nexit 0\nfi\ngit commit -m \"absorb agent runs $(date -u +%F)\"\nfi\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
-          "checks": [],
-          "direct_npm_scripts": [],
-          "transitive_npm_scripts": []
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "build",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "citation:prepare-velocity-intake",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_pages_dist.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/install_clarity.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/prepare_velocity_intake_release.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "build",
+            "citation:prepare-velocity-intake",
+            "validate:release"
+          ],
+          "transitive_npm_scripts": [
+            "build",
+            "citation:prepare-velocity-intake",
+            "validate:release"
+          ]
         },
         {
           "command": "npm run release:velocity-intake",
@@ -869,7 +945,7 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "for attempt in 1 2 3; do\ngit fetch origin main\ngit rebase origin/main\nnpm run build\nnpm run validate:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\nnpm run validate:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
