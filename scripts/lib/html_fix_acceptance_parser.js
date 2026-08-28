@@ -125,17 +125,34 @@ function fallbackTitle(query, type, fallbackSeq) {
   fallbackSeq.set(base, n);
   return n > 1 ? `${base} (${n})` : base;
 }
+// Returns { title, source }. `source` records WHERE the heading came from, because
+// only one of these is a promise the agent actually made:
+//
+//   'named'   - the fix names the heading as a heading ("... titled 'X'",
+//               "add an h2 section on X"). Holding the page to that exact string
+//               is holding it to the agent's own instruction.
+//   'derived' - the compiler invented it. Either from a bare quoted phrase, which
+//               in an "insert: '...'" edit is the COPY to insert and not a title,
+//               or from fallbackTitle(), which builds "<Query> - <suffix>" off the
+//               query. Asserting those against the rendered page tests this
+//               compiler's naming convention, not the repair.
+//
+// Derived headings caused the acceptance failures on
+// insights/uscis-medical-008-*: the manifest demanded
+// "... - what to verify before you act" and the answer sentence
+// "No - since November 2023, ..." as <h2>s, while the renderer had written its own
+// question-form heading. The content requirement is unaffected and still enforced.
 function titleFromFix(edit, query, index = 0, type = 'agent_directive', fallbackSeq = null) {
   const titled = String(edit || '').match(/(?:h2|h3|section|block|callout|table|checklist|part [ab])[^.;]{0,80}?titled\s+['"“]([^'"”]{4,100})['"”]/i) || String(edit || '').match(/titled\s+['"“]([^'"”]{4,100})['"”]/i);
-  if (titled && usableAsCopy(titled[1])) return normalizeSpace(titled[1]);
+  if (titled && usableAsCopy(titled[1])) return { title: normalizeSpace(titled[1]), source: 'named' };
   const quoted = quotedPhrases(edit).filter(usableAsCopy);
   const hTitle = quoted.find((q) => /[A-Za-z]/.test(q) && q.split(/\s+/).length >= 2 && q.length <= 90);
-  if (hTitle) return hTitle;
+  if (hTitle) return { title: hTitle, source: 'derived' };
   const h2On = String(edit || '').match(/\badd\s+(?:a\s+|an\s+)?h[23]\s+section\s+on\s+([^.;]{8,90})/i);
-  if (h2On && usableAsCopy(h2On[1])) return sentenceCase(h2On[1]);
+  if (h2On && usableAsCopy(h2On[1])) return { title: sentenceCase(h2On[1]), source: 'named' };
   const afterAdd = edit.match(/(?:add|insert|create|open with|replace with)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:h2|h3|section|block|callout|table|checklist|script|scorecard|matrix)[^:.]*[:.]?\s*([^.;]{10,90})/i);
-  if (afterAdd && usableAsCopy(afterAdd[1])) return sentenceCase(afterAdd[1]);
-  return fallbackTitle(query, type, fallbackSeq);
+  if (afterAdd && usableAsCopy(afterAdd[1])) return { title: sentenceCase(afterAdd[1]), source: 'named' };
+  return { title: fallbackTitle(query, type, fallbackSeq), source: 'derived' };
 }
 function typeFromFix(edit) {
   const v = edit.toLowerCase();
@@ -267,7 +284,7 @@ function scriptLinesFromFix(edit, query, count) {
 function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null }) {
   const edit = stripPrefixes(recommendation);
   const type = typeFromFix(edit);
-  const title = titleFromFix(edit, query, index, type, fallbackSeq);
+  const { title, source: titleSource } = titleFromFix(edit, query, index, type, fallbackSeq);
   const minRows = rowCountFromFix(edit, type);
   const headers = headersFromFix(edit, type);
   const artifact = {
@@ -275,6 +292,7 @@ function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackS
     marker: `semantic-${hash(`${recordId || query}:${title}:${index}`, 12)}`,
     type,
     title,
+    title_source: titleSource,
     intro: readerIntroForArtifact(title, query, type)
   };
   if (type === 'agent_directive') {
@@ -299,7 +317,11 @@ function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackS
   return artifact;
 }
 function requiredStringsForArtifact(artifact, recommendation) {
-  const out = [artifact.title];
+  // A derived title is this compiler's phrasing, not the agent's. Requiring it as a
+  // string would re-impose the exact heading the contract deliberately stopped
+  // asserting. Everything substantive below - headers, rows, items, the extracted
+  // requirements - is still required.
+  const out = artifact.title_source === 'derived' ? [] : [artifact.title];
   if (Array.isArray(artifact.headers)) out.push(...artifact.headers);
   if (Array.isArray(artifact.rows)) out.push(...artifact.rows.flat().filter((cell) => String(cell || '').length <= 90).slice(0, 10));
   if (artifact.query_target) out.push(compact(artifact.query_target, 90));
@@ -323,6 +345,7 @@ function rowRequirementFromFix({ recommendation, query, recordId, implementation
     required_blocks: [{
       type: built.type,
       heading_exact: built.title,
+      heading_source: built.title_source || 'named',
       columns_exact: built.headers || [],
       min_rows: Array.isArray(built.rows) ? built.rows.length : (built.items || built.lines || []).length,
       placement: /first screen|top|after the direct answer|immediately after/i.test(recommendation || '') ? 'near_top_or_requested_location' : 'rendered_content'
@@ -352,11 +375,28 @@ function compileEntryFromSpec(spec) {
     rowRequirements.push(rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index, artifact }));
   });
   const mergedArtifacts = mergeArtifacts(artifacts);
+  // mergeArtifacts drops any artifact that would publish internal instruction text.
+  // Its row requirement has to go with it. Keeping the row meant the manifest
+  // demanded a heading for an artifact this compiler had deliberately refused to
+  // emit - unsatisfiable by construction, and the reason
+  // insights/uscis-medical-008-* reported five compiled_artifact_missing rows for
+  // headings no page could ever legitimately carry.
+  //
+  // The withheld rows are recorded rather than deleted, so a refusal to publish a
+  // fix stays visible as a refusal instead of disappearing from the manifest.
+  const publishableTitles = new Set(mergedArtifacts.map((artifact) => artifact.title));
+  const withheldRows = rowRequirements
+    .filter((row) => !publishableTitles.has(row.required_blocks?.[0]?.heading_exact))
+    .map((row) => ({ row_id: row.row_id, query: row.query, heading_exact: row.required_blocks?.[0]?.heading_exact || '', withheld_reason: 'artifact_would_publish_internal_instruction_text' }));
+  const publishableRowRequirements = rowRequirements.filter((row) => publishableTitles.has(row.required_blocks?.[0]?.heading_exact));
+  rowRequirements.length = 0;
+  rowRequirements.push(...publishableRowRequirements);
   const requiredStrings = unique(
     mergedArtifacts.flatMap((artifact, index) => requiredStringsForArtifact(artifact, recommendations[index] || recommendations[0] || ''))
   ).slice(0, 80);
   return {
     implementation_path: implementationPath,
+    withheld_row_requirements: withheldRows,
     title: mergedArtifacts[0]?.title || sentenceCase(spec.query || implementationPath),
     answer: compact(`Compare options by checking the concrete factors a user can verify: ${queries.join('; ') || implementationPath}. Do not rely on slogans, ranking labels, or vague authority claims when the page asks for side-by-side decision support.`, 520),
     checklist: unique(rowRequirements.flatMap((row) => row.required_strings || []).slice(0, 10)),

@@ -62,7 +62,13 @@ function validateEntryAgainstHtml(entry, html) {
   for (const needle of entry.required_strings || []) if (!includesNormalized(html, needle)) errors.push(`missing_required_string:${needle}`);
   for (const row of entry.row_requirements || []) {
     for (const block of row.required_blocks || []) {
-      if (block.heading_exact && !includesNormalized(html, block.heading_exact)) errors.push(`row:${row.row_id}:missing_heading:${block.heading_exact}`);
+      // Only a heading the agent NAMED is asserted verbatim. A derived heading is
+      // the compiler's own phrasing - a query-derived fallback, or a quoted phrase
+      // from an "insert: '...'" edit that is copy rather than a title - and holding
+      // the page to it tests the compiler, not the repair. The row's
+      // required_strings still carry the substance either way.
+      const headingIsAgentNamed = (block.heading_source || 'named') !== 'derived';
+      if (block.heading_exact && headingIsAgentNamed && !includesNormalized(html, block.heading_exact)) errors.push(`row:${row.row_id}:missing_heading:${block.heading_exact}`);
       for (const column of block.columns_exact || []) if (!includesNormalized(html, column)) errors.push(`row:${row.row_id}:missing_column:${column}`);
       if (block.min_rows && ['comparison_table','decision_matrix','cost_table','timeline_table','severity_matrix','scorecard','worksheet'].includes(block.type)) {
         const rows = countRowsNearHeading(html, block.heading_exact || '');
