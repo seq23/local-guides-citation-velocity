@@ -50,9 +50,25 @@ jobs:
       - name: Rebase, rebuild, revalidate, and push
         if: ${{ steps.candidate.outputs.changed == 'true' }}
         run: |
+          # The retry loop was unreachable. `git rebase` is a bare command under
+          # `bash -e`, so the first conflicting rebase ended the step and attempts
+          # 2 and 3 never ran - the same defect fixed in velocity-content-release.yml
+          # on 2026-08-28, still present here because this workflow has never run
+          # once and so nothing ever exercised it. It is the recovery workflow, which
+          # makes an unreachable retry the worst place for this to sit.
+          #
+          # Aborting a failed rebase leaves a clean tree so the remaining attempts
+          # can actually run. It deliberately does not re-derive the way the
+          # absorption step does: the commit being replayed is a full deterministic
+          # rebuild, and this workflow's declared failure boundary forbids broad
+          # self-healing here.
           for attempt in 1 2 3; do
             git fetch origin main
-            git rebase origin/main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              sleep $((attempt * 15))
+              continue
+            fi
             npm run build
             npm run validate:release
             git add -A
