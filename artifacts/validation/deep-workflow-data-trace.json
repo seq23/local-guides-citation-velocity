@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-28T13:52:21.237Z",
+  "generated_at": "2026-08-28T18:23:35.784Z",
   "status": "PASS",
   "workflow_count": 10,
   "errors": [],
@@ -233,11 +233,11 @@
     },
     {
       "workflow": "query-class-occupancy-probe.yml",
-      "command_count": 2,
+      "command_count": 4,
       "status": "PASS",
       "commands": [
         {
-          "command": "node scripts/queries/probe_query_class_occupancy.mjs \"${{ inputs.panel }}\" data/signals/query_class_occupancy_run.json",
+          "command": "node scripts/queries/probe_query_class_occupancy.mjs \"${{ inputs.panel }}\" data/signals/query_class_occupancy.json --atlas-top \"${{ inputs.atlas_top || '0' }}",
           "status": "PASS",
           "checks": [
             {
@@ -250,17 +250,73 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "node -e '\nconst d=require(\"./data/signals/query_class_occupancy_run.json\");\nconst pad=(s,n)=>String(s).padEnd(n);\nconsole.log(pad(\"query\",44),pad(\"slots\",6),pad(\"unbranded\",10),pad(\"social\",7),\"surfaces\");\nfor(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.unbranded_share,10),pad(p.social_share,7),JSON.stringify(p.social_by_surface));\nif(d.discarded_probes.length) console.log(\"\\nDISCARDED (channel degraded, not zero):\",d.discarded_probes.map(x=>x.query).join(\" | \"));\n'",
+          "command": "node -e '\nconst d=require(\"./data/signals/query_class_occupancy.json\");\nconst pad=(s,n)=>String(s).padEnd(n);\nconsole.log(pad(\"query\",44),pad(\"slots\",6),pad(\"occupancy\",10),pad(\"social\",7),pad(\"owned\",6),\"surfaces\");\nfor(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.citation_occupancy,10),pad(p.social_share,7),pad(p.owned_share,6),JSON.stringify(p.social_by_surface));\nconsole.log(\"\\nCONTROLS:\",JSON.stringify(d.control_check.results));\nif(d.discarded_probes.length) console.log(\"\\nDISCARDED (channel degraded, not zero):\",d.discarded_probes.map(x=>x.query).join(\" | \"));\n'",
           "status": "PASS",
           "checks": [],
           "direct_npm_scripts": [],
           "transitive_npm_scripts": []
+        },
+        {
+          "command": "npm run atlas:build\nnpm run queries:join-release",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "atlas:build",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "queries:join-release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/atlas/build_query_atlas.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/queries/join_atlas_to_release_queue.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "atlas:build",
+            "queries:join-release"
+          ],
+          "transitive_npm_scripts": [
+            "atlas:build",
+            "queries:join-release"
+          ]
+        },
+        {
+          "command": "npm run validate",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "validate"
+          ],
+          "transitive_npm_scripts": [
+            "validate"
+          ]
         }
       ]
     },
     {
       "workflow": "query-evidence-refresh.yml",
-      "command_count": 6,
+      "command_count": 9,
       "status": "PASS",
       "commands": [
         {
@@ -284,6 +340,28 @@
           "transitive_npm_scripts": []
         },
         {
+          "command": "npm run probe:occupancy -- data/signals/query_class_probe_panel.json data/signals/query_class_occupancy.json --atlas-top 20",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "probe:occupancy",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/queries/probe_query_class_occupancy.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "probe:occupancy"
+          ],
+          "transitive_npm_scripts": [
+            "probe:occupancy"
+          ]
+        },
+        {
           "command": "npm run atlas:build",
           "status": "PASS",
           "checks": [
@@ -303,6 +381,28 @@
           ],
           "transitive_npm_scripts": [
             "atlas:build"
+          ]
+        },
+        {
+          "command": "npm run queries:join-release",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "queries:join-release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/queries/join_atlas_to_release_queue.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "queries:join-release"
+          ],
+          "transitive_npm_scripts": [
+            "queries:join-release"
           ]
         },
         {
@@ -373,6 +473,13 @@
           "transitive_npm_scripts": [
             "validate"
           ]
+        },
+        {
+          "command": "COUNT=$(node -e 'try{console.log((require(\"./data/queries/measured_demand_candidates.json\").candidates||[]).length)}catch{console.log(0)}')\nif [ \"$COUNT\" -gt 0 ]; then\necho \"measured demand produced $COUNT candidate(s); dispatching Velocity Content Release\"\ngh workflow run velocity-content-release.yml --ref main\nelse\nREASON=$(node -e 'try{console.log(require(\"./data/queries/measured_demand_candidates.json\").stop_reason||\"unstated\")}catch{console.log(\"candidates file unreadable\")}')\necho \"no candidates this run; not dispatching. Named stop: $REASON\"\nfi",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         }
       ]
     },
@@ -552,9 +659,16 @@
     },
     {
       "workflow": "velocity-content-release.yml",
-      "command_count": 11,
+      "command_count": 13,
       "status": "PASS",
       "commands": [
+        {
+          "command": "if [ \"$GITHUB_REF_NAME\" != \"main\" ]; then\necho \"REFUSED: this lane pushes HEAD:main; refusing to run on $GITHUB_REF_NAME\" >&2\nexit 1\nfi",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
         {
           "command": "npm ci --ignore-scripts",
           "status": "PASS",
@@ -631,12 +745,17 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "python3 scripts/queries/ingest_gsc_evidence.py\nnpm run atlas:build",
+          "command": "python3 scripts/queries/ingest_gsc_evidence.py\nnpm run atlas:build\nnpm run queries:join-release",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "atlas:build",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "queries:join-release",
               "ok": true
             },
             {
@@ -648,13 +767,20 @@
               "type": "file",
               "path": "scripts/atlas/build_query_atlas.mjs",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/queries/join_atlas_to_release_queue.mjs",
+              "ok": true
             }
           ],
           "direct_npm_scripts": [
-            "atlas:build"
+            "atlas:build",
+            "queries:join-release"
           ],
           "transitive_npm_scripts": [
-            "atlas:build"
+            "atlas:build",
+            "queries:join-release"
           ]
         },
         {
@@ -1035,14 +1161,28 @@
             "validate:citation-agent-fixes",
             "validate:release"
           ]
+        },
+        {
+          "command": "gh workflow run validate-repo.yml --ref main",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         }
       ]
     },
     {
       "workflow": "velocity-full-rebuild.yml",
-      "command_count": 5,
+      "command_count": 6,
       "status": "PASS",
       "commands": [
+        {
+          "command": "if [ \"$GITHUB_REF_NAME\" != \"main\" ]; then\necho \"REFUSED: this lane pushes HEAD:main; refusing to run on $GITHUB_REF_NAME\" >&2\nexit 1\nfi",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
         {
           "command": "git fetch origin main\ngit checkout main\ngit reset --hard origin/main",
           "status": "PASS",
@@ -1123,7 +1263,7 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "for attempt in 1 2 3; do\ngit fetch origin main\ngit rebase origin/main\nnpm run build\nnpm run validate:release\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "# The retry loop was unreachable. `git rebase` is a bare command under\n# `bash -e`, so the first conflicting rebase ended the step and attempts\n# 2 and 3 never ran - the same defect fixed in velocity-content-release.yml\n# on 2026-08-28, still present here because this workflow has never run\n# once and so nothing ever exercised it. It is the recovery workflow, which\n# makes an unreachable retry the worst place for this to sit.\n#\n# Aborting a failed rebase leaves a clean tree so the remaining attempts\n# can actually run. It deliberately does not re-derive the way the\n# absorption step does: the commit being replayed is a full deterministic\n# rebuild, and this workflow's declared failure boundary forbids broad\n# self-healing here.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\nnpm run validate:release\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {

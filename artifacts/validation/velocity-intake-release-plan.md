@@ -13,8 +13,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-cost-009-can-insurance-cover-any-part.html | does health insurance cover the immigration medical exam |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-vaccines-labs-004-what-bloodwork-is-usually-part-of-the-immigration-medical-exam.html | do i need to fast before the immigration blood test |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | how much does the i-693 medical exam cost in 2026 |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-exam-day-documents-001-what-should-i-bring-to-the-immigration-medical-exam.html | list of items to bring to uscis medical exam appointment |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-correction-mistakes-001-what-if-the-civil-surgeon-made-a-mistake-on-my-i-693.html | what happens if there is a mistake on my I-693 form |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-015-what-if-i-need-tb-testing.html | what happens if I need a TB test for my USCIS medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html | how to avoid RFE delays after submitting I-693 medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-008-how-long-is-the-medical-exam-valid.html | how long is the I-693 medical exam valid for green card application |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-014-what-if-i-m-missing-vaccine-records.html | what if i am missing vaccine records for uscis medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-002-uscis-medical-exam-questions-answered-in-plain-english.html | what happens at the uscis medical exam appointment |
