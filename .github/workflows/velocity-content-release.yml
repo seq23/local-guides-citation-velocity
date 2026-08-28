@@ -101,9 +101,33 @@ jobs:
           if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
           git commit -m "absorb agent runs $(date -u +%F)"
+          # The retry loop used to be unreachable. `git rebase` is a bare command
+          # under `bash -e`, so a conflicting rebase killed the step on attempt 1
+          # and attempts 2 and 3 never ran - 2026-08-27 died on
+          # "could not apply ... absorb agent runs" with no retry and no sleep.
+          #
+          # Every file that conflicts here is derived: artifacts/validation/*.json
+          # and content/_shared/content_state.json are outputs of the intake and
+          # build below, not hand-authored state. Merging two generated versions of
+          # a generated file is meaningless, so a conflict is resolved by taking
+          # the newest main and re-deriving the absorption on top of it. That keeps
+          # whatever the concurrent push added, which `reset --hard` before the
+          # re-derive guarantees and a plain "ours" resolution would have dropped.
           for attempt in 1 2 3; do
             git fetch origin main
-            git rebase origin/main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              git reset --hard origin/main
+              npm run citation:prepare-velocity-intake
+              npm run build
+              npm run validate:release
+              git add -A
+              if git diff --cached --quiet; then
+                echo "changed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              git commit -m "absorb agent runs $(date -u +%F)"
+            fi
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 15))
           done
@@ -122,9 +146,20 @@ jobs:
       - name: Rebase, rebuild, revalidate, and push Velocity
         if: ${{ steps.candidate.outputs.changed == 'true' }}
         run: |
+          # Same unreachable-retry defect as the absorption step: a bare `git rebase`
+          # under `bash -e` ended the step on the first conflict. Aborting a failed
+          # rebase leaves a clean tree so the remaining attempts can actually run.
+          # This loop does not re-derive on conflict the way the absorption step
+          # does, because the commit it is replaying carries published pages from
+          # release:velocity-intake that a reset would discard and this step cannot
+          # regenerate on its own.
           for attempt in 1 2 3; do
             git fetch origin main
-            git rebase origin/main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              sleep $((attempt * 15))
+              continue
+            fi
             npm run build
             npm run validate:release
             npm run trace:agent-exact
