@@ -63,6 +63,26 @@ const plan = readJson('artifacts/validation/agent-exact-implementation-plan.json
 const apply = readJson('artifacts/validation/agent-exact-implementation-apply.json', { results: [] });
 const velocityContentRelease = readJson('artifacts/validation/velocity-content-release.json', { created: [], skipped: [] });
 const ceilingDeferredNewPageIds = new Set((velocityContentRelease.skipped || []).filter((row) => String(row.reason || '').includes('daily_new_url_ceiling_reached')).map((row) => row.id).filter(Boolean));
+// A create the release queue REFUSED is not unproven work - it is work the
+// governance layer forbade, and demanding proof of it makes a correctly-refused
+// release indistinguishable from a broken one.
+//
+// The planner cannot filter these itself: citation:plan-agent-exact runs BEFORE
+// strategy:release-queue builds the queue, so at plan time the decision does not
+// exist yet. The queue does exist by the time this trace runs, which is why the
+// reconciliation belongs here - exactly as ceiling-deferral above already reads a
+// downstream artifact to excuse pages the run was never permitted to publish.
+//
+// This narrows nothing that was being enforced: proof is still required for every
+// create the pipeline actually admitted. Only records the queue marked ineligible
+// and NOT_ADMITTED are excused, and they are recorded with the queue's own reason
+// rather than passing silently.
+const releaseQueueRecords = readJson('data/release/page_release_queue.json', { records: [] }).records || [];
+const queueRefusedNewPages = new Map(
+  releaseQueueRecords
+    .filter((row) => row && row.id && row.eligible === false && String(row.lifecycle_state || '') === 'NOT_ADMITTED')
+    .map((row) => [row.id, String(row.decision || 'NOT_ADMITTED')])
+);
 const ledger = readJson(LEDGER_PATH, { entries: [] });
 const insights = readJson('content/_live/insights.json', { items: [] });
 const livePages = readJson('content/_live/pages.json', { pages: [] });
@@ -140,8 +160,13 @@ for (const spec of plan.specs || []) {
     const implementationPath = normalizeImplementationPath(spec.implementation_path || routeToImplementationPath(spec.target_route));
     const exists = Boolean(livePageByPath.get(implementationPath) || fs.existsSync(rel(implementationPath)));
     const deferredByDailyCeiling = !exists && ceilingDeferredNewPageIds.has(spec.record_id);
-    traces.push({ ...spec, trace_status: exists ? 'PASS' : (deferredByDailyCeiling ? 'DEFERRED_BY_DAILY_CEILING' : 'FAIL'), rendered_path: implementationPath, page_exists: exists, deferred_by_daily_ceiling: deferredByDailyCeiling });
-    if (!exists && !deferredByDailyCeiling) errors.push(`${spec.record_id}:new_page_not_proven:${spec.target_route}`);
+    const refusedByReleaseQueue = !exists && !deferredByDailyCeiling && queueRefusedNewPages.has(spec.record_id);
+    const traceStatus = exists ? 'PASS'
+      : deferredByDailyCeiling ? 'DEFERRED_BY_DAILY_CEILING'
+      : refusedByReleaseQueue ? 'REFUSED_BY_RELEASE_QUEUE'
+      : 'FAIL';
+    traces.push({ ...spec, trace_status: traceStatus, rendered_path: implementationPath, page_exists: exists, deferred_by_daily_ceiling: deferredByDailyCeiling, refused_by_release_queue: refusedByReleaseQueue, release_queue_decision: queueRefusedNewPages.get(spec.record_id) || '' });
+    if (!exists && !deferredByDailyCeiling && !refusedByReleaseQueue) errors.push(`${spec.record_id}:new_page_not_proven:${spec.target_route}`);
   }
 }
 

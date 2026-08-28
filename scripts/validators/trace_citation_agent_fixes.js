@@ -89,6 +89,17 @@ const velocityContentRelease = readJson('artifacts/validation/velocity-content-r
 const createdReleaseIds = new Set((velocityContentRelease.created || []).map((row) => row.id).filter(Boolean));
 const skippedReleaseById = new Map((velocityContentRelease.skipped || []).map((row) => [row.id, row]));
 function isDeferredByDailyCeiling(id) { const skipped = skippedReleaseById.get(id); return Boolean(skipped && String(skipped.reason || '').includes('daily_new_url_ceiling_reached')); }
+// A create the release queue refused never reaches staged or live, by design. It
+// is not a missing route - it is a route governance declined to admit, and the
+// planner cannot filter it out because citation:plan-agent-exact runs before
+// strategy:release-queue exists. Same reconciliation as the daily-ceiling case
+// directly above, and it excuses nothing the pipeline actually admitted.
+const releaseQueueRefusedById = new Map(
+  ((readJson('data/release/page_release_queue.json', { records: [] }).records) || [])
+    .filter((row) => row && row.id && row.eligible === false && String(row.lifecycle_state || '') === 'NOT_ADMITTED')
+    .map((row) => [row.id, String(row.decision || 'NOT_ADMITTED')])
+);
+function isRefusedByReleaseQueue(id) { return releaseQueueRefusedById.has(id); }
 
 for (const fix of selected) {
   const id = fix.id || fix.query;
@@ -101,6 +112,7 @@ for (const fix of selected) {
     continue;
   }
   if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:selected_new_page_deferred_by_daily_new_url_ceiling:${route}`); continue; }
+  if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isRefusedByReleaseQueue(id)) { warnings.push(`${id}:selected_new_page_refused_by_release_queue:${releaseQueueRefusedById.get(id)}:${route}`); continue; }
   for (const [label, payload] of [['staged', stagedPages], ['live', livePages]]) {
     if (!pageExists(payload, route)) { errors.push(`${id}:${label}_missing_route:${route}`); continue; }
     for (const marker of markers) if (!pageHasMarker(payload, route, marker)) errors.push(`${id}:${label}_missing_marker:${marker}`);
@@ -134,6 +146,7 @@ if (plan && plan.selected_count > 0) {
     const liveExists = pageExists(livePages, unit.target_route);
     const stagedExists = pageExists(stagedPages, unit.target_route);
     if ((!liveExists || !stagedExists) && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:deferred_by_daily_new_url_ceiling:${unit.target_route}`); continue; }
+    if ((!liveExists || !stagedExists) && isRefusedByReleaseQueue(id)) { warnings.push(`${id}:refused_by_release_queue:${releaseQueueRefusedById.get(id)}:${unit.target_route}`); continue; }
     if (!liveExists) errors.push(`${id}:live_missing_route:${unit.target_route}`);
     else if (!pageHasMarker(livePages, unit.target_route, unit.query)) errors.push(`${id}:live_missing_query`);
     if (!stagedExists) errors.push(`${id}:staged_missing_route:${unit.target_route}`);
