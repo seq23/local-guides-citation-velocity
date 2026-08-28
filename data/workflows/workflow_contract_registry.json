@@ -187,6 +187,35 @@
       "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
     },
     {
+      "file": "query-class-occupancy-probe.yml",
+      "name": "Query Class Occupancy Probe",
+      "lane": "measurement",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": false,
+      "permissions": [
+        "contents: read"
+      ],
+      "timeout_minutes": 20,
+      "commands": [
+        "node scripts/queries/probe_query_class_occupancy.mjs"
+      ],
+      "required_inputs": [],
+      "required_secrets": [],
+      "optional_secrets": [],
+      "consumes": [
+        "data/signals/query_class_probe_panel.json"
+      ],
+      "produces": [
+        "query class occupancy measurement artifact"
+      ],
+      "upstream": [],
+      "downstream": [],
+      "failure_boundary": "Measures only. It has contents: read, commits nothing and publishes nothing; the result leaves as a run artifact. A query whose channel degrades is recorded as discarded rather than as zero occupancy, because a false zero here would read as 'no host holds this query' and is exactly the error this probe exists to avoid."
+    },
+    {
       "file": "query-evidence-refresh.yml",
       "name": "Query Evidence Refresh",
       "lane": "query-evidence",
