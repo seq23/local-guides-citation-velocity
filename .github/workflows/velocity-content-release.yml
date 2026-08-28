@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - "data/report_fixes/agent_runs/**/agent_run_manifest.json"
+      # Measured query demand is now a second, non-human path into this lane.
+      # A human pushing this file triggers a release the same way a manifest
+      # does; the scheduled lane cannot raise a push event with GITHUB_TOKEN, so
+      # query-evidence-refresh.yml dispatches this workflow explicitly instead.
+      - "data/queries/measured_demand_candidates.json"
   workflow_dispatch:
     inputs:
       batch_size:
@@ -36,6 +41,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
+      # REFUSE_NON_MAIN: this lane pushes HEAD:main, so a dispatch from any other
+      # ref would publish that branch to main. The push target is deliberately
+      # literal - the workflow contract asserts it to prove the lane is autonomous
+      # - so the ref is gated here instead of making the target dynamic.
+      - name: Refuse to release from a non-main ref
+        run: |
+          if [ "$GITHUB_REF_NAME" != "main" ]; then
+            echo "REFUSED: this lane pushes HEAD:main; refusing to run on $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
       - name: Checkout main
         uses: actions/checkout@v7
         with:
@@ -78,6 +93,7 @@ jobs:
         run: |
           python3 scripts/queries/ingest_gsc_evidence.py
           npm run atlas:build
+          npm run queries:join-release
       - name: Normalize landed agent runs and validate the absorption alone
         # Absorption used to be inseparable from the content release. Intake
         # normalized the run, but the normalized artifact was only ever pushed if

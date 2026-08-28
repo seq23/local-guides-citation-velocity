@@ -24,6 +24,26 @@ const dims = readJson('data/authority_scale/fanout_dimensions.json', null);
 const evidence = readJson('data/queries/evidence/evidence_queries.json', { queries: [] });
 const reserveIndex = readJson('data/authority_scale/fanout_100k/index.json', null);
 
+// Measured citation occupancy, keyed by query.
+//
+// This replaces a placebo. weak_incumbent_score arrived on four semrush rows and
+// was defaulted to a hardcoded 0.5 on every other row - all 64 measured T1 rows
+// among them. A constant multiplied into every score decides nothing: it changed
+// no ordering, admitted no page, and blocked none, while looking on the page like
+// a winnability judgement had been made. It had not.
+//
+// The real signal is what an answer engine actually cites for the query. See
+// scripts/queries/probe_query_class_occupancy.mjs. Rows with no measurement carry
+// a NEUTRAL factor of 1.0 and say so in winnability_basis - not a made-up 0.5 -
+// so ranking is never quietly discounted by a number nobody measured. The
+// publishing join is where measurement is REQUIRED; see
+// scripts/queries/join_atlas_to_release_queue.mjs.
+const occupancy = readJson('data/signals/query_class_occupancy.json', null);
+const occupancyByQuery = new Map();
+for (const p of occupancy?.probes || []) {
+  if (typeof p.unbranded_share === 'number') occupancyByQuery.set(String(p.query).toLowerCase().trim(), p);
+}
+
 const EVIDENCE_WEIGHT = { T1: 1.0, T2a: 0.8, T2b: 0.6, T3: 0.35 };
 
 // rank_score is only comparable WITHIN a band, because the demand term in the
@@ -35,7 +55,14 @@ const RANK_BANDS = {
 };
 
 const RANK_FORMULA = {
-  formula: 'rank_score = EVIDENCE_WEIGHT[evidence_tier] * max(demand_value, 1) * weak_incumbent_score',
+  formula: 'rank_score = EVIDENCE_WEIGHT[evidence_tier] * max(demand_value, 1) * winnability_factor',
+  winnability_factor: {
+    measured_answer_engine_citation_occupancy: 'citation_occupancy = unbranded_share of the citation slots an answer engine built its answer from, measured by scripts/queries/probe_query_class_occupancy.mjs. Preferred where present.',
+    keyword_tool_supplied_weak_incumbent_score: 'weak_incumbent_score as supplied on the source row by a keyword tool. Used only where no citation occupancy has been measured.',
+    unmeasured_neutral: '1.0. No winnability evidence exists for this query, so ranking is not adjusted at all.',
+    replaced_placebo: 'weak_incumbent_score used to default to a hardcoded 0.5 on every row that lacked one - 64 of 68, including every measured T1 row. A constant factor changes no ordering and admits no page; it only made the file look as though winnability had been judged. It is gone: a row now carries a measurement, a supplied score, or an explicit neutral.',
+    publishing_gate: 'The neutral factor ranks but never admits. scripts/queries/join_atlas_to_release_queue.mjs requires winnability_basis = measured_answer_engine_citation_occupancy before a query can become a page candidate.',
+  },
   demand_value_by_band: {
     [RANK_BANDS.MARKET]: 'search_volume (monthly searches from a keyword tool)',
     [RANK_BANDS.OWN]: "impressions_90d (this domain's own impressions over 90 days)",
@@ -113,7 +140,21 @@ for (const q of evidence.queries || []) {
   // banded so the two units can never sort against each other as peers.
   const searchVolume = q.search_volume ?? null;
   const impressions90d = q.impressions_90d ?? null;
-  const weakIncumbent = Number(q.weak_incumbent_score ?? 0.5);
+
+  // Winnability, in order of how much it is worth: a measured citation occupancy
+  // reading beats a keyword-tool supplied score beats nothing. "Nothing" is
+  // neutral (1.0) and labelled, never a fabricated midpoint.
+  const measured = occupancyByQuery.get(String(q.query).toLowerCase().trim()) || null;
+  const suppliedWeakIncumbent = q.weak_incumbent_score === undefined || q.weak_incumbent_score === null
+    ? null
+    : Number(q.weak_incumbent_score);
+  const citationOccupancy = measured ? measured.unbranded_share : null;
+  const winnabilityBasis = measured ? 'measured_answer_engine_citation_occupancy'
+    : suppliedWeakIncumbent !== null ? 'keyword_tool_supplied_weak_incumbent_score'
+    : 'unmeasured_neutral';
+  const winnabilityFactor = measured ? citationOccupancy
+    : suppliedWeakIncumbent !== null ? suppliedWeakIncumbent
+    : 1.0;
 
   const demandBasis = searchVolume !== null ? 'search_volume'
     : impressions90d !== null ? 'impressions_90d'
@@ -129,7 +170,7 @@ for (const q of evidence.queries || []) {
     : null;
   const rank = demandValue === null
     ? null
-    : Number((EVIDENCE_WEIGHT[tier] * Math.max(demandValue, 1) * weakIncumbent).toFixed(2));
+    : Number((EVIDENCE_WEIGHT[tier] * Math.max(demandValue, 1) * winnabilityFactor).toFixed(2));
 
   classified.push({
     query: q.query,
@@ -144,7 +185,15 @@ for (const q of evidence.queries || []) {
     kd_sources: q.kd_sources ?? null,
     kd_conflict: q.kd_conflict ?? false,
     keyword_difficulty: q.keyword_difficulty ?? null,
-    weak_incumbent_score: weakIncumbent,
+    // The measured signal, and an explicit statement of what it is. A consumer
+    // must be able to tell a measurement from an absence without guessing.
+    citation_occupancy: citationOccupancy,
+    citation_occupancy_measured_on: measured ? (occupancy?.measured_on ?? null) : null,
+    citation_occupancy_slots_read: measured ? (measured.slots_read ?? null) : null,
+    citation_occupancy_hosts: measured ? (measured.cited_hosts_in_order ?? null) : null,
+    weak_incumbent_score: suppliedWeakIncumbent,
+    winnability_factor: winnabilityFactor,
+    winnability_basis: winnabilityBasis,
     intent: q.intent || null,
     intent_method: q.intent_method || null,
     target_domain: q.target_domain || null,

@@ -1,12 +1,22 @@
 name: Query Class Occupancy Probe
 
-# Dispatch only. This measures; it publishes nothing and commits nothing.
+# Measures which citation slots are open, per query class, and COMMITS the result.
 #
-# It runs in Actions rather than locally because Bing serves a JavaScript shell
-# to a residential or agent client - one b_algo node, no outbound links - which
-# parses as an empty result set. Reading that as "no host holds this query" would
-# be exactly the kind of false zero this repo keeps having to undo, so the probe
-# is pinned to a server egress and discards any query whose channel degrades.
+# Two things were wrong with the first version of this lane and both are fixed here.
+#
+#   1. It probed Bing. Bing serves a JavaScript shell - one b_algo node, no
+#      outbound links - to residential clients AND to GitHub Actions egress. Its
+#      only run discarded 16 of 16 probes, including both controls, and still
+#      exited 0. The channel is now the OpenRouter web plugin, the same call the
+#      citation probe uses, which is verified working from Actions.
+#   2. It uploaded an artifact and committed nothing, so even a good run left
+#      nothing behind for anything downstream to read. It now commits to
+#      data/signals/ and the query atlas consumes that file as its winnability
+#      signal.
+#
+# Dispatch-only, so it is not a scheduled mutator and does not consume the
+# contract's single scheduled-commit slot. The scheduled path runs the same probe
+# inside query-evidence-refresh.yml.
 on:
   workflow_dispatch:
     inputs:
@@ -15,9 +25,14 @@ on:
         required: false
         default: "data/signals/query_class_probe_panel.json"
         type: string
+      atlas_top:
+        description: "Also measure the top N measured T1 queries from the atlas (0 to measure the panel only)"
+        required: false
+        default: "0"
+        type: string
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
@@ -29,25 +44,37 @@ concurrency:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
-      - name: Probe query class occupancy
-        run: node scripts/queries/probe_query_class_occupancy.mjs "${{ inputs.panel }}" data/signals/query_class_occupancy_run.json
+      - run: npm ci --ignore-scripts
+      - name: Probe citation occupancy
+        # No continue-on-error. A run that measures nothing now exits non-zero
+        # instead of reporting success over an empty result set.
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: node scripts/queries/probe_query_class_occupancy.mjs "${{ inputs.panel }}" data/signals/query_class_occupancy.json --atlas-top "${{ inputs.atlas_top || '0' }}"
       - name: Summarise
         run: |
           node -e '
-            const d=require("./data/signals/query_class_occupancy_run.json");
+            const d=require("./data/signals/query_class_occupancy.json");
             const pad=(s,n)=>String(s).padEnd(n);
-            console.log(pad("query",44),pad("slots",6),pad("unbranded",10),pad("social",7),"surfaces");
-            for(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.unbranded_share,10),pad(p.social_share,7),JSON.stringify(p.social_by_surface));
+            console.log(pad("query",44),pad("slots",6),pad("occupancy",10),pad("social",7),pad("owned",6),"surfaces");
+            for(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.citation_occupancy,10),pad(p.social_share,7),pad(p.owned_share,6),JSON.stringify(p.social_by_surface));
+            console.log("\nCONTROLS:",JSON.stringify(d.control_check.results));
             if(d.discarded_probes.length) console.log("\nDISCARDED (channel degraded, not zero):",d.discarded_probes.map(x=>x.query).join(" | "));
           '
-      - uses: actions/upload-artifact@v7
+      - name: Rebuild the atlas on the measured occupancy and re-derive candidates
+        run: |
+          npm run atlas:build
+          npm run queries:join-release
+      - name: Validate before recording anything
+        run: npm run validate
+      - name: Commit the measurement
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          name: query-class-occupancy-${{ github.run_id }}
-          path: data/signals/query_class_occupancy_run.json
-          if-no-files-found: error
+          commit_message: "citation occupancy probe: measured winnability -> atlas"
+          file_pattern: "data/signals/query_class_occupancy.json data/authority_scale/query_atlas.json data/queries/measured_demand_candidates.json artifacts/validation/*.json"

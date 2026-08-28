@@ -27,6 +27,12 @@ on:
 
 permissions:
   contents: write
+  # Needed only to hand the finished candidate set to Velocity Content Release.
+  # A push made with GITHUB_TOKEN raises no push event, so the commit this
+  # workflow lands can never trigger the release workflow that consumes it;
+  # workflow_dispatch is the one documented exception to that rule and is the
+  # link that lets measured demand reach publishing without a human.
+  actions: write
 
 concurrency:
   group: query-evidence-${{ github.ref }}
@@ -58,8 +64,28 @@ jobs:
           GSC_LOOKBACK_DAYS: ${{ inputs.lookback_days || '90' }}
         run: python3 scripts/queries/ingest_gsc_evidence.py
 
+      - name: Measure citation occupancy for the panel and the measured atlas head
+        # Runs BEFORE the atlas build, because the atlas consumes this file as its
+        # winnability signal. Allowed to fail without killing the lane: a failed
+        # measurement leaves the previous committed occupancy file in place, which
+        # is a stale reading, not a false zero. The probe itself never writes a
+        # zero for a degraded probe.
+        continue-on-error: true
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: npm run probe:occupancy -- data/signals/query_class_probe_panel.json data/signals/query_class_occupancy.json --atlas-top 20
+
       - name: Rebuild the query atlas from refreshed evidence
         run: npm run atlas:build
+
+      - name: Join measured demand to the release queue
+        # This is the edge that did not exist. The atlas was built on a schedule
+        # and read by nobody: every release-queue row carried
+        # source=twin_agent_artifact and the release workflow only fired when a
+        # human pushed an agent-run manifest - 5 runs and 8 pages since June.
+        # The join emits page candidates ranked by measured citation occupancy;
+        # the release law downstream still decides what may actually publish.
+        run: npm run queries:join-release
 
       - name: Observe whether answer engines cite us
         # The probe shipped in seven repos and was invoked by none, so no
@@ -83,11 +109,30 @@ jobs:
       - name: Validate before publishing anything
         run: npm run validate
 
-      - name: Commit refreshed evidence and atlas
+      - name: Commit refreshed evidence, atlas and candidates
+        id: commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "query evidence refresh: measured GSC demand -> atlas"
-          file_pattern: "data/signals/*.json data/queries/evidence/*.json data/authority_scale/query_atlas.json artifacts/validation/*.json"
+          commit_message: "query evidence refresh: measured GSC demand -> atlas -> release candidates"
+          file_pattern: "data/signals/*.json data/queries/*.json data/queries/evidence/*.json data/authority_scale/query_atlas.json artifacts/validation/*.json"
+
+      - name: Hand measured candidates to Velocity Content Release
+        # Only when the join actually produced candidates. A run that named a
+        # legitimate stop - no query has a measured occupancy reading yet, or
+        # every candidate was held by an admission rule - dispatches nothing and
+        # says so, rather than waking the release lane to do nothing.
+        if: ${{ always() && steps.commit.outputs.changes_detected == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COUNT=$(node -e 'try{console.log((require("./data/queries/measured_demand_candidates.json").candidates||[]).length)}catch{console.log(0)}')
+          if [ "$COUNT" -gt 0 ]; then
+            echo "measured demand produced $COUNT candidate(s); dispatching Velocity Content Release"
+            gh workflow run velocity-content-release.yml --ref main
+          else
+            REASON=$(node -e 'try{console.log(require("./data/queries/measured_demand_candidates.json").stop_reason||"unstated")}catch{console.log("candidates file unreadable")}')
+            echo "no candidates this run; not dispatching. Named stop: $REASON"
+          fi
 
       - name: Upload evidence snapshot
         if: always()
