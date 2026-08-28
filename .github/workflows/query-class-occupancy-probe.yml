@@ -1,0 +1,53 @@
+name: Query Class Occupancy Probe
+
+# Dispatch only. This measures; it publishes nothing and commits nothing.
+#
+# It runs in Actions rather than locally because Bing serves a JavaScript shell
+# to a residential or agent client - one b_algo node, no outbound links - which
+# parses as an empty result set. Reading that as "no host holds this query" would
+# be exactly the kind of false zero this repo keeps having to undo, so the probe
+# is pinned to a server egress and discards any query whose channel degrades.
+on:
+  workflow_dispatch:
+    inputs:
+      panel:
+        description: "Panel file of queries to probe"
+        required: false
+        default: "data/signals/query_class_probe_panel.json"
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
+concurrency:
+  group: query-class-occupancy-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Probe query class occupancy
+        run: node scripts/queries/probe_query_class_occupancy.mjs "${{ inputs.panel }}" data/signals/query_class_occupancy_run.json
+      - name: Summarise
+        run: |
+          node -e '
+            const d=require("./data/signals/query_class_occupancy_run.json");
+            const pad=(s,n)=>String(s).padEnd(n);
+            console.log(pad("query",44),pad("slots",6),pad("unbranded",10),pad("social",7),"surfaces");
+            for(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.unbranded_share,10),pad(p.social_share,7),JSON.stringify(p.social_by_surface));
+            if(d.discarded_probes.length) console.log("\nDISCARDED (channel degraded, not zero):",d.discarded_probes.map(x=>x.query).join(" | "));
+          '
+      - uses: actions/upload-artifact@v7
+        with:
+          name: query-class-occupancy-${{ github.run_id }}
+          path: data/signals/query_class_occupancy_run.json
+          if-no-files-found: error

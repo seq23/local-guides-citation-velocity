@@ -1,8 +1,8 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-08-27T21:42:31.446Z",
-  "workflow_count": 9,
+  "generated_at": "2026-08-28T04:19:40.253Z",
+  "workflow_count": 10,
   "workflows": [
     {
       "path": ".github/workflows/ci-health-recovery.yml",
@@ -137,6 +137,35 @@
       ],
       "required_artifacts": [
         "artifacts/diagnostics/click-audit/**"
+      ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/query-class-occupancy-probe.yml",
+      "name": "Query Class Occupancy Probe",
+      "trigger": [
+        "workflow_dispatch"
+      ],
+      "primary_command": "unknown",
+      "repo_lane": "manual-maintenance",
+      "current_status": "keep",
+      "reason": "Non-canonical workflow requires review.",
+      "allowed_runtime_mutations": [],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        "artifact path declared inline or by action"
       ],
       "validation_owner": "validation registry and workflow topology validators"
     },
