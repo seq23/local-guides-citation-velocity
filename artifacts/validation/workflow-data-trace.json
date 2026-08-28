@@ -1,8 +1,8 @@
 {
   "validator": "workflow-data-trace",
   "status": "PASS",
-  "workflow_count": 9,
-  "manual_ready_count": 9,
+  "workflow_count": 10,
+  "manual_ready_count": 10,
   "scheduled_count": 4,
   "push_count": 2,
   "scheduled_mutation_count": 1,
@@ -91,6 +91,22 @@
       ],
       "downstream": [],
       "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
+    },
+    {
+      "file": "query-class-occupancy-probe.yml",
+      "lane": "measurement",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "consumes": [
+        "data/signals/query_class_probe_panel.json"
+      ],
+      "produces": [
+        "query class occupancy measurement artifact"
+      ],
+      "upstream": [],
+      "downstream": [],
+      "failure_boundary": "Measures only. It has contents: read, commits nothing and publishes nothing; the result leaves as a run artifact. A query whose channel degrades is recorded as discarded rather than as zero occupancy, because a false zero here would read as 'no host holds this query' and is exactly the error this probe exists to avoid."
     },
     {
       "file": "query-evidence-refresh.yml",
@@ -210,5 +226,5 @@
   ],
   "errors": [],
   "warnings": [],
-  "checked_at": "2026-08-27"
+  "checked_at": "2026-08-28"
 }
