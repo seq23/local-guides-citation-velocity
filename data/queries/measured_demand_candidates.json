@@ -20,10 +20,13 @@
     "require_demand_evidence": true,
     "minimum_query_characters": 20,
     "maximum_candidates_per_run": 5,
-    "maximum_candidates_per_run_why": "A processing budget, never a publication quota. The same principle page_strategy_registry.json states for daily cadence."
+    "maximum_candidates_per_run_why": "A processing budget, never a publication quota. The same principle page_strategy_registry.json states for daily cadence.",
+    "near_duplicate_jaccard": 0.8,
+    "near_duplicate_jaccard_why": "page_strategy_registry.json states that a wording variation is not a distinct page intent, but the release queue only compares routes and titles, so two orderings of the same words pass it as two pages. Candidates whose content-word sets overlap at or above this threshold collapse to the higher-ranked one and the loser is held naming the query it duplicates. 0.8 keeps a qualifier that changes the answer (0.75) as its own page."
   },
   "ranked_by": "measured citation occupancy (unbranded share of answer-engine citation slots), then atlas rank_score within band",
   "eligible_count": 14,
+  "distinct_intent_count": 12,
   "candidate_count": 5,
   "held_count": 63,
   "stop_reason": null,
@@ -122,37 +125,6 @@
       "status_reason": "selected_from_measured_query_atlas_by_citation_occupancy"
     },
     {
-      "id": "atlas_64656e74616c2069",
-      "status": "APPROVED",
-      "source": "measured_query_atlas",
-      "source_run_id": "query_atlas_2026-08-28",
-      "vertical": "dentistry",
-      "query": "dental implants cost dallas tx",
-      "normalized_query": "dental implants cost dallas tx",
-      "llm_bait_phrase": "dental implants cost dallas tx",
-      "operation": "CREATE_NEW_TARGET_PAGE",
-      "target_route": "/dentistry/guides/dental-implants-cost-dallas-tx/",
-      "renderedPath": "dentistry/guides/dental-implants-cost-dallas-tx/index.html",
-      "route_family": "CREATE_GUIDE",
-      "route_reason": "measured_query_demand_with_measured_citation_occupancy",
-      "route_shape": "guide_directory",
-      "route_authority": "query_atlas_measured_evidence",
-      "admission_basis": "MEASURED_QUERY_ATLAS_CANDIDATE",
-      "source_records": [
-        "SRC-ADA-MOUTHHEALTHY"
-      ],
-      "source_signal_ids": [
-        "query_atlas:2026-08-28:dental-implants-cost-dallas-tx"
-      ],
-      "citation_velocity": true,
-      "evidence_tier": "T1",
-      "rank_band": "own_impressions_only",
-      "rank_score": 7,
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "status_reason": "selected_from_measured_query_atlas_by_citation_occupancy"
-    },
-    {
       "id": "atlas_6661697220706572",
       "status": "APPROVED",
       "source": "measured_query_atlas",
@@ -180,6 +152,37 @@
       "evidence_tier": "T1",
       "rank_band": "own_impressions_only",
       "rank_score": 7,
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "status_reason": "selected_from_measured_query_atlas_by_citation_occupancy"
+    },
+    {
+      "id": "atlas_7472757374776f72",
+      "status": "APPROVED",
+      "source": "measured_query_atlas",
+      "source_run_id": "query_atlas_2026-08-28",
+      "vertical": "dentistry",
+      "query": "trustworthy dentist checklist",
+      "normalized_query": "trustworthy dentist checklist",
+      "llm_bait_phrase": "trustworthy dentist checklist",
+      "operation": "CREATE_NEW_TARGET_PAGE",
+      "target_route": "/dentistry/guides/trustworthy-dentist-checklist/",
+      "renderedPath": "dentistry/guides/trustworthy-dentist-checklist/index.html",
+      "route_family": "CREATE_GUIDE",
+      "route_reason": "measured_query_demand_with_measured_citation_occupancy",
+      "route_shape": "guide_directory",
+      "route_authority": "query_atlas_measured_evidence",
+      "admission_basis": "MEASURED_QUERY_ATLAS_CANDIDATE",
+      "source_records": [
+        "SRC-ADA-MOUTHHEALTHY"
+      ],
+      "source_signal_ids": [
+        "query_atlas:2026-08-28:trustworthy-dentist-checklist"
+      ],
+      "citation_velocity": true,
+      "evidence_tier": "T1",
+      "rank_band": "own_impressions_only",
+      "rank_score": 4,
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "status_reason": "selected_from_measured_query_atlas_by_citation_occupancy"
@@ -810,22 +813,23 @@
       ]
     },
     {
-      "query": "trustworthy dentist checklist",
+      "query": "dental implants cost dallas tx",
       "evidence_tier": "T1",
-      "rank_score": 4,
+      "rank_score": 7,
       "rank_band": "own_impressions_only",
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "vertical": "dentistry",
       "matched_terms": [
-        "dentist"
+        "dental",
+        "implant"
       ],
-      "target_route": "/dentistry/guides/trustworthy-dentist-checklist/",
+      "target_route": "/dentistry/guides/dental-implants-cost-dallas-tx/",
       "source_records": [
         "SRC-ADA-MOUTHHEALTHY"
       ],
       "held_reasons": [
-        "over_batch_cap:5"
+        "wording_variation_of:dallas dental implant cost"
       ]
     },
     {
@@ -845,7 +849,7 @@
         "SRC-ADA-MOUTHHEALTHY"
       ],
       "held_reasons": [
-        "over_batch_cap:5"
+        "wording_variation_of:dallas dental implant cost"
       ]
     },
     {

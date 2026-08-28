@@ -140,9 +140,50 @@ for (const q of atlas.queries) {
 // whether a slot can be taken at all; demand only sizes the prize.
 eligible.sort((a, b) => (b.citation_occupancy - a.citation_occupancy) || ((b.rank_score ?? 0) - (a.rank_score ?? 0)));
 
+// "A wording variation is not a distinct page intent" - page_strategy_registry.json.
+// The downstream duplicate gate compares routes and titles, so two orderings of
+// the same words ("dallas dental implant cost" / "dental implants cost dallas tx")
+// slip through it as two pages. Collapse them here, on the content-word set, and
+// keep the higher-ranked one. The loser is held with the query it duplicates
+// named, so the decision is reviewable rather than invisible.
+const STOP = new Set(['a', 'an', 'the', 'of', 'for', 'to', 'in', 'on', 'and', 'or', 'with', 'my', 'is', 'are', 'do', 'does', 'i', 'it', 'near', 'me', 'best', 'vs']);
+const intentKey = (q) => [...new Set(norm(q).split(/[^a-z0-9]+/)
+  .filter(Boolean)
+  .filter((t) => !STOP.has(t))
+  .map((t) => t.replace(/(ies)$/, 'y').replace(/([a-z]{3,})s$/, '$1')))].sort().join(' ');
+
+// Exact content-word equality catches reorderings. It does not catch a variation
+// that adds one throwaway token - "dallas dental implant cost" against "dental
+// implants cost dallas tx" - so overlap is also measured. The threshold is
+// declared in the contract rather than tuned here, and it is deliberately high:
+// "dental implant cost" vs "dental implant cost medicaid" is 0.75 and stays two
+// pages, because a qualifier that changes the answer is a different intent.
+const NEAR_DUPLICATE_JACCARD = Number(rules.near_duplicate_jaccard ?? 0.8);
+const overlap = (a, b) => {
+  const A = new Set(a.split(' ').filter(Boolean));
+  const B = new Set(b.split(' ').filter(Boolean));
+  if (!A.size || !B.size) return 0;
+  let hit = 0;
+  for (const t of A) if (B.has(t)) hit += 1;
+  return hit / (A.size + B.size - hit);
+};
+
+const deduped = [];
+const keptKeys = [];
+for (const e of eligible) {
+  const key = intentKey(e.query);
+  const clash = keptKeys.find((k) => k.key === key || overlap(k.key, key) >= NEAR_DUPLICATE_JACCARD);
+  if (clash) {
+    held.push({ ...e, held_reasons: [`wording_variation_of:${clash.query}`] });
+    continue;
+  }
+  keptKeys.push({ key, query: e.query });
+  deduped.push(e);
+}
+
 const limit = Number(arg('--limit', rules.maximum_candidates_per_run || 5));
-const selected = eligible.slice(0, limit);
-for (const e of eligible.slice(limit)) held.push({ ...e, held_reasons: [`over_batch_cap:${limit}`] });
+const selected = deduped.slice(0, limit);
+for (const e of deduped.slice(limit)) held.push({ ...e, held_reasons: [`over_batch_cap:${limit}`] });
 
 const now = new Date();
 const stamp = process.env.SOURCE_DATE || now.toISOString().slice(0, 10);
@@ -196,6 +237,7 @@ const payload = {
   admission_rules: rules,
   ranked_by: 'measured citation occupancy (unbranded share of answer-engine citation slots), then atlas rank_score within band',
   eligible_count: eligible.length,
+  distinct_intent_count: deduped.length,
   candidate_count: candidates.length,
   held_count: held.length,
   stop_reason: stopReason,
