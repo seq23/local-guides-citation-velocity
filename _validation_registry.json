@@ -737,6 +737,45 @@
       "estimated_runtime_seconds": 5
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "atlas-release-join",
+      "title": "Measured demand to release-queue join",
+      "path": "scripts/validators/validate_atlas_release_join.js",
+      "command": "node scripts/validators/validate_atlas_release_join.js",
+      "risk_prevented": "Prevents winnability from silently reverting to a fabricated constant (weak_incumbent_score used to default to a hardcoded 0.5 on 64 of 68 rows and therefore decided nothing), and prevents a page candidate from being admitted on an unmeasured or untraceable citation-occupancy figure. Also fails a join run that produced no candidates without naming a stop reason, and fails an occupancy signal that records a discarded probe as a measurement.",
+      "requires_files": [
+        "data/authority_scale/query_atlas.json",
+        "data/queries/atlas_release_join_contract.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/atlas-release-join.json"
+      ],
+      "mutates_files": [],
+      "timeout_seconds": 120,
+      "depends_on": [
+        "query-atlas",
+        "atlas-unit-contract"
+      ],
+      "why_existing_checks_do_not_cover": "query-atlas checks that demand evidence exists and atlas-unit-contract checks what unit that demand is in. Neither inspects winnability at all, and nothing validated the release-queue candidate lane, which did not exist until the atlas was joined to publishing.",
+      "estimated_runtime_seconds": 4
+    },
+    {
       "id": "atom-contract",
       "title": "Content atom contract",
       "path": "scripts/validators/validate_atom_contract.js",
@@ -2388,7 +2427,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],

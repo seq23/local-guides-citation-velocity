@@ -194,26 +194,38 @@
         "workflow_dispatch"
       ],
       "manual_ready": true,
-      "mutates_repo": false,
+      "mutates_repo": true,
       "permissions": [
-        "contents: read"
+        "contents: write"
       ],
-      "timeout_minutes": 20,
+      "timeout_minutes": 30,
       "commands": [
-        "node scripts/queries/probe_query_class_occupancy.mjs"
+        "npm ci --ignore-scripts",
+        "node scripts/queries/probe_query_class_occupancy.mjs",
+        "npm run atlas:build",
+        "npm run queries:join-release",
+        "npm run validate"
       ],
       "required_inputs": [],
       "required_secrets": [],
-      "optional_secrets": [],
+      "optional_secrets": [
+        "OPENROUTER_API_KEY"
+      ],
       "consumes": [
-        "data/signals/query_class_probe_panel.json"
+        "data/signals/query_class_probe_panel.json",
+        "data/authority_scale/query_atlas.json (measured T1 head, via --atlas-top)",
+        "OpenRouter web-plugin citation annotations"
       ],
       "produces": [
-        "query class occupancy measurement artifact"
+        "data/signals/query_class_occupancy.json",
+        "data/authority_scale/query_atlas.json",
+        "data/queries/measured_demand_candidates.json"
       ],
       "upstream": [],
-      "downstream": [],
-      "failure_boundary": "Measures only. It has contents: read, commits nothing and publishes nothing; the result leaves as a run artifact. A query whose channel degrades is recorded as discarded rather than as zero occupancy, because a false zero here would read as 'no host holds this query' and is exactly the error this probe exists to avoid."
+      "downstream": [
+        "velocity-content-release.yml"
+      ],
+      "failure_boundary": "Dispatch-only, so it is not a scheduled mutator and does not consume the single scheduled-commit slot; the scheduled path runs the same probe inside query-evidence-refresh.yml. It commits its measurement instead of uploading an artifact, because the previous version left nothing behind for the atlas to read. It measures answer-engine citation slots via the OpenRouter web plugin, not Bing SERP slots: Bing blocks both residential and GitHub Actions egress with a JavaScript shell, which is why the only run of the previous version discarded 16 of 16 probes including both controls and still exited 0. A degraded probe is discarded, never recorded as zero occupancy, and a run that measures nothing or loses its controls exits non-zero."
     },
     {
       "file": "query-evidence-refresh.yml",
@@ -226,34 +238,43 @@
       "manual_ready": true,
       "mutates_repo": true,
       "permissions": [
-        "contents: write"
+        "contents: write",
+        "actions: write"
       ],
       "timeout_minutes": 30,
       "commands": [
         "npm ci --ignore-scripts",
         "python3 scripts/queries/ingest_gsc_evidence.py",
+        "npm run probe:occupancy",
         "npm run atlas:build",
-        "npm run validate"
+        "npm run queries:join-release",
+        "npm run validate",
+        "gh workflow run velocity-content-release.yml --ref main"
       ],
       "required_inputs": [],
       "required_secrets": [],
       "optional_secrets": [
         "GSC_SERVICE_ACCOUNT_JSON",
-        "GSC_SITE_URL"
+        "GSC_SITE_URL",
+        "OPENROUTER_API_KEY"
       ],
       "consumes": [
         "Google Search Console search-analytics query rows for the verified property",
-        "existing evidence_queries.json (merged, never replaced)"
+        "existing evidence_queries.json (merged, never replaced)",
+        "OpenRouter web-plugin citation annotations for the occupancy panel and the measured atlas head"
       ],
       "produces": [
         "data/queries/evidence/evidence_queries.json",
-        "data/authority_scale/query_atlas.json"
+        "data/authority_scale/query_atlas.json",
+        "data/signals/query_class_occupancy.json",
+        "data/queries/measured_demand_candidates.json",
+        "Velocity Content Release run when measured demand produced candidates"
       ],
       "upstream": [],
       "downstream": [
         "velocity-content-release.yml"
       ],
-      "failure_boundary": "Ingests measured Search Console demand, rebuilds the atlas, and commits only if the full validation chain passes in the same run. Named in allowed_scheduled_mutation_workflows. It has no page-admission authority: publishing stays gated by atlas evidence tiers and the release workflow. Missing credentials leave the evidence untouched and exit 0; a credentialed API failure is a hard error."
+      "failure_boundary": "Ingests measured Search Console demand, measures answer-engine citation occupancy, rebuilds the atlas on that measured winnability signal, joins it to the release queue as page candidates, and commits only if the full validation chain passes in the same run. Named in allowed_scheduled_mutation_workflows. It has no page-admission authority: the join proposes candidates and the release law downstream still decides. A push made with GITHUB_TOKEN raises no push event, so when the join produces candidates this workflow dispatches Velocity Content Release explicitly; when it produces none it dispatches nothing and prints the named stop reason. Missing credentials leave the evidence untouched and exit 0; a credentialed API failure is a hard error. A failed occupancy probe leaves the previously committed reading in place - stale, never a false zero."
     },
     {
       "file": "search-intelligence-loop.yml",
@@ -340,6 +361,7 @@
       "lane": "content-release",
       "triggers": [
         "push:agent_run_manifest",
+        "push:measured_demand_candidates",
         "workflow_dispatch"
       ],
       "manual_ready": true,
@@ -360,6 +382,7 @@
         "npm run validate:release",
         "python3 scripts/queries/ingest_gsc_evidence.py",
         "npm run atlas:build",
+        "npm run queries:join-release",
         "gh workflow run validate-repo.yml --ref main"
       ],
       "required_inputs": [],
@@ -371,7 +394,8 @@
       "consumes": [
         "Twin Agent ready manifests",
         "traffic-qualified preview proof",
-        "staged Velocity source"
+        "staged Velocity source",
+        "data/queries/measured_demand_candidates.json (measured query demand ranked by citation occupancy)"
       ],
       "produces": [
         "absorbed agent run commit",
@@ -382,7 +406,9 @@
         "Validate Repo run on the pushed main HEAD"
       ],
       "upstream": [
-        "validate-repo.yml"
+        "validate-repo.yml",
+        "query-evidence-refresh.yml",
+        "query-class-occupancy-probe.yml"
       ],
       "downstream": [
         "validate-repo.yml",

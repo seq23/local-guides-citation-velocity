@@ -14,7 +14,20 @@ const write = (p,v) => { const out=path.join(ROOT,p); fs.mkdirSync(path.dirname(
 const slugify = (s) => String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90);
 const verticalMap = {pi:'personal_injury',personal_injury:'personal_injury',dentistry:'dentistry',trt:'trt',neuro:'neuro',uscis:'uscis-medical','uscis-medical':'uscis-medical'};
 const targets = {personal_injury:'https://theaccidentguides.com/request-assistance/',dentistry:'https://dentistryguides.com/request-assistance/',trt:'https://hormonesivhair.com/request-assistance/',neuro:'https://neuroevalguides.com/request-assistance/','uscis-medical':'https://uscisexam.com/request-assistance/'};
-const sourceDefaults = {personal_injury:['SRC-CONGRESS-STATE-LEGISLATURES','SRC-CORNELL-SOL'],dentistry:['SRC-ADA-MOUTHHEALTHY'],trt:['SRC-FDA-TESTOSTERONE'],neuro:['SRC-NIMH-ADHD'],'uscis-medical':['SRC-USCIS-I693']};
+// Single authority for the per-vertical source records. The atlas -> release
+// join needs the same mapping to emit candidates that pass validate_evidence_registry,
+// and two hand-kept copies of the same table drift. The file is the copy; this
+// falls back to the previous inline table only if the file is unreadable, so a
+// missing file can never silently strip a page's source records.
+const sourceDefaults = (() => {
+  const inline = {personal_injury:['SRC-CONGRESS-STATE-LEGISLATURES','SRC-CORNELL-SOL'],dentistry:['SRC-ADA-MOUTHHEALTHY'],trt:['SRC-FDA-TESTOSTERONE'],neuro:['SRC-NIMH-ADHD'],'uscis-medical':['SRC-USCIS-I693']};
+  try {
+    const declared = read('data/queries/atlas_release_join_contract.json').vertical_source_records || {};
+    const merged = {...inline};
+    for (const [k, v] of Object.entries(declared)) if (Array.isArray(v)) merged[k] = v;
+    return merged;
+  } catch { return inline; }
+})();
 const sourceRegistry = (()=>{ try { return new Map((read('data/evidence/source_registry.json').sources||[]).map((row)=>[row.source_id,row])); } catch { return new Map(); } })();
 function projectedWords(page, sections){ return String([page.title,page.description,page.bodyHtml,page.dated_primary_fact,...(sections||[]).flatMap((sec)=>[sec.q,sec.a,...(sec.checklist||[]),...(sec.red_flags||[])])].join(' ')).trim().split(/\s+/).filter(Boolean).length; }
 const releaseQueue = read('data/release/page_release_queue.json');

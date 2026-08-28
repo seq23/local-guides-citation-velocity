@@ -8,7 +8,20 @@ const read = (rel, fallback) => { try { return JSON.parse(fs.readFileSync(path.j
 const write = (rel, value) => { const abs=path.join(ROOT,rel); fs.mkdirSync(path.dirname(abs),{recursive:true}); fs.writeFileSync(abs,JSON.stringify(value,null,2)+'\n'); };
 const norm = (s) => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
 const strategy = read('data/strategy/page_strategy_registry.json', {});
-const intake = read('data/community/approval_queue.json', []);
+const approvals = read('data/community/approval_queue.json', []);
+// Second intake lane: measured query demand.
+//
+// Until now every record here carried source="twin_agent_artifact", so the only
+// way a page could be proposed was a human pushing an agent-run manifest - five
+// runs and eight pages since June - while the measured query atlas sat unread.
+// Candidates from scripts/queries/join_atlas_to_release_queue.mjs enter through
+// this same function and face every gate below unchanged. The join proposes; the
+// release law still decides.
+const measured = read('data/queries/measured_demand_candidates.json', {candidates: []});
+const intake = [
+  ...(Array.isArray(approvals) ? approvals : []),
+  ...(Array.isArray(measured.candidates) ? measured.candidates : []),
+];
 const admission = read('data/content/page_admission_registry.json', {pages:[]});
 const live = read('content/_live/pages.json', {pages:[]});
 const admittedRoutes = new Set((admission.pages||[]).map((p)=>p.path));

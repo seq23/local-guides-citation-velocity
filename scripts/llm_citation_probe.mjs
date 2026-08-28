@@ -8,10 +8,14 @@
  * observed whether these pages are cited. Every statement about AEO progress up
  * to now has been inference from proxies.
  *
- * Gemini's free tier answers with Google Search grounding, and the response
- * carries the sources it actually grounded on. That is a citation observation:
- * the query, the engine, the domains it cited, and whether any of them are ours.
- * It costs nothing.
+ * Grounded runs go through OpenRouter's web plugin, and the response carries the
+ * url_citation annotations the answer was actually built from. That is a citation
+ * observation: the query, the engine, the domains it cited, and whether any of
+ * them are ours.
+ *
+ * Gemini grounding is NOT usable here and is not selected automatically. Plain
+ * generateContent returns 200; the same call with tools:[{google_search:{}}]
+ * returns 429 RESOURCE_EXHAUSTED on this project across every model tried.
  *
  * What this does not claim: one engine is not all engines, grounding metadata is
  * not identical to what a user sees in an AI Overview, and absence on a given
@@ -103,13 +107,26 @@ if (!queries.length) { console.error('citation probe: no queries found'); proces
 // live search, which is the stronger measurement when its quota allows.
 const orKey = process.env.OPENROUTER_API_KEY || '';
 const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || '';
-// Pick the provider that can actually do the job asked for. Gemini grounds via
-// Google Search; OpenRouter grounds via the ":online" suffix, which returns the
-// pages the answer was built from as url_citation annotations. Preferring a
-// provider we have no key for is how grounded mode silently skipped every run.
+// Grounded mode is PINNED to OpenRouter. It is not a preference.
+//
+// Gemini grounded search is hard-blocked on this project. A plain
+// generateContent call returns 200, but the same call carrying
+// tools:[{google_search:{}}] returns 429 RESOURCE_EXHAUSTED - reproduced across
+// three models, persistently, not a transient quota blip. The previous routing
+// preferred Gemini whenever GEMINI_API_KEY happened to be present, so setting
+// that key would have turned every grounded run into a wall of provider errors
+// and, with the old summary arithmetic below, a recorded 0% citation rate. A
+// false zero here is worse than no measurement: it reads as "no answer engine
+// cites us" when in fact nothing was asked.
+//
+// --provider is still honoured so the block can be re-tested by hand, but
+// nothing picks Gemini for grounded work on its own.
 const PROVIDER = arg('--provider', GROUNDED
-  ? (key ? 'gemini' : (orKey ? 'openrouter' : 'gemini'))
+  ? 'openrouter'
   : (orKey ? 'openrouter' : 'gemini'));
+if (GROUNDED && PROVIDER === 'gemini') {
+  console.error('citation probe: grounded mode was pointed at gemini explicitly. Google Search grounding returns 429 RESOURCE_EXHAUSTED on this project; expect provider errors, not citations.');
+}
 // Three small models rather than one, because a single model's idiosyncrasies
 // are not a measurement.
 //
@@ -136,11 +153,17 @@ async function withTimeout(fn) {
   finally { clearTimeout(t); }
 }
 
-// ":online" runs the model against live web results. The pages it actually used
-// come back as url_citation annotations, which is the retrieval observation the
-// knowledge-mode call cannot produce - that one only shows whether the model
+// The web plugin runs the model against live web results. The pages it actually
+// used come back as url_citation annotations, which is the retrieval observation
+// the knowledge-mode call cannot produce - that one only shows whether the model
 // memorised us during training, which is not a citation.
-const onlineModel = (model) => (model.endsWith(':online') ? model : `${model}:online`);
+//
+// Declared as an explicit plugin rather than the ":online" model suffix. The two
+// are the same feature, but the plugin form takes max_results, and the number of
+// slots read has to be a stated constant for occupancy shares to mean anything:
+// "2 of our pages out of an unknown number of citations" is not a share.
+const WEB_PLUGIN_MAX_RESULTS = Number(process.env.PROBE_WEB_MAX_RESULTS || 10);
+const WEB_PLUGIN = [{ id: 'web', max_results: WEB_PLUGIN_MAX_RESULTS }];
 
 function openRouterCitations(data) {
   const message = data?.choices?.[0]?.message || {};
@@ -153,13 +176,13 @@ function openRouterCitations(data) {
 }
 
 async function askOpenRouter(query, model, grounded = false) {
-  const requestModel = grounded ? onlineModel(model) : model;
   const res = await withTimeout((signal) => fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     signal,
     headers: { 'content-type': 'application/json', authorization: `Bearer ${orKey}` },
     body: JSON.stringify({
-      model: requestModel, temperature: 0, max_tokens: 400,
+      model, temperature: 0, max_tokens: 400,
+      ...(grounded ? { plugins: WEB_PLUGIN } : {}),
       messages: [{ role: 'user', content: query }],
     }),
   }));
@@ -186,7 +209,12 @@ const observations = [];
 // - and the thing being measured is which pages the retrieval layer returns,
 // which does not vary much by model. One model keeps a portfolio-wide run in
 // cents. Override with OPENROUTER_GROUNDED_MODELS.
-const GROUNDED_MODELS = (process.env.OPENROUTER_GROUNDED_MODELS || OR_MODELS[0] || 'mistralai/mistral-nemo')
+//
+// openai/gpt-4o-mini is the default because it is the model this call shape was
+// actually verified against end to end: it returned ten url_citation annotations
+// carrying real URLs. Cheaper models answer, but the citation annotations are the
+// thing being measured, and a model that answers without them measures nothing.
+const GROUNDED_MODELS = (process.env.OPENROUTER_GROUNDED_MODELS || 'openai/gpt-4o-mini')
   .split(',').map((m) => m.trim()).filter(Boolean);
 const engines = PROVIDER === 'openrouter' ? (GROUNDED ? GROUNDED_MODELS : OR_MODELS) : [model];
 for (const q of queries) {
@@ -209,6 +237,7 @@ for (const q of queries) {
   observations.push({
     query: q, engine: `${PROVIDER}:${engineModel}`, mode: MODE, observed_at: now,
     status: 'observed',
+    slots_read: domains.length,
     cited_domains: domains,
     cited_ours: ours,
     self_cited: GROUNDED ? ours.length > 0 : named.length > 0,
@@ -228,15 +257,38 @@ prior.runs.push({ run_at: now, provider: PROVIDER, engines, mode: MODE, queries:
 
 const cited = observations.filter((o) => o.self_cited).length;
 const errored = observations.filter((o) => o.status === 'provider_error').length;
+// A rate is only a rate over the observations the provider actually answered.
+//
+// The old denominator was every observation attempted, so a run in which the
+// provider errored on all 25 queries divided 0 by 25 and recorded 0% - a number
+// that reads as "no answer engine cites us" when nothing was ever asked. That is
+// the false-zero failure mode this repo keeps having to undo. The rate is now
+// computed over answered observations only and is null when there are none, and
+// the run carries an explicit measurement_status so a consumer cannot mistake an
+// unanswered run for a measured absence.
+const answered = observations.filter((o) => o.status === 'observed').length;
+const measurementStatus = answered > 0
+  ? 'MEASURED'
+  : (observations.length ? 'NOT_MEASURED_PROVIDER_ERROR' : 'NOT_MEASURED_NO_QUERIES');
 prior.latest_summary = {
   run_at: now, provider: PROVIDER, engines, mode: MODE,
-  queries: queries.length, observations: observations.length, self_cited: cited, errored,
+  queries: queries.length, observations: observations.length,
+  answered, self_cited: cited, errored,
+  measurement_status: measurementStatus,
   _mode_note: GROUNDED
     ? 'grounded: counted when the answer was built from one of our pages'
     : 'knowledge: counted when the model named us unprompted, with no retrieval. Weaker than a citation and must not be reported as one.',
-  self_cited_rate_pct: observations.length ? Number(((100 * cited) / observations.length).toFixed(1)) : 0,
+  _rate_denominator: 'answered observations only; a provider error is not a measured absence of citations',
+  self_cited_rate_pct: answered ? Number(((100 * cited) / answered).toFixed(1)) : null,
 };
 
 fs.mkdirSync(path.join(ROOT, path.dirname(OUT)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, OUT), JSON.stringify(prior, null, 2) + '\n');
-console.log(`citation probe [${PROVIDER}/${MODE}]: ${cited}/${observations.length} observations named one of our domains (${prior.latest_summary.self_cited_rate_pct}%); ${errored} provider error(s). Recorded in ${OUT}`);
+const rate = prior.latest_summary.self_cited_rate_pct;
+console.log(`citation probe [${PROVIDER}/${MODE}]: ${measurementStatus}; ${cited}/${answered} answered observations named one of our domains (${rate === null ? 'no rate - nothing was answered' : `${rate}%`}); ${errored} provider error(s). Recorded in ${OUT}`);
+// Rule: a probe that measured nothing must say so loudly rather than leaving a
+// zero behind. It still records the error state above before exiting.
+if (measurementStatus !== 'MEASURED') {
+  console.error(`citation probe: ${measurementStatus} - ${errored} provider error(s) across ${observations.length} attempt(s). No citation rate was recorded.`);
+  process.exit(1);
+}

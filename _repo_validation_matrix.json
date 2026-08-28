@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "c187738b0de200e325f709cc96797ba99ef14a755e787ee79b2e8619a49e12f8",
+  "registry_sha256": "74d48926eef0fd2c68113efccf0c9f5bd1279f55690fe0031a8a939f52129458",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 138,
-    "active": 111,
+    "total": 139,
+    "active": 112,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 109,
+    "hard_fail": 110,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -71,6 +71,7 @@
       "validator_ids": [
         "archive-schema",
         "atlas-unit-contract",
+        "atlas-release-join",
         "authority-contracts",
         "browser-contract",
         "canonical-domains",
@@ -127,6 +128,7 @@
         "portfolio-kpi-truth",
         "query-atlas",
         "atlas-unit-contract",
+        "atlas-release-join",
         "route-topic-quality",
         "strategy-gate",
         "local-guides-tree-hygiene",
@@ -191,6 +193,7 @@
         "agent-run-artifact-intake",
         "archive-schema",
         "atlas-unit-contract",
+        "atlas-release-join",
         "atom-contract",
         "authority-contracts",
         "backlink-search-contract",
@@ -309,6 +312,7 @@
         "citation-yield-feedback",
         "query-atlas",
         "atlas-unit-contract",
+        "atlas-release-join",
         "rich-new-page-contract",
         "route-topic-quality",
         "seo-execution-contract",
@@ -420,6 +424,7 @@
         "agent-run-artifact-intake",
         "archive-schema",
         "atlas-unit-contract",
+        "atlas-release-join",
         "atom-contract",
         "authority-contracts",
         "backlink-search-contract",
@@ -537,6 +542,7 @@
         "citation-yield-feedback",
         "query-atlas",
         "atlas-unit-contract",
+        "atlas-release-join",
         "rich-new-page-contract",
         "route-topic-quality",
         "seo-execution-contract",
@@ -680,6 +686,7 @@
         "agent-run-artifact-intake",
         "archive-schema",
         "atlas-unit-contract",
+        "atlas-release-join",
         "atom-contract",
         "authority-contracts",
         "backlink-search-contract",
@@ -795,6 +802,7 @@
         "citation-yield-feedback",
         "query-atlas",
         "atlas-unit-contract",
+        "atlas-release-join",
         "rich-new-page-contract",
         "route-topic-quality",
         "seo-execution-contract",
@@ -903,6 +911,7 @@
         "answer-blocks",
         "archive-schema",
         "atlas-unit-contract",
+        "atlas-release-join",
         "atom-contract",
         "authority-contracts",
         "backlink-search-contract",
@@ -1027,6 +1036,7 @@
         "citation-yield-feedback",
         "query-atlas",
         "atlas-unit-contract",
+        "atlas-release-join",
         "rich-new-page-contract",
         "route-topic-quality",
         "seo-execution-contract",
@@ -1375,6 +1385,7 @@
         "agent-artifact-priority",
         "agent-improvement-capability",
         "atlas-unit-contract",
+        "atlas-release-join",
         "content-pattern-contract",
         "content-safety",
         "dynamic-page-contract-cross-vertical",
@@ -1411,6 +1422,7 @@
         "portfolio-kpi-truth",
         "query-atlas",
         "atlas-unit-contract",
+        "atlas-release-join",
         "rich-new-page-contract",
         "seo-execution-contract",
         "validator-authority-contract",
@@ -1517,6 +1529,7 @@
         "agent-improvement-capability",
         "agent-run-artifact-intake",
         "atlas-unit-contract",
+        "atlas-release-join",
         "browserless-mock-backup",
         "citation-yield-feedback",
         "content-safety",
@@ -1567,6 +1580,7 @@
         "citation-yield-feedback",
         "query-atlas",
         "atlas-unit-contract",
+        "atlas-release-join",
         "rich-new-page-contract",
         "seo-execution-contract",
         "signal-normalization",
@@ -1731,6 +1745,14 @@
     {
       "from": "query-atlas",
       "to": "atlas-unit-contract"
+    },
+    {
+      "from": "query-atlas",
+      "to": "atlas-release-join"
+    },
+    {
+      "from": "atlas-unit-contract",
+      "to": "atlas-release-join"
     },
     {
       "from": "controlled-release-readiness",
@@ -2407,6 +2429,46 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "atlas-release-join",
+        "title": "Measured demand to release-queue join",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_atlas_release_join.js",
+        "command": "node scripts/validators/validate_atlas_release_join.js",
+        "depends_on": [
+          "query-atlas",
+          "atlas-unit-contract"
+        ],
+        "requires_files": [
+          "data/authority_scale/query_atlas.json",
+          "data/queries/atlas_release_join_contract.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/atlas-release-join.json"
+        ],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents winnability from silently reverting to a fabricated constant (weak_incumbent_score used to default to a hardcoded 0.5 on 64 of 68 rows and therefore decided nothing), and prevents a page candidate from being admitted on an unmeasured or untraceable citation-occupancy figure. Also fails a join run that produced no candidates without naming a stop reason, and fails an occupancy signal that records a discarded probe as a measurement.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -7347,6 +7409,46 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "atlas-release-join",
+        "title": "Measured demand to release-queue join",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_atlas_release_join.js",
+        "command": "node scripts/validators/validate_atlas_release_join.js",
+        "depends_on": [
+          "query-atlas",
+          "atlas-unit-contract"
+        ],
+        "requires_files": [
+          "data/authority_scale/query_atlas.json",
+          "data/queries/atlas_release_join_contract.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/atlas-release-join.json"
+        ],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents winnability from silently reverting to a fabricated constant (weak_incumbent_score used to default to a hardcoded 0.5 on 64 of 68 rows and therefore decided nothing), and prevents a page candidate from being admitted on an unmeasured or untraceable citation-occupancy figure. Also fails a join run that produced no candidates without naming a stop reason, and fails an occupancy signal that records a discarded probe as a measurement.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
