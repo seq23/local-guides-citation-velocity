@@ -326,7 +326,9 @@
         "velocity-validated-{commit_sha}",
         "validation diagnostics"
       ],
-      "upstream": [],
+      "upstream": [
+        "velocity-content-release.yml"
+      ],
       "downstream": [
         "deploy-distribution.yml"
       ],
@@ -343,7 +345,8 @@
       "manual_ready": true,
       "mutates_repo": true,
       "permissions": [
-        "contents: write"
+        "contents: write",
+        "actions: write"
       ],
       "timeout_minutes": 120,
       "commands": [
@@ -356,7 +359,8 @@
         "npm run build",
         "npm run validate:release",
         "python3 scripts/queries/ingest_gsc_evidence.py",
-        "npm run atlas:build"
+        "npm run atlas:build",
+        "gh workflow run validate-repo.yml --ref main"
       ],
       "required_inputs": [],
       "required_secrets": [],
@@ -374,15 +378,17 @@
         "validated Velocity release commit",
         "release diagnostics",
         "data/queries/evidence/evidence_queries.json",
-        "data/authority_scale/query_atlas.json"
+        "data/authority_scale/query_atlas.json",
+        "Validate Repo run on the pushed main HEAD"
       ],
       "upstream": [
         "validate-repo.yml"
       ],
       "downstream": [
+        "validate-repo.yml",
         "deploy-distribution.yml"
       ],
-      "failure_boundary": "Absorption pushes on its own commit once the release gate passes on the normalized artifacts alone, so a content-release failure cannot un-absorb a landed agent run. The content release then pushes only after Safe Harbor/transactional release finalization, deterministic rebuild, release validation, exact-agent validation, and citation-fix validation pass."
+      "failure_boundary": "Absorption pushes on its own commit once the release gate passes on the normalized artifacts alone, so a content-release failure cannot un-absorb a landed agent run. The content release then pushes only after Safe Harbor/transactional release finalization, deterministic rebuild, release validation, exact-agent validation, and citation-fix validation pass. A push made with GITHUB_TOKEN raises no push event, so after any commit this workflow lands it dispatches Validate Repo on main: the absorption and release commits are validated by the same unmodified guards that govern them, and a repair that did not hold shows up red instead of leaving main pinned to a stale result."
     },
     {
       "file": "velocity-full-rebuild.yml",
