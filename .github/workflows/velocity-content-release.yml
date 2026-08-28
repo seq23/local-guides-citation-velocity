@@ -15,6 +15,11 @@ on:
 
 permissions:
   contents: write
+  # Needed only to hand main back to Validate Repo after this workflow pushes.
+  # A push made with GITHUB_TOKEN raises no push event, so the commits this
+  # workflow lands can never re-run the validator that governs them; an explicit
+  # workflow_dispatch is the one documented exception to that rule.
+  actions: write
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
@@ -172,6 +177,26 @@ jobs:
             sleep $((attempt * 15))
           done
           exit 1
+      - name: Re-validate main after this workflow pushes
+        # The daily agent run lands on main as raw artifacts plus a manifest already
+        # marked READY_FOR_ABSORPTION. The normalized artifact that satisfies
+        # agent-artifact-continuity is written here, minutes later, on the absorption
+        # commit. Validate Repo runs on the raw commit and correctly reports the
+        # violation - but the absorption commit is pushed with GITHUB_TOKEN, which by
+        # design raises no push event, so no Validate Repo run ever observes the
+        # repaired state. main was therefore left showing a red guard that its own
+        # HEAD already satisfies, every single day, and the registry's declared
+        # velocity-content-release -> deploy-distribution edge had nothing carrying it.
+        #
+        # workflow_dispatch and repository_dispatch are the two events GITHUB_TOKEN is
+        # still allowed to raise, so dispatching Validate Repo on main is the link that
+        # lets the repair reach the guard. It re-runs the same unmodified validators
+        # against the pushed HEAD: if absorption did not actually fix the state, this
+        # run goes red on the same validator and nothing is hidden.
+        if: ${{ always() && (steps.absorption.outputs.changed == 'true' || steps.candidate.outputs.changed == 'true') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run validate-repo.yml --ref main
       - name: Upload release diagnostics
         if: always()
         uses: actions/upload-artifact@v7
