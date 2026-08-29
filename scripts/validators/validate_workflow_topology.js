@@ -16,7 +16,19 @@ for (const w of inventory.workflows || []) {
   if (!allowed.has(w.repo_lane)) errors.push(`unmapped lane:${w.path}:${w.repo_lane}`);
   laneCounts[w.repo_lane] = (laneCounts[w.repo_lane] || 0) + 1;
 }
-for (const lane of ['validate','content-release','signal-intelligence','deploy','postdeploy-audit','full-rebuild']) if (!laneCounts[lane]) errors.push(`missing canonical lane:${lane}`);
+for (const lane of ['validate','content-release','signal-intelligence','deploy','full-rebuild']) if (!laneCounts[lane]) errors.push(`missing canonical lane:${lane}`);
+// Retired lanes: assert absence, not presence. `postdeploy-audit` was removed
+// 2026-08-29 by owner decision; the click-audit runner survives as the local
+// browser proof (release:prepush:local), only the deployed lane is gone. Each
+// entry must stay absent from the live topology AND stay recorded as retired,
+// so the retirement cannot be silently undone in either direction.
+const retiredPaths = new Set((inventory.retired_or_replaced_workflows || []).filter((r) => r.action === 'DELETE').map((r) => r.path));
+for (const [lane, workflowPath] of [['postdeploy-audit', '.github/workflows/postdeploy-public-audit.yml']]) {
+  if (laneCounts[lane]) errors.push(`retired lane still present:${lane}`);
+  if (allowed.has(lane)) errors.push(`retired lane still listed as canonical:${lane}`);
+  if (!retiredPaths.has(workflowPath)) errors.push(`retired lane not recorded as DELETE in inventory:${workflowPath}`);
+  if (exists(workflowPath)) errors.push(`retired workflow file still on disk:${workflowPath}`);
+}
 for (const w of inventory.workflows || []) {
   if (w.path.includes('_')) errors.push(`workflow filename not canonical hyphenated:${w.path}`);
   if (w.path.endsWith('release_batch.yml')) errors.push('release_batch.yml should be retired/merged');
