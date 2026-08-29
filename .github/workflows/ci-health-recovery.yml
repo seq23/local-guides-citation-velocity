@@ -29,7 +29,13 @@ jobs:
       - name: Record exact-SHA CI health and open/close governed alert
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion || 'success' }}
+          # Defaulting this to 'success' meant a manual dispatch - which observes
+          # no Validate Repo run at all - recorded RECOVERED and PATCHed the open
+          # "[Automation Health] Validate Repo CI RED" issue to closed, with
+          # "Recovered on exact SHA " and an empty SHA. Nothing had been
+          # validated. A dispatch is now 'unknown', and the script refuses to
+          # close an alert on anything but an observed workflow_run success.
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion || 'unknown' }}
           WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url || format('{0}/{1}/actions', github.server_url, github.repository) }}
         run: node scripts/search_intelligence/ci_health_alert.js

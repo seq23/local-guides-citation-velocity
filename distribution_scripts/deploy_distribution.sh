@@ -116,6 +116,11 @@ statuses = [priority.get('status'), batch.get('status')]
 if any(s in {'failed','missing'} for s in statuses): status = 'partial'
 elif any(s == 'dry-run' for s in statuses): status = 'dry-run'
 else: status = 'success'
+coverage_path = pathlib.Path(pathlib.Path('.build/indexnow-batch-coverage.json'))
+if not coverage_path.exists():
+    alt = pathlib.Path('dist/indexnow-batch-coverage.json')
+    coverage_path = alt if alt.exists() else coverage_path
+coverage = json.loads(coverage_path.read_text()) if coverage_path.exists() else {}
 report = {
   "repo": "local-guides-citation-velocity",
   "submittedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -123,11 +128,25 @@ report = {
   "endpoint": priority.get('endpoint') or batch.get('endpoint') or 'https://api.indexnow.org/indexnow',
   "priorityCount": priority.get('totalUrlCount', 0),
   "batchCount": batch.get('totalUrlCount', 0),
+  # A count of what was submitted must never be published without the count of
+  # what was not. This lane reported "count=100 status=200" and stopped there,
+  # which read as "the site was submitted" when it was 100 URLs out of 2151.
+  "urlPoolTotal": coverage.get('url_pool_total'),
+  "deferredCount": coverage.get('deferred_urls'),
+  "rotatingSlotsPerDeploy": coverage.get('rotating_slots_per_deploy'),
+  "daysToFullCoverage": coverage.get('days_to_full_coverage'),
   "priority": priority,
   "batch": batch,
 }
 pathlib.Path('reports/indexnow-submit-report.json').write_text(json.dumps(report, indent=2)+"\n")
 print('Wrote aggregate IndexNow report: reports/indexnow-submit-report.json')
+if coverage:
+    print(f"IndexNow coverage: {coverage.get('batch_urls')} of {coverage.get('url_pool_total')} URLs submitted this deploy; "
+          f"{coverage.get('deferred_urls')} DEFERRED to a later deploy. "
+          f"{coverage.get('rotating_slots_per_deploy')} rotating slot(s) close the "
+          f"{coverage.get('overflow_pool')}-URL overflow pool every {coverage.get('days_to_full_coverage')} day(s).")
+else:
+    print('IndexNow coverage: NOT MEASURED - .build/indexnow-batch-coverage.json is absent, so how much of the site this deploy submitted is unknown.')
 PY
 
 if [[ -n "$GSC_CREDS" && -n "$GSC_SITE_URL" && -f "$GSC_CREDS" ]]; then

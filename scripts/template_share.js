@@ -76,20 +76,64 @@ const shares = docs.map(d => {
 const median = shares[Math.floor(shares.length / 2)].share;
 const over = shares.filter(s => s.share > CEILING).length;
 
+/**
+ * The census.
+ *
+ * `pages_over_ceiling` used to be `over` - a count that can never exceed the
+ * 140-page sample - published in the JSON right next to `pages_total`, the
+ * whole population. The console line was honest ("X of N sampled pages"); the
+ * JSON field was not, and the JSON is what gets read later. Lowering the
+ * ceiling until the condition bites showed the gap: the sampled field reported
+ * 75 over where the population had 1,254. At the shipped ceiling of 0.40 both
+ * are 0 today, so nothing was being misstated live - the defect fires the
+ * moment the metric degrades, which is exactly when someone reads it.
+ *
+ * The scaffolding vocabulary still comes from the sample (that is what makes
+ * the measure stable run to run), but every page is then scored against it, so
+ * the population figure is measured rather than extrapolated. It costs a few
+ * seconds on ~2,400 pages.
+ */
+let censusMeasured = 0;
+let censusOver = 0;
+const censusShares = [];
+for (const f of files) {
+  const w = words(f);
+  if (w.length < 60) continue;
+  const set = new Set();
+  for (let i = 0; i + 7 <= w.length; i++) set.add(w.slice(i, i + 7).join(' '));
+  if (!set.size) continue;
+  let hit = 0;
+  for (const s of set) if (boiler.has(s)) hit++;
+  const share = hit / set.size;
+  censusMeasured += 1;
+  censusShares.push(share);
+  if (share > CEILING) censusOver += 1;
+}
+censusShares.sort((a, b) => a - b);
+const censusMedian = censusShares.length ? censusShares[Math.floor(censusShares.length / 2)] : null;
+
 fs.mkdirSync(path.join(ROOT, path.dirname(EVIDENCE)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, EVIDENCE), `${JSON.stringify({
   measured_at: new Date().toISOString().slice(0, 10),
   pages_total: files.length, sampled: docs.length,
-  median_template_share: Number(median.toFixed(4)),
   ceiling: CEILING,
-  pages_over_ceiling: over,
+  // Sample-scoped figures, named as such. A sample count must never sit beside
+  // pages_total under a population name.
+  sampled_median_template_share: Number(median.toFixed(4)),
+  sampled_pages_over_ceiling: over,
+  // Population figures, measured over every page with enough text to score.
+  pages_measured_census: censusMeasured,
+  pages_over_ceiling_census: censusOver,
+  median_template_share_census: censusMedian === null ? null : Number(censusMedian.toFixed(4)),
+  scaffolding_vocabulary_basis: 'shingles appearing on >=60% of the deterministic sample; every page scored against it',
   worst: shares.slice(-5).reverse().map(s => ({ file: s.file, share: Number(s.share.toFixed(3)) })),
 }, null, 2)}\n`);
 
 const pct = (x) => `${(x * 100).toFixed(1)}%`;
-console.log(`TEMPLATE SHARE: ${files.length} pages; sampled ${docs.length}; median ${pct(median)}; ceiling ${pct(CEILING)}`);
-if (median > CEILING) {
-  console.log(`  WARN  template_share_over_ceiling: ${over} of ${docs.length} sampled pages are more than ${pct(CEILING)} scaffolding.`);
+console.log(`TEMPLATE SHARE: ${files.length} pages; sampled ${docs.length}; sampled median ${pct(median)}; census median ${censusMedian === null ? 'n/a' : pct(censusMedian)}; ceiling ${pct(CEILING)}`);
+console.log(`  CENSUS ${censusOver} of ${censusMeasured} measured pages are over the ceiling (population, not sample).`);
+if (censusMedian !== null && censusMedian > CEILING) {
+  console.log(`  WARN  template_share_over_ceiling: ${censusOver} of ${censusMeasured} pages are more than ${pct(CEILING)} scaffolding.`);
   console.log('        These pages are long enough to look substantial and similar enough to read as');
   console.log('        near-duplicates. The remedy is editorial: carry more per-page substance, or emit');
   console.log('        fewer fixed paragraphs. Reported rather than blocking - a build cannot make that call.');

@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "incident": "2026-08-29 rendered-but-unadmitted route gap",
+  "baseline_date": "2026-08-29",
+  "what_happened": "A walk of the rendered tree found 198 pages (197 under the five verticals, 1 under /insights/) written to disk as indexable HTML by the same release run that wrote the sitemaps, and named by no sitemap shard. scripts/build_site.js filters the rendered set through isPubliclyAdmitted() before building allUrls, but renders every route unconditionally, so admission gates advertising and not rendering. 183 of the 198 turned out to be already named stops - retired routes carrying an ACTIVE_301 in _redirects with authority data/release/route_retirements.json - which the reproduction did not look at. The remaining 15 listed below are genuinely undispositioned: nobody has decided whether to admit them or stop rendering them.",
+  "declared_count": 15,
+  "by_vertical": {
+    "dentistry": 3,
+    "insights": 1,
+    "neuro": 1,
+    "personal-injury": 5,
+    "uscis-medical": 5
+  },
+  "by_section": {
+    "guides": 5,
+    "(top-level)": 1,
+    "community-questions": 6,
+    "document-checklist": 1,
+    "i-693-requirements": 1,
+    "vaccination-requirements": 1
+  },
+  "reason_codes": {
+    "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION": "The build renders this route to disk as an indexable page, but data/content/page_admission_registry.json has never admitted it, so no sitemap, feed or llms export names it, and nothing else withholds it. It is live, crawlable and unsubmitted. Declared here so the backlog is counted and visible rather than silent. Resolve by admitting the route, by retiring it (a 301 in _redirects recorded in data/release/route_retirements.json), or by giving the page a noindex - then delete the entry from this file."
+  },
+  "computed_rules": [
+    {
+      "id": "REDIRECT_SOURCE_301",
+      "basis": "_redirects",
+      "covers_at_baseline": 183,
+      "note": "A route that _redirects 301s away is deliberately not submitted. Computed live from _redirects by scripts/validators/validate_rendered_route_admission_parity.js so it cannot go stale, and therefore not enumerated route by route here. Authority for the retirements: data/release/route_retirements.json."
+    },
+    {
+      "id": "NOINDEX",
+      "basis": "page HTML",
+      "note": "A page carrying a noindex robots directive has withheld itself in the artifact a crawler reads. Computed live."
+    },
+    {
+      "id": "ERROR_PAGE",
+      "basis": "/404",
+      "note": "The error page is never submitted to a sitemap."
+    }
+  ],
+  "routes": [
+    {
+      "route": "/dentistry/guides/comparing-dental-treatments/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/dentistry/guides/dallas-dental-implant-cost/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/dentistry/guides/local-dentistry-guide/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/insights/neuro-068-adult-specialist-anxiety-vs-adhd-eval-near-me",
+      "vertical": "insights",
+      "section": "(top-level)",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/neuro/guides/neuropsychological-evaluation-chicago-il/",
+      "vertical": "neuro",
+      "section": "guides",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/personal-injury/community-questions/can-i-sue-for-pain-and-suffering-after-a-car-accident-gemini-1-5-flash/",
+      "vertical": "personal-injury",
+      "section": "community-questions",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/personal-injury/community-questions/can-i-switch-personal-injury-lawyers-if-i-m-unhappy-with-mine-openai-gpt-4o/",
+      "vertical": "personal-injury",
+      "section": "community-questions",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/personal-injury/community-questions/do-i-have-to-talk-to-the-insurance-company-first-after-an-accident-openai-gpt-4o/",
+      "vertical": "personal-injury",
+      "section": "community-questions",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/personal-injury/community-questions/do-i-need-a-lawyer-after-a-drink-and-drive-accident-openai-gpt-4o/",
+      "vertical": "personal-injury",
+      "section": "community-questions",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/personal-injury/community-questions/how-is-fault-determined-in-a-personal-injury-case-openai-gpt-4o/",
+      "vertical": "personal-injury",
+      "section": "community-questions",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/uscis-medical/community-questions/list-of-items-to-bring-to-uscis-medical-exam-appointment-perplexity/",
+      "vertical": "uscis-medical",
+      "section": "community-questions",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/uscis-medical/document-checklist/",
+      "vertical": "uscis-medical",
+      "section": "document-checklist",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/uscis-medical/guides/what-are-the-requirements-for-the-i-693-medical-exam-perplexity/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/uscis-medical/i-693-requirements/",
+      "vertical": "uscis-medical",
+      "section": "i-693-requirements",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    },
+    {
+      "route": "/uscis-medical/vaccination-requirements/",
+      "vertical": "uscis-medical",
+      "section": "vaccination-requirements",
+      "reason": "RENDERED_BUT_UNADMITTED_PENDING_DISPOSITION",
+      "declared_on": "2026-08-29",
+      "disposition": "UNDECIDED",
+      "note": "Rendered as an indexable page in the same release run that wrote the sitemaps; absent from data/content/page_admission_registry.json; no 301 in _redirects; no noindex."
+    }
+  ]
+}

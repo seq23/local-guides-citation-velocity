@@ -11,6 +11,18 @@ function run() {
   const strategy = readJson('data/strategy/page_strategy_registry.json', {});
   const shardIndex = readJson('data/queries/citation_fanout_opportunities_100k/index.json', {});
   const errors = [];
+  // The declared policy target, read once and never restated. Three gates below
+  // used to carry the literal 100000, which made them assertions that a constant
+  // equals itself: raising the declared target in
+  // data/strategy/citation_growth_strategy.json would have left every gate green
+  // against the old number, and lowering it would have failed the run for
+  // agreeing with policy. Derive it, so a policy change moves the gate with it.
+  const declaredCitationReadyTarget = Number(growth.target?.citation_ready_opportunities_or_surfaces);
+  const declaredHorizonDays = Number(growth.target?.time_horizon_days);
+  if (!Number.isFinite(declaredCitationReadyTarget) || declaredCitationReadyTarget <= 0) errors.push('citation_growth_strategy.json declares no usable citation_ready_opportunities_or_surfaces target; a missing policy target is a stop, not a default');
+  if (!Number.isFinite(declaredHorizonDays) || declaredHorizonDays <= 0) errors.push('citation_growth_strategy.json declares no usable time_horizon_days; a missing policy horizon is a stop, not a default');
+  const profileTarget = Number(profile.primary_kpi?.target_value);
+  if (Number.isFinite(profileTarget) && Number.isFinite(declaredCitationReadyTarget) && profileTarget !== declaredCitationReadyTarget) errors.push(`policy targets disagree: citation_strategy_profile.json says ${profileTarget}, citation_growth_strategy.json says ${declaredCitationReadyTarget}`);
   if (profile.repo !== 'seq23/local-guides-citation-velocity') errors.push('profile repo mismatch');
   if (profile.primary_kpi?.name !== 'monthly_visitors') errors.push('primary KPI must be monthly_visitors');
   if (profile.primary_kpi?.validator_claim_allowed !== false) errors.push('validators must not claim external traffic');
@@ -50,11 +62,11 @@ function run() {
     gates: {
       strategy_profile_present: Boolean(profile.repo),
       traffic_target_labelled_business_objective: profile.primary_kpi?.validator_claim_allowed === false,
-      citation_ready_100k_target_present: (growth.target?.citation_ready_opportunities_or_surfaces || 0) >= 100000,
-      citation_ready_horizon_180_days_or_less: (growth.target?.time_horizon_days || 9999) <= 180,
+      citation_ready_target_declared: Number.isFinite(declaredCitationReadyTarget) && declaredCitationReadyTarget > 0,
+      citation_ready_horizon_declared: Number.isFinite(declaredHorizonDays) && declaredHorizonDays > 0,
       no_hard_guarantee: growth.target?.hard_guarantee === false,
       no_external_citation_claim: growth.target?.target_is_external_citation_claim === false,
-      fanout_universe_present: Number(shardIndex.record_count||0) === 100000,
+      fanout_universe_matches_declared_target: Number.isFinite(declaredCitationReadyTarget) && Number(shardIndex.record_count||0) === declaredCitationReadyTarget,
       fanout_storage_sharded: !fs.existsSync('data/queries/citation_fanout_opportunities_100k.json') && Number(shardIndex.shard_count||0) > 1,
       citation_honesty_boundaries_present: scoreboard.buckets?.opportunities_are_not_wins === true,
       contracts_installed: Boolean(intelligence.schema_version && release.schema_version),

@@ -30,4 +30,33 @@ if(reg){
  const expected=buildMatrix(reg);check(matrix&&JSON.stringify(matrix)===JSON.stringify(expected),'matrix:not-generated-from-current-registry');
 }
 if(pkg){const runner='scripts/validation/run_validation_registry.js';for(const [name,cmd] of Object.entries(pkg.scripts||{})){if(name==='validate'||name.startsWith('validate:')||name==='preflight:integrity'||name==='audit:all'){check(String(cmd).includes(runner),`package:validation-alias-bypasses-registry:${name}`);for(const banned of ['daily_release.js','release_batch.js','build_site.js','git push','git commit','collect_signals.js','export_lkg_candidates.js'])check(!String(cmd).includes(banned),`package:validation-alias-mutates:${name}:${banned}`);}}check(pkg.scripts?.['validate:all']==='node scripts/validation/run_validation_registry.js --profile core','package:validate-all-not-core-profile');check(pkg.scripts?.['validate:release']==='node scripts/validation/run_validation_registry.js --profile release','package:validate-release-not-release-profile');check(pkg.scripts?.['validate:strict']==='node scripts/validation/run_validation_registry.js --profile strict','package:validate-strict-not-strict-profile');}
-const report={validator:'validation-registry',ok:errors.length===0,schema_version:reg?.schema_version||null,registered_count:reg?.validators?.length||0,active_count:reg?.validators?.filter(v=>v.status==='ACTIVE').length||0,on_demand_count:reg?.validators?.filter(v=>v.status==='ON_DEMAND').length||0,retired_count:reg?.validators?.filter(v=>v.status==='RETIRED').length||0,dependency_edges:reg?.validators?.reduce((n,v)=>n+(v.depends_on||[]).length,0)||0,preparers:reg?.validators?.filter(v=>(v.prepare_commands||[]).length).length||0,errors};fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts/validation/validation-registry.json'),JSON.stringify(report,null,2)+'\n');if(errors.length){console.error(errors.join('\n'));process.exit(1);}console.log(`VALIDATION REGISTRY PASS (${report.registered_count} registered; ${report.dependency_edges} dependency edges; ${report.preparers} prerequisite builders)`);
+const report={validator:'validation-registry',ok:errors.length===0,schema_version:reg?.schema_version||null,registered_count:reg?.validators?.length||0,active_count:reg?.validators?.filter(v=>v.status==='ACTIVE').length||0,on_demand_count:reg?.validators?.filter(v=>v.status==='ON_DEMAND').length||0,retired_count:reg?.validators?.filter(v=>v.status==='RETIRED').length||0,dependency_edges:reg?.validators?.reduce((n,v)=>n+(v.depends_on||[]).length,0)||0,preparers:reg?.validators?.filter(v=>(v.prepare_commands||[]).length).length||0,errors};fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts/validation/validation-registry.json'),JSON.stringify(report,null,2)+'\n');
+// ---------------------------------------------------------------- dead prepares
+// prepare_commands run ONLY when a requires_files entry is missing. A validator
+// that declares a prepare while every prerequisite it names is a committed file
+// has a prepare that can never fire. Sixteen such declarations sat in this
+// registry, and production run 33267988587 logged ZERO "PREPARE" lines while its
+// own banner printed "prerequisites=ON" - the configuration described a refresh
+// the runner never performed. Dead configuration that reads as a guarantee is
+// worse than no configuration, so it is a hard error here.
+try {
+  const { execFileSync } = require('child_process');
+  const isTracked = (f) => { try { execFileSync('git', ['ls-files', '--error-unmatch', f], { stdio: 'ignore' }); return true; } catch { return false; } };
+  for (const v of ((reg && reg.validators) || [])) {
+    if (v.status === 'RETIRED') continue;
+    const prep = v.prepare_commands || [];
+    if (!prep.length) continue;
+    const req = v.requires_files || [];
+    if (!req.length) {
+      errors.push(`registry:unreachable-prepare:${v.id}: declares prepare_commands but no requires_files, so the prepare can never fire. Name the generated artifact it produces, or remove the prepare.`);
+      continue;
+    }
+    if (req.every(isTracked)) {
+      errors.push(`registry:unreachable-prepare:${v.id}: declares prepare_commands ${JSON.stringify(prep)} but every requires_files entry is a committed file, so the prerequisite is never missing and the prepare has never run. Point requires_files at the generated artifact, or remove the prepare and say the validator grades the committed tree.`);
+    }
+  }
+} catch (e) {
+  errors.push(`registry:unreachable-prepare-check-failed:${e.message}`);
+}
+
+if(errors.length){console.error(errors.join('\n'));process.exit(1);}console.log(`VALIDATION REGISTRY PASS (${report.registered_count} registered; ${report.dependency_edges} dependency edges; ${report.preparers} prerequisite builders)`);

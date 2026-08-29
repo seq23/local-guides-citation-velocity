@@ -13,13 +13,22 @@ const {
   slugify,
   countIndexableRoutes,
   countSitemapUrls,
-  countLlmsEntries
+  countLlmsEntries,
+  citationPolicy
 } = require('./pipeline_lib');
 
 const { ShardedJsonWriter } = require('../lib/sharded_json');
 
-const TARGET = 100000;
-const HORIZON_DAYS = 180;
+// The 100K governor is policy, not a code literal. It used to be
+// `const TARGET = 100000` here, and that same constant was then written into
+// `generated_fanout_records` and `citation_ready_opportunities_current` - the
+// two fields the 100K gates measure. Reading it from
+// data/strategy/citation_strategy_profile.json means a policy change moves the
+// target and the gates together, and a missing policy value stops the run
+// instead of quietly defaulting.
+const POLICY = citationPolicy();
+const TARGET = POLICY.citation_ready_target;
+const HORIZON_DAYS = POLICY.time_horizon_days;
 
 const STATES = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
@@ -318,6 +327,16 @@ function run() {
     considerRepairCandidate(record, repairState);
   }
   const shardIndex = shardWriter.finalize();
+  // The number that gets published is the number of records that actually
+  // reached disk. It used to be TARGET - the goal itself was written into the
+  // fields the two 100K gates measure, so an 80% generation shortfall (patch
+  // the loop to 20,000 and 20,000 records land) still reported 100,000 and both
+  // gates passed. ShardedJsonWriter.finalize() has returned the true
+  // record_count all along; nothing was reading it.
+  const generatedFanoutRecords = Number(shardIndex.record_count);
+  if (!Number.isFinite(generatedFanoutRecords) || generatedFanoutRecords < 1) {
+    throw new Error('fanout generation produced no records; refusing to publish a fanout count');
+  }
   const legacyMonolith = path.join(ROOT, 'data/queries/citation_fanout_opportunities_100k.json');
   if (fs.existsSync(legacyMonolith)) fs.rmSync(legacyMonolith, { force: true });
 
@@ -381,6 +400,7 @@ function run() {
       format: 'indexed_json_shards',
       index: 'data/queries/citation_fanout_opportunities_100k/index.json',
       shard_count: shardIndex.shard_count,
+      record_count: generatedFanoutRecords,
       aggregate_sha256: shardIndex.aggregate_sha256
     },
     generated_at: generatedAt
@@ -395,8 +415,10 @@ function run() {
     owned_surfaces_current: ownedSurfaceCount,
     sitemap_urls_current: sitemapUrls,
     llms_entries_current: llmsEntries,
-    citation_ready_opportunities_current: TARGET,
-    generated_fanout_records: TARGET,
+    citation_ready_opportunities_current: generatedFanoutRecords,
+    generated_fanout_records: generatedFanoutRecords,
+    generated_fanout_records_basis: 'measured_shard_index_record_count',
+    fanout_shortfall_against_target: Math.max(0, TARGET - generatedFanoutRecords),
     fanout_shard_count: shardIndex.shard_count,
     fanout_aggregate_sha256: shardIndex.aggregate_sha256,
     submitted_urls_current: readJson('data/seo/search_submission_registry.json', { domains: [] }).domains?.filter((d) => d.submission_record).length || 0,
@@ -441,10 +463,12 @@ function run() {
     validator: 'citation-100k-runway',
     repo: 'local-guides-citation-velocity',
     generated_at: generatedAt,
-    status: 'PASS',
+    status: generatedFanoutRecords >= TARGET ? 'PASS' : 'FAIL_FANOUT_SHORTFALL',
     target: TARGET,
+    target_source: 'data/strategy/citation_strategy_profile.json:citation_strategy.citation_ready_target',
     time_horizon_days: HORIZON_DAYS,
-    fanout_records: TARGET,
+    fanout_records: generatedFanoutRecords,
+    fanout_records_basis: 'measured_shard_index_record_count',
     fanout_index: 'data/queries/citation_fanout_opportunities_100k/index.json',
     fanout_shards: shardIndex.shard_count,
     fanout_aggregate_sha256: shardIndex.aggregate_sha256,
@@ -478,8 +502,13 @@ function run() {
     records: observedWins
   });
   writeJson('artifacts/validation/citation-100k-runway.json', validation);
-  writeText('reports/citation-100k-runway.md', `# 100K Citation-Ready Runway\n\nStatus: PASS\n\nTarget: ${TARGET} citation-ready opportunities/surfaces in ${HORIZON_DAYS} days or less.\nFanout opportunities: ${TARGET}\nShard count: ${shardIndex.shard_count}\nAggregate SHA256: ${shardIndex.aggregate_sha256}\nOwned surfaces: ${ownedSurfaceCount}\nSafe/free-win repair candidates: ${repairQueue.length}\nObserved external citation/win records: ${observedWins.length}\n\nThis report does not claim 100K external citations, rankings, indexing, traffic, or LLM surfacing.\n`);
-  console.log(`citation runway: ${TARGET} sharded opportunities; shards=${shardIndex.shard_count}; repairs=${repairQueue.length}; observed=${observedWins.length}`);
+  writeText('reports/citation-100k-runway.md', `# 100K Citation-Ready Runway\n\nStatus: ${validation.status}\n\nTarget: ${TARGET} citation-ready opportunities/surfaces in ${HORIZON_DAYS} days or less (declared in data/strategy/citation_strategy_profile.json).\nFanout opportunities generated (measured from shard index): ${generatedFanoutRecords}\nShortfall against target: ${Math.max(0, TARGET - generatedFanoutRecords)}\nShard count: ${shardIndex.shard_count}\nAggregate SHA256: ${shardIndex.aggregate_sha256}\nOwned surfaces: ${ownedSurfaceCount}\nSafe/free-win repair candidates: ${repairQueue.length}\nObserved external citation/win records: ${observedWins.length}\n\nThis report does not claim 100K external citations, rankings, indexing, traffic, or LLM surfacing.\n`);
+  console.log(`citation runway: ${generatedFanoutRecords} sharded opportunities generated against a declared target of ${TARGET}; shards=${shardIndex.shard_count}; repairs=${repairQueue.length}; observed=${observedWins.length}`);
+  if (generatedFanoutRecords < TARGET) {
+    // Named, human-visible stop. The gates downstream will fail on the real
+    // number; this makes sure nobody has to read a JSON file to find out why.
+    console.error(`FANOUT SHORTFALL: generated ${generatedFanoutRecords} of a declared ${TARGET} citation-ready fanout opportunities.`);
+  }
 }
 
 if (require.main === module) {

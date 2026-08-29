@@ -145,20 +145,33 @@ function defectsFor(route, title) {
 function scan() {
   const files = walk(ROOT);
   const found = new Map();
+  // Routes whose page was actually read. Needed to tell "this sealed route was
+  // examined and is now clean" (a repair) from "this sealed route's page is not
+  // on disk" (not a repair - see the note below the baseline comparison).
+  const seenRoutes = new Set();
   for (const f of files) {
     let html;
     try { html = fs.readFileSync(f, 'utf8'); } catch { continue; }
     const route = routeFor(f);
+    seenRoutes.add(route);
     const title = titleOf(html);
     const d = defectsFor(route, title);
     if (d.length) found.set(route, { route, title, defects: d });
   }
-  return { scanned: files.length, found };
+  return { scanned: files.length, found, seenRoutes };
 }
 
-const { scanned, found } = scan();
+const { scanned, found, seenRoutes } = scan();
 
 if (process.argv.includes('--seed-baseline')) {
+  // Sealing from an unbuilt tree would overwrite the baseline with zero routes and
+  // silently discard the sealed record of every existing defect. Same root cause as
+  // the zero-page pass below: absence read as a clean result.
+  if (scanned === 0) {
+    console.error('REFUSING to seed the route topic-quality baseline from 0 scanned pages.');
+    console.error('  This would erase the sealed record. Build the site first.');
+    process.exit(1);
+  }
   const routes = [...found.values()].sort((a, b) => a.route.localeCompare(b.route));
   const byDefect = {};
   for (const r of routes) for (const d of r.defects) byDefect[d] = (byDefect[d] || 0) + 1;
@@ -187,6 +200,30 @@ if (process.argv.includes('--seed-baseline')) {
 const errors = [];
 const notes = [];
 
+// WHAT THIS USED TO DO, AND WHY IT WAS WRONG
+//
+// With zero rendered pages on disk this HARD_FAIL gate printed
+//   "ROUTE TOPIC QUALITY PASS (0 pages scanned; 0 sealed pre-existing defects; 0 new)"
+// and exited 0, against a baseline holding 485 sealed defective routes. Worse, the
+// repair note below computed `repaired` as "sealed routes not found on disk", so an
+// empty tree reported all 485 sealed defects as REPAIRED and invited the baseline to
+// be re-sealed downward to nothing. A build that emitted no HTML at all scored as a
+// clean build that had also fixed everything.
+//
+// Two corrections, neither of which loosens an assertion:
+//   1. Scanning zero pages is a hard failure. There is no input for which "I looked
+//      at nothing" is a pass (Rule 0).
+//   2. A sealed route is only "repaired" if its page was scanned and no longer
+//      carries the defect. Absence is not repair. Sealed routes whose page is not
+//      on disk are reported separately, as absent-not-repaired, so they can never
+//      be resealed away on the strength of a missing file.
+if (scanned === 0) {
+  errors.push(
+    'zero pages scanned. This gate cannot pass having examined nothing: an empty or '
+    + 'failed build must not score as a clean one. Build the site, then re-run.'
+  );
+}
+
 if (!fs.existsSync(BASELINE)) {
   notes.push('no baseline; run this validator once with --seed-baseline');
 } else {
@@ -206,9 +243,22 @@ if (!fs.existsSync(BASELINE)) {
     );
   }
   // Report repairs so the baseline can be re-sealed downward, never upward.
-  const repaired = [...known.keys()].filter((r) => !found.has(r));
-  notes.push(`baseline: ${known.size} sealed routes; ${found.size} routes currently carry a defect; ${repaired.length} baseline route(s) now clean`);
+  //
+  // `repaired` used to mean "sealed route not in `found`", which is also true of
+  // every sealed route whose page simply is not on disk. On an empty tree that
+  // reported all 485 as repaired. A repair now requires the page to have been
+  // scanned and come back clean; a sealed route whose page is absent is reported
+  // as absent, and must not be resealed away on that basis.
+  const repaired = [...known.keys()].filter((r) => !found.has(r) && seenRoutes.has(r));
+  const absent = [...known.keys()].filter((r) => !found.has(r) && !seenRoutes.has(r));
+  notes.push(`baseline: ${known.size} sealed routes; ${found.size} routes currently carry a defect; ${repaired.length} baseline route(s) scanned and now clean; ${absent.length} baseline route(s) have no page on disk`);
   if (repaired.length) notes.push(`repaired since sealing: ${repaired.slice(0, 10).join(', ')}${repaired.length > 10 ? ` (+${repaired.length - 10} more)` : ''}`);
+  if (absent.length) {
+    notes.push(
+      `NOT repaired, merely absent (page not on disk; do not reseal on this): `
+      + `${absent.slice(0, 10).join(', ')}${absent.length > 10 ? ` (+${absent.length - 10} more)` : ''}`
+    );
+  }
 }
 
 const report = {

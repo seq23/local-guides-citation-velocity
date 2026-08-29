@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 'use strict';
-const { readJson, writeJson, writeText, countIndexableRoutes, countSitemapUrls, countLlmsEntries } = require('./pipeline_lib');
+const { readJson, writeJson, writeText, countIndexableRoutes, countNoindexRoutes, countSitemapUrls, countLlmsEntries, requirePolicyNumber } = require('./pipeline_lib');
 function run() {
-  const profile = readJson('data/strategy/citation_strategy_profile.json', {});
+  const profile = readJson('data/strategy/citation_strategy_profile.json', null);
+  if (!profile) throw new Error('data/strategy/citation_strategy_profile.json is missing; the proof packet will not invent its governors');
   const raw = readJson('data/signals/raw/latest.json', { records: [] });
   const normalized = readJson('data/signals/normalized/latest.json', { records: [] });
   const clusters = readJson('data/signals/clusters/latest.json', { clusters: [] });
@@ -13,20 +14,38 @@ function run() {
   const scoreboard = readJson('data/measurement/citation_honesty_scoreboard.json', {});
   const zeroDollar = readJson('data/measurement/zero_dollar_citation_test_ledger.json', { tests: [] });
   const freeWinQueue = readJson('data/measurement/free_win_self_heal_queue.json', { queue: [] });
+  // Policy governors are read, never defaulted. These four used to be written
+  // `profile.primary_kpi?.target_value || 100000` and so on: the policy literal
+  // restated in code, so a policy change would be silently absorbed by the
+  // fallback and the packet would keep publishing the old number as if measured.
+  // A missing governor is a stop.
+  const primaryTarget = requirePolicyNumber(profile.primary_kpi?.target_value, 'primary_kpi.target_value');
+  const primaryHorizon = requirePolicyNumber(profile.primary_kpi?.time_horizon_days, 'primary_kpi.time_horizon_days');
+  const citationReadyTarget = requirePolicyNumber(growth.target?.citation_ready_opportunities_or_surfaces, 'citation_growth_strategy.target.citation_ready_opportunities_or_surfaces');
+  const citationReadyHorizon = requirePolicyNumber(growth.target?.time_horizon_days, 'citation_growth_strategy.target.time_horizon_days');
+  // `scoreboard.owned_surfaces_current || countIndexableRoutes()` let a
+  // legitimate measured ZERO spring to a computed default. The scoreboard is
+  // produced by build_100k_citation_runway.js earlier in the same pipeline; if
+  // it is absent or carries no number, that is a pipeline-order failure to
+  // report, not a figure to substitute.
+  const ownedSurfaces = Number(scoreboard.owned_surfaces_current);
+  if (!Number.isFinite(ownedSurfaces)) throw new Error('data/measurement/citation_honesty_scoreboard.json has no owned_surfaces_current; run the 100K runway builder first. This value is not substituted.');
+  const publicRouteCount = countIndexableRoutes();
+  const noindexRoutes = countNoindexRoutes();
   const packet = {
     schema_version: '2.0',
     run_id: plan.run_id || `proof_${Date.now()}`,
     repo: 'local-guides-citation-velocity',
     date: new Date().toISOString().slice(0, 10),
     primary_kpi: 'monthly_visitors',
-    primary_target: profile.primary_kpi?.target_value || 100000,
-    primary_target_time_horizon_days: profile.primary_kpi?.time_horizon_days || 180,
-    citation_ready_target: growth.target?.citation_ready_opportunities_or_surfaces || 100000,
-    citation_ready_time_horizon_days: growth.target?.time_horizon_days || 180,
+    primary_target: primaryTarget,
+    primary_target_time_horizon_days: primaryHorizon,
+    citation_ready_target: citationReadyTarget,
+    citation_ready_time_horizon_days: citationReadyHorizon,
     citation_ready_hard_guarantee: growth.target?.hard_guarantee === true,
     citation_ready_fanout_opportunities: scoreboard.generated_fanout_records || 0,
     citation_ready_opportunities_current: scoreboard.citation_ready_opportunities_current || 0,
-    owned_surfaces_current: scoreboard.owned_surfaces_current || countIndexableRoutes(),
+    owned_surfaces_current: ownedSurfaces,
     submitted_urls_current: scoreboard.submitted_urls_current || 0,
     indexed_urls_current: scoreboard.indexed_urls_current || 0,
     observed_wins_current: scoreboard.observed_wins_current || 0,
@@ -50,9 +69,18 @@ function run() {
     entity_context_updates: (plan.selected || []).filter((u) => u.release_unit_type === 'entity_context_update').length,
     internal_link_updates: (plan.selected || []).filter((u) => u.release_unit_type === 'internal_link_update').length,
     blocked_units: (plan.blocked || []).filter((u) => u.planner_status === 'blocked').length,
-    citation_surfaces_total: countIndexableRoutes(),
-    indexable_routes_total: countIndexableRoutes(),
-    noindex_routes_total: 0,
+    // Both of these came from a walk that counted every .html file under the
+    // repo root - 4,556, including the dist/ render mirror and files under
+    // staging/, templates/, artifacts/, data/ and docs/ that are not public
+    // routes. That is a file count labelled as a citation-surface total. It is
+    // now the admitted public route set (scripts/lib/page_admission.js), one
+    // entry per route.
+    citation_surfaces_total: publicRouteCount,
+    citation_surfaces_basis: 'admitted_public_routes_only',
+    indexable_routes_total: publicRouteCount - noindexRoutes,
+    // `noindex_routes_total: 0` was a hardcoded literal sitting among genuinely
+    // counted totals while noindex appears in the tree. Now measured.
+    noindex_routes_total: noindexRoutes,
     sitemap_urls_total: countSitemapUrls(),
     llms_entries_total: countLlmsEntries(),
     validators: {

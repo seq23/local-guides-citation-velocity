@@ -72,7 +72,14 @@ if(statePageCount!==expectedStatePages)errors.push(`state page registry parity m
 if(faqCount!==expectedFaqs)errors.push(`state FAQ registry parity mismatch: ${faqCount} vs ${expectedFaqs}`);
 if(exactAnswers.size!==faqCount)errors.push(`state FAQ exact-answer uniqueness mismatch: ${exactAnswers.size} unique of ${faqCount}`);
 const diversityAdvisory=normalizedAnswers.size<250?`Normalized answer diversity is ${normalizedAnswers.size}; review for commodity repetition, but do not block release on an arbitrary quota.`:null;
-for(const forbidden of ['data/canonical_candidates','data/lkg_candidates','scripts/export_promotion_candidates.js','scripts/community/export_lkg_candidates.js','.github/workflows/lkg_pr_push.yml']) if(exists(forbidden))errors.push(`forbidden LKG/candidate surface remains: ${forbidden}`);
+// content/_shared/promotion_candidates.json joins this list because the
+// exporters were banned and their OUTPUT was not. The severance from
+// local-guides-generator was deliberate and is enforced above, but the last
+// export sat here for four months - payload frozen 2026-04-13, last committed
+// 2026-04-26 - with no writer, no reader, and no validator naming it. A stale
+// artifact that looks like a live handoff is how a retired seam gets
+// resurrected by someone who finds the file and assumes it means something.
+for(const forbidden of ['data/canonical_candidates','data/lkg_candidates','scripts/export_promotion_candidates.js','scripts/community/export_lkg_candidates.js','.github/workflows/lkg_pr_push.yml','content/_shared/promotion_candidates.json']) if(exists(forbidden))errors.push(`forbidden LKG/candidate surface remains: ${forbidden}`);
 const payload=read('content/_live/pages.json'); const programs=payload.pages.filter((p)=>['VELOCITY_QUESTION_200','VELOCITY_DISAMBIGUATOR_20'].includes(p.full_scope_program));
 const minQuestions=Number(minimums.velocity_questions||scopeContract.counts?.velocity_questions||0);if(programs.filter((p)=>p.full_scope_program==='VELOCITY_QUESTION_200').length<minQuestions)errors.push(`question page inventory fell below the approved baseline: ${minQuestions}`);
 const minDisambiguators=Number(minimums.velocity_disambiguators||scopeContract.counts?.velocity_disambiguators||0);if(programs.filter((p)=>p.full_scope_program==='VELOCITY_DISAMBIGUATOR_20').length<minDisambiguators)errors.push(`disambiguator inventory fell below the approved baseline: ${minDisambiguators}`);
