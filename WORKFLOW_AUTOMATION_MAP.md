@@ -13,6 +13,6 @@ Runtime model is FULL SAFE AUTONOMY: safe operations proceed; exceptions skip/re
 
 - `search-intelligence-loop.yml`: scheduled + manual; read/diagnose/retest/score only; no repo commit or cadence authority.
 - `ci-health-recovery.yml`: workflow-run + manual; observes Validate Repo exact-SHA status and manages the automation-health issue.
-- `postdeploy-public-audit.yml`: now manual + scheduled + after successful Deploy Distribution.
+- `postdeploy-public-audit.yml`: REMOVED 2026-08-29 by owner decision. The deployed click audit no longer runs in CI; the same runner still provides the local browser proof through `npm run release:prepush:local`.
 
-Canonical workflow count: 8. Scheduled workflows: 3. Push-triggered workflows: 2. All 8 remain manual-ready.
+Canonical workflow count: 9. Scheduled workflows: 3. Push-triggered workflows: 2. All 9 remain manual-ready.

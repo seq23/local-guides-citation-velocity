@@ -8,7 +8,7 @@ const dir = path.join(ROOT, '.github/workflows');
 const files = fs.readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).sort();
 const errors = [];
 const fingerprints = [];
-const required = ['daily-citation-intelligence.yml','validate-repo.yml','velocity-content-release.yml','velocity-full-rebuild.yml','deploy-distribution.yml','postdeploy-public-audit.yml'];
+const required = ['daily-citation-intelligence.yml','validate-repo.yml','velocity-content-release.yml','velocity-full-rebuild.yml','deploy-distribution.yml'];
 for (const f of files) {
   const text = fs.readFileSync(path.join(dir, f), 'utf8');
   fingerprints.push({file: f, sha256: crypto.createHash('sha256').update(text).digest('hex')});
@@ -23,11 +23,12 @@ for (const f of files) {
   if (!/NODE_OPTIONS:\s*--max-old-space-size=3072/.test(text)) errors.push(`${f}:node-options`);
 }
 for (const f of required) if (!files.includes(f)) errors.push(`missing:${f}`);
-for (const retired of ['validate.yml','velocity_content_release.yml','velocity_full_rebuild.yml','release_batch.yml','postdeploy_public_audit.yml']) if (files.includes(retired)) errors.push(`retired-present:${retired}`);
+// postdeploy-public-audit.yml joined this list on 2026-08-29: the postdeploy
+// click-audit lane was removed by owner decision, so its presence is now a failure.
+for (const retired of ['validate.yml','velocity_content_release.yml','velocity_full_rebuild.yml','release_batch.yml','postdeploy_public_audit.yml','postdeploy-public-audit.yml']) if (files.includes(retired)) errors.push(`retired-present:${retired}`);
 const content = fs.readFileSync(path.join(dir, 'velocity-content-release.yml'), 'utf8');
 const validate = fs.readFileSync(path.join(dir, 'validate-repo.yml'), 'utf8');
 const dist = fs.readFileSync(path.join(dir, 'deploy-distribution.yml'), 'utf8');
-const post = fs.readFileSync(path.join(dir, 'postdeploy-public-audit.yml'), 'utf8');
 const daily = fs.readFileSync(path.join(dir, 'daily-citation-intelligence.yml'), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 const releaseIntake = String((pkg.scripts || {})['release:velocity-intake'] || '');
@@ -42,7 +43,6 @@ if (/npm run build|distribution:prepare/.test(dist)) errors.push('deploy-distrib
 if (!/download-artifact@v\d+/.test(dist)) errors.push('deploy-distribution:download-validated-artifact');
 if (!/run-id:\s*\$\{\{ steps\.artifact\.outputs\.run_id \}\}/.test(dist)) errors.push('deploy-distribution:must-download-exact-run-id');
 if (!/node scripts\/prepare_distribution_from_attestation\.js/.test(dist)) errors.push('deploy-distribution:must-verify-attestation-before-deploy');
-if (!/PLAYWRIGHT_BASE_URL/.test(post) || !/playwright@1\.61\.1/.test(post) || !/postdeploy:public-click-audit/.test(post)) errors.push('postdeploy-public-audit:real-browser-contract-missing');
 if (!/release:daily-citation-intelligence/.test(daily) || !/cron:\s*"17 13 \* \* \*"/.test(daily)) errors.push('daily-citation-intelligence:command-or-cron-missing');
 const report = {validator: 'workflow-contract', ok: !errors.length, errors, fingerprints};
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), {recursive: true});

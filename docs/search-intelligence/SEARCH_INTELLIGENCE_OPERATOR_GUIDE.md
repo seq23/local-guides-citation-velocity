@@ -39,7 +39,7 @@ Every applied repair must record a before hash, after hash, actual byte change, 
 ## Workflows
 
 - `search-intelligence-loop.yml` — scheduled + manual observation/diagnosis/retest lane; does not commit source changes.
-- `postdeploy-public-audit.yml` — manual, scheduled, and after successful Deploy Distribution.
+- `postdeploy-public-audit.yml` — removed 2026-08-29 by owner decision; the deployed click audit no longer runs.
 - `ci-health-recovery.yml` — observes Validate Repo exact-SHA conclusion and opens/updates/closes the governed automation-health issue.
 
 The repo has eight workflows total. Search Intelligence does not add a third push-triggered repo-mutation lane.

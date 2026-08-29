@@ -22,7 +22,6 @@ const allowedMutators = new Set((globalContract.allowed_scheduled_mutation_workf
 const approvedScheduled = new Set([
   '.github/workflows/daily-citation-intelligence.yml',
   '.github/workflows/search-intelligence-loop.yml',
-  '.github/workflows/postdeploy-public-audit.yml',
   ...allowedMutators,
 ]);
 // The contract permits a bounded number of scheduled workflows that commit. This

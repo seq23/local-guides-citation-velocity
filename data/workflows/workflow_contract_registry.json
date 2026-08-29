@@ -19,7 +19,8 @@
       "insights_gate.yml",
       "medium_articles_gate.yml",
       "public-signal-processing.yml",
-      "lkg_pr_push.yml"
+      "lkg_pr_push.yml",
+      "postdeploy-public-audit.yml"
     ],
     "forbidden_actions": [
       "peter-evans/create-pull-request",
@@ -145,46 +146,8 @@
       "upstream": [
         "validate-repo.yml"
       ],
-      "downstream": [
-        "postdeploy-public-audit.yml"
-      ],
-      "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
-    },
-    {
-      "file": "postdeploy-public-audit.yml",
-      "name": "Postdeploy Public Audit",
-      "lane": "postdeploy-audit",
-      "triggers": [
-        "workflow_run:Deploy Distribution",
-        "schedule:23-11-utc-tue-fri",
-        "workflow_dispatch"
-      ],
-      "manual_ready": true,
-      "mutates_repo": false,
-      "permissions": [
-        "contents: read"
-      ],
-      "timeout_minutes": 12,
-      "commands": [
-        "npm ci --ignore-scripts",
-        "npm run postdeploy:public-click-audit"
-      ],
-      "required_inputs": [
-        "base_url"
-      ],
-      "required_secrets": [],
-      "optional_secrets": [],
-      "consumes": [
-        "deployed Velocity base URL"
-      ],
-      "produces": [
-        "artifacts/diagnostics/click-audit/**"
-      ],
-      "upstream": [
-        "deploy-distribution.yml"
-      ],
       "downstream": [],
-      "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
+      "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
     },
     {
       "file": "query-class-occupancy-probe.yml",
