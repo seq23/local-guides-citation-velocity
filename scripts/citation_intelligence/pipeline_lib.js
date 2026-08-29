@@ -178,19 +178,89 @@ function requirementsFor(item, blocked) {
   if (item.candidate_type === 'internal_link_update') out.push('structural graph live policy');
   return out;
 }
-function countIndexableRoutes() {
-  let count = 0;
+/**
+ * The public citation-surface inventory.
+ *
+ * This used to count every .html file under the repo root - 4,556 of them -
+ * and publish that number as `citation_surfaces_total`, `indexable_routes_total`
+ * and `owned_surfaces_current`. It was a file count wearing the name of a
+ * surface count. It included the `dist/` render mirror (every admitted page a
+ * second time), plus ~48 files under staging/, templates/, artifacts/,
+ * data/report_fixes/ and docs/ that are not public routes at all, plus the 188
+ * personal-injury pages that render to disk and are admitted nowhere. None of
+ * those is a surface anything could cite.
+ *
+ * There is exactly one definition of "this route is public" in the repo
+ * (scripts/lib/page_admission.js) and this now uses it, deduplicated by route
+ * so the dist/ mirror cannot count a page twice. Today: 2,151, which is the
+ * admission registry's size, not a coincidence - every admitted route has a
+ * file behind it.
+ */
+function publicRouteFiles() {
+  const { admittedRoutes, normalizeRoute } = require('../lib/page_admission');
+  const admitted = admittedRoutes();
+  if (!admitted.size) {
+    // A missing or empty admission registry is a stop, not an empty inventory:
+    // reporting zero public surfaces as if measured would be a fabrication.
+    throw new Error('page admission registry is missing or empty; refusing to report a public-surface count derived from no admitted routes');
+  }
+  const byRoute = new Map();
   function walk(dir) {
     if (!fs.existsSync(dir)) return;
     for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
       const p = path.join(dir, ent.name);
       if (ent.name === 'node_modules' || ent.name === '.git') continue;
-      if (ent.isDirectory()) walk(p);
-      else if (ent.name === 'index.html' || ent.name.endsWith('.html')) count += 1;
+      if (ent.isDirectory()) { walk(p); continue; }
+      if (!ent.name.endsWith('.html')) continue;
+      let rel = path.relative(ROOT, p).replace(/\\/g, '/');
+      // dist/ is the rendered mirror of the same routes, not a second surface.
+      if (rel.startsWith('dist/')) rel = rel.slice('dist/'.length);
+      const route = normalizeRoute(`/${rel}`);
+      if (!admitted.has(route)) continue;
+      if (!byRoute.has(route)) byRoute.set(route, p);
     }
   }
   walk(ROOT);
+  return byRoute;
+}
+function countIndexableRoutes() {
+  return publicRouteFiles().size;
+}
+/**
+ * Counts admitted public routes whose page carries a robots noindex directive.
+ * The proof packet used to publish `noindex_routes_total: 0` as a hardcoded
+ * literal sitting beside genuinely-counted totals, while noindex appears in the
+ * tree. A fabricated zero is worse than no field: it reads as a measurement.
+ */
+function countNoindexRoutes() {
+  let count = 0;
+  for (const abs of publicRouteFiles().values()) {
+    let html;
+    try { html = fs.readFileSync(abs, 'utf8'); } catch { continue; }
+    if (/<meta[^>]+name=["']?robots["']?[^>]*content=["'][^"']*noindex/i.test(html)) count += 1;
+  }
   return count;
+}
+/**
+ * The declared 100K governor, read from policy rather than restated in code.
+ * Every consumer that needs the target must get it from here so that changing
+ * the policy file moves every gate at once instead of silently disagreeing with
+ * a literal someone typed into a generator.
+ */
+function requirePolicyNumber(value, name) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) throw new Error(`policy value missing or not finite: ${name}. A missing governor is a stop, not a default.`);
+  return n;
+}
+function citationPolicy() {
+  const profile = readJson('data/strategy/citation_strategy_profile.json', null);
+  if (!profile) throw new Error('data/strategy/citation_strategy_profile.json is missing; the 100K governor cannot be defaulted');
+  return {
+    citation_ready_target: requirePolicyNumber(profile.citation_strategy?.citation_ready_target, 'citation_strategy.citation_ready_target'),
+    time_horizon_days: requirePolicyNumber(profile.citation_strategy?.citation_ready_time_horizon_days, 'citation_strategy.citation_ready_time_horizon_days'),
+    primary_kpi_target: requirePolicyNumber(profile.primary_kpi?.target_value, 'primary_kpi.target_value'),
+    primary_kpi_time_horizon_days: requirePolicyNumber(profile.primary_kpi?.time_horizon_days, 'primary_kpi.time_horizon_days')
+  };
 }
 function countSitemapUrls() {
   let total = 0;
@@ -223,4 +293,4 @@ function latestNormalized() {
   const latest = readJson('data/signals/normalized/latest.json', null);
   return latest && Array.isArray(latest.records) ? latest.records : [];
 }
-module.exports = { ROOT, TODAY, abs, exists, ensureDir, readJson, writeJson, writeText, hash, slugify, excerpt, normalizeRecord, clusterSignals, scoreSignals, canonicalReleaseUnitType, buildCandidates, countIndexableRoutes, countSitemapUrls, countLlmsEntries, latestRawRecords, latestNormalized };
+module.exports = { ROOT, TODAY, abs, exists, ensureDir, readJson, writeJson, writeText, hash, slugify, excerpt, normalizeRecord, clusterSignals, scoreSignals, canonicalReleaseUnitType, buildCandidates, publicRouteFiles, countIndexableRoutes, countNoindexRoutes, requirePolicyNumber, citationPolicy, countSitemapUrls, countLlmsEntries, latestRawRecords, latestNormalized };

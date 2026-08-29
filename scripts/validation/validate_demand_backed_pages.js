@@ -32,11 +32,17 @@ const exists = (rel) => fs.existsSync(path.join(ROOT, rel));
 const errors = [];
 const notes = [];
 
+// Every input surface reports how many units it actually examined. See the
+// zero-examination stop at the bottom of this file for why.
+const examined = { sitemap_urls: 0, page_records: 0, admitted_routes: 0, fanout_candidates: 0 };
+const absentInputs = [];
+
 // --- 1. every sitemap URL renders -------------------------------------------
 const sitemapDir = exists('dist/sitemaps') ? 'dist/sitemaps' : 'sitemaps';
 const base = exists('dist') ? 'dist' : '.';
 if (!exists(sitemapDir)) {
   notes.push(`no ${sitemapDir}/ on disk; run \`npm run build\` first`);
+  absentInputs.push(`${sitemapDir}/`);
 } else {
   const locs = new Set();
   for (const file of fs.readdirSync(path.join(ROOT, sitemapDir)).filter((f) => f.endsWith('.xml'))) {
@@ -51,6 +57,7 @@ if (!exists(sitemapDir)) {
     const candidates = rel === '' ? [`${base}/index.html`] : [`${base}/${rel}`, `${base}/${rel}.html`, `${base}/${rel}/index.html`];
     if (!candidates.some(exists)) missing.push(p);
   }
+  examined.sitemap_urls = locs.size;
   if (missing.length) {
     errors.push(`${missing.length} sitemap URL(s) have no file to render, e.g. ${missing.slice(0, 5).join(', ')}`);
   } else {
@@ -63,10 +70,15 @@ if (exists('content/_live/published_urls.json')) {
   const published = read('content/_live/published_urls.json');
   const rows = Array.isArray(published) ? published : (published.urls || published.pages || []);
   notes.push(`published inventory: ${rows.length} routes; admission registry: ${admittedRoutes().size}`);
+} else {
+  absentInputs.push('content/_live/published_urls.json');
 }
+examined.admitted_routes = admittedRoutes().size;
+if (!exists('content/_live/pages.json')) absentInputs.push('content/_live/pages.json');
 if (exists('content/_live/pages.json')) {
   const pages = read('content/_live/pages.json');
   const rows = (pages.pages || pages.data?.pages || []);
+  examined.page_records = rows.length;
   const orphans = renderedButNotPublic(rows.map((p) => p.path || p.slug).filter(Boolean));
   if (orphans.length) {
     notes.push(
@@ -83,11 +95,19 @@ const backlogRel = 'data/strategy/page_opportunity_backlog.json';
 if (exists(backlogRel)) {
   const backlog = read(backlogRel);
   const rows = backlog.candidates || backlog.opportunities || backlog.records || [];
+  examined.fanout_candidates = rows.length;
   const promoted = rows.filter((r) => r && r.publication_state && r.publication_state !== 'OPPORTUNITY_ONLY');
   if (promoted.length) {
     errors.push(`${promoted.length} fan-out candidate(s) are no longer OPPORTUNITY_ONLY; the 100k planning set must not become pages`);
   }
-  notes.push(`fan-out backlog: ${rows.length} candidates, all opportunity-only`);
+  // This note used to read "fan-out backlog: 2500 candidates" - the selection
+  // cap, not the depth, because the builder emitted the cap under the name
+  // `count` and this counted the capped slice. The population is now published
+  // beside the slice, so say both.
+  const depth = Number(backlog.backlog_depth_total);
+  notes.push(Number.isFinite(depth)
+    ? `fan-out backlog: ${rows.length} selected of ${depth} distinct opportunities, all opportunity-only`
+    : `fan-out backlog: ${rows.length} selected (backlog_depth_total absent; population unknown), all opportunity-only`);
 }
 
 // --- 4. the admitted corpus may not grow without evidence -------------------
@@ -127,6 +147,30 @@ if (exists('data/demand/measured_demand.json')) {
   const d = read('data/demand/measured_demand.json');
   notes.push(`demand: ${d.record_count} measured queries worth ${d.total_measured_volume_per_month}/mo, by tier ${JSON.stringify(d.by_tier)}`);
 }
+
+// WHAT THIS USED TO DO, AND WHY IT WAS WRONG
+//
+// Every check above is guarded by an `exists()`, and each guard's else-branch was a
+// note. With no sitemaps/, no content/_live/pages.json, no backlog and an empty
+// admission registry, this HARD_FAIL gate walked all four checks, examined nothing,
+// printed "validate:demand-backed-pages OK" and exited 0. A build that emitted no
+// pages at all scored as a corpus fully backed by measured demand.
+//
+// Nothing below loosens a check. It asserts that at least one check had something to
+// look at, and names every input that was missing so the stop is diagnosable rather
+// than a bare red (Rule 0: no stage may exit 0 having done nothing).
+const totalExamined = Object.values(examined).reduce((a, b) => a + b, 0);
+if (totalExamined === 0) {
+  console.error('validate:demand-backed-pages FAILED: zero items examined.');
+  console.error('  Nothing was measured, so nothing can be attested. Absent inputs:');
+  for (const i of absentInputs.length ? absentInputs : ['(none reported - the inputs exist but are empty)']) {
+    console.error(`    ${i}`);
+  }
+  console.error('  Run `npm run build` so the sitemaps and the live page inventory exist, then re-run.');
+  process.exit(1);
+}
+notes.push(`examined: ${JSON.stringify(examined)}`);
+if (absentInputs.length) notes.push(`inputs absent (partial examination): ${absentInputs.join(', ')}`);
 
 for (const n of notes) console.log(`note: ${n}`);
 if (errors.length) {

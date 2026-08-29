@@ -44,9 +44,33 @@ function visibleWords(html) {
   return body.replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').split(/\s+/).filter(Boolean).length;
 }
 
-if (!fs.existsSync(REGISTRY) || !fs.existsSync(PAGES)) {
-  console.log('[frozen-content-recoverability] registry or page source absent; nothing to check');
-  process.exit(0);
+// WHAT THIS USED TO DO, AND WHY IT WAS WRONG
+//
+// With either input missing it printed
+//   "[frozen-content-recoverability] registry or page source absent; nothing to check"
+// and exited 0. That is the wrong verdict for the wrong reason. This validator's
+// whole job is to say whether frozen routes can be reproduced from source; with no
+// registry and no page source it does not know, and "I do not know" was being
+// recorded as "nothing at risk". The five routes in CONFIRMED below lose 4,069
+// measured words on a thaw-and-rebuild, and a run over absent inputs reported them
+// as fine.
+//
+// Absent inputs are now a named hard stop. This stays a STRONG_WARNING validator for
+// what it MEASURES - an at-risk route is reported, not blocked, because recovering
+// the content is a deliberate editorial job. But "not measured at all" is a
+// different state from "measured and bad", and only the second may exit 0
+// (Rule 0: no stage may exit 0 having done nothing).
+const missingInputs = [
+  [REGISTRY, 'data/release/frozen_page_registry.json'],
+  [PAGES, 'content/_live/pages.json'],
+].filter(([abs]) => !fs.existsSync(abs)).map(([, rel]) => rel);
+
+if (missingInputs.length) {
+  console.error('[frozen-content-recoverability] NOT MEASURED - required input absent:');
+  for (const rel of missingInputs) console.error(`    ${rel}`);
+  console.error('  Frozen-route recoverability is UNKNOWN, which is not the same as CLEAR.');
+  console.error('  Run `npm run build` so content/_live/pages.json exists, then re-run.');
+  process.exit(1);
 }
 
 const registry = JSON.parse(fs.readFileSync(REGISTRY, 'utf8'));
@@ -90,6 +114,18 @@ for (const entry of registry.pages || []) {
       confirmed_loss_words: CONFIRMED[route] || null,
     });
   }
+}
+
+// A registry that lists frozen routes but from which not one could be checked -
+// every rendered_file missing, or every route absent from pages.json - is the same
+// "not measured" state as an absent input, and must not report CLEAR. An genuinely
+// empty registry (nothing is frozen) is a real measured state and passes below.
+const registryRoutes = (registry.pages || []).length;
+if (registryRoutes > 0 && checked === 0) {
+  console.error(`[frozen-content-recoverability] NOT MEASURED - ${registryRoutes} route(s) in the frozen registry, 0 checkable.`);
+  console.error('  Every frozen route is missing its rendered file or its content/_live/pages.json record.');
+  console.error('  Recoverability is UNKNOWN, not CLEAR. Build the site, then re-run.');
+  process.exit(1);
 }
 
 at_risk.sort((a, b) => b.gap_words - a.gap_words);

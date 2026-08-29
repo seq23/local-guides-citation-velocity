@@ -1466,9 +1466,7 @@
         "artifacts/validation/fixture-signal-trace.json",
         "artifacts/validation/daily-proof-packet.json"
       ],
-      "prepare_commands": [
-        "npm run trace:traffic-qualified-pipeline"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -1477,7 +1475,11 @@
       "mutates_files": [
         "artifacts/validation/citation-surface-ledger.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run trace:traffic-qualified-pipeline"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "citation-targets",
@@ -1683,27 +1685,24 @@
       "depends_on": [
         "page-release-law"
       ],
-      "requires_files": [],
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
+      "requires_files": [
         "sitemap.xml",
         "index.html"
       ],
-      "prepare_mutates_files": [
-        "**/*.html",
-        "sitemap*.xml",
-        "content/_live/**",
-        "artifacts/validation/**"
-      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
       "produces_files": [
         "artifacts/validation/content-pattern-contract.json"
       ],
       "mutates_files": [
         "artifacts/validation/content-pattern-contract.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run build"
+      ],
+      "_retired_prepare_reason": "Unreachable: every prerequisite is a committed file, so run_validation_registry.js could never fire this prepare. These validators grade the committed rendered tree, which is the tree that was pushed; the declared refresh never ran and claiming it did was the untruth."
     },
     {
       "id": "content-safety",
@@ -1836,9 +1835,7 @@
       "requires_files": [
         "artifacts/validation/daily-proof-packet.json"
       ],
-      "prepare_commands": [
-        "npm run trace:traffic-qualified-pipeline"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -1847,7 +1844,11 @@
       "mutates_files": [
         "artifacts/validation/daily-proof-packet-validation.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run trace:traffic-qualified-pipeline"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "deep-workflow-data-trace",
@@ -2344,9 +2345,7 @@
         "data/signals/source_registry.json",
         "data/signals/firehose_ledger.json"
       ],
-      "prepare_commands": [
-        "npm run firehose:collect"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -2355,7 +2354,11 @@
       "mutates_files": [
         "artifacts/validation/firehose-source-contract.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run firehose:collect"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "frozen-content-recoverability",
@@ -2445,24 +2448,13 @@
         "artifacts/validation/frozen-output-integrity.json"
       ],
       "enforce_no_source_mutation": true,
-      "prepare_commands": [
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "_retired_prepare_commands": [
         "npm run build"
       ],
-      "prepare_produces_files": [
-        "sitemap.xml",
-        "index.html"
-      ],
-      "prepare_mutates_files": [
-        "**/*.html",
-        "sitemap*.xml",
-        "feed.xml",
-        "llms.txt",
-        "robots.txt",
-        "_redirects",
-        "content/_live/**",
-        "releases/**",
-        "artifacts/validation/**"
-      ]
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "full-scope-overhaul",
@@ -2783,8 +2775,8 @@
         "indexing",
         "search-submission"
       ],
-      "risk_prevented": "Prevents unsafe IndexNow submission batches from exceeding configured per-run URL limits or carrying invalid URLs.",
-      "why_existing_checks_do_not_cover": "Distribution manifest validation proves artifacts exist but does not separately bound the final IndexNow batch files consumed by submission tooling.",
+      "risk_prevented": "Bounds the IndexNow submission batch and proves the backlog the bound creates is accounted for. Hard-fails if it examines zero URLs: the loop used to `continue` past a missing file, so with .build absent it iterated nothing and printed PASS while declared HARD_FAIL - structurally incapable of failing. Also fails if batch + deferred does not account for the whole URL pool, or if the overflow pool has no rotating slots and no bounded coverage period, which is what made 2051 URLs 'deferred' forever while the same 100 shipped on every deploy.",
+      "why_existing_checks_do_not_cover": "distribution-inputs proves the artifacts exist; it does not bound the batch, does not reconcile submitted against deferred, and does not check that the deferred set is ever reachable. Nothing else reads the coverage receipt.",
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 120,
       "evidence_file": "artifacts/validation/indexnow-batch-budget.json",
@@ -2792,9 +2784,21 @@
       "depends_on": [
         "distribution-inputs"
       ],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
+      "requires_files": [
+        ".build/indexnow-priority.txt",
+        ".build/indexnow-batch.txt",
+        ".build/indexnow-deferred-batch.txt",
+        ".build/indexnow-batch-coverage.json"
+      ],
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        ".build/indexnow-priority.txt",
+        ".build/indexnow-batch.txt",
+        ".build/indexnow-deferred-batch.txt",
+        ".build/indexnow-batch-coverage.json"
+      ],
       "prepare_mutates_files": [],
       "produces_files": [
         "artifacts/validation/indexnow-batch-budget.json"
@@ -3232,27 +3236,20 @@
         "artifacts/validation/citation-100k-runway.json",
         "scripts/citation_intelligence/build_100k_citation_runway.js"
       ],
-      "prepare_commands": [
-        "npm run citation:100k-runway"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
-      "prepare_mutates_files": [
-        "data/strategy/citation_growth_strategy.json",
-        "data/queries/citation_fanout_opportunities_100k/**",
-        "data/measurement/citation_honesty_scoreboard.json",
-        "data/measurement/zero_dollar_citation_test_ledger.json",
-        "data/measurement/free_win_self_heal_queue.json",
-        "data/measurement/observed_external_citation_evidence.json",
-        "artifacts/validation/citation-100k-runway.json",
-        "reports/citation-100k-runway.md"
-      ],
+      "prepare_mutates_files": [],
       "produces_files": [
         "artifacts/validation/local-guides-tree-hygiene.json"
       ],
       "mutates_files": [
         "artifacts/validation/local-guides-tree-hygiene.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run citation:100k-runway"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "local-pantry",
@@ -3591,9 +3588,17 @@
       "evidence_file": "artifacts/validation/no-double-vertical-slugs.json",
       "failure_action": "stop release and repair",
       "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
+      "requires_files": [
+        "dist/index.html",
+        "insights",
+        "atlas"
+      ],
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "dist/index.html"
+      ],
       "prepare_mutates_files": [],
       "produces_files": [],
       "mutates_files": [
@@ -3634,27 +3639,24 @@
       "depends_on": [
         "page-release-law"
       ],
-      "requires_files": [],
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
+      "requires_files": [
         "sitemap.xml",
         "index.html"
       ],
-      "prepare_mutates_files": [
-        "**/*.html",
-        "sitemap*.xml",
-        "content/_live/**",
-        "artifacts/validation/**"
-      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
       "produces_files": [
         "artifacts/validation/internal-instruction-leak.json"
       ],
       "mutates_files": [
         "artifacts/validation/internal-instruction-leak.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run build"
+      ],
+      "_retired_prepare_reason": "Unreachable: every prerequisite is a committed file, so run_validation_registry.js could never fire this prepare. These validators grade the committed rendered tree, which is the tree that was pushed; the declared refresh never ran and claiming it did was the untruth."
     },
     {
       "id": "generator-instruction-refusal",
@@ -3926,31 +3928,20 @@
         "data/content/page_admission_registry.json",
         "sitemap.xml"
       ],
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
-        "sitemap.xml",
-        "index.html"
-      ],
-      "prepare_mutates_files": [
-        "**/*.html",
-        "sitemap*.xml",
-        "feed.xml",
-        "llms.txt",
-        "robots.txt",
-        "_redirects",
-        "content/_live/**",
-        "releases/**",
-        "artifacts/validation/**"
-      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
       "produces_files": [
         "artifacts/validation/page-release-law.json"
       ],
       "mutates_files": [
         "artifacts/validation/page-release-law.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run build"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "portfolio-kpi-truth",
@@ -4385,9 +4376,7 @@
       "requires_files": [
         "artifacts/validation/daily-citation-release-plan.json"
       ],
-      "prepare_commands": [
-        "npm run trace:traffic-qualified-pipeline"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -4396,7 +4385,11 @@
       "mutates_files": [
         "artifacts/validation/release-plan-integrity.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run trace:traffic-qualified-pipeline"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "render-integrity",
@@ -4513,23 +4506,9 @@
       "requires_files": [
         "data/page_families/velocity_page_specs.json"
       ],
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
-        "personal-injury/states/tennessee/statute-of-limitations/index.html"
-      ],
-      "prepare_mutates_files": [
-        "**/*.html",
-        "sitemap*.xml",
-        "feed.xml",
-        "llms.txt",
-        "robots.txt",
-        "_redirects",
-        "content/_live/**",
-        "releases/**",
-        "artifacts/validation/**"
-      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
       "produces_files": [
         "artifacts/validation/rendered-programmatic-substance.json"
       ],
@@ -4545,7 +4524,11 @@
         "data/evidence/source_registry.json",
         "data/evidence/state_source_registry.json",
         "data/page_families/velocity_page_specs.json"
-      ]
+      ],
+      "_retired_prepare_commands": [
+        "npm run build"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "repo-hygiene",
@@ -5010,9 +4993,7 @@
         "data/signals/raw/latest.json",
         "data/signals/normalized/latest.json"
       ],
-      "prepare_commands": [
-        "npm run firehose:collect && npm run firehose:normalize"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -5021,7 +5002,11 @@
       "mutates_files": [
         "artifacts/validation/signal-normalization.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run firehose:collect && npm run firehose:normalize"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "site-monolith",
@@ -5208,9 +5193,7 @@
         "_content_release_contract.json",
         "artifacts/validation/citation-strategy-gate.json"
       ],
-      "prepare_commands": [
-        "npm run strategy:gate"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -5219,7 +5202,11 @@
       "mutates_files": [
         "artifacts/validation/strategy-gate.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run strategy:gate"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "strategy-integrity-contract",
@@ -5942,9 +5929,7 @@
         "artifacts/validation/workflow-yaml-inventory.json",
         "package.json"
       ],
-      "prepare_commands": [
-        "npm run workflow:inventory"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -5953,7 +5938,11 @@
       "mutates_files": [
         "artifacts/validation/workflow-artifacts.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run workflow:inventory"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "workflow-contract",
@@ -6085,9 +6074,7 @@
         "artifacts/validation/workflow-yaml-inventory.json",
         "_content_release_contract.json"
       ],
-      "prepare_commands": [
-        "npm run workflow:inventory"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -6096,7 +6083,11 @@
       "mutates_files": [
         "artifacts/validation/workflow-runtime-mutations.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run workflow:inventory"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "workflow-topology",
@@ -6132,9 +6123,7 @@
       "requires_files": [
         "artifacts/validation/workflow-yaml-inventory.json"
       ],
-      "prepare_commands": [
-        "npm run workflow:inventory"
-      ],
+      "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
@@ -6143,7 +6132,11 @@
       "mutates_files": [
         "artifacts/validation/workflow-topology.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "_retired_prepare_commands": [
+        "npm run workflow:inventory"
+      ],
+      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
       "id": "workflow-yaml-inventory",
@@ -6350,6 +6343,216 @@
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "enforce_no_source_mutation": true
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "occupancy-reading-ratchet",
+      "title": "Occupancy measurement file may not shrink",
+      "path": "scripts/validators/validate_occupancy_reading_ratchet.js",
+      "command": "node scripts/validators/validate_occupancy_reading_ratchet.js",
+      "risk_prevented": "Detects destruction of paid citation-occupancy measurements. On 2026-08-29 a scheduled run rewrote data/signals/query_class_occupancy.json without --merge and 205 recorded readings became 36: 170 grounded provider calls deleted by a run that exited 0 and reported success. The missing --merge was fixed the same day and the file was NOT rehydrated, because nothing in the repo knew how many readings there were supposed to be. This holds the expected depth outside the file, ratchets it upward only, and hard-fails when the measurement file falls below it or when a query that once carried a reading no longer does. A query may leave the panel only via an explicit retired_queries entry carrying a reason. Hard-fails on zero probes examined and on an empty high-water mark.",
+      "requires_files": [
+        "data/signals/query_class_occupancy.json",
+        "data/signals/query_class_occupancy_highwater.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/occupancy-reading-ratchet.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/occupancy-reading-ratchet.json"
+      ],
+      "evidence_file": "artifacts/validation/occupancy-reading-ratchet.json",
+      "failure_action": "restore the truncated readings from a prior commit and re-derive with --rescore-only; never advance the mark to match the damage",
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "repair_command": "npm run occupancy:ratchet",
+      "repair_writes": [
+        "data/signals/query_class_occupancy_highwater.json"
+      ],
+      "why_existing_checks_do_not_cover": "occupancy-probe-contract and occupancy-control-separation both validate the CONTENTS of whatever rows the file happens to hold; both passed at 36 rows and would pass at 1. Neither knows how many rows there ought to be, so neither can see the file being truncated.",
+      "estimated_runtime_seconds": 2
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "llm-citation-observation-integrity",
+      "title": "LLM citation observation freshness, status and reading ratchet",
+      "path": "scripts/validators/validate_llm_citation_observation_integrity.js",
+      "command": "node scripts/validators/validate_llm_citation_observation_integrity.js",
+      "risk_prevented": "data/signals/llm_citation_observations.json had NO consumer and NO validator - a repo-wide grep found only its writer - so every regression in the only real citation measurement this repo takes was invisible. Prevents a provider-error run overwriting latest_summary with a null rate stamped with today's date (reproduced with an invalid key: a MEASURED 25-observation summary became answered:0, self_cited_rate_pct:null). Prevents the rolling window silently dropping paid grounded runs, ratcheting the file's depth against an external high-water mark exactly as the occupancy ratchet does after 170 paid readings were deleted by an exit-0 run on 2026-08-29. Fails a stale file whose probe has quietly stopped running, and fails on zero runs or zero observations examined.",
+      "requires_files": [
+        "scripts/llm_citation_probe.mjs",
+        "data/signals/llm_citation_observations.json",
+        "data/signals/llm_citation_observations_highwater.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/llm-citation-observation-integrity.json"
+      ],
+      "mutates_files": [],
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "occupancy-reading-ratchet covers data/signals/query_class_occupancy.json only. No validator referenced llm_citation_observations.json at all; the atlas does not read it and the atlas->release join does not read it, so nothing in the repo would have noticed the file being truncated, gone stale, or having its measured rate replaced by a null.",
+      "estimated_runtime_seconds": 2
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "push-after-rebase-revalidates",
+      "title": "A lane may not push a tree it did not validate",
+      "path": "scripts/validators/validate_push_after_rebase_revalidates.js",
+      "command": "node scripts/validators/validate_push_after_rebase_revalidates.js",
+      "risk_prevented": "Three steps push HEAD:main inside a retry loop that rebases onto whatever main has become. A rebase applying without conflict is not a rebase that changes nothing - origin/main moved, which is the only reason to rebase - so the pushed tree is a combination of two separately validated trees and is not itself validated. The absorption step in velocity-content-release.yml re-derived only on the CONFLICT path and pushed straight through on the clean one, and it is the step that runs first and most often. Checks the shell control flow, not proximity: an earlier draft of this validator matched a validate command anywhere between the rebase and the push and therefore PASSED the exact defect it was written to catch, because the defective step had one inside the conflict branch the clean path skips.",
+      "requires_files": [
+        ".github/workflows/velocity-content-release.yml",
+        ".github/workflows/velocity-full-rebuild.yml"
+      ],
+      "produces_files": [
+        "artifacts/validation/push-after-rebase-revalidates.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/push-after-rebase-revalidates.json"
+      ],
+      "timeout_seconds": 30,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "workflow-contract and velocity-intake-workflow assert that named tokens are PRESENT in the workflow text - including 'git push origin HEAD:main' and 'npm run validate:release'. Both were present in the defective step. Neither reads the shell control flow, so neither could tell that the validation sat on a branch the push path skips.",
+      "estimated_runtime_seconds": 1
+    },
+    {
+      "id": "rendered-route-admission-parity",
+      "title": "Rendered route admission parity",
+      "path": "scripts/validators/validate_rendered_route_admission_parity.js",
+      "command": "node scripts/validators/validate_rendered_route_admission_parity.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 5",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "render",
+        "sitemap",
+        "admission"
+      ],
+      "risk_prevented": "Pages render as live, crawlable, indexable HTML while appearing in no sitemap and carrying no noindex - neither published nor withheld - and the gap grows silently because nothing records it. 197 such pages were found on 2026-08-29; 183 turned out to be a legitimate named stop (retired via ACTIVE_301 in _redirects) and 15 were a genuine undeclared backlog. build_site.js only console.warn'd the difference, which is why the gap grew from the 190 named in page_admission.js's own header to 198 with nothing noticing.",
+      "why_existing_checks_do_not_cover": "sitemap-parity compares content/_live/published_urls.json against sitemaps/sitemap_all.xml, two artifacts written from the same allUrls array a few lines apart in build_site.js. It agrees with itself by construction and never walks the rendered tree, so a page that never entered allUrls is invisible to it. This validator walks the rendered tree instead, and also checks the reverse direction - routes advertised in a sitemap with no rendered file.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/rendered-route-admission-parity.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "data/content/rendered_route_exclusions.json",
+        "_redirects",
+        "sitemaps/sitemap_all.xml"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [],
+      "mutates_files": [
+        "artifacts/validation/rendered-route-admission-parity.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 5",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "feeds/promotion-candidates.json",
+        "dist/feeds/promotion-candidates.json"
+      ],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "promotion-candidates-feed",
+      "title": "Public candidate feed is a live projection, not a souvenir",
+      "path": "scripts/validators/validate_promotion_candidates_feed.js",
+      "command": "node scripts/validators/validate_promotion_candidates_feed.js",
+      "risk_prevented": "local-guides-generator consumes this feed over plain HTTPS. The previous cross-repo feed, content/_shared/promotion_candidates.json, froze on 2026-04-13 when both of its writers were retired and nothing noticed for four months because no validator named the file - the consumer read a stale snapshot and reported success. Asserts the feed agrees with the live source it projects (same count, same generated_at), carries only whitelisted public fields so an internal scoring field cannot reach a public URL by being added upstream, names a stop reason whenever it is empty so an empty feed is distinguishable from a dead producer, and is not advertised as a page. Hard-fails on zero assertions made.",
+      "requires_files": [
+        "feeds/promotion-candidates.json",
+        "dist/feeds/promotion-candidates.json",
+        "data/queries/measured_demand_candidates.json",
+        "scripts/feeds/build_promotion_candidates_feed.js",
+        "robots.txt"
+      ],
+      "produces_files": [
+        "artifacts/validation/promotion-candidates-feed.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/promotion-candidates-feed.json"
+      ],
+      "evidence_file": "artifacts/validation/promotion-candidates-feed.json",
+      "failure_action": "rebuild the feed from its source before publishing",
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "No validator referenced the previous cross-repo feed at all, which is why it went stale unobserved. sitemap-parity and rendered-route-admission-parity govern HTML routes and ignore a .json data feed entirely; nothing else compares a published artifact against the live file it claims to project.",
+      "estimated_runtime_seconds": 2
     }
   ],
   "legacy_policy": {

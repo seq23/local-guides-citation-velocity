@@ -176,6 +176,33 @@ const pages = [];
   }
 })(ROOT);
 
+// ------------------------------------------------------------------- Rule 0
+// What this used to do, and why that was wrong
+// --------------------------------------------
+// The walk above collects whatever .html it finds and every number below is a
+// percentage of THAT. On the real tree it is 2351 pages and "missing on 0" means
+// something. On a tree with the rendered page directories removed it collected
+// 2 files, reported "coverage 50% missing on 1", and still printed
+// CONTENT PATTERN CONTRACT PASS with exit 0 - reproduced in a sandbox. A
+// coverage percentage over a denominator nobody checked is not a measurement:
+// pages that are absent cannot fail a block check, so truncating the tree is the
+// fastest way to make this validator green.
+//
+// The fix is a FLOOR, not a loosened assertion. Measured on the real tree on
+// 2026-08-29: this walk collected 2351 pages ("CONTENT PATTERN CONTRACT: 2351
+// pages checked"). MIN_PAGES sits below that so ordinary publishing churn does
+// not trip it, and far above the handful a truncated tree exposes. Changing it
+// must be deliberate: re-measure by running this validator and reading the count
+// it prints on the first line.
+const MEASURED_PAGES_2026_08_29 = 2351;
+const MIN_PAGES = 2000;
+if (pages.length < MIN_PAGES) {
+  console.error(`CONTENT PATTERN CONTRACT: STOP - only ${pages.length} HTML page(s) found; expected at least ${MIN_PAGES} (the real tree measured ${MEASURED_PAGES_2026_08_29} on 2026-08-29).`);
+  console.error('  The tree is unbuilt or truncated, so this check graded almost nothing and every coverage percentage below would be computed over a denominator that is not the site.');
+  console.error('  Remedy: run against a complete checkout and re-run. A page that is absent is not a page that carries its blocks.');
+  process.exit(1);
+}
+
 const blockingFailures = [];
 const exempted = [];
 const gaps = {};

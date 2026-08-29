@@ -122,6 +122,10 @@ jobs:
           if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
           git commit -m "absorb agent runs $(date -u +%F)"
+          # The base this absorption was built and validated against. If a rebase
+          # moves it, the rebased tree has to be re-derived and re-validated
+          # before it may be pushed to main.
+          BASE_BEFORE_REBASE="$(git rev-parse HEAD~1)"
           # The retry loop used to be unreachable. `git rebase` is a bare command
           # under `bash -e`, so a conflicting rebase killed the step on attempt 1
           # and attempts 2 and 3 never ran - 2026-08-27 died on
@@ -148,8 +152,33 @@ jobs:
                 exit 0
               fi
               git commit -m "absorb agent runs $(date -u +%F)"
+            elif [ "$(git rev-parse HEAD~1)" != "$BASE_BEFORE_REBASE" ]; then
+              # A CLEAN rebase still produces a tree nobody validated.
+              #
+              # This step validated the absorption against the main it started
+              # from, then rebased onto whatever main had become, then pushed.
+              # A rebase that applies without conflict is not a rebase that
+              # changes nothing: origin/main moved - that is why we are rebasing -
+              # so the tree being pushed is a combination of two validated trees,
+              # which is not itself a validated tree. The push surface here is
+              # main.
+              #
+              # Both sibling push loops in this repo already close this: the
+              # Velocity step below, and velocity-full-rebuild.yml, each re-run
+              # build + validate:release after a successful rebase and amend the
+              # result. This step was the only one that did not, and it is the
+              # step that runs first and most often.
+              #
+              # Only re-derive when the base actually moved. A rebase onto the
+              # same base is a no-op and re-validating it would double the
+              # runtime of every clean run for nothing.
+              npm run build
+              npm run validate:release
+              git add -A
+              git commit --amend --no-edit
             fi
             if git push origin HEAD:main; then exit 0; fi
+            BASE_BEFORE_REBASE="$(git rev-parse origin/main)"
             sleep $((attempt * 15))
           done
           exit 1

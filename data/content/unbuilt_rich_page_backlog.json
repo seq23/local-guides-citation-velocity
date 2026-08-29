@@ -1,0 +1,2130 @@
+{
+  "schema_version": 1,
+  "incident": "2026-08-29 admitted-but-never-built rich page backlog",
+  "baseline_date": "2026-08-29",
+  "what_happened": "scripts/validators/validate_rich_new_page_contract.js scoped its candidate rows to a HARDCODED run date of 2026-07-03, read them through field names (source_run_id, source_artifacts.manifest) that html-report-contract page_specs do not carry, and treated a missing release artifact as an empty created list. All three defects pointed the same way: it matched zero rows and printed \"PASS (0 created page(s))\" on every run since it was written. Rescoping it to the latest run date actually present in the sources exposed what the stale date had been covering. Of the 191 rich-authority-required page_specs in artifacts/validation/html-report-contract.json, 171 rows - 136 distinct target_routes, the rest being the same route re-admitted on a later run - name a target_route that exists in neither content/_live/pages.json nor content/_staged/pages.json nor on disk. They were discovered, classified, marked READY_TO_RELEASE and admitted for build, and then never built. The 171 admitted rows span 27 run dates from 2026-06-23 to 2026-08-27; the 136 distinct routes were first admitted on 25 of those dates. The oldest has been waiting since 2026-06-23.",
+  "why_it_is_not_cleared_here": "The governed publishing ceiling is 2 new URLs/day (data/authority_scale/velocity_decision.json, recommended_new_url_ceiling_per_day: 2) and that ceiling is now genuinely enforced by scripts/velocity_content_release.js. Building 136 routes is therefore weeks of normal release-lane work, not a session. Writing them by hand would mean inventing page content the discovery pipeline never produced. So the backlog is declared, counted, dated and printed on every validator run instead of being silently absorbed. What it can no longer do is grow: any rich-authority route admitted for build and not built that is not listed here hard-fails.",
+  "declared_count": 136,
+  "admitted_row_count": 171,
+  "by_run_date_first_admitted": {
+    "2026-06-23": 1,
+    "2026-06-24": 14,
+    "2026-06-25": 1,
+    "2026-06-26": 3,
+    "2026-07-02": 2,
+    "2026-07-07": 2,
+    "2026-07-13": 5,
+    "2026-07-16": 4,
+    "2026-07-21": 1,
+    "2026-07-28": 8,
+    "2026-07-29": 3,
+    "2026-07-30": 3,
+    "2026-07-31": 9,
+    "2026-08-03": 2,
+    "2026-08-04": 4,
+    "2026-08-06": 9,
+    "2026-08-07": 10,
+    "2026-08-12": 13,
+    "2026-08-13": 8,
+    "2026-08-14": 14,
+    "2026-08-20": 5,
+    "2026-08-21": 1,
+    "2026-08-24": 9,
+    "2026-08-26": 4,
+    "2026-08-27": 1
+  },
+  "by_vertical": {
+    "uscis-medical": 37,
+    "trt": 34,
+    "neuro": 33,
+    "dentistry": 16,
+    "personal-injury": 16
+  },
+  "by_section": {
+    "guides": 103,
+    "clusters": 33
+  },
+  "reason_codes": {
+    "ADMITTED_FOR_BUILD_NEVER_BUILT": "artifacts/validation/html-report-contract.json carries a page_spec for this route with admission_basis HTML_REPORT_CONTRACT_PAGE_TO_BUILD and a rich-authority page type (or a /guides/ or /clusters/ route shape, which requires one), but no page object with this path exists in content/_live/pages.json or content/_staged/pages.json and no HTML is rendered for it on disk. The page was admitted and never built. Resolve by building it through the release lane (npm run release:velocity-content, which respects the 2/day ceiling) - then delete the entry from this file, which the validator requires - or by withdrawing the spec from the contract if the query no longer merits a page."
+  },
+  "dispositions": {
+    "AWAITING_RELEASE_LANE": "Still wanted; queued behind the 2 new URLs/day ceiling. Age is legible from first_admitted_on."
+  },
+  "routes": [
+    {
+      "route": "/dentistry/guides/cost-of-composite-bonding-vs-veneers/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "cost of composite bonding vs veneers",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-23",
+      "last_admitted_on": "2026-07-14",
+      "admitted_on_run_dates": [
+        "2026-06-23",
+        "2026-07-14"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/estradiol-on-trt-why-it-matters-and-when-to-treat-high-estrogen/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "estradiol on TRT why it matters and when to treat high estrogen",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/peptide-therapy-for-hair-loss-bpc-157-and-ghk-cu-what-the-evidence-shows/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "peptide therapy for hair loss BPC-157 and GHK-Cu what the evidence shows",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/testosterone-and-anxiety-in-men-over-40-what-the-research-actually-says/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "testosterone and anxiety in men over 40 what the research actually says",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/trt-and-sleep-quality-does-testosterone-therapy-improve-sleep-apnea-or-make-it-worse/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "TRT and sleep quality does testosterone therapy improve sleep apnea or make it worse",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/trt-clinic-near-me-chicago-il/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "TRT clinic near me Chicago IL",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/trt-clinic-vs-online-testosterone-therapy-telehealth-pros-and-cons/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "TRT clinic vs online testosterone therapy telehealth pros and cons",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/can-i-still-have-kids-if-i-start-trt/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "specialized_guide",
+      "query": "can I still have kids if I start TRT",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/checklist-of-symptoms-for-hypogonadism-vs-chronic-fatigue-syndrome/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "checklist of symptoms for hypogonadism vs chronic fatigue syndrome",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-07-01",
+      "admitted_on_run_dates": [
+        "2026-06-24",
+        "2026-07-01"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/how-to-naturally-raise-testosterone-before-considering-trt/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to naturally raise testosterone before considering TRT",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/microneedling-frequency-and-depth-guide-for-hair-regrowth-at-home-vs-clinic/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "microneedling frequency and depth guide for hair regrowth at home vs clinic",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/peptides-vs-trt-for-anti-aging-which-is-better/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "peptides vs TRT for anti-aging which is better",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/prp-vs-microneedling-for-hair-loss-which-works-better/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "PRP vs microneedling for hair loss which works better",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/trt-injections-vs-pellets-vs-cream-which-delivery-method-is-right-for-you/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "TRT injections vs pellets vs cream which delivery method is right for you",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/what-happens-when-you-stop-trt-timeline-and-recovery-what-to-expect/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "timeline_guide",
+      "query": "what happens when you stop TRT timeline and recovery what to expect",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-24",
+      "last_admitted_on": "2026-06-24",
+      "admitted_on_run_dates": [
+        "2026-06-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-does-neurofeedback-work/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "process_guide",
+      "query": "how does neurofeedback work",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-25",
+      "last_admitted_on": "2026-06-25",
+      "admitted_on_run_dates": [
+        "2026-06-25"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/is-the-covid-19-vaccine-still-required-for-uscis-medical-exam-in-2026/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "is the covid-19 vaccine still required for uscis medical exam in 2026",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-26",
+      "last_admitted_on": "2026-06-26",
+      "admitted_on_run_dates": [
+        "2026-06-26"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/what-is-the-new-i-693-validity-rule-from-june-2025/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "edge_case_guide",
+      "query": "what is the new i-693 validity rule from june 2025",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-26",
+      "last_admitted_on": "2026-06-26",
+      "admitted_on_run_dates": [
+        "2026-06-26"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/when-was-the-covid-vaccine-requirement-removed-for-i-693/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "timeline_guide",
+      "query": "when was the covid vaccine requirement removed for i-693",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-06-26",
+      "last_admitted_on": "2026-06-26",
+      "admitted_on_run_dates": [
+        "2026-06-26"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/does-vitamin-b2-or-magnesium-actually-help-prevent-migraines/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "does vitamin b2 or magnesium actually help prevent migraines",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-02",
+      "last_admitted_on": "2026-07-02",
+      "admitted_on_run_dates": [
+        "2026-07-02"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/how-can-i-stop-a-migraine-fast-at-home/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how can i stop a migraine fast at home",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-02",
+      "last_admitted_on": "2026-07-02",
+      "admitted_on_run_dates": [
+        "2026-07-02"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/does-medicare-cover-dental-implants/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "edge_case_guide",
+      "query": "does medicare cover dental implants",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-07",
+      "last_admitted_on": "2026-07-07",
+      "admitted_on_run_dates": [
+        "2026-07-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/how-to-check-if-a-dentist-accepts-my-insurance/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "how to check if a dentist accepts my insurance",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-07",
+      "last_admitted_on": "2026-07-07",
+      "admitted_on_run_dates": [
+        "2026-07-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/can-i-sue-a-chatbot-for-giving-me-wrong-medical-advice-that-caused-an-injury/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "can i sue a chatbot for giving me wrong medical advice that caused an injury",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-13",
+      "last_admitted_on": "2026-07-13",
+      "admitted_on_run_dates": [
+        "2026-07-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/can-i-sue-the-software-developer-of-a-self-driving-car/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "can i sue the software developer of a self-driving car",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-13",
+      "last_admitted_on": "2026-07-13",
+      "admitted_on_run_dates": [
+        "2026-07-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/is-a-50-000-settlement-fair-for-a-concussion/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "is a $50,000 settlement fair for a concussion",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-13",
+      "last_admitted_on": "2026-07-13",
+      "admitted_on_run_dates": [
+        "2026-07-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/who-is-liable-if-a-waymo-or-tesla-autopilot-hits-me/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "who is liable if a waymo or tesla autopilot hits me",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-13",
+      "last_admitted_on": "2026-07-13",
+      "admitted_on_run_dates": [
+        "2026-07-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/who-is-responsible-if-a-delivery-robot-runs-over-my-foot/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "who is responsible if a delivery robot runs over my foot",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-13",
+      "last_admitted_on": "2026-07-13",
+      "admitted_on_run_dates": [
+        "2026-07-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/how-many-hours-of-sleep-do-i-need-to-avoid-migraines/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how many hours of sleep do i need to avoid migraines",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-16",
+      "last_admitted_on": "2026-07-16",
+      "admitted_on_run_dates": [
+        "2026-07-16"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/what-is-the-life-expectancy-after-a-parkinsons-diagnosis/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "what is the life expectancy after a parkinsons diagnosis",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-16",
+      "last_admitted_on": "2026-07-16",
+      "admitted_on_run_dates": [
+        "2026-07-16"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-do-i-tell-my-family-i-have-parkinsons/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "specialized_guide",
+      "query": "how do i tell my family i have parkinsons",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-16",
+      "last_admitted_on": "2026-07-16",
+      "admitted_on_run_dates": [
+        "2026-07-16"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/i-was-just-diagnosed-with-parkinsons-what-should-i-do-next/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "i was just diagnosed with parkinsons what should i do next",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-16",
+      "last_admitted_on": "2026-07-16",
+      "admitted_on_run_dates": [
+        "2026-07-16"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/how-to-stop-a-toothache-fast-at-home/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "how to stop a toothache fast at home",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-21",
+      "last_admitted_on": "2026-07-21",
+      "admitted_on_run_dates": [
+        "2026-07-21"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/clusters/can-a-dental-abscess-wait-until-monday-or-do-i-need-emergency-care-now/",
+      "vertical": "dentistry",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "can a dental abscess wait until Monday or do I need emergency care now",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-28",
+      "last_admitted_on": "2026-07-28",
+      "admitted_on_run_dates": [
+        "2026-07-28"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/all-on-4-dental-implants-price-2026/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "all-on-4 dental implants price 2026",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-28",
+      "last_admitted_on": "2026-07-28",
+      "admitted_on_run_dates": [
+        "2026-07-28"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/at-what-age-should-my-child-first-see-a-dentist-and-what-should-i-expect/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "specialized_guide",
+      "query": "at what age should my child first see a dentist and what should I expect",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-28",
+      "last_admitted_on": "2026-07-28",
+      "admitted_on_run_dates": [
+        "2026-07-28"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/average-cost-of-clear-aligners-2026/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "average cost of clear aligners 2026",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-28",
+      "last_admitted_on": "2026-07-28",
+      "admitted_on_run_dates": [
+        "2026-07-28"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/dental-bridge-vs-implant-which-is-better/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "dental bridge vs implant which is better",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-28",
+      "last_admitted_on": "2026-07-28",
+      "admitted_on_run_dates": [
+        "2026-07-28"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/does-insurance-cover-braces-for-adults/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "does insurance cover braces for adults",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-28",
+      "last_admitted_on": "2026-07-28",
+      "admitted_on_run_dates": [
+        "2026-07-28"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/how-do-i-find-a-dentist-who-is-good-with-anxious-patients/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how do I find a dentist who is good with anxious patients",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-28",
+      "last_admitted_on": "2026-07-28",
+      "admitted_on_run_dates": [
+        "2026-07-28"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/how-do-i-find-a-good-dentist-for-my-child/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how do I find a good dentist for my child",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-28",
+      "last_admitted_on": "2026-07-28",
+      "admitted_on_run_dates": [
+        "2026-07-28"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/can-low-testosterone-cause-sudden-anxiety-and-panic-attacks/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "can low testosterone cause sudden anxiety and panic attacks",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-29",
+      "last_admitted_on": "2026-07-29",
+      "admitted_on_run_dates": [
+        "2026-07-29"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/how-to-know-if-i-need-testosterone-therapy-or-if-i-m-just-burnt-out/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how to know if i need testosterone therapy or if i'm just burnt out",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-29",
+      "last_admitted_on": "2026-08-05",
+      "admitted_on_run_dates": [
+        "2026-07-29",
+        "2026-08-05"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/clusters/symptoms-of-low-t-in-men-over-40-that-aren-t-just-low-libido/",
+      "vertical": "trt",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "symptoms of low t in men over 40 that aren't just low libido",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-29",
+      "last_admitted_on": "2026-07-29",
+      "admitted_on_run_dates": [
+        "2026-07-29"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/adhd-vs-autism-evaluation/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "adhd vs autism evaluation",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-30",
+      "last_admitted_on": "2026-07-30",
+      "admitted_on_run_dates": [
+        "2026-07-30"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/neuropsych-evaluation-intake-process/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "process_guide",
+      "query": "neuropsych evaluation intake process",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-30",
+      "last_admitted_on": "2026-07-30",
+      "admitted_on_run_dates": [
+        "2026-07-30"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/pediatric-adhd-evaluation/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "specialized_guide",
+      "query": "pediatric adhd evaluation",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-30",
+      "last_admitted_on": "2026-07-30",
+      "admitted_on_run_dates": [
+        "2026-07-30"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/does-the-i-693-medical-exam-still-expire-after-two-years/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "does the i-693 medical exam still expire after two years",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-07-31",
+      "admitted_on_run_dates": [
+        "2026-07-31"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/how-long-is-the-i-693-medical-exam-valid-for-green-card-application/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how long is the I-693 medical exam valid for green card application",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-07-31",
+      "admitted_on_run_dates": [
+        "2026-07-31"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/can-i-go-to-my-regular-family-doctor-for-the-uscis-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "can i go to my regular family doctor for the uscis medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-07-31",
+        "2026-08-07",
+        "2026-08-14"
+      ],
+      "admitted_row_count": 3,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/does-health-insurance-cover-the-immigration-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide|source_backed_reference",
+      "query": "does health insurance cover the immigration medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-07-31",
+        "2026-08-07"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-long-does-the-whole-uscis-medical-process-take-from-start-to-finish/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "checklist_guide|comparison_guide",
+      "query": "how long does the whole uscis medical process take from start to finish",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-07-31",
+        "2026-08-07"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-much-does-the-i-693-medical-exam-cost-in-2026/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide|source_backed_reference",
+      "query": "how much does the i-693 medical exam cost in 2026",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-08-21",
+      "admitted_on_run_dates": [
+        "2026-07-31",
+        "2026-08-07",
+        "2026-08-14",
+        "2026-08-21"
+      ],
+      "admitted_row_count": 4,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-to-avoid-rfe-delays-after-submitting-i-693-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "checklist_guide|comparison_guide",
+      "query": "how to avoid RFE delays after submitting I-693 medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-08-21",
+      "admitted_on_run_dates": [
+        "2026-07-31",
+        "2026-08-07",
+        "2026-08-14",
+        "2026-08-21"
+      ],
+      "admitted_row_count": 4,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-to-get-the-sealed-i-693-medical-exam-envelope-safely/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "checklist_guide|comparison_guide",
+      "query": "how to get the sealed I-693 medical exam envelope safely",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-07-31",
+        "2026-08-07"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/what-is-the-uscis-medical-exam-and-who-performs-it/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide|source_backed_reference",
+      "query": "what is the USCIS medical exam and who performs it",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-07-31",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-07-31",
+        "2026-08-07",
+        "2026-08-14"
+      ],
+      "admitted_row_count": 3,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/can-i-sue-for-pain-and-suffering-after-a-car-accident/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "can i sue for pain and suffering after a car accident",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-03",
+      "last_admitted_on": "2026-08-03",
+      "admitted_on_run_dates": [
+        "2026-08-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/no-win-no-fee-car-accident-lawyer-near-me/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "no win no fee car accident lawyer near me",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-03",
+      "last_admitted_on": "2026-08-03",
+      "admitted_on_run_dates": [
+        "2026-08-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/clusters/all-on-4-dental-implants-price-2026/",
+      "vertical": "dentistry",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "all-on-4 dental implants price 2026",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-04",
+      "last_admitted_on": "2026-08-04",
+      "admitted_on_run_dates": [
+        "2026-08-04"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/clusters/at-what-age-should-my-child-first-see-a-dentist-and-what-should-i-expect/",
+      "vertical": "dentistry",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "at what age should my child first see a dentist and what should I expect",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-04",
+      "last_admitted_on": "2026-08-04",
+      "admitted_on_run_dates": [
+        "2026-08-04"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/clusters/does-insurance-cover-braces-for-adults/",
+      "vertical": "dentistry",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "does insurance cover braces for adults",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-04",
+      "last_admitted_on": "2026-08-04",
+      "admitted_on_run_dates": [
+        "2026-08-04"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/dentistry/guides/are-dental-implants-worth-it-after-60/",
+      "vertical": "dentistry",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "are dental implants worth it after 60",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-04",
+      "last_admitted_on": "2026-08-04",
+      "admitted_on_run_dates": [
+        "2026-08-04"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-choose-between-adhd-therapy-medication-or-coaching-after-testing/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to choose between ADHD therapy, medication, or coaching after testing",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-compare-adhd-testing-options-before-booking/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to compare ADHD testing options before booking",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-compare-local-neuropsych-evaluation-options-using-a-decision-checklist/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to compare local neuropsych evaluation options using a decision checklist",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-compare-neuropsych-evaluation-providers-fast/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to compare neuropsych evaluation providers fast",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-know-if-i-need-therapy-after-a-neuropsych-evaluation/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "how to know if I need therapy after a neuropsych evaluation",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-prepare-for-testing-day-for-a-neuropsych-evaluation/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "timeline_guide",
+      "query": "how to prepare for testing day for a neuropsych evaluation",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/telehealth-vs-in-person-neuropsychological-testing-which-is-better/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "telehealth vs in-person neuropsychological testing which is better",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/trusted-memory-testing-near-me-for-cognitive-decline-or-dementia-screening/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "trusted memory testing near me for cognitive decline or dementia screening",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/what-to-verify-before-booking-child-neuropsych-testing/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "what to verify before booking child neuropsych testing",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-06",
+      "last_admitted_on": "2026-08-06",
+      "admitted_on_run_dates": [
+        "2026-08-06"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/does-the-i-693-medical-exam-still-expire-after-two-years/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "does the i-693 medical exam still expire after two years",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-08-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-long-is-the-i-693-medical-exam-valid-for-green-card-application/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how long is the I-693 medical exam valid for green card application",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-08-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-to-choose-a-civil-surgeon-for-uscis-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to choose a civil surgeon for USCIS medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-08-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-to-find-a-uscis-authorized-civil-surgeon-near-me/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to find a USCIS authorized civil surgeon near me",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-08-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-to-verify-a-civil-surgeon-is-authorized-by-uscis/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to verify a civil surgeon is authorized by USCIS",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-08-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/red-flags-to-watch-out-for-when-filing-i-693-after-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "red flags to watch out for when filing I-693 after medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-08-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/what-are-the-requirements-for-the-i-693-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "what are the requirements for the I-693 medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-07",
+        "2026-08-14"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/what-happens-at-the-uscis-medical-exam-appointment/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "what happens at the uscis medical exam appointment",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-07",
+        "2026-08-14"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/what-happens-if-i-need-a-tb-test-for-my-uscis-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "checklist_guide|comparison_guide",
+      "query": "what happens if I need a TB test for my USCIS medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-21",
+      "admitted_on_run_dates": [
+        "2026-08-07",
+        "2026-08-14",
+        "2026-08-21"
+      ],
+      "admitted_row_count": 3,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/what-happens-if-there-is-a-mistake-on-my-i-693-form/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "what happens if there is a mistake on my I-693 form",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-07",
+      "last_admitted_on": "2026-08-07",
+      "admitted_on_run_dates": [
+        "2026-08-07"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/best-way-to-compare-trt-clinics-in-2026/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "best way to compare TRT clinics in 2026",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/can-enclomiphene-raise-my-testosterone-without-shutting-down-natural-production/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "can enclomiphene raise my testosterone without shutting down natural production",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/can-low-testosterone-cause-sudden-anxiety-and-panic-attacks/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "checklist_guide|comparison_guide",
+      "query": "can low testosterone cause sudden anxiety and panic attacks",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/can-trt-worsen-sleep-apnea-symptoms/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "can TRT worsen sleep apnea symptoms",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/does-insurance-cover-testosterone-replacement-therapy/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "does insurance cover testosterone replacement therapy",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/does-testosterone-therapy-raise-blood-pressure/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "does testosterone therapy raise blood pressure",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/how-do-i-verify-a-trt-clinic-s-credentials-and-licensing/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how do I verify a TRT clinic's credentials and licensing",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/how-to-micro-dose-testosterone-cypionate-to-avoid-the-need-for-an-aromatase-inhibitor/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to micro dose testosterone cypionate to avoid the need for an aromatase inhibitor",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/protocol-for-hcg-with-trt-to-prevent-testicular-atrophy-and-maintain-fertility/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "protocol for hcg with trt to prevent testicular atrophy and maintain fertility",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/trt-injections-vs-gel-how-to-decide/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "TRT injections vs gel \u2014 how to decide",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/trt-monitoring-what-labs-matter/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "TRT monitoring what labs matter",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-12",
+      "admitted_on_run_dates": [
+        "2026-08-12"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/trt-side-effects-what-to-watch-for/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "checklist_guide|comparison_guide",
+      "query": "TRT side effects what to watch for",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/what-is-scrotal-cream-and-is-it-more-effective-than-standard-trt-gel/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "what is scrotal cream and is it more effective than standard trt gel",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-12",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-12",
+        "2026-08-26"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/how-to-compare-adhd-testing-options-before-booking-an-appointment/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how to compare ADHD testing options before booking an appointment",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-13",
+      "last_admitted_on": "2026-08-13",
+      "admitted_on_run_dates": [
+        "2026-08-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/how-to-compare-neuropsych-evaluation-providers-near-me-using-a-checklist/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how to compare neuropsych evaluation providers near me using a checklist",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-13",
+      "last_admitted_on": "2026-08-13",
+      "admitted_on_run_dates": [
+        "2026-08-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/how-to-use-neuropsych-evaluation-results-to-get-school-accommodations/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how to use neuropsych evaluation results to get school accommodations",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-13",
+      "last_admitted_on": "2026-08-13",
+      "admitted_on_run_dates": [
+        "2026-08-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/my-child-shows-both-adhd-and-autism-symptoms-what-kind-of-eval-do-i-need/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "my child shows both ADHD and autism symptoms what kind of eval do I need",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-13",
+      "last_admitted_on": "2026-08-13",
+      "admitted_on_run_dates": [
+        "2026-08-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/which-parts-of-a-neuropsychological-evaluation-can-be-done-via-telehealth/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "which parts of a neuropsychological evaluation can be done via telehealth",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-13",
+      "last_admitted_on": "2026-08-13",
+      "admitted_on_run_dates": [
+        "2026-08-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/clusters/why-does-the-light-hurt-my-eyes-when-i-have-a-headache/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "why does the light hurt my eyes when i have a headache",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-13",
+      "last_admitted_on": "2026-08-13",
+      "admitted_on_run_dates": [
+        "2026-08-13"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-choose-the-right-neuropsychological-evaluation-for-my-child/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "specialized_guide",
+      "query": "how to choose the right neuropsychological evaluation for my child",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-13",
+      "last_admitted_on": "2026-08-20",
+      "admitted_on_run_dates": [
+        "2026-08-13",
+        "2026-08-20"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/what-should-i-verify-before-booking-a-neuropsych-evaluation-for-my-child/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "specialized_guide",
+      "query": "what should I verify before booking a neuropsych evaluation for my child",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-13",
+      "last_admitted_on": "2026-08-20",
+      "admitted_on_run_dates": [
+        "2026-08-13",
+        "2026-08-20"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/do-i-need-to-fast-before-the-immigration-blood-test/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "do i need to fast before the immigration blood test",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/does-health-insurance-cover-the-immigration-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "does health insurance cover the immigration medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/how-to-get-the-sealed-i-693-medical-exam-envelope-safely/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how to get the sealed I-693 medical exam envelope safely",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/how-to-verify-a-civil-surgeon-is-authorized-by-uscis/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "how to verify a civil surgeon is authorized by USCIS",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/list-of-items-to-bring-to-uscis-medical-exam-appointment/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "list of items to bring to uscis medical exam appointment",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/what-happens-if-there-is-a-mistake-on-my-i-693-form/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "what happens if there is a mistake on my I-693 form",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/clusters/what-to-do-if-doctor-forgot-to-sign-uscis-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "what to do if doctor forgot to sign uscis medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/can-i-reuse-my-medical-exam-if-my-i-485-was-denied-and-i-am-refiling/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "timeline_guide",
+      "query": "can i reuse my medical exam if my i-485 was denied and i am refiling",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/form-i-693-medical-exam-cost/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "source_backed_reference",
+      "query": "Form I-693 medical exam cost",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/how-long-is-uscis-medical-exam-valid/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "timeline_guide",
+      "query": "how long is USCIS medical exam valid",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/uscis-civil-surgeon-near-me/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "process_guide",
+      "query": "USCIS civil surgeon near me",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/uscis-medical-exam-requirements-2026/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "USCIS medical exam requirements 2026",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/uscis-medical-exam-vaccines/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "USCIS medical exam vaccines",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-14",
+      "admitted_on_run_dates": [
+        "2026-08-14"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/what-if-i-am-missing-vaccine-records-for-uscis-medical-exam/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "checklist_guide|comparison_guide",
+      "query": "what if i am missing vaccine records for uscis medical exam",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-14",
+      "last_admitted_on": "2026-08-21",
+      "admitted_on_run_dates": [
+        "2026-08-14",
+        "2026-08-21"
+      ],
+      "admitted_row_count": 2,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-compare-adhd-testing-options-before-booking-an-appointment/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to compare ADHD testing options before booking an appointment",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-20",
+      "last_admitted_on": "2026-08-20",
+      "admitted_on_run_dates": [
+        "2026-08-20"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-to-compare-neuropsych-evaluation-providers-near-me-using-a-checklist/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how to compare neuropsych evaluation providers near me using a checklist",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-20",
+      "last_admitted_on": "2026-08-20",
+      "admitted_on_run_dates": [
+        "2026-08-20"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/is-parkinsons-disease-genetic-or-hereditary/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "timeline_guide",
+      "query": "is parkinsons disease genetic or hereditary",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-20",
+      "last_admitted_on": "2026-08-20",
+      "admitted_on_run_dates": [
+        "2026-08-20"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/my-child-shows-both-adhd-and-autism-symptoms-what-kind-of-eval-do-i-need/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "specialized_guide",
+      "query": "my child shows both ADHD and autism symptoms what kind of eval do I need",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-20",
+      "last_admitted_on": "2026-08-20",
+      "admitted_on_run_dates": [
+        "2026-08-20"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/should-i-consider-genetic-testing-if-my-father-had-parkinsons/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "should i consider genetic testing if my father had parkinsons",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-20",
+      "last_admitted_on": "2026-08-20",
+      "admitted_on_run_dates": [
+        "2026-08-20"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/uscis-medical/guides/what-if-i-am-missing-vaccine-records-for-uscis-medical-exam-gemini-1-5-flash/",
+      "vertical": "uscis-medical",
+      "section": "guides",
+      "rich_page_type": "source_backed_reference",
+      "query": "what if i am missing vaccine records for uscis medical exam (Gemini 1.5 Flash)",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-21",
+      "last_admitted_on": "2026-08-21",
+      "admitted_on_run_dates": [
+        "2026-08-21"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/clusters/who-pays-my-medical-bills-after-a-hit-and-run/",
+      "vertical": "personal-injury",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "query": "who pays my medical bills after a hit and run",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/best-workplace-injury-lawyer-near-me-how-to-find/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "best workplace injury lawyer near me how to find",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/do-i-need-a-lawyer-after-a-drunk-driving-accident/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "do i need a lawyer after a drunk driving accident",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/how-is-fault-determined-in-a-personal-injury-case/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how is fault determined in a personal injury case",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/how-should-i-preserve-and-compare-evidence-after-an-accident/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how should i preserve and compare evidence after an accident",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/how-to-choose-a-lawyer-if-you-missed-work-due-to-an-injury/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "query": "how to choose a lawyer if you missed work due to an injury",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/is-it-bad-if-i-waited-a-few-days-to-get-checked-by-a-doctor-after-a-crash/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "timeline_guide",
+      "query": "is it bad if i waited a few days to get checked by a doctor after a crash",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/truck-accident-lawyer-near-me-how-to-choose/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "process_guide",
+      "query": "truck accident lawyer near me how to choose",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/personal-injury/guides/what-mistakes-cause-problems-with-comparative-and-contributory-fault-in-accident-claims/",
+      "vertical": "personal-injury",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "what mistakes cause problems with comparative and contributory fault in accident claims",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-24",
+      "last_admitted_on": "2026-08-24",
+      "admitted_on_run_dates": [
+        "2026-08-24"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/best-trt-clinic-near-me/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "best TRT clinic near me",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-26",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-26"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/does-trt-affect-fertility-and-sperm-count/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "does TRT affect fertility and sperm count",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-26",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-26"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/how-long-until-trt-works/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how long until TRT works",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-26",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-26"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/trt/guides/trt-vs-enclomiphene-which-is-better-for-a-30-year-old-with-low-t/",
+      "vertical": "trt",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "trt vs enclomiphene which is better for a 30 year old with low t",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-26",
+      "last_admitted_on": "2026-08-26",
+      "admitted_on_run_dates": [
+        "2026-08-26"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    },
+    {
+      "route": "/neuro/guides/how-do-new-2026-migraine-neuromodulation-devices-work/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "query": "how do new 2026 migraine neuromodulation devices work",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-08-27",
+      "last_admitted_on": "2026-08-27",
+      "admitted_on_run_dates": [
+        "2026-08-27"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE"
+    }
+  ]
+}

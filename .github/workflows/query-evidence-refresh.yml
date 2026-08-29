@@ -128,7 +128,22 @@ jobs:
         # legitimate stop - no query has a measured occupancy reading yet, or
         # every candidate was held by an admission rule - dispatches nothing and
         # says so, rather than waking the release lane to do nothing.
-        if: ${{ always() && steps.commit.outputs.changes_detected == 'true' }}
+        #
+        # The gate used to also require steps.commit.outputs.changes_detected.
+        # That clause was dead in the true direction and dangerous in the false
+        # one. Dead, because this lane's commit surface includes
+        # artifacts/validation/*.json, whose PASS receipts carry a generated_at
+        # and therefore differ on every run: changes_detected has been 'true' on
+        # every run regardless of substance, so it gated nothing. Dangerous,
+        # because on the one run where it were false - the commit action finding
+        # nothing to write - the whole step would be SKIPPED, and a run that had
+        # produced candidates would decline to dispatch while printing nothing at
+        # all. A skipped step is a silent stop; the point of this step is that it
+        # always says what it decided.
+        #
+        # The COUNT check below was already doing all the real work, and it names
+        # its stop out loud. So the step now always runs and always reports.
+        if: ${{ always() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

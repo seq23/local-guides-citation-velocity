@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-29T18:19:07.961Z",
+  "generated_at": "2026-08-29T21:43:48.276Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -107,6 +107,11 @@
             {
               "type": "file",
               "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/feeds/build_promotion_candidates_feed.js",
               "ok": true
             },
             {
@@ -776,6 +781,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/feeds/build_promotion_candidates_feed.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/build_pages_dist.js",
               "ok": true
             },
@@ -807,7 +817,7 @@
           ]
         },
         {
-          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"absorb agent runs $(date -u +%F)\"\n# The retry loop used to be unreachable. `git rebase` is a bare command\n# under `bash -e`, so a conflicting rebase killed the step on attempt 1\n# and attempts 2 and 3 never ran - 2026-08-27 died on\n# \"could not apply ... absorb agent runs\" with no retry and no sleep.\n#\n# Every file that conflicts here is derived: artifacts/validation/*.json\n# and content/_shared/content_state.json are outputs of the intake and\n# build below, not hand-authored state. Merging two generated versions of\n# a generated file is meaningless, so a conflict is resolved by taking\n# the newest main and re-deriving the absorption on top of it. That keeps\n# whatever the concurrent push added, which `reset --hard` before the\n# re-derive guarantees and a plain \"ours\" resolution would have dropped.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\nnpm run citation:prepare-velocity-intake\nnpm run build\nnpm run validate:release\ngit add -A\nif git diff --cached --quiet; then\necho \"changed=false\" >> \"$GITHUB_OUTPUT\"\nexit 0\nfi\ngit commit -m \"absorb agent runs $(date -u +%F)\"\nfi\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"absorb agent runs $(date -u +%F)\"\n# The base this absorption was built and validated against. If a rebase\n# moves it, the rebased tree has to be re-derived and re-validated\n# before it may be pushed to main.\nBASE_BEFORE_REBASE=\"$(git rev-parse HEAD~1)\"\n# The retry loop used to be unreachable. `git rebase` is a bare command\n# under `bash -e`, so a conflicting rebase killed the step on attempt 1\n# and attempts 2 and 3 never ran - 2026-08-27 died on\n# \"could not apply ... absorb agent runs\" with no retry and no sleep.\n#\n# Every file that conflicts here is derived: artifacts/validation/*.json\n# and content/_shared/content_state.json are outputs of the intake and\n# build below, not hand-authored state. Merging two generated versions of\n# a generated file is meaningless, so a conflict is resolved by taking\n# the newest main and re-deriving the absorption on top of it. That keeps\n# whatever the concurrent push added, which `reset --hard` before the\n# re-derive guarantees and a plain \"ours\" resolution would have dropped.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\nnpm run citation:prepare-velocity-intake\nnpm run build\nnpm run validate:release\ngit add -A\nif git diff --cached --quiet; then\necho \"changed=false\" >> \"$GITHUB_OUTPUT\"\nexit 0\nfi\ngit commit -m \"absorb agent runs $(date -u +%F)\"\nelif [ \"$(git rev-parse HEAD~1)\" != \"$BASE_BEFORE_REBASE\" ]; then\n# A CLEAN rebase still produces a tree nobody validated.\n#\n# This step validated the absorption against the main it started\n# from, then rebased onto whatever main had become, then pushed.\n# A rebase that applies without conflict is not a rebase that\n# changes nothing: origin/main moved - that is why we are rebasing -\n# so the tree being pushed is a combination of two validated trees,\n# which is not itself a validated tree. The push surface here is\n# main.\n#\n# Both sibling push loops in this repo already close this: the\n# Velocity step below, and velocity-full-rebuild.yml, each re-run\n# build + validate:release after a successful rebase and amend the\n# result. This step was the only one that did not, and it is the\n# step that runs first and most often.\n#\n# Only re-derive when the base actually moved. A rebase onto the\n# same base is a no-op and re-validating it would double the\n# runtime of every clean run for nothing.\nnpm run build\nnpm run validate:release\ngit add -A\ngit commit --amend --no-edit\nfi\nif git push origin HEAD:main; then exit 0; fi\nBASE_BEFORE_REBASE=\"$(git rev-parse origin/main)\"\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
@@ -828,6 +838,11 @@
             {
               "type": "file",
               "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/feeds/build_promotion_candidates_feed.js",
               "ok": true
             },
             {
@@ -1078,6 +1093,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/feeds/build_promotion_candidates_feed.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/build_pages_dist.js",
               "ok": true
             },
@@ -1190,6 +1210,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/feeds/build_promotion_candidates_feed.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/build_pages_dist.js",
               "ok": true
             },
@@ -1246,6 +1271,11 @@
             {
               "type": "file",
               "path": "scripts/build_site.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/feeds/build_promotion_candidates_feed.js",
               "ok": true
             },
             {

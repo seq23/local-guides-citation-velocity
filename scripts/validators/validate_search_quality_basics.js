@@ -12,6 +12,32 @@ const redirects=new Set(redirectText.split(/\r?\n/).map(x=>x.trim()).filter(x=>x
 const sitemapText=['sitemap.xml',...(fs.existsSync(path.join(ROOT,'sitemaps'))?walk(path.join(ROOT,'sitemaps')).filter(x=>x.endsWith('.xml')).map(x=>norm(path.relative(ROOT,x))):[])].filter(rel=>fs.existsSync(path.join(ROOT,rel))).map(rel=>fs.readFileSync(path.join(ROOT,rel),'utf8')).join('\n');
 const admission=fs.existsSync(path.join(ROOT,'data/content/page_admission_registry.json'))?fs.readFileSync(path.join(ROOT,'data/content/page_admission_registry.json'),'utf8'):'';
 const errors=[],warnings=[],indexable=[];
+// ------------------------------------------------------------------- Rule 0
+// What this used to do, and why that was wrong
+// --------------------------------------------
+// walk() below sweeps the repo for .html and grades whatever it finds. On the
+// real tree that is 2166 indexable pages. On a truncated or half-checked-out
+// tree it found 6, printed "SEARCH QUALITY BASICS PASS: 6 indexable HTML pages"
+// and exited 0 - reproduced verbatim in a sandbox. Every page that was not there
+// was silently counted as compliant: the same green line covers "2166 pages all
+// carry a title, description, canonical and one h1" and "I could see six files".
+// Titles, canonicals and duplicate detection are exactly the checks that a
+// truncated tree makes look perfect, because absence is indistinguishable from
+// compliance when nothing counts what was examined.
+//
+// The fix is a FLOOR, not a loosened assertion. The counts below were measured
+// on the real tree on 2026-08-29 (`node scripts/validators/validate_search_quality_basics.js`
+// reported "2166 indexable HTML pages; 193 redirect sources checked"). MIN_* are
+// set below the measured values so ordinary publishing churn does not trip them,
+// but far above what a truncated tree exposes. Changing them must be deliberate:
+// re-measure by running this validator and reading the counts it prints.
+const MEASURED_INDEXABLE_2026_08_29=2166;
+const MIN_INDEXABLE_PAGES=1900;
+const MEASURED_REDIRECT_SOURCES_2026_08_29=193;
+const MIN_REDIRECT_SOURCES=150;
+const stops=[];
+if(!redirectText.trim())stops.push('_redirects is missing or empty, so the redirect-source checks below (redirect in sitemap, redirect source admitted) examined nothing.');
+if(!sitemapText.trim())stops.push('no sitemap XML could be read (sitemap.xml and sitemaps/ are both absent or empty), so no redirect source could be tested against a sitemap.');
 const badEncoding=/â(?:|€™|€œ|€|€˜|€")|Ã¢|Â(?=[^A-Za-z]|$)/;
 for(const abs of walk(ROOT).filter(p=>p.endsWith('.html'))){
   const rel=norm(path.relative(ROOT,abs));
@@ -45,6 +71,16 @@ for(const page of indexable){
   const list=exact.get(hash)||[];list.push(page.rel);exact.set(hash,list);
 }
 for(const files of exact.values())if(files.length>1)errors.push(`exact_duplicate_indexable_content:${files.join(',')}`);
+if(indexable.length<MIN_INDEXABLE_PAGES)stops.push(`only ${indexable.length} indexable HTML page(s) found; expected at least ${MIN_INDEXABLE_PAGES} (the real tree measured ${MEASURED_INDEXABLE_2026_08_29} on 2026-08-29). The tree is unbuilt or truncated, so this check graded almost nothing.`);
+if(redirects.size<MIN_REDIRECT_SOURCES)stops.push(`only ${redirects.size} redirect source(s) read from _redirects; expected at least ${MIN_REDIRECT_SOURCES} (measured ${MEASURED_REDIRECT_SOURCES_2026_08_29} on 2026-08-29).`);
+if(stops.length){
+  fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});
+  fs.writeFileSync(path.join(ROOT,'artifacts/validation/search-quality-basics.json'),JSON.stringify({validator:'search-quality-basics',ok:false,status:'UNVERIFIED_TREE_TRUNCATED',indexable_html_checked:indexable.length,redirect_sources_checked:redirects.size,expected_indexable_minimum:MIN_INDEXABLE_PAGES,stops},null,2)+'\n');
+  console.error('SEARCH QUALITY BASICS: STOP - the tree this ran against is not the site, so no search-quality claim can be made.');
+  for(const s of stops)console.error(`- ${s}`);
+  console.error('  Remedy: run against a complete checkout (and build it if the lane requires dist/), then re-run. A page that is absent is not a page that passed.');
+  process.exit(1);
+}
 const report={validator:'search-quality-basics',ok:errors.length===0,indexable_html_checked:indexable.length,redirect_sources_checked:redirects.size,errors,warnings,policy:{hard_fail:['mojibake','missing indexable title/description/canonical','invalid h1 count','redirect source in sitemap/admission','exact duplicate indexable content without redirect'],non_blocking:['near-duplicate language','marketing-copy preferences','external authority acquisition','citation-volume targets']}};
 fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'artifacts/validation/search-quality-basics.json'),JSON.stringify(report,null,2)+'\n');

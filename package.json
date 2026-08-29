@@ -3,7 +3,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js",
+    "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/feeds/build_promotion_candidates_feed.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js",
     "validate": "node scripts/validation/run_validation_registry.js --profile core",
     "release:batch": "node scripts/release_batch.js 10",
     "release:batch20": "node scripts/release_batch.js 20",
@@ -275,7 +275,15 @@
     "validate:self-heal-repair-contract": "node scripts/validation/run_validation_registry.js --id self-heal-repair-contract",
     "validate:self-heal-commit-coverage": "node scripts/validation/run_validation_registry.js --id self-heal-commit-coverage",
     "validate:social-fallback-backlog-visibility": "node scripts/validation/run_validation_registry.js --id social-fallback-backlog-visibility",
-    "validate:occupancy-controls": "node scripts/validation/run_validation_registry.js --id occupancy-control-separation"
+    "validate:occupancy-controls": "node scripts/validation/run_validation_registry.js --id occupancy-control-separation",
+    "occupancy:ratchet": "node scripts/queries/update_occupancy_reading_ratchet.js",
+    "validate:occupancy-ratchet": "node scripts/validation/run_validation_registry.js --id occupancy-reading-ratchet",
+    "citation:observations:validate": "node scripts/validators/validate_llm_citation_observation_integrity.js",
+    "citation:observations:ratchet": "node scripts/validators/validate_llm_citation_observation_integrity.js --record",
+    "validate:push-after-rebase": "node scripts/validation/run_validation_registry.js --id push-after-rebase-revalidates",
+    "validate:rendered-parity": "node scripts/validation/run_validation_registry.js --id rendered-route-admission-parity",
+    "feed:promotion-candidates": "node scripts/feeds/build_promotion_candidates_feed.js",
+    "validate:promotion-feed": "node scripts/validation/run_validation_registry.js --id promotion-candidates-feed"
   },
   "engines": {
     "node": "24.x"

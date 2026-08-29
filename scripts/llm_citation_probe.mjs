@@ -257,8 +257,27 @@ for (const q of queries) {
 const prior = fs.existsSync(path.join(ROOT, OUT))
   ? JSON.parse(fs.readFileSync(path.join(ROOT, OUT), 'utf8'))
   : { schema_version: '1.0', runs: [] };
-prior.runs = (prior.runs || []).slice(-49);
-prior.runs.push({ run_at: now, provider: PROVIDER, engines, mode: MODE, queries: queries.length, observations });
+// The rolling window truncates loudly or not at all.
+//
+// This was a bare `prior.runs = (prior.runs || []).slice(-49);` - no constant, no
+// comment, no counter. At one run a day the oldest reading would start silently
+// falling off the end around 2026-10-15, and nothing in the file or the repo would
+// ever say a reading had existed. That is the same shape as the occupancy
+// truncation that deleted 170 paid grounded measurements on 2026-08-29 and exited
+// 0: a rolling-window file whose only record of its own depth is the file itself
+// cannot notice it has been truncated. So the window keeps a running total of what
+// it has dropped and the run_at stamp of every dropped run, and a validator checks
+// that total against a high-water mark.
+const MAX_RETAINED_RUNS = 50;
+const allRuns = [...(prior.runs || []), { run_at: now, provider: PROVIDER, engines, mode: MODE, queries: queries.length, observations }];
+const overflow = allRuns.length > MAX_RETAINED_RUNS ? allRuns.slice(0, allRuns.length - MAX_RETAINED_RUNS) : [];
+prior.runs = overflow.length ? allRuns.slice(-MAX_RETAINED_RUNS) : allRuns;
+prior.max_retained_runs = MAX_RETAINED_RUNS;
+prior.runs_discarded_total = Number(prior.runs_discarded_total || 0) + overflow.length;
+prior.runs_discarded_at = [...(prior.runs_discarded_at || []), ...overflow.map((r) => r.run_at)];
+if (overflow.length) {
+  console.error(`citation probe: the rolling window dropped ${overflow.length} run(s) (${overflow.map((r) => r.run_at).join(', ')}); ${prior.runs_discarded_total} run(s) discarded in total. These readings are gone from this file - they are only recoverable from git history.`);
+}
 
 const cited = observations.filter((o) => o.self_cited).length;
 const errored = observations.filter((o) => o.status === 'provider_error').length;
@@ -275,7 +294,7 @@ const answered = observations.filter((o) => o.status === 'observed').length;
 const measurementStatus = answered > 0
   ? 'MEASURED'
   : (observations.length ? 'NOT_MEASURED_PROVIDER_ERROR' : 'NOT_MEASURED_NO_QUERIES');
-prior.latest_summary = {
+const thisRunSummary = {
   run_at: now, provider: PROVIDER, engines, mode: MODE,
   queries: queries.length, observations: observations.length,
   answered, self_cited: cited, errored,
@@ -287,10 +306,37 @@ prior.latest_summary = {
   self_cited_rate_pct: answered ? Number(((100 * cited) / answered).toFixed(1)) : null,
 };
 
+// A failed run must not overwrite the last real measurement.
+//
+// `prior.latest_summary` used to be assigned unconditionally. Reproduced with an
+// invalid API key: one run of provider errors replaced a MEASURED summary
+// (25 answered, a real rate) with
+// {"answered":0,"measurement_status":"NOT_MEASURED_PROVIDER_ERROR","self_cited_rate_pct":null}
+// stamped with today's timestamp. The per-run history in runs[] survived, so the
+// reading was technically recoverable - but latest_summary is the field a reader,
+// a dashboard or a downstream script reaches for first, and it had been replaced by
+// a null wearing today's date. One bad key day erases the last known citation rate.
+//
+// So: latest_summary now holds only MEASURED runs. Every run, measured or not, is
+// stamped into latest_attempt, and a non-measured attempt is named there rather
+// than presented as a measurement of zero.
+prior.latest_attempt = thisRunSummary;
+if (measurementStatus === 'MEASURED') {
+  prior.latest_summary = thisRunSummary;
+} else if (!prior.latest_summary) {
+  // Nothing has ever been measured. Say that, rather than leaving a shape that
+  // looks like a summary with nulls in it.
+  prior.latest_summary = null;
+}
+prior._latest_summary_contract = 'latest_summary is the most recent MEASURED run and is never overwritten by a failed one; latest_attempt is the most recent run of any kind. If latest_attempt.measurement_status is not MEASURED, latest_summary is older than latest_attempt.run_at and must be read with that date, not today\'s.';
+
 fs.mkdirSync(path.join(ROOT, path.dirname(OUT)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, OUT), JSON.stringify(prior, null, 2) + '\n');
-const rate = prior.latest_summary.self_cited_rate_pct;
+const rate = thisRunSummary.self_cited_rate_pct;
 console.log(`citation probe [${PROVIDER}/${MODE}]: ${measurementStatus}; ${cited}/${answered} answered observations named one of our domains (${rate === null ? 'no rate - nothing was answered' : `${rate}%`}); ${errored} provider error(s). Recorded in ${OUT}`);
+if (measurementStatus !== 'MEASURED' && prior.latest_summary) {
+  console.log(`citation probe: latest_summary is UNCHANGED and still carries the last measured run (${prior.latest_summary.run_at}, ${prior.latest_summary.self_cited_rate_pct}%). A failed run does not replace a measurement.`);
+}
 // Rule: a probe that measured nothing must say so loudly rather than leaving a
 // zero behind. It still records the error state above before exiting.
 if (measurementStatus !== 'MEASURED') {

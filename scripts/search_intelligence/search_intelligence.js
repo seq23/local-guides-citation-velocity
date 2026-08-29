@@ -24,24 +24,112 @@ function buildProviderTruth(){
   writeJson('data/search_intelligence/provider_truth_snapshot.json',snapshot);writeJson('data/search_intelligence/gsc_truth.json',{schema_version:'1.0',generated_at:stableTimestamp(),provider:'GSC',...providers.gsc});writeJson('data/search_intelligence/live_search_observations.json',{schema_version:'1.0',generated_at:stableTimestamp(),provider:'LIVE_SEARCH',...providers.live_search});return snapshot;
 }
 function diagnose(){
-  const targets=readJson('data/search_intelligence/target_query_set.json').targets;const bridge=readJson('data/search_intelligence/agent_signal_bridge.json',{signals:[]});const provider=readJson('data/search_intelligence/provider_truth_snapshot.json');let sitemap=fs.readFileSync(path.join(ROOT,'sitemap.xml'),'utf8');const sitemapDir=path.join(ROOT,'sitemaps');if(fs.existsSync(sitemapDir))for(const f of fs.readdirSync(sitemapDir).filter(x=>x.endsWith('.xml')))sitemap+='\n'+fs.readFileSync(path.join(sitemapDir,f),'utf8');const claims=readJson('data/evidence/claim_registry.json',{claims:[]});const claimRoutes=new Set((claims.claims||claims.items||[]).map(c=>c.page_route).filter(Boolean));
+  const targets=readJson('data/search_intelligence/target_query_set.json').targets;const bridge=readJson('data/search_intelligence/agent_signal_bridge.json',{signals:[]});const provider=readJson('data/search_intelligence/provider_truth_snapshot.json');let sitemap=fs.readFileSync(path.join(ROOT,'sitemap.xml'),'utf8');const sitemapDir=path.join(ROOT,'sitemaps');if(fs.existsSync(sitemapDir))for(const f of fs.readdirSync(sitemapDir).filter(x=>x.endsWith('.xml')))sitemap+='\n'+fs.readFileSync(path.join(sitemapDir,f),'utf8');const claims=readJson('data/evidence/claim_registry.json',{claims:[]});
+// Sitemap membership used to be `sitemap.includes(owner_route)` against the raw
+// concatenated XML. That was wrong in both directions.
+//
+// FALSE POSITIVES for sitemap_missing: the sitemap publishes canonical
+// extensionless URLs (`/insights/dentistry-q029-...`) while target owner_routes
+// carry `.html`. The check stripped a trailing slash and nothing else, so 17
+// pages that were IN the sitemap were reported missing, every run, and each one
+// became a SITEMAP_CONSISTENCY repair candidate for a page with nothing wrong
+// with it. Acting on one would have submitted a duplicate URL form.
+//
+// FALSE NEGATIVES: a raw substring match means `/trt/` is "found" by any longer
+// route containing it, so a genuinely absent hub route reads as present.
+//
+// Both go away by comparing normalised routes against the parsed <loc> set.
+const normalizeSitemapRoute=(u)=>{let r=String(u||'').replace(/^https?:\/\/[^/]+/,'');r=r.split('?')[0].split('#')[0];r=r.replace(/\.html$/,'');r=r.replace(/\/+$/,'');return r||'/';};
+// A target may name a route that has since been RETIRED via an ACTIVE_301 in
+// _redirects. 28 of them do. Those were all reported as `sitemap_missing`, which
+// is the wrong diagnosis pointing at the wrong file: the sitemap is correct to
+// omit a retired route, and the stale thing is the target set. A repair lane
+// told "the sitemap is missing this" would try to advertise a 301 source.
+const retiredRoutes=new Set(String(require('fs').readFileSync(require('path').join(ROOT,'_redirects'),'utf8')).split(/\r?\n/).map(l=>l.trim()).filter(l=>l&&!l.startsWith('#')).map(l=>normalizeSitemapRoute(l.split(/\s+/)[0])));
+const sitemapRoutes=new Set([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>normalizeSitemapRoute(m[1])));
+const claimRoutes=new Set((claims.claims||claims.items||[]).map(c=>c.page_route).filter(Boolean));
   const signalsByRoute=new Map();for(const s of bridge.signals||[]){let r=s.intended_winner_path||'';if(r&&!r.startsWith('/'))r='/'+r;if(r.endsWith('index.html'))r='/'+r.replace(/^\//,'').replace(/index\.html$/,'');if(r&&!r.endsWith('/')&&!r.endsWith('.html'))r+='/';if(r)(signalsByRoute.get(r)||signalsByRoute.set(r,[]).get(r)).push(s);}
   const rows=[];
-  for(const t of targets){const file=routeToFile(t.owner_route);const html=fs.readFileSync(path.join(ROOT,file),'utf8');const text=textFromHtml(html);const title=/<title>[^<]{3,}<\/title>/i.test(html);const h1=/<h1\b[^>]*>[^<]{2,}<\/h1>/i.test(html);const canonical=/<link\b[^>]*rel=["']canonical["'][^>]*href=/i.test(html)||/<link\b[^>]*href=[^>]*rel=["']canonical["']/i.test(html);const noindex=/<meta\b[^>]*name=["']robots["'][^>]*noindex/i.test(html);const direct=/data-direct-answer=["']true["']/i.test(html)||/class=["'][^"']*answer-box/i.test(html);const structured=/<table\b/i.test(html)||/<ul\b/i.test(html)||/<ol\b/i.test(html);const schema=/application\/ld\+json/i.test(html);const sourceBlock=/data-primary-sources=["']true["']/i.test(html)||/Primary sources/i.test(html);const publisher=/The Industry Guides/i.test(html);const internalLinks=(html.match(/href=["']\//g)||[]).length;const sitemapOk=sitemap.includes(t.owner_route)||sitemap.includes(t.owner_route.replace(/\/$/,''));const placeholder=/\b(lorem ipsum|todo|tbd|placeholder)\b/i.test(text);const regulated=['trt','uscis-medical','neuro'].includes(t.vertical)||t.sensitivity_profile!=='general';const sources=(t.required_sources||[]).length;const agentSignals=signalsByRoute.get(t.owner_route)||[];
-    const material=[];if(!canonical)material.push('missing_canonical');if(!title)material.push('missing_title');if(!h1)material.push('missing_h1');if(noindex)material.push('unexpected_noindex');if(!sitemapOk)material.push('sitemap_missing');if(placeholder)material.push('placeholder_text');
-    let repair_type=null;if(material.includes('missing_canonical'))repair_type='CANONICAL_LINK';else if(material.includes('sitemap_missing'))repair_type='SITEMAP_CONSISTENCY';else if(material.includes('missing_title'))repair_type='METADATA_DESCRIPTION';
+  for(const t of targets){const file=routeToFile(t.owner_route);const html=fs.readFileSync(path.join(ROOT,file),'utf8');const text=textFromHtml(html);const title=/<title>[^<]{3,}<\/title>/i.test(html);const h1=/<h1\b[^>]*>[^<]{2,}<\/h1>/i.test(html);const canonical=/<link\b[^>]*rel=["']canonical["'][^>]*href=/i.test(html)||/<link\b[^>]*href=[^>]*rel=["']canonical["']/i.test(html);const noindex=/<meta\b[^>]*name=["']robots["'][^>]*noindex/i.test(html);const direct=/data-direct-answer=["']true["']/i.test(html)||/class=["'][^"']*answer-box/i.test(html);const structured=/<table\b/i.test(html)||/<ul\b/i.test(html)||/<ol\b/i.test(html);const schema=/application\/ld\+json/i.test(html);const sourceBlock=/data-primary-sources=["']true["']/i.test(html)||/Primary sources/i.test(html);const publisher=/The Industry Guides/i.test(html);const internalLinks=(html.match(/href=["']\//g)||[]).length;const sitemapOk=sitemapRoutes.has(normalizeSitemapRoute(t.owner_route));const placeholder=/\b(lorem ipsum|todo|tbd|placeholder)\b/i.test(text);const regulated=['trt','uscis-medical','neuro'].includes(t.vertical)||t.sensitivity_profile!=='general';const sources=(t.required_sources||[]).length;const agentSignals=signalsByRoute.get(t.owner_route)||[];
+    const material=[];if(!canonical)material.push('missing_canonical');if(!title)material.push('missing_title');if(!h1)material.push('missing_h1');if(noindex)material.push('unexpected_noindex');if(retiredRoutes.has(normalizeSitemapRoute(t.owner_route)))material.push('target_route_retired');else if(!sitemapOk)material.push('sitemap_missing');if(placeholder)material.push('placeholder_text');
+    // unexpected_noindex used to be detected here and then mapped to no repair_type
+    // at all, so a de-indexed admitted page produced no candidate, no receipt and no
+    // failure - detected and dropped on the floor. It is now the FIRST mapping and
+    // the most serious: a page search engines are told not to index is not a
+    // formatting defect. INDEXABILITY is deliberately absent from the contract's
+    // auto_repair_types, so candidateStatusFromDiagnosis returns BLOCK_NEEDS_REVIEW
+    // and a human sees it, rather than a robot silently flipping a noindex tag.
+    let repair_type=null;if(material.includes('target_route_retired'))repair_type='TARGET_SET_STALE';else if(material.includes('unexpected_noindex'))repair_type='INDEXABILITY';else if(material.includes('missing_canonical'))repair_type='CANONICAL_LINK';else if(material.includes('sitemap_missing'))repair_type='SITEMAP_CONSISTENCY';else if(material.includes('missing_title'))repair_type='METADATA_DESCRIPTION';
     rows.push({query_id:t.query_id,query:t.query,owner_route:t.owner_route,vertical:t.vertical,material_state:material.length?'DEFECT':'HEALTHY',material_findings:material,repair_type,regulated_claim_risk:Boolean(regulated&&repair_type&&repair_type!=='CANONICAL_LINK'&&repair_type!=='SITEMAP_CONSISTENCY'),seo:{canonical,title,h1,sitemap:sitemapOk,indexable:!noindex,internal_links:internalLinks},aeo:{direct_answer:direct,structured_answer:structured,word_count:text.split(/\s+/).filter(Boolean).length,answer_completeness:direct&&structured?'STRONG':direct?'ADEQUATE':'OBSERVE'},geo:{schema,publisher_identity:publisher,source_block:sourceBlock,required_source_count:sources,claim_registry_coverage:claimRoutes.has(t.owner_route)},content_quality:{placeholder_free:!placeholder,thin:text.split(/\s+/).filter(Boolean).length<180},external_evidence_state:Object.values(provider.providers).some(p=>p.state==='CONFIGURED')?'OBSERVED_PROVIDER_DATA_AVAILABLE':'INCONCLUSIVE',agent_signal_count:agentSignals.length});}
   const out={schema_version:'1.0',generated_at:stableTimestamp(),count:rows.length,diagnoses:rows};writeJson('data/search_intelligence/search_diagnosis.json',out);return out;
 }
+// Find the page row a repair would patch, using the same matching safeJsonPatch uses.
+function findSourceRow(source_file, route){
+  const source=readJson(source_file);
+  const rows=[...(Array.isArray(source.pages)?source.pages:[]),...(Array.isArray(source.items)?source.items:[])];
+  return rows.find(p=>p.slug===route||p.path===route||`/${String(p.slug||'').replace(/^\//,'').replace(/\/$/,'')}/`===route)||null;
+}
+
+// Build a real patch, or name why there isn't one.
+//
+// Every candidate used to be emitted with `patch:null`, and applyRepairs skipped
+// anything without a patch. Proven: the --apply path with 23 READY_AUTO_REPAIR
+// candidates produced repair_receipts.json {"repairs":[]}, retest_queue.json
+// {"items":[]}, no rollback_snapshots directory, exit 0 and no warning. A repair
+// lane that exits 0 having repaired nothing, silently, is worse than no repair lane:
+// it reads as "there was nothing to fix".
+//
+// safeJsonPatch permits exactly five fields - title, description, related_links,
+// sections, content_atom - so some repair types have no patch surface at all and
+// never did. That is a legitimate answer; it just has to be a NAMED one that a human
+// sees, carried on the candidate and counted in the receipt, not an unexplained
+// skip.
+function buildRepairPatch(d, t){
+  const type=d.repair_type;
+  if(type==='METADATA_DESCRIPTION'){
+    let row=null;
+    try{row=findSourceRow(t.source_file,d.owner_route);}catch(e){return {stop:'SOURCE_FILE_UNREADABLE',detail:`${t.source_file}: ${e.message}`};}
+    if(!row)return {stop:'SOURCE_ROW_NOT_FOUND',detail:`${d.owner_route} is not present in ${t.source_file}, so there is no row to patch.`};
+    const title=String(row.title||'').trim();
+    if(title)return {stop:'RENDERED_OUTPUT_DIVERGES_FROM_SOURCE',detail:`the source row already carries a title (${JSON.stringify(title.slice(0,60))}) but the rendered page has none. The defect is in the build or the template, not in the page data, and no source patch can fix it.`};
+    const q=String(t.query||'').trim();
+    if(q.length<8)return {stop:'NO_ADMITTED_QUERY_TO_TITLE_FROM',detail:`the admitted target carries no usable primary query, and this lane does not invent page titles.`};
+    // The admitted primary query is the page's own declared subject, already
+    // governed by page admission. Using it as the missing title copies existing
+    // governed data; it does not author new content.
+    return {patch:{title:q}};
+  }
+  return {stop:'NO_PATCH_SURFACE_FOR_TYPE',detail:`repair_type ${type} cannot be expressed through the fields safeJsonPatch permits (title, description, related_links, sections, content_atom). A canonical tag, a sitemap entry and a robots directive are emitted by the build, not stored on the page row, so this needs a build-lane fix or a human.`};
+}
+
 function buildCandidates(){
   const targets=new Map(readJson('data/search_intelligence/target_query_set.json').targets.map(t=>[t.query_id,t]));const diagnoses=readJson('data/search_intelligence/search_diagnosis.json').diagnoses;const existing=readJson('data/search_intelligence/repair_receipts.json',{repairs:[]});const contract=loadContract();const candidates=[];
-  for(const d of diagnoses){const status=candidateStatusFromDiagnosis(d);if(!status)continue;const t=targets.get(d.query_id);const prior=[...(existing.repairs||[])].filter(r=>r.query_id===d.query_id&&r.applied_at).sort((a,b)=>String(b.applied_at).localeCompare(String(a.applied_at)))[0];const cooldown_until=prior?addDays(prior.applied_at,contract.default_repair_cooldown_days):null;const cooldown_active=Boolean(cooldown_until&&stableDate()<cooldown_until);candidates.push({repair_id:`R-${sha256(`${d.query_id}|${d.repair_type}|${d.owner_route}`).slice(0,16).toUpperCase()}`,query_id:d.query_id,target_route:d.owner_route,source_file:t.source_file,diagnosis:d.material_findings,repair_type:d.repair_type,before_evidence:{rendered_file:routeToFile(d.owner_route),rendered_sha256:L.fileSha(routeToFile(d.owner_route))},source_basis:t.required_sources||[],risk_class:d.regulated_claim_risk?'REVIEW':'LOW',allowed_mutation:t.source_file,expected_outcome:'Resolve material local structural defect without changing page ownership or publishing cadence.',cooldown_days:contract.default_repair_cooldown_days,cooldown_until,cooldown_active,status:cooldown_active?'COOLDOWN':status,patch:null});}
+  for(const d of diagnoses){const status=candidateStatusFromDiagnosis(d);if(!status)continue;const t=targets.get(d.query_id);const prior=[...(existing.repairs||[])].filter(r=>r.query_id===d.query_id&&r.applied_at).sort((a,b)=>String(b.applied_at).localeCompare(String(a.applied_at)))[0];const cooldown_until=prior?addDays(prior.applied_at,contract.default_repair_cooldown_days):null;const cooldown_active=Boolean(cooldown_until&&stableDate()<cooldown_until);candidates.push({repair_id:`R-${sha256(`${d.query_id}|${d.repair_type}|${d.owner_route}`).slice(0,16).toUpperCase()}`,query_id:d.query_id,target_route:d.owner_route,source_file:t.source_file,diagnosis:d.material_findings,repair_type:d.repair_type,before_evidence:{rendered_file:routeToFile(d.owner_route),rendered_sha256:L.fileSha(routeToFile(d.owner_route))},source_basis:t.required_sources||[],risk_class:d.regulated_claim_risk?'REVIEW':'LOW',allowed_mutation:t.source_file,expected_outcome:'Resolve material local structural defect without changing page ownership or publishing cadence.',cooldown_days:contract.default_repair_cooldown_days,cooldown_until,cooldown_active,status:cooldown_active?'COOLDOWN':status,...(()=>{if(status!=='READY_AUTO_REPAIR')return {patch:null};const built=buildRepairPatch(d,t);return built.patch?{patch:built.patch}:{patch:null,patch_stop:built.stop,patch_stop_detail:built.detail};})()});}
+  // A candidate that is READY with no patch is not ready. Say so in its status so
+  // nothing downstream reads an unrepairable row as a repair that is about to happen.
+  for(const c of candidates)if(c.status==='READY_AUTO_REPAIR'&&!c.patch)c.status='BLOCK_NO_PATCH_GENERATED';
   const out={schema_version:'1.0',generated_at:stableTimestamp(),count:candidates.length,preference:'REPAIR_EXISTING_PAGE',new_url_authority:false,candidates};writeJson('data/search_intelligence/repair_candidates.json',out);return out;
 }
 function applyRepairs(){
   const payload=readJson('data/search_intelligence/repair_candidates.json',{candidates:[]});const receipts=readJson('data/search_intelligence/repair_receipts.json',{schema_version:'1.0',repairs:[]});const retest=readJson('data/search_intelligence/retest_queue.json',{schema_version:'1.0',items:[]});let applied=0;
   for(const c of payload.candidates||[]){if(c.status!=='READY_AUTO_REPAIR'||c.cooldown_active||!c.patch)continue;if(isProtected(c.source_file))throw new Error(`PROTECTED_PATH:${c.source_file}`);const beforeBytes=fs.readFileSync(path.join(ROOT,c.source_file));const snapshotRel=`data/search_intelligence/rollback_snapshots/${c.repair_id}.json`;writeJson(snapshotRel,{schema_version:'1.0',repair_id:c.repair_id,source_file:c.source_file,before_sha256:sha256(beforeBytes),before_base64:beforeBytes.toString('base64')});const m=safeJsonPatch({source_file:c.source_file,route:c.target_route,patch:c.patch});if(!m.changed)throw new Error(`REPAIR_APPLIED_WITHOUT_MUTATION:${c.repair_id}`);const receipt={repair_id:c.repair_id,query_id:c.query_id,target_route:c.target_route,source_file:c.source_file,status:'APPLIED',applied_at:stableDate(),...m,rollback_snapshot:snapshotRel,rollback_eligible:true};receipts.repairs.push(receipt);retest.items.push({repair_id:c.repair_id,query_id:c.query_id,target_route:c.target_route,before_evidence:c.before_evidence,applied_at:stableDate(),retest_due_date:addDays(stableDate(),loadContract().default_repair_cooldown_days),status:'PENDING_EXTERNAL_RETEST'});applied++;}
-  receipts.generated_at=stableTimestamp();retest.generated_at=stableTimestamp();writeJson('data/search_intelligence/repair_receipts.json',receipts);writeJson('data/search_intelligence/retest_queue.json',retest);return {applied};
+  // Rule 0: no stage may exit 0 having done nothing, and nothing it declined to do
+  // may be invisible.
+  //
+  // The old body of this function was the loop above and nothing else: a `continue`
+  // on `!c.patch`, then `return {applied}` with applied=0, then a PASS line. Every
+  // candidate carried patch:null, so this lane's entire observable behaviour was to
+  // print success. The unrepaired rows are now named individually, counted in the
+  // receipt file, and a ready candidate that produced no repair is a thrown error.
+  const unrepaired=(payload.candidates||[]).filter(c=>c.status==='BLOCK_NO_PATCH_GENERATED'||(c.status==='READY_AUTO_REPAIR'&&!c.cooldown_active&&!c.patch)).map(c=>({repair_id:c.repair_id,query_id:c.query_id,target_route:c.target_route,repair_type:c.repair_type,stop:c.patch_stop||'NO_PATCH_GENERATED',stop_detail:c.patch_stop_detail||null}));
+  for(const u of unrepaired)console.error(`NO_PATCH_GENERATED:${u.repair_id} ${u.repair_type} ${u.target_route} - ${u.stop}: ${u.stop_detail||'no detail recorded'}`);
+  const readyNow=(payload.candidates||[]).filter(c=>c.status==='READY_AUTO_REPAIR'&&!c.cooldown_active);
+  receipts.unrepaired_candidates=unrepaired;
+  receipts.unrepaired_count=unrepaired.length;
+  receipts.last_apply={at:stableTimestamp(),candidates:(payload.candidates||[]).length,ready:readyNow.length,applied,unrepaired:unrepaired.length};
+  receipts.generated_at=stableTimestamp();retest.generated_at=stableTimestamp();writeJson('data/search_intelligence/repair_receipts.json',receipts);writeJson('data/search_intelligence/retest_queue.json',retest);
+  if(readyNow.length&&applied===0)throw new Error(`REPAIR_LANE_APPLIED_NOTHING:${readyNow.length} candidate(s) were READY_AUTO_REPAIR and outside cooldown, and not one repair was applied. A repair lane that exits 0 having repaired nothing reads as "there was nothing to fix". Named stops: ${unrepaired.map(u=>`${u.repair_id}:${u.stop}`).join(', ')||'none recorded, which means the skip is unexplained'}`);
+  return {applied,ready:readyNow.length,unrepaired:unrepaired.length};
 }
 function evaluateRetests(){
   const queue=readJson('data/search_intelligence/retest_queue.json',{items:[]});const obs=readJson('data/search_intelligence/live_search_observations.json',{evidence:[]});const outcomes=readJson('data/search_intelligence/retest_outcomes.json',{schema_version:'1.0',outcomes:[]});const byRepair=new Map((outcomes.outcomes||[]).map(o=>[o.repair_id,o]));for(const q of queue.items||[]){if(stableDate()<q.retest_due_date)continue;const matches=(obs.evidence||[]).filter(e=>e.owner_route===q.target_route&&verifyExternalObservation(e));const before=matches.filter(e=>String(e.observed_at).slice(0,10)<=q.applied_at).sort((a,b)=>String(b.observed_at).localeCompare(String(a.observed_at)))[0];const after=matches.filter(e=>String(e.observed_at).slice(0,10)>=q.retest_due_date).sort((a,b)=>String(b.observed_at).localeCompare(String(a.observed_at)))[0];let outcome='INCONCLUSIVE';if(before&&after&&Number.isFinite(before.metric)&&Number.isFinite(after.metric)){outcome=after.metric>before.metric?'IMPROVED':after.metric<before.metric?'REGRESSED':'UNCHANGED';}byRepair.set(q.repair_id,{repair_id:q.repair_id,query_id:q.query_id,target_route:q.target_route,outcome,before_external_evidence:before||null,after_external_evidence:after||null,evaluated_at:stableDate()});}

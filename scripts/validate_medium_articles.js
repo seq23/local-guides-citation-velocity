@@ -135,13 +135,34 @@ function validateFile(relPath) {
   return null;
 }
 
+// WHAT THIS USED TO DO, AND WHY IT WAS WRONG
+//
+// Registered as `node scripts/validate_medium_articles.js` -- no `--all`, no file
+// list. The central runner spawns that string verbatim and never appends changed
+// files, so the "changed files" branch always found nothing, printed
+//   "No changed medium-articles/**/index.html files to validate. Skipping."
+// and exited 0 while 14 syndicated articles sat on disk unexamined. Same shape as
+// the insights gate; same fix.
+//
+//   1. No file list supplied now means validate the FULL set. Changed-file
+//      scoping is opt-in by passing paths.
+//   2. Examining zero articles is a failure, not a pass. A missing
+//      medium-articles/ tree is a named stop, not a silent skip (Rule 0).
+// No assertion was loosened; validateFile() is unchanged.
 function main() {
   const args = process.argv.slice(2).map(normalizeRel).filter(Boolean);
-  const scanAll = args.includes('--all');
+  const fileArgs = args.filter((p) => !p.startsWith('--'));
+  const scanAll = args.includes('--all') || fileArgs.length === 0;
 
   let targets = [];
 
   if (scanAll) {
+    const root = path.join(ROOT, 'medium-articles');
+    if (!fs.existsSync(root)) {
+      console.error('X Medium articles validation failed: no medium-articles/ directory to validate.');
+      console.error('  This gate must never report a pass having examined zero articles.');
+      process.exit(1);
+    }
     function walk(dir) {
       for (const name of fs.readdirSync(dir)) {
         const abs = path.join(dir, name);
@@ -164,8 +185,12 @@ function main() {
   targets = Array.from(new Set(targets)).sort();
 
   if (targets.length === 0) {
-    console.log(scanAll ? 'No medium articles found to validate.' : 'No changed medium-articles/**/index.html files to validate. Skipping.');
-    process.exit(0);
+    console.error('\nX Medium articles validation failed: zero articles examined.\n');
+    console.error(scanAll
+      ? '- medium-articles/ exists but contains no **/index.html file. A gate that inspects nothing is not a pass.'
+      : `- the ${fileArgs.length} path(s) supplied contain no medium-articles/**/index.html file, so nothing was checked.`);
+    console.error('\nRun with no arguments to validate the full syndicated corpus.\n');
+    process.exit(1);
   }
 
   const findings = [];

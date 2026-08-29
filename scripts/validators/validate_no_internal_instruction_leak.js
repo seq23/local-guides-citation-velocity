@@ -99,6 +99,7 @@ const baseline = fs.existsSync(BASELINE)
 
 const offenders = [];
 const sealed = [];
+let scanned = 0;
 (function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name.startsWith('.') && entry.name !== '.') continue;
@@ -110,6 +111,7 @@ const sealed = [];
       continue;
     }
     if (!entry.name.endsWith('.html')) continue;
+    scanned++;
     const html = fs.readFileSync(abs, 'utf8');
     // First match names the page's reason, as it always has. `shapes` records every
     // pattern the page hits, because a page can carry more than one and a tally that
@@ -140,6 +142,17 @@ function writeBaseline(pages, extra) {
     pages,
   }, null, 2)}\n`);
   return sourcePages.length;
+}
+
+// Both baseline-writing modes below derive their result from what the walk found.
+// From an unbuilt tree --seed-baseline would seal an empty file and --reseal would
+// clear every sealed entry as "repaired", when in fact no page was examined. Absence
+// is not repair; refuse before writing.
+if (scanned === 0 && (process.argv.includes('--seed-baseline') || process.argv.includes('--reseal'))) {
+  console.error('REFUSING to write the internal-instruction-leak baseline from 0 scanned pages.');
+  console.error('  --seed-baseline would seal nothing; --reseal would clear every entry as repaired.');
+  console.error('  Build the site first.');
+  process.exit(1);
 }
 
 if (process.argv.includes('--seed-baseline')) {
@@ -184,11 +197,30 @@ if (process.argv.includes('--reseal')) {
   process.exit(offenders.length ? 1 : 0);
 }
 
+// WHAT THIS USED TO DO, AND WHY IT WAS WRONG
+//
+// The walk above collects offenders; nothing counted how many pages it walked. With
+// no HTML on disk - an unbuilt tree, or a build that emitted nothing - this
+// HARD_FAIL gate found zero offenders, printed "NO INTERNAL INSTRUCTION LEAK: 0 new"
+// and exited 0. The strongest possible clean result was also the result of looking
+// at nothing at all, and the two were indistinguishable in the log.
+//
+// Scanning zero pages is now a hard stop with its own message, so the operator sees
+// "nothing was examined" rather than "nothing was wrong" (Rule 0). No pattern and no
+// exemption changed.
+if (scanned === 0) {
+  console.error('INTERNAL INSTRUCTION LEAK FAIL: zero HTML pages scanned.');
+  console.error('  This gate cannot report a clean surface having examined no pages.');
+  console.error('  Run `npm run build` so the published pages exist, then re-run.');
+  process.exit(1);
+}
+
 fs.mkdirSync(path.dirname(EVIDENCE), { recursive: true });
 fs.writeFileSync(EVIDENCE, `${JSON.stringify({
   schema_version: '1.0',
   validator: 'no-internal-instruction-leak',
   status: offenders.length ? 'FAIL' : 'PASS',
+  pages_scanned: scanned,
   offender_count: offenders.length,
   sealed_pre_existing: sealed.length,
   offenders: offenders.slice(0, 200),
@@ -201,4 +233,4 @@ if (offenders.length) {
   console.error('  remedy: the generator must not render recommendation text; see scripts/lib/agent_exact_repairs.js');
   process.exit(1);
 }
-console.log(`NO INTERNAL INSTRUCTION LEAK: 0 new; ${sealed.length} sealed pre-existing page(s) still carry one (see data/content/internal_instruction_leak_baseline.json)`);
+console.log(`NO INTERNAL INSTRUCTION LEAK: ${scanned} page(s) scanned; 0 new; ${sealed.length} sealed pre-existing page(s) still carry one (see data/content/internal_instruction_leak_baseline.json)`);

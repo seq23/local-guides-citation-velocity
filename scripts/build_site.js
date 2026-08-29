@@ -1192,25 +1192,94 @@ function writeDistributionArtifacts(siteBase, allUrls){
   const rawBatch = unique.map((entry) => entry.loc);
   const INDEXNOW_SAFE_BATCH_LIMIT = Number.parseInt(process.env.INDEXNOW_SAFE_BATCH_LIMIT || '100', 10);
   const safeBatchLimit = Number.isFinite(INDEXNOW_SAFE_BATCH_LIMIT) && INDEXNOW_SAFE_BATCH_LIMIT > 0 ? INDEXNOW_SAFE_BATCH_LIMIT : 100;
+
+  // Why this rotates
+  // ----------------
+  // docs/INDEXNOW-ROOT-CAUSE-FIX.md says overflow URLs are written to
+  // indexnow-deferred-batch.txt "instead of submitting thousands at once" and
+  // that IndexNow is submitted "in safe batches" - plural, i.e. later. There was
+  // no later. The batch was the top `safeBatchLimit` URLs by scorePriority, and
+  // scorePriority is a pure function of the slug: no lastmod, no freshness, no
+  // cursor, no randomness. So every deploy submitted the identical 100 URLs and
+  // the other 2051 were deferred forever. "Deferred" is a word that means later;
+  // a fixed ranking with a fixed cut is not a queue, it is a wall.
+  //
+  // The cap itself is deliberate and stays: large mixed batches partially fail,
+  // which is the condition that fix was written to remove. What changes is that
+  // the overflow pool is now walked. The 35 priority URLs are the blocking proof
+  // lane and are always submitted; the remaining slots advance through the
+  // ranked overflow by a cursor derived from the UTC date, so the whole corpus
+  // is submitted within a bounded number of days instead of never.
+  //
+  // The cursor is the date, not a persisted counter, on purpose. This lane runs
+  // from a read-only checkout and commits nothing, so any counter it kept would
+  // be thrown away with the runner; and a date-derived offset keeps the build
+  // deterministic within a day, which is what validate_deterministic_build.js
+  // rebuilds and compares. Volume per deploy is unchanged.
+  const ranked = unique.slice().sort((a, b) => scorePriority(b) - scorePriority(a)).map((entry) => entry.loc);
+  const prioritySet = new Set(priority);
+  const overflowPool = ranked.filter((url) => !prioritySet.has(url));
+
   const batch = [];
   for (const url of priority) if (batch.length < safeBatchLimit && !batch.includes(url)) batch.push(url);
-  for (const entry of unique.slice().sort((a, b) => scorePriority(b) - scorePriority(a))) {
-    if (batch.length >= safeBatchLimit) break;
-    if (!batch.includes(entry.loc)) batch.push(entry.loc);
+  const rotatingSlots = Math.max(0, safeBatchLimit - batch.length);
+
+  // Days since the epoch under SOURCE_DATE when the release lanes set it, so a
+  // rebuild of the same release day reproduces the same window byte for byte.
+  const sourceDate = /^\d{4}-\d{2}-\d{2}$/.test(String(process.env.SOURCE_DATE || ''))
+    ? `${process.env.SOURCE_DATE}T00:00:00Z`
+    : `${new Date().toISOString().slice(0, 10)}T00:00:00Z`;
+  const dayNumber = Math.floor(Date.parse(sourceDate) / 86400000);
+  const rotationOffset = (overflowPool.length && rotatingSlots) ? (((dayNumber * rotatingSlots) % overflowPool.length) + overflowPool.length) % overflowPool.length : 0;
+
+  for (let i = 0; i < rotatingSlots && i < overflowPool.length; i += 1) {
+    const url = overflowPool[(rotationOffset + i) % overflowPool.length];
+    if (!batch.includes(url)) batch.push(url);
   }
+  // Any slot the wrap-around could not fill with a distinct URL is backfilled in
+  // rank order, so the batch is never short of its budget.
+  for (const url of ranked) {
+    if (batch.length >= safeBatchLimit) break;
+    if (!batch.includes(url)) batch.push(url);
+  }
+
   const deferredBatch = rawBatch.filter((url) => !batch.includes(url));
+  const daysToFullCoverage = rotatingSlots > 0 ? Math.ceil(overflowPool.length / rotatingSlots) : null;
+
   writeUtf8(path.join(ROOT, '.build', 'indexnow-priority.txt'), priority.join('\n') + '\n');
   writeUtf8(path.join(ROOT, '.build', 'distribution-priority-urls.txt'), priority.join('\n') + '\n');
   writeUtf8(path.join(ROOT, '.build', 'indexnow-batch.txt'), batch.join('\n') + '\n');
   writeUtf8(path.join(ROOT, '.build', 'indexnow-deferred-batch.txt'), deferredBatch.join('\n') + (deferredBatch.length ? '\n' : ''));
+
+  // The coverage receipt exists so that "100 URLs submitted" can never again be
+  // read as "the site was submitted". It states the whole population, the slice
+  // this deploy took, what is still owed, and when the pool closes.
+  writeUtf8(path.join(ROOT, '.build', 'indexnow-batch-coverage.json'), JSON.stringify({
+    schema_version: '1.0',
+    source_date: sourceDate.slice(0, 10),
+    safe_batch_limit: safeBatchLimit,
+    url_pool_total: rawBatch.length,
+    priority_urls: priority.length,
+    batch_urls: batch.length,
+    deferred_urls: deferredBatch.length,
+    rotating_slots_per_deploy: rotatingSlots,
+    overflow_pool: overflowPool.length,
+    rotation_offset: rotationOffset,
+    days_to_full_coverage: daysToFullCoverage,
+    rotation: 'date-cursor',
+    note: `This deploy submits ${batch.length} of ${rawBatch.length} URLs. ${deferredBatch.length} are deferred to a later deploy, not dropped: the ${rotatingSlots} non-priority slots advance through the ${overflowPool.length}-URL overflow pool by a date cursor, so every URL is submitted at least once every ${daysToFullCoverage === null ? 'n/a' : daysToFullCoverage} day(s). Sitemap discovery covers the full pool on every deploy regardless.`
+  }, null, 2) + '\n');
+
   writeUtf8(path.join(ROOT, '.build', 'distribution-readme.txt'), [
     'Option B distribution layer for The Industry Guides',
     '',
     `Primary sitemap: ${siteBase}/sitemap.xml`,
+    `IndexNow URL pool (total): ${rawBatch.length}`,
     `IndexNow priority URLs: ${priority.length}`,
     `IndexNow batch URLs: ${batch.length}`,
     `IndexNow deferred URLs: ${deferredBatch.length}`,
     `IndexNow safe batch limit: ${safeBatchLimit}`,
+    `IndexNow rotating slots per deploy: ${rotatingSlots} (offset ${rotationOffset} of ${overflowPool.length}; full pool covered every ${daysToFullCoverage === null ? 'n/a' : daysToFullCoverage} day(s))`,
     'Use distribution_scripts/deploy_distribution.sh after each deploy.',
     'Manual GSC request-indexing should be limited to 5-10 highest-priority URLs.'
   ].join('\n') + '\n');
@@ -1282,6 +1351,89 @@ ${canonBottom}
   return { slug, title, description, bodyHtml: body, jsonld, fanoutMeta: { slug, title, description, vertical:'generic', surface:'utility' } };
 }
 
+
+/**
+ * Rendered-but-unadmitted routes are dispositioned, not warned about.
+ *
+ * Incident, 2026-08-29: a walk of the rendered tree found 198 pages that this
+ * build had written to disk as indexable HTML in the same run that wrote the
+ * sitemaps, and that no sitemap shard named. None carried noindex. They were
+ * live, crawlable and never submitted - neither published nor withheld.
+ *
+ * The old behaviour was a console.warn. Admission (scripts/lib/page_admission.js)
+ * gates what enters `publicWritten` -> `allUrls` -> the sitemaps, but gates
+ * nothing in the render loop above, which writes an indexable page for every
+ * route it is handed. The difference between the two was computed, printed as a
+ * warning line, and then dropped. A line in a build log is not a record: the gap
+ * had grown from the 190 named in page_admission.js's own header comment to 198
+ * and nothing in the repo could tell that it had moved.
+ *
+ * So the difference is now reconciled against named stops and written down.
+ * A route that this build renders but does not advertise must be accounted for
+ * by one of: a 301 in _redirects (retired, authority data/release/route_retirements.json),
+ * or an entry in data/content/rendered_route_exclusions.json with a reason.
+ * Whatever is left is a silent gap, printed as a count that cannot be missed and
+ * hard-failed by scripts/validators/validate_rendered_route_admission_parity.js.
+ *
+ * This writes a receipt rather than throwing, because the validator is the gate
+ * and a build that refuses to finish cannot produce the artifact the gate reads.
+ */
+function reconcileRenderedRouteDisposition(orphanedRoutes) {
+  const declaredFile = path.join(ROOT, 'data', 'content', 'rendered_route_exclusions.json');
+  const declared = new Map();
+  if (fs.existsSync(declaredFile)) {
+    const doc = JSON.parse(fs.readFileSync(declaredFile, 'utf8'));
+    for (const entry of (doc.routes || [])) if (entry && entry.route && entry.reason) declared.set(entry.route, entry.reason);
+  }
+
+  const redirected = new Set();
+  const redirectsFile = path.join(ROOT, '_redirects');
+  if (fs.existsSync(redirectsFile)) {
+    for (const line of fs.readFileSync(redirectsFile, 'utf8').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const from = trimmed.split(/\s+/)[0];
+      if (from && from.startsWith('/')) redirected.add(from);
+    }
+  }
+
+  // Cloudflare Pages serves `foo.html` at `/foo`, so the build's own slug for an
+  // insights page (`/insights/x.html`) and the public route the sitemap and the
+  // exclusion file speak in (`/insights/x`) are the same page under two names.
+  // Matching on only one of them reported a declared route as undeclared.
+  const variants = (route) => (route.endsWith('.html') ? [route, route.slice(0, -'.html'.length)] : [route, `${route}.html`]);
+  const knownTo = (lookup, route) => variants(route).some((v) => lookup.has(v));
+
+  const buckets = { retired_301: [], declared_exclusion: [], undeclared: [] };
+  for (const route of orphanedRoutes) {
+    if (knownTo(redirected, route)) buckets.retired_301.push(route);
+    else if (knownTo(declared, route)) buckets.declared_exclusion.push(route);
+    else buckets.undeclared.push(route);
+  }
+
+  const receipt = {
+    generated_at: new Date().toISOString(),
+    incident: '2026-08-29 rendered-but-unadmitted route gap',
+    rendered_but_not_advertised: orphanedRoutes.length,
+    retired_301: buckets.retired_301.length,
+    declared_exclusion: buckets.declared_exclusion.length,
+    undeclared_silent_gaps: buckets.undeclared.length,
+    undeclared_routes: buckets.undeclared,
+    declared_exclusion_file: 'data/content/rendered_route_exclusions.json',
+    gate: 'scripts/validators/validate_rendered_route_admission_parity.js'
+  };
+  writeUtf8(path.join(ROOT, 'artifacts', 'validation', 'rendered_route_disposition.json'), JSON.stringify(receipt, null, 2) + '\n');
+
+  console.log('[build] rendered-but-not-advertised route disposition:');
+  console.log(`[build]   retired via 301 in _redirects        : ${buckets.retired_301.length}`);
+  console.log(`[build]   DECLARED UNSUBMITTED BACKLOG         : ${buckets.declared_exclusion.length}  (data/content/rendered_route_exclusions.json, awaiting a human disposition)`);
+  console.log(`[build]   UNDECLARED SILENT GAPS               : ${buckets.undeclared.length}`);
+  if (buckets.undeclared.length) {
+    console.error(`[build] ${buckets.undeclared.length} rendered indexable route(s) are advertised nowhere and declared nowhere, e.g. ${buckets.undeclared.slice(0, 5).join(', ')}`);
+    console.error('[build] Admit them, retire them with a 301, give them a noindex, or declare them with a reason. validate_rendered_route_admission_parity will fail until then.');
+  }
+  return receipt;
+}
 
 function writeSupplementalContent({ written, contentState, siteBase }) {
   const supplementalWritten = [];
@@ -2531,10 +2683,14 @@ ${m}`;
   // drift. What they still disagree on is reported rather than hidden: a page
   // written to disk that no sitemap, feed or llms export names is work that
   // nobody can find, which is the same waste as a 404 pointed the other way.
+  // The disagreement between them is no longer warned about and dropped. Every
+  // route this build renders but does not advertise is reconciled against a
+  // named stop - a 301 in _redirects, or a declared exclusion with a reason -
+  // and whatever is left over is counted, written to a receipt, and failed by
+  // validate_rendered_route_admission_parity. See the incident note on
+  // reconcileRenderedRouteDisposition.
   const orphanedRoutes = renderedButNotPublic(written.map((entry) => entry.slug));
-  if (orphanedRoutes.length) {
-    console.warn(`[build] ${orphanedRoutes.length} rendered route(s) are in no public surface, e.g. ${orphanedRoutes.slice(0, 3).join(', ')}`);
-  }
+  reconcileRenderedRouteDisposition(orphanedRoutes);
 
 // robots.txt
 
