@@ -53,7 +53,29 @@
  * Not measured: the egress IP is not pinned, so "near me" classes resolve against
  * whatever region the runner sits in. Same caveat the original carried.
  *
- * Usage: node probe_query_class_occupancy.mjs [panel.json] [out.json] [--atlas-top N]
+ * Measuring a query that is NOT in the panel
+ * ------------------------------------------
+ * data/signals/query_class_probe_panel.json carries its own invariant: every
+ * non-control row is a query the property actually received Search Console
+ * impressions for. That is what makes the panel a demand-backed sample, and it
+ * is not weakened here. A query with no impressions - a T3 "real phrasing, no
+ * volume" row, for instance - therefore may not be written into the panel just
+ * to get it probed.
+ *
+ * --evidence-set <provenance_set_id> is the supported path for those. It appends
+ * every row in data/queries/evidence/evidence_queries.json whose `provenance`
+ * names that set, after checking the set is declared in provenance_sets. The
+ * panel is read unchanged and its invariant is untouched; nothing is invented,
+ * because every appended row is an evidence row that already landed in the
+ * repo's own evidence file under a reviewed provenance set.
+ *
+ * --merge carries forward the probes already recorded in the output file for
+ * queries this run did not target. Without it a narrow run would silently
+ * DELETE the readings a wider earlier run took, and the atlas would lose
+ * winnability it had already paid to measure. Re-measured queries always take
+ * the new reading; a query carried forward keeps its own measured_on.
+ *
+ * Usage: node probe_query_class_occupancy.mjs [panel.json] [out.json] [--atlas-top N] [--evidence-set ID] [--merge]
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -137,6 +159,8 @@ async function citedHosts(query) {
 const inFile = positional[0] || 'data/signals/query_class_probe_panel.json';
 const outFile = positional[1] || 'data/signals/query_class_occupancy.json';
 const atlasTop = Number(flag('--atlas-top', '0'));
+const evidenceSet = String(flag('--evidence-set', '') || '');
+const merge = argv.includes('--merge');
 
 const panel = readJson(inFile, null);
 if (!panel || !Array.isArray(panel.queries) || !panel.queries.length) {
@@ -160,6 +184,46 @@ if (atlasTop > 0) {
   for (const q of t1) {
     targets.push({ query: q.query, role: 'atlas_t1', property: q.target_domain || null, evidence_tier: 'T1' });
   }
+}
+
+// Evidence-set rows. The panel may not hold a query with no GSC impressions
+// without breaking its own stated invariant, so a demand-less evidence tier
+// (T3: real phrasing, no volume) reaches the probe through here instead. The
+// set must be declared in provenance_sets, otherwise this would be a way to
+// probe an arbitrary string and record it as evidence-backed.
+if (evidenceSet) {
+  const evidence = readJson('data/queries/evidence/evidence_queries.json', null);
+  if (!evidence || !Array.isArray(evidence.queries)) {
+    console.error('occupancy probe: --evidence-set given but data/queries/evidence/evidence_queries.json has no queries');
+    process.exit(1);
+  }
+  const declared = evidence.provenance_sets || {};
+  if (!declared[evidenceSet]) {
+    console.error(`occupancy probe: --evidence-set ${evidenceSet} is not declared in evidence_queries.json provenance_sets. Only a reviewed set may be probed as evidence.`);
+    process.exit(1);
+  }
+  const seen = new Set(targets.map((t) => String(t.query).toLowerCase().trim()));
+  let added = 0;
+  for (const q of evidence.queries) {
+    if (q.provenance !== evidenceSet) continue;
+    const key = String(q.query).toLowerCase().trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    targets.push({
+      query: q.query,
+      role: `evidence_set:${evidenceSet}`,
+      property: q.target_domain || null,
+      evidence_tier: q.evidence_tier || null,
+      vertical: q.vertical || null,
+      demand_basis: q.demand_basis ?? null,
+    });
+    added += 1;
+  }
+  if (!added) {
+    console.error(`occupancy probe: --evidence-set ${evidenceSet} matched no rows in evidence_queries.json`);
+    process.exit(1);
+  }
+  console.log(`occupancy probe: appended ${added} row(s) from evidence set ${evidenceSet}`);
 }
 
 if (!orKey) {
@@ -209,6 +273,30 @@ for (const q of targets) {
   await sleep(1200);
 }
 
+// Merge. A narrow run must not delete readings a wider run already took, so
+// every query this run did NOT target keeps its previous record, stamped with
+// the run that actually measured it. Anything this run targeted is replaced by
+// what this run saw, including a fresh discard replacing an old measurement.
+const runProbes = probes.length;
+const runDiscarded = discarded.length;
+let carriedProbes = 0;
+let carriedDiscards = 0;
+if (merge) {
+  const prior = readJson(outFile, null);
+  const targeted = new Set(targets.map((t) => String(t.query).toLowerCase().trim()));
+  const priorOn = prior?.measured_on ?? null;
+  for (const p of prior?.probes || []) {
+    if (targeted.has(String(p.query).toLowerCase().trim())) continue;
+    probes.push({ ...p, measured_on: p.measured_on ?? priorOn, carried_forward: true });
+    carriedProbes += 1;
+  }
+  for (const d of prior?.discarded_probes || []) {
+    if (targeted.has(String(d.query).toLowerCase().trim())) continue;
+    discarded.push({ ...d, measured_on: d.measured_on ?? priorOn, carried_forward: true });
+    carriedDiscards += 1;
+  }
+}
+
 const controls = probes.filter((p) => String(p.role || '').startsWith('control_'));
 const controlsAttempted = targets.filter((t) => String(t.role || '').startsWith('control_')).length;
 
@@ -224,6 +312,12 @@ const out = {
     citation_occupancy: 'unbranded_share = unbranded_slots / slots_read. Comparable across queries because slots_read is bounded by a declared max_results.',
     honesty_note: 'Probes whose provider errored or that returned no citation annotations are listed under discarded_probes and are NOT recorded as zero occupancy. A degraded channel is not a measurement.',
     egress_caveat: 'The egress IP is not pinned, so "near me" classes resolve against the runner region rather than a chosen market.',
+    evidence_set_note: evidenceSet
+      ? `Rows tagged role=evidence_set:${evidenceSet} were appended from data/queries/evidence/evidence_queries.json under the reviewed provenance set of that name. They are NOT in data/signals/query_class_probe_panel.json, because that panel requires every non-control row to be a query the property received Search Console impressions for and these rows have no impressions. Probing them here measures who holds their citation slots; it does not give them demand evidence and does not change their evidence tier.`
+      : null,
+    merge_policy: merge
+      ? 'Queries this run did not target kept their previous reading (carried_forward=true). Targeted queries were replaced by what this run saw.'
+      : 'No merge: this file records only what this run targeted. Any previous reading for an untargeted query was dropped.',
   },
   control_check: {
     attempted: controlsAttempted,
@@ -239,6 +333,9 @@ const out = {
   },
   summary: {
     attempted: targets.length,
+    measured_this_run: runProbes,
+    discarded_this_run: runDiscarded,
+    carried_forward_from_previous_run: merge ? carriedProbes + carriedDiscards : 0,
     measured: probes.length,
     discarded: discarded.length,
     mean_citation_occupancy: probes.length
@@ -247,7 +344,7 @@ const out = {
   },
   probes,
   discarded_probes: discarded,
-  reproduce: 'npm run probe:occupancy - requires OPENROUTER_API_KEY. Re-runs every query in the panel and rewrites this file. Add --atlas-top N to also measure the top N measured T1 atlas queries.',
+  reproduce: 'npm run probe:occupancy - requires OPENROUTER_API_KEY. Re-runs every query in the panel and rewrites this file. Add --atlas-top N to also measure the top N measured T1 atlas queries, --evidence-set ID to also measure every evidence_queries.json row carrying that provenance set, and --merge to keep readings for queries the run did not target.',
 };
 
 fs.mkdirSync(path.join(ROOT, path.dirname(outFile)), { recursive: true });
@@ -256,8 +353,10 @@ console.log(`occupancy probe: ${probes.length} measured, ${discarded.length} dis
 if (discarded.length) console.log(`  discarded: ${discarded.map((d) => `${d.query} (${d.reason})`).join(' | ')}`);
 
 // Rule 0: a stage may not exit 0 having done nothing.
-if (!probes.length) {
-  console.error(`occupancy probe: MEASURED NOTHING. ${targets.length} attempted, all ${discarded.length} discarded. Nothing was recorded as zero occupancy; the run fails instead.`);
+// Carried-forward rows are a previous run's work and cannot stand in for this
+// run having done any, so this is checked on what THIS run measured.
+if (!runProbes) {
+  console.error(`occupancy probe: MEASURED NOTHING. ${targets.length} attempted, all ${runDiscarded} discarded. Nothing was recorded as zero occupancy; the run fails instead.`);
   process.exit(1);
 }
 if (controlsAttempted && !controls.length) {
