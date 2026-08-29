@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "34e2eef378ee9a72359e24f71ca2829b10688df3328d133d770345007faa7b10",
+  "registry_sha256": "ab76d21cc01c2909b3fb274b01b4664238669d504a4e93e5c3d6f7a27785687f",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 142,
-    "active": 115,
+    "total": 143,
+    "active": 116,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 113,
+    "hard_fail": 114,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -305,7 +305,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "occupancy-probe-contract"
+        "occupancy-probe-contract",
+        "social-fallback-backlog-visibility"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -334,6 +335,7 @@
         "release-plan-integrity",
         "daily-proof-packet",
         "citation-surface-ledger",
+        "social-fallback-backlog-visibility",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
@@ -541,7 +543,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "occupancy-probe-contract"
+        "occupancy-probe-contract",
+        "social-fallback-backlog-visibility"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -570,6 +573,7 @@
         "release-plan-integrity",
         "daily-proof-packet",
         "citation-surface-ledger",
+        "social-fallback-backlog-visibility",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
@@ -807,7 +811,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "occupancy-probe-contract"
+        "occupancy-probe-contract",
+        "social-fallback-backlog-visibility"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -836,6 +841,7 @@
         "release-plan-integrity",
         "daily-proof-packet",
         "citation-surface-ledger",
+        "social-fallback-backlog-visibility",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
@@ -1047,7 +1053,8 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "occupancy-probe-contract"
+        "occupancy-probe-contract",
+        "social-fallback-backlog-visibility"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1076,6 +1083,7 @@
         "release-plan-integrity",
         "daily-proof-packet",
         "citation-surface-ledger",
+        "social-fallback-backlog-visibility",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
@@ -1227,9 +1235,11 @@
         "ingestion-health",
         "social-content-loop",
         "validation-policy",
-        "validation-registry"
+        "validation-registry",
+        "social-fallback-backlog-visibility"
       ],
       "execution_order": [
+        "social-fallback-backlog-visibility",
         "validation-policy",
         "validation-registry",
         "social-content-loop",
@@ -1449,7 +1459,8 @@
         "velocity-commercial-pages",
         "velocity-intake-workflow",
         "velocity-route-resolution-self-test",
-        "occupancy-probe-contract"
+        "occupancy-probe-contract",
+        "social-fallback-backlog-visibility"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1465,6 +1476,7 @@
         "atlas-release-join",
         "rich-new-page-contract",
         "seo-execution-contract",
+        "social-fallback-backlog-visibility",
         "validator-authority-contract",
         "velocity-commercial-pages",
         "provider-evidence",
@@ -1605,7 +1617,8 @@
         "velocity-intake-workflow",
         "velocity-route-resolution-self-test",
         "workflow-data-trace",
-        "occupancy-probe-contract"
+        "occupancy-probe-contract",
+        "social-fallback-backlog-visibility"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1628,6 +1641,7 @@
         "signal-normalization",
         "release-plan-integrity",
         "daily-proof-packet",
+        "social-fallback-backlog-visibility",
         "strategy-gate",
         "validator-authority-contract",
         "validator-materiality",
@@ -6491,6 +6505,44 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "social-fallback-backlog-visibility",
+        "title": "Social fallback backlog depth must be reported honestly",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "content-release",
+          "local",
+          "release",
+          "social",
+          "audit",
+          "full-audit",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_social_fallback_backlog_visibility.js",
+        "command": "node scripts/validators/validate_social_fallback_backlog_visibility.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/citation_velocity/prepare_velocity_intake_release.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/social-fallback-backlog-visibility.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/social-fallback-backlog-visibility.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "social_fallback_suppressed_count is bounded by the run's remaining capacity, so on any run where agent artifacts fill the daily target it reports 0 while a real eligible backlog sits unreleased. Measured on current data the true depth is 389 against a suppressed_count of 68. A human reading the plan then believes nothing is being held back. Suppressing social fallback is a deliberate contract-enforced policy and is not challenged here; only the honesty of the reported number is enforced.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -9259,6 +9311,44 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents a narrow occupancy run from silently DELETING the readings a wider run paid to take (--merge exists but neither caller passed it; 169 of 205 measured readings were destroyed by one scheduled refresh). Prevents \"unbranded\" reverting to a blind fallthrough in which foreign government, health-service and regulator hosts count as citation slots an independent microsite can hold. Prevents an occupancy reading being published with no blue_ocean_eligible gate, i.e. \"not cited\" read as \"open ground\". Fails if it examines zero probes.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "social-fallback-backlog-visibility",
+        "title": "Social fallback backlog depth must be reported honestly",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "content-release",
+          "local",
+          "release",
+          "social",
+          "audit",
+          "full-audit",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_social_fallback_backlog_visibility.js",
+        "command": "node scripts/validators/validate_social_fallback_backlog_visibility.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/citation_velocity/prepare_velocity_intake_release.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/social-fallback-backlog-visibility.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/social-fallback-backlog-visibility.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "social_fallback_suppressed_count is bounded by the run's remaining capacity, so on any run where agent artifacts fill the daily target it reports 0 while a real eligible backlog sits unreleased. Measured on current data the true depth is 389 against a suppressed_count of 68. A human reading the plan then believes nothing is being held back. Suppressing social fallback is a deliberate contract-enforced policy and is not challenged here; only the honesty of the reported number is enforced.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

@@ -468,6 +468,27 @@ function importAgentRuns() {
   }
   return { manifests, normalized, invalid, absorbed, skipped_by_policy };
 }
+// Depth of the social/public backlog that is ELIGIBLE but unreleased, measured
+// independently of this run's remaining capacity.
+//
+// social_fallback_suppressed_count is bounded by (TARGET - selected.length), so
+// on any run where agent artifacts already fill the target it reports 0 -- and a
+// human reading the plan sees "suppressed: 0" while a real backlog sits idle.
+// That is technically accurate and practically misleading: it is the difference
+// between "nothing is being held back" and "nothing more fits today".
+function measureSocialFallbackBacklogDepth(existingIds) {
+  const queue = readJson('data/community/publish_queue.json', []);
+  if (!Array.isArray(queue)) return 0;
+  let depth = 0;
+  for (const row of queue) {
+    if (!row || !row.query || existingIds.has(row.id)) continue;
+    const vertical = normalizeVertical(row.vertical || row.target_vertical || '');
+    const query = String(row.query || row.normalized_query || '').trim();
+    if (query.length >= 20 && ['personal_injury', 'dentistry', 'trt', 'neuro', 'uscis-medical'].includes(vertical)) depth += 1;
+  }
+  return depth;
+}
+
 function countSocialFallbackCandidates(limit, existingIds) {
   if (limit <= 0) return 0;
   const queue = readJson('data/community/publish_queue.json', []);
@@ -674,6 +695,7 @@ function main() {
     selected.push(record); seenRoutes.add(record.target_route); seenIds.add(record.id);
   }
   const suppressedSocialFallbackCount = allowSocialFallbackRelease ? 0 : countSocialFallbackCandidates(TARGET - selected.length, seenIds);
+  const socialFallbackBacklogDepth = measureSocialFallbackBacklogDepth(seenIds);
   const approvals = selected.map(toApproval);
   writeJson('data/community/approval_queue.json', approvals);
   const plan = {
@@ -692,6 +714,7 @@ function main() {
     strategy_gap_fill_required: false,
     social_fallback_suppressed_count: suppressedSocialFallbackCount,
     social_fallback_suppressed_reason: allowSocialFallbackRelease ? '' : 'fallback disabled by Safe Harbor contract; processing budget is not a publication quota',
+    social_fallback_backlog_depth: socialFallbackBacklogDepth,
     repair_count: selected.filter((r) => r.operation === 'REPAIR_INTENDED_WINNER_PAGE').length,
     new_page_count: selected.filter((r) => r.operation === 'CREATE_NEW_TARGET_PAGE').length,
     blocked_count: blockedAgent.length,
@@ -716,6 +739,7 @@ function main() {
     `Social fallback units: ${plan.social_fallback_selected_count}`,
     `Social fallback allowed: ${plan.social_fallback_release_allowed}`,
     `Social fallback suppressed: ${plan.social_fallback_suppressed_count}`,
+    `Social fallback backlog depth (eligible, unreleased): ${plan.social_fallback_backlog_depth}`,
     `Repair units: ${plan.repair_count}`,
     `New page units: ${plan.new_page_count}`,
     '', '| Source | Operation | Vertical | Target route | Query |', '|---|---|---|---|---|',
