@@ -1,7 +1,7 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-08-29T13:56:03.646Z",
+  "generated_at": "2026-08-29T16:15:53.395Z",
   "workflow_count": 9,
   "workflows": [
     {
@@ -113,11 +113,16 @@
       "trigger": [
         "workflow_dispatch"
       ],
-      "primary_command": "unknown",
-      "repo_lane": "manual-maintenance",
-      "current_status": "keep",
-      "reason": "Non-canonical workflow requires review.",
-      "allowed_runtime_mutations": [],
+      "primary_command": "node scripts/queries/probe_query_class_occupancy.mjs",
+      "repo_lane": "measurement",
+      "current_status": "add",
+      "reason": "Dispatch-only citation occupancy probe that commits its measurement rather than uploading it.",
+      "allowed_runtime_mutations": [
+        "data/signals/query_class_occupancy.json",
+        "data/authority_scale/query_atlas.json",
+        "data/queries/measured_demand_candidates.json",
+        "artifacts/validation/*.json"
+      ],
       "forbidden_runtime_mutations": [
         ".github/**",
         "package.json",
@@ -141,11 +146,24 @@
         "schedule",
         "workflow_dispatch"
       ],
-      "primary_command": "unknown",
-      "repo_lane": "manual-maintenance",
-      "current_status": "keep",
-      "reason": "Non-canonical workflow requires review.",
-      "allowed_runtime_mutations": [],
+      "primary_command": "npm run queries:join-release",
+      "repo_lane": "query-evidence",
+      "current_status": "add",
+      "reason": "Scheduled Search Console evidence refresh; the single allowed scheduled committer, whose commit surface is derived from the registry repair_writes.",
+      "allowed_runtime_mutations": [
+        "data/signals/*.json",
+        "data/queries/*.json",
+        "data/queries/evidence/*.json",
+        "data/authority_scale/query_atlas.json",
+        "artifacts/validation/*.json",
+        "content/_live/insights.json",
+        "content/_live/pages.json",
+        "content/_staged/pages.json",
+        "data/evidence/source_registry.json",
+        "data/evidence/state_source_registry.json",
+        "data/page_families/velocity_page_specs.json",
+        "data/report_fixes/agent_fix_ledger.json"
+      ],
       "forbidden_runtime_mutations": [
         ".github/**",
         "package.json",
@@ -365,6 +383,8 @@
     "ci-health",
     "deploy",
     "full-rebuild",
+    "query-evidence",
+    "measurement",
     "manual-maintenance",
     "retired"
   ]
