@@ -3,8 +3,52 @@
 const fs=require('fs'),path=require('path');
 const ROOT=path.resolve(__dirname,'..');
 const read=(rel)=>JSON.parse(fs.readFileSync(path.join(ROOT,rel),'utf8'));
-const published=read('content/_live/published_urls.json').items;
+const publishedInventory=read('content/_live/published_urls.json').items;
 const livePages=read('content/_live/pages.json').pages;
+
+// ---------------------------------------------------------------- the loop
+// This registry was a fixed point that no new page could enter.
+//
+// It is built from content/_live/published_urls.json. published_urls.json is
+// written by scripts/build_site.js from `allUrls`, which is `written` filtered
+// through isPubliclyAdmitted, which asks this registry. So a route was admitted
+// if it was published, and published if it was admitted: a page released after
+// the 2026-06-19 baseline could be promoted to live with publication_status
+// ADMITTED, rendered to disk as an indexable page, and still never reach a
+// sitemap, a feed or an llms export, because nothing could put it into the set
+// that decides those. That is exactly the shape of the 11 rendered-but-
+// unsubmitted routes found on 2026-08-29, and it would have swallowed every
+// page the newly-wired backlog drain builds.
+//
+// The loop is broken by admitting what the release lane actually released. A
+// route joins the registry when all four of these hold:
+//
+//   * it is a page record in content/_live/pages.json - it went through the
+//     release law and the staged-to-live promotion, not just onto disk;
+//   * its publication_status is ADMITTED - EVIDENCE_ONLY is the declared way to
+//     hold a page back, and retirement sets it;
+//   * it is rendered on disk - a record with no page is not a public route;
+//   * it is not a 301 source in _redirects - a retired route is a named stop.
+//
+// At the moment this was written that rule admitted exactly the routes the
+// parity walk had found orphaned and nothing else, which is the check that it
+// is a fix rather than a widening. scripts/validators/validate_admission_
+// reachability.js re-runs the same rule on every validation and hard-fails if a
+// released page is unreachable again.
+const REDIRECT_SOURCES=(()=>{ const s=new Set(); try{ for(const line of fs.readFileSync(path.join(ROOT,'_redirects'),'utf8').split('\n')){ const t=line.trim(); if(!t||t.startsWith('#'))continue; const from=t.split(/\s+/)[0]; if(from&&from.startsWith('/'))s.add(from.replace(/\/+$/,'/')); } }catch{} return s; })();
+const isRedirected=(route)=>{ const r=String(route||''); return REDIRECT_SOURCES.has(r)||REDIRECT_SOURCES.has(r.replace(/\/+$/,'/'))||REDIRECT_SOURCES.has(r.endsWith('.html')?r.slice(0,-5):`${r}.html`); };
+const isRendered=(route)=>{ const rel=String(route||'').replace(/^\/+|\/+$/g,''); if(!rel)return true; return fs.existsSync(path.join(ROOT,rel,'index.html'))||fs.existsSync(path.join(ROOT,`${rel}.html`)); };
+const publishedPaths=new Set(publishedInventory.map((x)=>x.path));
+const releasedButUnadvertised=livePages
+  .map((p)=>({route:p.slug||p.path,page:p}))
+  .filter(({route,page})=>route
+    && !publishedPaths.has(route)
+    && String(page.publication_status||'').toUpperCase()==='ADMITTED'
+    && !isRedirected(route)
+    && isRendered(route))
+  .map(({route,page})=>({url:`https://theindustryguides.com${route}`,path:route,lastmod:page.date_modified||null,surface:'page',canonical_domain:'theindustryguides.com'}));
+if(releasedButUnadvertised.length)console.log(`PAGE ADMISSION REGISTRY: admitting ${releasedButUnadvertised.length} released route(s) that the published-URL inventory does not yet name`);
+const published=[...publishedInventory,...releasedButUnadvertised];
 const insights=read('content/_live/insights.json').items;
 const medium=read('content/_live/medium_articles.json').items;
 const recommendations=read('data/citation_velocity/recommendations.json').recommendations;

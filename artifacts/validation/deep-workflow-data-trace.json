@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-29T21:43:48.276Z",
+  "generated_at": "2026-08-29T22:48:25.047Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -447,7 +447,7 @@
           ]
         },
         {
-          "command": "COUNT=$(node -e 'try{console.log((require(\"./data/queries/measured_demand_candidates.json\").candidates||[]).length)}catch{console.log(0)}')\nif [ \"$COUNT\" -gt 0 ]; then\necho \"measured demand produced $COUNT candidate(s); dispatching Velocity Content Release\"\ngh workflow run velocity-content-release.yml --ref main\nelse\nREASON=$(node -e 'try{console.log(require(\"./data/queries/measured_demand_candidates.json\").stop_reason||\"unstated\")}catch{console.log(\"candidates file unreadable\")}')\necho \"no candidates this run; not dispatching. Named stop: $REASON\"\nfi",
+          "command": "COUNT=$(node -e 'try{console.log((require(\"./data/queries/measured_demand_candidates.json\").candidates||[]).length)}catch{console.log(0)}')\n# The second reason to wake the release lane: routes that were admitted\n# for build and never built.\n#\n# This step used to dispatch only when the measured atlas produced a\n# candidate. That is the only lane it knew about, and the atlas has\n# produced nothing for weeks - so the release lane was not running, so\n# the 136-route unbuilt backlog could not have drained even after\n# build_page_release_queue.js was taught to offer it. Wiring a consumer\n# to a lane that never wakes is not a drain.\n#\n# The backlog is drainable when it holds AWAITING_RELEASE_LANE entries.\n# Nothing about the ceiling changes: the lane still publishes at most\n# the governed 2 new URLs a day, and a run with nothing to do exits on\n# its own named stop.\nBACKLOG=$(node -e 'try{console.log((require(\"./data/content/unbuilt_rich_page_backlog.json\").routes||[]).filter(r=>String(r.disposition||\"\").toUpperCase()===\"AWAITING_RELEASE_LANE\").length)}catch{console.log(0)}')\nif [ \"$COUNT\" -gt 0 ] || [ \"$BACKLOG\" -gt 0 ]; then\necho \"measured demand produced $COUNT candidate(s); $BACKLOG route(s) await the release lane in the unbuilt backlog; dispatching Velocity Content Release\"\ngh workflow run velocity-content-release.yml --ref main\nelse\nREASON=$(node -e 'try{console.log(require(\"./data/queries/measured_demand_candidates.json\").stop_reason||\"unstated\")}catch{console.log(\"candidates file unreadable\")}')\necho \"no candidates this run and the unbuilt backlog is empty; not dispatching. Named stop: $REASON\"\nfi",
           "status": "PASS",
           "checks": [],
           "direct_npm_scripts": [],
@@ -1010,12 +1010,18 @@
               "type": "file",
               "path": "scripts/velocity_content_release.js",
               "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/content/reconcile_unbuilt_backlog.js",
+              "ok": true
             }
           ],
           "direct_npm_scripts": [
             "release:velocity-intake"
           ],
           "transitive_npm_scripts": [
+            "backlog:reconcile",
             "citation:apply-agent-exact",
             "citation:apply-html-report-contract",
             "citation:compile-html-fix-acceptance",

@@ -5,9 +5,16 @@ const path = require('path');
 const { classifyOpportunity } = require('./citation_opportunity_classifier');
 const { normalizeVertical, routeSegmentForVertical } = require('./vertical_authority');
 const { routeShape, renderedPathForRoute } = require('./page_family_authority');
+// A route may never name the model that generated the page. The seven
+// -openai-gpt-4o / -perplexity / -gemini-1-5-flash routes retired on 2026-08-29
+// all entered here: `query` arrived from an LLM answer panel carrying the
+// answering model in its display string, and this function slugified it whole.
+// Stripping at the one place a query becomes a URL closes it for every caller.
+// See scripts/lib/model_name_guard.js.
+const { stripModelNames } = require('./model_name_guard');
 const ROOT = path.resolve(__dirname, '../..');
 const POLICY_PATH = 'data/report_fixes/page_family_routing_policy.json';
-function slugify(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 90) || 'citation-question'; }
+function slugify(value) { return stripModelNames(String(value || '')).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 90) || 'citation-question'; }
 function readPolicy() { try { return JSON.parse(fs.readFileSync(path.join(ROOT, POLICY_PATH), 'utf8')); } catch { return {}; } }
 function routeForFamily(vertical, query, family) {
   const v = routeSegmentForVertical(vertical);

@@ -2433,7 +2433,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -6553,6 +6553,173 @@
       "depends_on": [],
       "why_existing_checks_do_not_cover": "No validator referenced the previous cross-repo feed at all, which is why it went stale unobserved. sitemap-parity and rendered-route-admission-parity govern HTML routes and ignore a .json data feed entirely; nothing else compares a published artifact against the live file it claims to project.",
       "estimated_runtime_seconds": 2
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 5",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "unbuilt-backlog-drain",
+      "title": "Unbuilt rich page backlog drain",
+      "path": "scripts/validators/validate_unbuilt_backlog_drain.js",
+      "command": "node scripts/validators/validate_unbuilt_backlog_drain.js",
+      "tags": [
+        "backlog",
+        "release",
+        "drain"
+      ],
+      "risk_prevented": "136 routes were admitted for build and never built, the oldest waiting since 2026-06-23, because nothing read the declared backlog: build_page_release_queue.js took intake from the approval queue and the measured atlas only, so an admitted row that reached the backlog had no path back out. A queue with no consumer is measured demand that produces nothing wearing the paperwork of a decision. This fails if the backlog is ever again offered to no one, if the release law refuses every row it is offered, if an entry is marked as awaiting a lane that cannot admit it, or if a retirement carries no recorded reason.",
+      "why_existing_checks_do_not_cover": "rich-new-page-contract proves the backlog is declared, complete and not growing. It cannot prove the backlog is shrinking: a fully declared backlog that never moves passes it exactly as a draining one does. This checks the consumer, not the declaration.",
+      "requires_files": [
+        "data/content/unbuilt_rich_page_backlog.json",
+        "data/release/page_release_queue.json",
+        "data/authority_scale/velocity_decision.json"
+      ],
+      "produces_files": [],
+      "mutates_files": []
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 5",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict",
+        "content-release"
+      ],
+      "id": "model-name-free-routes",
+      "title": "Model-name-free public routes",
+      "path": "scripts/validators/validate_model_name_free_routes.js",
+      "command": "node scripts/validators/validate_model_name_free_routes.js",
+      "tags": [
+        "routes",
+        "slugs",
+        "admission"
+      ],
+      "risk_prevented": "Seven live indexable pages carried the generating model in the URL and the title (-openai-gpt-4o, -perplexity, -gemini-1-5-flash) because an LLM answer panel's display string - question plus answering model - was written into the query field and slugified whole. A public URL that names the model that wrote the page is a generation artifact in the address bar, and it undermines the citation goal these properties exist for. This fails on any route, title, admitted build candidate or rendered page that names a model and is not retired by a 301.",
+      "why_existing_checks_do_not_cover": "No existing validator inspects slug composition. rendered-route-admission-parity asks whether a route is submitted or withheld and is indifferent to what the route says; the release law gates topic, family, duplication and neutrality, none of which a model name trips.",
+      "requires_files": [
+        "scripts/lib/model_name_guard.js",
+        "content/_live/published_urls.json",
+        "data/content/page_admission_registry.json",
+        "_redirects"
+      ],
+      "produces_files": [],
+      "mutates_files": []
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 5",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "admission-reachability",
+      "title": "Released-page admission reachability",
+      "path": "scripts/validators/validate_admission_reachability.js",
+      "command": "node scripts/validators/validate_admission_reachability.js",
+      "tags": [
+        "admission",
+        "sitemap",
+        "release"
+      ],
+      "risk_prevented": "The admission registry is built from published_urls.json, which is built from the routes the admission registry admits. That fixed point meant no page released after the 2026-06-19 baseline could ever enter it: eleven routes were promoted to live as ADMITTED, rendered as indexable HTML, and named by no sitemap, feed or llms export. Left in place it would have turned the newly wired 46-route backlog drain into 46 new orphans. This fails if any released, rendered, non-retired page is missing from the registry.",
+      "why_existing_checks_do_not_cover": "rendered-route-admission-parity accepts a declared exclusion or a 301 as a complete answer, so a route can satisfy it forever while staying unreachable. sitemap-parity compares two artifacts derived from the same array and agrees with itself by construction. This one asks the different question: was the page the release lane actually released ever made findable?",
+      "requires_files": [
+        "content/_live/pages.json",
+        "data/content/page_admission_registry.json",
+        "_redirects"
+      ],
+      "produces_files": [],
+      "mutates_files": []
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 5",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict",
+        "content-release"
+      ],
+      "id": "generated-page-substance",
+      "title": "Generated page substance and vertical fit",
+      "path": "scripts/validators/validate_generated_page_substance.js",
+      "command": "node scripts/validators/validate_generated_page_substance.js",
+      "tags": [
+        "content",
+        "generator",
+        "quality"
+      ],
+      "risk_prevented": "The release lane's section builder wrote instructions to the page about itself with the query pasted in - 'dallas dental implant cost is an admitted community question answer, so the direct answer must stay tied to current source review' - so a page could name Dallas in its title and mention it nowhere in its body. It also emitted a hardcoded USCIS civil-surgeon comparison table for every comparison_guide whatever the vertical, and the oldest row in the unbuilt backlog is a dentistry comparison guide. This fails on self-referential template phrasing in a published page and on a decision table written in another vertical's vocabulary.",
+      "why_existing_checks_do_not_cover": "rendered-programmatic-substance counts words, sources and sections, all of which the template text satisfied - four such pages measured 561-576 projected words with six sections and a source record each. Word count cannot tell a page about its subject from a page about itself, and nothing at all checked that a table matched its vertical.",
+      "requires_files": [
+        "content/_live/pages.json",
+        "content/_staged/pages.json",
+        "scripts/lib/rich_new_page_blocks.js"
+      ],
+      "produces_files": [],
+      "mutates_files": []
     }
   ],
   "legacy_policy": {

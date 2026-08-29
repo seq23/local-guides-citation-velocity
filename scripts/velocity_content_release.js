@@ -117,7 +117,13 @@ for (const rel of ['content/_staged/pages.json']) {
     const agentSourceRecordIds=[...new Set([...(Array.isArray(item.source_record_ids)?item.source_record_ids:[]), ...(Array.isArray(item.source_records)?item.source_records.filter((id)=>String(id).startsWith('velocity_src_')):[])])];
     const sourceRecords=[...new Set([...(Array.isArray(item.source_records)?item.source_records.filter((id)=>sourceRegistry.has(id)):[]), ...(sourceDefaults[vertical]||[])])];
     const sourceUrls=sourceRecords.map((id)=>sourceRegistry.get(id)?.url).filter(Boolean);
-    const sections=buildRichSections({item, route, vertical, richType, date:DATE});
+    // The section builder is handed the RESOLVED source records, not the raw
+    // intake ids. Backlog rows carry internal velocity_src_* ids; the page's
+    // real sources are the registry rows resolved just above, and the source
+    // section names their publisher and URL to the reader. Passing the raw item
+    // made that section fall back to a generic sentence about authority on
+    // every backlog-drained page.
+    const sections=buildRichSections({item: {...item, source_records: sourceRecords}, route, vertical, richType, date:DATE});
     const semanticBlocks = sections.map((sec)=>sec.q);
     const page={slug:route,path:route,renderedPath:item.renderedPath||renderedPathForRoute(route),vertical,title:question,description:`${question} A source-first ${String(richType).replace(/_/g,' ')} built from an admitted governed release unit with direct answer, source basis, internal-link, and page-family-specific decision support.`,sections,canonical_target_url:targets[vertical],source_records:sourceRecords,source_urls:sourceUrls,page_family:admittedFamily,route_shape:shape,rich_page_type:richType,semantic_blocks:semanticBlocks,route_authority:item.route_authority||'artifact_admitted',admission_basis:item.admission_basis||'SAFE_HARBOR_MACHINE_ADMISSION',admission_source_id:item.id||item.record_id||'',source_artifacts:item.source_artifacts||{},agent_source_record_ids:agentSourceRecordIds,content_atom:deriveContentAtom({title:question,checklist:['Define the exact decision','Verify the current primary source','Compare written terms','Find a provider'],red_flags:['No source or date']},{sourceRoute:route,title:question}),date_modified:DATE,publication_status:'STAGED',velocity_only_program:'SAFE_HARBOR_AUTONOMOUS_RELEASE',dated_primary_fact:`${DATE}: Primary-source set reviewed for ${question}.`,self_healing:{version:'2.1',status:'REPAIRED_AND_RESCORED',stage:'SOURCE_READY',projected_word_count:0,repaired_at:DATE,repair_strategy:'BATCH_F_RICH_NEW_PAGE_SOURCE_READY'}};
     // The recorded word count is the measured one. No floor.

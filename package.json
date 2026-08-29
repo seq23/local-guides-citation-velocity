@@ -118,7 +118,7 @@
     "validate:routing-law": "node scripts/validation/run_validation_registry.js --id canonical-routing-law",
     "validate:network-crawlers": "node scripts/validation/run_validation_registry.js --id network-crawler-contract",
     "validate:backlink-search": "node scripts/validation/run_validation_registry.js --id backlink-search-contract",
-    "release:velocity-content": "npm run strategy:opportunities && npm run strategy:release-queue && npm run release:velocity-content:raw",
+    "release:velocity-content": "npm run strategy:opportunities && npm run strategy:release-queue && npm run release:velocity-content:raw && npm run backlog:reconcile",
     "release:full-rebuild": "npm run build && npm run validate:release",
     "validate:velocity-only": "node scripts/validation/run_validation_registry.js --id velocity-only-overhaul",
     "content:self-heal": "node scripts/content/run_source_self_heal_loop.js",
@@ -283,7 +283,12 @@
     "validate:push-after-rebase": "node scripts/validation/run_validation_registry.js --id push-after-rebase-revalidates",
     "validate:rendered-parity": "node scripts/validation/run_validation_registry.js --id rendered-route-admission-parity",
     "feed:promotion-candidates": "node scripts/feeds/build_promotion_candidates_feed.js",
-    "validate:promotion-feed": "node scripts/validation/run_validation_registry.js --id promotion-candidates-feed"
+    "validate:promotion-feed": "node scripts/validation/run_validation_registry.js --id promotion-candidates-feed",
+    "backlog:reconcile": "node scripts/content/reconcile_unbuilt_backlog.js",
+    "validate:backlog-drain": "node scripts/validation/run_validation_registry.js --id unbuilt-backlog-drain",
+    "validate:model-names": "node scripts/validation/run_validation_registry.js --id model-name-free-routes",
+    "validate:admission-reachability": "node scripts/validation/run_validation_registry.js --id admission-reachability",
+    "validate:generated-substance": "node scripts/validation/run_validation_registry.js --id generated-page-substance"
   },
   "engines": {
     "node": "24.x"

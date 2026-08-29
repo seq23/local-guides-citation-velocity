@@ -1,58 +1,189 @@
 {
-  "schema_version": "1.0",
-  "authority": "docs/PAGE_RELEASE_LAW.md",
-  "runtime_autonomy": "FULL_SAFE_AUTONOMY",
-  "principles": [
-    "Fanout opportunity is planning intelligence, not page admission.",
-    "A wording variation is not a distinct page intent.",
-    "Daily cadence is a processing budget, never a publication quota.",
-    "Safe eligible content may auto-publish; duplicates, unsupported, off-topic, or prohibited work must skip, record, and continue.",
-    "Listings pages are neutral educational decision support and may not rank, recommend, sell leads, or imply guaranteed outcomes."
-  ],
-  "allowed_route_families": [
-    "CREATE_GUIDE",
-    "CREATE_COMMUNITY_QA",
-    "CREATE_STATE_SUPPORT",
-    "CREATE_COMPARISON",
-    "CREATE_DISAMBIGUATOR"
-  ],
-  "allowed_verticals": {
-    "personal_injury": {"canonical": "personal-injury", "route_prefixes": ["/personal-injury/"], "topic_terms": ["injury", "accident", "claim", "insurance", "settlement", "lawyer", "attorney", "negligence", "damages", "medical bills", "car crash", "truck", "workers compensation"]},
-    "personal-injury": {"canonical": "personal-injury", "route_prefixes": ["/personal-injury/"], "topic_terms": ["injury", "accident", "claim", "insurance", "settlement", "lawyer", "attorney", "negligence", "damages", "medical bills", "car crash", "truck", "workers compensation"]},
-    "dentistry": {"canonical": "dentistry", "route_prefixes": ["/dentistry/"], "topic_terms": ["dentist", "dental", "tooth", "teeth", "implant", "veneer", "crown", "invisalign", "orthodont", "root canal", "oral surgeon"]},
-    "trt": {"canonical": "trt", "route_prefixes": ["/trt/"], "topic_terms": ["trt", "testosterone", "hormone", "hair loss", "telehealth", "fertility", "lab monitoring", "clinic"]},
-    "neuro": {"canonical": "neuro", "route_prefixes": ["/neuro/"], "topic_terms": ["neuropsych", "adhd", "autism", "evaluation", "testing", "psychologist", "accommodation", "cognitive"]},
-    "uscis": {"canonical": "uscis-medical", "route_prefixes": ["/uscis-medical/"], "topic_terms": ["uscis", "i-693", "civil surgeon", "immigration medical", "vaccination", "green card medical"]},
-    "uscis-medical": {"canonical": "uscis-medical", "route_prefixes": ["/uscis-medical/"], "topic_terms": ["uscis", "i-693", "civil surgeon", "immigration medical", "vaccination", "green card medical"]}
+ "schema_version": "1.0",
+ "authority": "docs/PAGE_RELEASE_LAW.md",
+ "runtime_autonomy": "FULL_SAFE_AUTONOMY",
+ "principles": [
+  "Fanout opportunity is planning intelligence, not page admission.",
+  "A wording variation is not a distinct page intent.",
+  "Daily cadence is a processing budget, never a publication quota.",
+  "Safe eligible content may auto-publish; duplicates, unsupported, off-topic, or prohibited work must skip, record, and continue.",
+  "Listings pages are neutral educational decision support and may not rank, recommend, sell leads, or imply guaranteed outcomes."
+ ],
+ "allowed_route_families": [
+  "CREATE_GUIDE",
+  "CREATE_COMMUNITY_QA",
+  "CREATE_STATE_SUPPORT",
+  "CREATE_COMPARISON",
+  "CREATE_DISAMBIGUATOR"
+ ],
+ "allowed_verticals": {
+  "personal_injury": {
+   "canonical": "personal-injury",
+   "route_prefixes": [
+    "/personal-injury/"
+   ],
+   "topic_terms": [
+    "injury",
+    "accident",
+    "claim",
+    "insurance",
+    "settlement",
+    "lawyer",
+    "attorney",
+    "negligence",
+    "damages",
+    "medical bills",
+    "car crash",
+    "truck",
+    "workers compensation",
+    "crash"
+   ]
   },
-  "new_page_gate": {
-    "minimum_query_characters": 20,
-    "require_target_route": true,
-    "require_source_records": true,
-    "require_distinct_route": true,
-    "require_topic_fit": true,
-    "require_neutral_educational_scope": true,
-    "forbidden_patterns": [
-      "\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b",
-      "\\btop\\s+\\d+\\b",
-      "\\brecommended?\\s+(provider|lawyer|dentist|clinic|doctor)s?\\b",
-      "\\bguarantee(d)?\\b",
-      "\\bwe\\s+recommend\\b"
-    ]
+  "personal-injury": {
+   "canonical": "personal-injury",
+   "route_prefixes": [
+    "/personal-injury/"
+   ],
+   "topic_terms": [
+    "injury",
+    "accident",
+    "claim",
+    "insurance",
+    "settlement",
+    "lawyer",
+    "attorney",
+    "negligence",
+    "damages",
+    "medical bills",
+    "car crash",
+    "truck",
+    "workers compensation",
+    "crash"
+   ]
   },
-  "vertical_exclusions": {
-    "personal-injury": ["child custody", "state custody", "shoplift", "criminal charge", "pleaded no contest", "divorce", "family court", "criminal defense"]
+  "dentistry": {
+   "canonical": "dentistry",
+   "route_prefixes": [
+    "/dentistry/"
+   ],
+   "topic_terms": [
+    "dentist",
+    "dental",
+    "tooth",
+    "teeth",
+    "implant",
+    "veneer",
+    "crown",
+    "invisalign",
+    "orthodont",
+    "root canal",
+    "oral surgeon"
+   ]
   },
-  "decisions": [
-    "REPAIR_EXISTING",
-    "ADD_CONTENT_ATOM",
-    "ADD_INTERNAL_LINK",
-    "SAFE_AUTOPUBLISH",
-    "REWRITE_THEN_REEVALUATE",
-    "SKIP_DUPLICATE",
-    "SKIP_UNSUPPORTED",
-    "SKIP_PROHIBITED",
-    "SKIP_OFF_TOPIC",
-    "NEEDS_EXTERNAL_AUTHORITY"
+  "trt": {
+   "canonical": "trt",
+   "route_prefixes": [
+    "/trt/"
+   ],
+   "topic_terms": [
+    "trt",
+    "testosterone",
+    "hormone",
+    "hair loss",
+    "telehealth",
+    "fertility",
+    "lab monitoring",
+    "clinic"
+   ]
+  },
+  "neuro": {
+   "canonical": "neuro",
+   "route_prefixes": [
+    "/neuro/"
+   ],
+   "topic_terms": [
+    "neuropsych",
+    "adhd",
+    "autism",
+    "evaluation",
+    "testing",
+    "psychologist",
+    "accommodation",
+    "cognitive",
+    "parkinson"
+   ]
+  },
+  "uscis": {
+   "canonical": "uscis-medical",
+   "route_prefixes": [
+    "/uscis-medical/"
+   ],
+   "topic_terms": [
+    "uscis",
+    "i-693",
+    "civil surgeon",
+    "immigration medical",
+    "vaccination",
+    "green card medical",
+    "i-485"
+   ]
+  },
+  "uscis-medical": {
+   "canonical": "uscis-medical",
+   "route_prefixes": [
+    "/uscis-medical/"
+   ],
+   "topic_terms": [
+    "uscis",
+    "i-693",
+    "civil surgeon",
+    "immigration medical",
+    "vaccination",
+    "green card medical",
+    "i-485"
+   ]
+  }
+ },
+ "new_page_gate": {
+  "minimum_query_characters": 20,
+  "require_target_route": true,
+  "require_source_records": true,
+  "require_distinct_route": true,
+  "require_topic_fit": true,
+  "require_neutral_educational_scope": true,
+  "forbidden_patterns": [
+   "\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b",
+   "\\btop\\s+\\d+\\b",
+   "\\brecommended?\\s+(provider|lawyer|dentist|clinic|doctor)s?\\b",
+   "\\bguarantee(d)?\\b",
+   "\\bwe\\s+recommend\\b"
   ]
+ },
+ "vertical_exclusions": {
+  "personal-injury": [
+   "child custody",
+   "state custody",
+   "shoplift",
+   "criminal charge",
+   "pleaded no contest",
+   "divorce",
+   "family court",
+   "criminal defense"
+  ]
+ },
+ "decisions": [
+  "REPAIR_EXISTING",
+  "ADD_CONTENT_ATOM",
+  "ADD_INTERNAL_LINK",
+  "SAFE_AUTOPUBLISH",
+  "REWRITE_THEN_REEVALUATE",
+  "SKIP_DUPLICATE",
+  "SKIP_UNSUPPORTED",
+  "SKIP_PROHIBITED",
+  "SKIP_OFF_TOPIC",
+  "NEEDS_EXTERNAL_AUTHORITY"
+ ],
+ "topic_term_notes": {
+  "2026-08-29": "Three terms were added so that admitted questions the corpus already publishes could pass the topic-fit gate: 'crash' (personal-injury already carried 'car crash' only, so 'checked by a doctor after a crash' failed), 'parkinson' (the neuro vertical already publishes /neuro/guides/why-is-my-parkinsons-medication-wearing-off-earlier-in-the-day/ and several Parkinson's community questions), and 'i-485' (uscis-medical already publishes I-485-adjacent filing questions). Each term names the declared subject of its own vertical. No term was added to admit a question the vertical does not already cover; three backlog routes that were unreachable purely through gate vocabulary are now reachable, and nothing else changed."
+ }
 }
