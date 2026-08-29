@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-29T13:58:47.019Z",
+  "generated_at": "2026-08-29T18:15:05.884Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -201,7 +201,7 @@
       "status": "PASS",
       "commands": [
         {
-          "command": "node scripts/queries/probe_query_class_occupancy.mjs \"${{ inputs.panel }}\" data/signals/query_class_occupancy.json --atlas-top \"${{ inputs.atlas_top || '0' }}",
+          "command": "node scripts/queries/probe_query_class_occupancy.mjs \"${{ inputs.panel }}\" data/signals/query_class_occupancy.json --atlas-top \"${{ inputs.atlas_top || '0' }}\" --merge",
           "status": "PASS",
           "checks": [
             {
@@ -214,7 +214,7 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "node -e '\nconst d=require(\"./data/signals/query_class_occupancy.json\");\nconst pad=(s,n)=>String(s).padEnd(n);\nconsole.log(pad(\"query\",44),pad(\"slots\",6),pad(\"occupancy\",10),pad(\"social\",7),pad(\"owned\",6),\"surfaces\");\nfor(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.citation_occupancy,10),pad(p.social_share,7),pad(p.owned_share,6),JSON.stringify(p.social_by_surface));\nconsole.log(\"\\nCONTROLS:\",JSON.stringify(d.control_check.results));\nif(d.discarded_probes.length) console.log(\"\\nDISCARDED (channel degraded, not zero):\",d.discarded_probes.map(x=>x.query).join(\" | \"));\n'",
+          "command": "node -e '\nconst d=require(\"./data/signals/query_class_occupancy.json\");\nconst pad=(s,n)=>String(s).padEnd(n);\nconsole.log(pad(\"query\",44),pad(\"slots\",6),pad(\"open\",6),pad(\"incumb\",7),pad(\"instit\",7),pad(\"unclass\",8),pad(\"published\",10));\nfor(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.open_share,6),pad(p.incumbent_slots,7),pad(p.institutional_slots,7),pad(p.unclassifiable_slots,8),pad(p.citation_occupancy===null?\"WITHHELD\":p.citation_occupancy,10));\nconst s=d.summary;\nconsole.log(\"\\nSLOTS:\",JSON.stringify(s.slots_by_kind));\nconsole.log(\"UNCLASSIFIABLE:\",s.unclassifiable_slots,\"of\",s.slots_read_total,\"slots (\"+s.unclassifiable_slot_share+\") - counted CLOSED, never open\");\nconsole.log(\"\\nCONTROLS:\",JSON.stringify(d.control_check.separation));\nconsole.log(\"SIGNAL STATUS:\",d.signal_status.published?\"PUBLISHED\":\"WITHHELD - \"+d.signal_status.reason);\nif(!d.signal_status.published) console.log(d.signal_status.note);\nif(d.discarded_probes.length) console.log(\"\\nDISCARDED (channel degraded, not zero):\",d.discarded_probes.map(x=>x.query).join(\" | \"));\n'",
           "status": "PASS",
           "checks": [],
           "direct_npm_scripts": [],
@@ -255,12 +255,32 @@
           ]
         },
         {
-          "command": "npm run validate",
+          "command": "npm run validate:occupancy-probe\nnpm run validate:occupancy-controls\nnpm run validate",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "validate",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:occupancy-controls",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:occupancy-probe",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
               "ok": true
             },
             {
@@ -270,10 +290,14 @@
             }
           ],
           "direct_npm_scripts": [
-            "validate"
+            "validate",
+            "validate:occupancy-controls",
+            "validate:occupancy-probe"
           ],
           "transitive_npm_scripts": [
-            "validate"
+            "validate",
+            "validate:occupancy-controls",
+            "validate:occupancy-probe"
           ]
         }
       ]
@@ -304,7 +328,7 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "npm run probe:occupancy -- data/signals/query_class_probe_panel.json data/signals/query_class_occupancy.json --atlas-top 20",
+          "command": "npm run probe:occupancy -- data/signals/query_class_probe_panel.json data/signals/query_class_occupancy.json --atlas-top 20 --merge",
           "status": "PASS",
           "checks": [
             {
@@ -383,38 +407,17 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "npm run selfheal:dry\nnpm run selfheal",
+          "command": "node scripts/selfheal/run_lane_selfheal.mjs",
           "status": "PASS",
           "checks": [
             {
-              "type": "npm_script",
-              "name": "selfheal",
-              "ok": true
-            },
-            {
-              "type": "npm_script",
-              "name": "selfheal:dry",
-              "ok": true
-            },
-            {
               "type": "file",
-              "path": "scripts/selfheal/heal_until_clean.mjs",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/selfheal/heal_until_clean.mjs",
+              "path": "scripts/selfheal/run_lane_selfheal.mjs",
               "ok": true
             }
           ],
-          "direct_npm_scripts": [
-            "selfheal",
-            "selfheal:dry"
-          ],
-          "transitive_npm_scripts": [
-            "selfheal",
-            "selfheal:dry"
-          ]
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         },
         {
           "command": "npm run validate",
