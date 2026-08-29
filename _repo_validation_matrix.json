@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "f2c576d64242bcd465da86f736dbc120a03416f7545db9048e851292bf922e38",
+  "registry_sha256": "706ed3f23f86e0ba7710f928c34301014eb7c766dd306ac2b7dd6ed2055b6fb9",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 140,
-    "active": 113,
+    "total": 141,
+    "active": 114,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 111,
+    "hard_fail": 112,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -91,6 +91,7 @@
         "html-report-contract",
         "insights",
         "insights-manifest",
+        "self-heal-repair-contract",
         "live-hubs",
         "local-guides-tree-hygiene",
         "medium-articles",
@@ -180,6 +181,7 @@
         "strategy-integrity-contract",
         "browser-contract",
         "ui-test-parity",
+        "self-heal-repair-contract",
         "workflow-contract",
         "velocity-intake-workflow"
       ]
@@ -238,6 +240,7 @@
         "indexnow-batch-budget",
         "insights",
         "insights-manifest",
+        "self-heal-repair-contract",
         "live-hubs",
         "local-guides-tree-hygiene",
         "local-pantry",
@@ -411,6 +414,7 @@
         "distribution-contract",
         "distribution-inputs",
         "indexnow-batch-budget",
+        "self-heal-repair-contract",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -471,6 +475,7 @@
         "ingestion-health",
         "insights",
         "insights-manifest",
+        "self-heal-repair-contract",
         "live-hubs",
         "local-guides-tree-hygiene",
         "local-pantry",
@@ -640,6 +645,7 @@
         "controlled-release-readiness",
         "batch-de-completion",
         "ui-test-parity",
+        "self-heal-repair-contract",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -732,6 +738,7 @@
         "html-report-contract",
         "insights",
         "insights-manifest",
+        "self-heal-repair-contract",
         "live-hubs",
         "local-guides-tree-hygiene",
         "local-pantry",
@@ -900,6 +907,7 @@
         "controlled-release-readiness",
         "batch-de-completion",
         "ui-test-parity",
+        "self-heal-repair-contract",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -965,6 +973,7 @@
         "ingestion-health",
         "insights",
         "insights-manifest",
+        "self-heal-repair-contract",
         "live-hubs",
         "llm-exports",
         "local-guides-tree-hygiene",
@@ -1145,6 +1154,7 @@
         "batch-de-completion",
         "ui-test-parity",
         "release-batch-workflow",
+        "self-heal-repair-contract",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -1303,6 +1313,7 @@
         "html-report-contract",
         "insights",
         "insights-manifest",
+        "self-heal-repair-contract",
         "live-hubs",
         "medium-articles",
         "monitor-future-append-self-test",
@@ -1386,6 +1397,7 @@
         "strategy-integrity-contract",
         "browser-contract",
         "ui-test-parity",
+        "self-heal-repair-contract",
         "workflow-contract",
         "velocity-intake-workflow"
       ]
@@ -3990,6 +4002,44 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Manifest drift can orphan or duplicate generated insight routes.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "self-heal-repair-contract",
+        "title": "Self-heal repair contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 7",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_self_heal_repair_contract.js",
+        "command": "node scripts/validators/validate_self_heal_repair_contract.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json",
+          "package.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/self-heal-repair-contract.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/self-heal-repair-contract.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "A validator can declare a repair_command that rewrites files the validator never reads. The self-heal loop then runs an inert command, it exits 0 having changed nothing, and every repair attempt is burned reaching the same failure.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -11161,6 +11211,44 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Deployment could consume missing or malformed distribution inputs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "self-heal-repair-contract",
+        "title": "Self-heal repair contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 7",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_self_heal_repair_contract.js",
+        "command": "node scripts/validators/validate_self_heal_repair_contract.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json",
+          "package.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/self-heal-repair-contract.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/self-heal-repair-contract.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "A validator can declare a repair_command that rewrites files the validator never reads. The self-heal loop then runs an inert command, it exits 0 having changed nothing, and every repair attempt is burned reaching the same failure.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

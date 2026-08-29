@@ -1349,7 +1349,10 @@
       ],
       "enforce_no_source_mutation": true,
       "repair_command": "npm run apply:citation-agent-fixes",
-      "repair_rationale": "Applies the agent-recommended citation fixes this validator checks for."
+      "repair_rationale": "Applies the agent-recommended citation fixes this validator checks for.",
+      "repair_writes": [
+        "data/report_fixes/agent_fix_ledger.json"
+      ]
     },
     {
       "id": "citation-agent-fixes-2026-05",
@@ -2961,8 +2964,56 @@
       ],
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "repair_command": "npm run repair:unmapped-insights",
-      "repair_rationale": "Re-maps insights missing from the manifest, which is what this validator fails on."
+      "repair_command": "npm run build",
+      "repair_rationale": "content/_live/insights.json is a derived manifest; npm run build regenerates it from the same buildInsightInventory() source the validator compares against, which is the drift this validator fails on. The previous repair (repair:unmapped-insights) rewrote content/_shared/query_to_cluster_map.json, a file this validator never reads, so it exited 0 having changed nothing.",
+      "repair_writes": [
+        "content/_live/insights.json"
+      ]
+    },
+    {
+      "id": "self-heal-repair-contract",
+      "title": "Self-heal repair contract",
+      "path": "scripts/validators/validate_self_heal_repair_contract.js",
+      "command": "node scripts/validators/validate_self_heal_repair_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "self-healing",
+        "validation",
+        "registry"
+      ],
+      "risk_prevented": "A validator can declare a repair_command that rewrites files the validator never reads. The self-heal loop then runs an inert command, it exits 0 having changed nothing, and every repair attempt is burned reaching the same failure.",
+      "why_existing_checks_do_not_cover": "The registry validator checks registry schema and the self-heal loop trusts repair_command blindly; nothing proved a declared repair can affect the validator that declares it.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/self-heal-repair-contract.json",
+      "failure_action": "stop release and repoint the repair at a command that rewrites what the validator reads",
+      "depends_on": [],
+      "requires_files": [
+        "_validation_registry.json",
+        "package.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/self-heal-repair-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/self-heal-repair-contract.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
     },
     {
       "id": "live-hubs",
@@ -3978,7 +4029,11 @@
       ],
       "enforce_no_source_mutation": true,
       "repair_command": "npm run content:self-heal",
-      "repair_rationale": "Repairs thin/short programmatic source, then the substance validator re-runs. This is the pairing run_source_self_heal_loop.js already performed internally; declaring it here lets the general loop use it too."
+      "repair_rationale": "Repairs thin/short programmatic source, then the substance validator re-runs. This is the pairing run_source_self_heal_loop.js already performed internally; declaring it here lets the general loop use it too.",
+      "repair_writes": [
+        "data/page_families/velocity_page_specs.json",
+        "data/evidence/source_registry.json"
+      ]
     },
     {
       "id": "provider-evidence",
@@ -4432,7 +4487,10 @@
       ],
       "enforce_no_source_mutation": true,
       "repair_command": "npm run content:self-heal",
-      "repair_rationale": "Same defect class measured on rendered output rather than source."
+      "repair_rationale": "Same defect class measured on rendered output rather than source.",
+      "repair_writes": [
+        "data/page_families/velocity_page_specs.json"
+      ]
     },
     {
       "id": "repo-hygiene",
