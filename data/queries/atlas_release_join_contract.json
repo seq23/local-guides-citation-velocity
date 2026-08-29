@@ -1,54 +1,61 @@
 {
-  "$schema": "lkg-atlas-release-join-contract-v1",
-  "authority": "docs/PAGE_RELEASE_LAW.md and data/strategy/page_strategy_registry.json remain the publishing authority. This file declares only the join between measured query demand and the release queue.",
-  "why": "The query atlas was read by nobody. Release queue rows all carried source=twin_agent_artifact, and Velocity Content Release only triggered when a human pushed an agent-run manifest - 5 runs and 8 pages since June. Measured demand existed the whole time and could not reach publishing. This contract is the declared, reviewable edge between the two.",
-  "candidate_source": "measured_query_atlas",
-  "admission_rules": {
-    "required_winnability_basis": "measured_answer_engine_citation_occupancy",
-    "why_required": "The atlas ranks unmeasured rows with a neutral factor so ordering is not distorted by a number nobody took. Ranking is not admission: a query may only become a page candidate once its citation occupancy has actually been measured. This is the gate that replaced the hardcoded 0.5 weak_incumbent_score, which admitted and blocked nothing.",
-    "minimum_citation_occupancy": 0.3,
-    "minimum_citation_occupancy_why": "unbranded_share is the fraction of answer-engine citation slots an independent page could plausibly take. Below this, the slots are held by national brands, social surfaces or our own pages, and a new page is competing for something that is not open.",
-    "allowed_evidence_tiers": [
-      "T1",
-      "T2a",
-      "T2b"
-    ],
-    "require_demand_evidence": true,
-    "minimum_query_characters": 20,
-    "maximum_candidates_per_run": 5,
-    "maximum_candidates_per_run_why": "A processing budget, never a publication quota. The same principle page_strategy_registry.json states for daily cadence.",
-    "near_duplicate_jaccard": 0.8,
-    "near_duplicate_jaccard_why": "page_strategy_registry.json states that a wording variation is not a distinct page intent, but the release queue only compares routes and titles, so two orderings of the same words pass it as two pages. Candidates whose content-word sets overlap at or above this threshold collapse to the higher-ranked one and the loser is held naming the query it duplicates. 0.8 keeps a qualifier that changes the answer (0.75) as its own page."
-  },
-  "route_shape": {
-    "template": "/{canonical_vertical}/guides/{slug}/",
-    "route_family": "CREATE_GUIDE",
-    "why": "New query pages belong on the Velocity site under an existing governed vertical prefix. The join never invents a vertical: a query that matches no vertical's topic terms, or matches more than one equally, is HELD with a reason rather than routed by guess."
-  },
-  "vertical_source_records": {
-    "_why": "Every admitted page must carry source records that exist in data/evidence/source_registry.json, or validate_evidence_registry.js fails the build. This is the single authority for the per-vertical defaults; scripts/velocity_content_release.js and scripts/queries/join_atlas_to_release_queue.mjs both read it rather than each keeping a copy.",
-    "personal_injury": [
-      "SRC-CONGRESS-STATE-LEGISLATURES",
-      "SRC-CORNELL-SOL"
-    ],
-    "personal-injury": [
-      "SRC-CONGRESS-STATE-LEGISLATURES",
-      "SRC-CORNELL-SOL"
-    ],
-    "dentistry": [
-      "SRC-ADA-MOUTHHEALTHY"
-    ],
-    "trt": [
-      "SRC-FDA-TESTOSTERONE"
-    ],
-    "neuro": [
-      "SRC-NIMH-ADHD"
-    ],
-    "uscis-medical": [
-      "SRC-USCIS-I693"
-    ],
-    "uscis": [
-      "SRC-USCIS-I693"
-    ]
-  }
+ "$schema": "lkg-atlas-release-join-contract-v1",
+ "authority": "docs/PAGE_RELEASE_LAW.md and data/strategy/page_strategy_registry.json remain the publishing authority. This file declares only the join between measured query demand and the release queue.",
+ "why": "The query atlas was read by nobody. Release queue rows all carried source=twin_agent_artifact, and Velocity Content Release only triggered when a human pushed an agent-run manifest - 5 runs and 8 pages since June. Measured demand existed the whole time and could not reach publishing. This contract is the declared, reviewable edge between the two.",
+ "candidate_source": "measured_query_atlas",
+ "admission_rules": {
+  "required_winnability_basis": "measured_answer_engine_citation_occupancy",
+  "why_required": "The atlas ranks unmeasured rows with a neutral factor so ordering is not distorted by a number nobody took. Ranking is not admission: a query may only become a page candidate once its citation occupancy has actually been measured. This is the gate that replaced the hardcoded 0.5 weak_incumbent_score, which admitted and blocked nothing.",
+  "minimum_citation_occupancy": 0.3,
+  "minimum_citation_occupancy_why": "unbranded_share is the fraction of answer-engine citation slots an independent page could plausibly take. Below this, the slots are held by national brands, social surfaces or our own pages, and a new page is competing for something that is not open.",
+  "allowed_evidence_tiers": [
+   "T1",
+   "T2a",
+   "T2b",
+   "T3"
+  ],
+  "require_demand_evidence": true,
+  "minimum_query_characters": 20,
+  "maximum_candidates_per_run": 5,
+  "maximum_candidates_per_run_why": "A processing budget, never a publication quota. The same principle page_strategy_registry.json states for daily cadence.",
+  "near_duplicate_jaccard": 0.8,
+  "near_duplicate_jaccard_why": "page_strategy_registry.json states that a wording variation is not a distinct page intent, but the release queue only compares routes and titles, so two orderings of the same words pass it as two pages. Candidates whose content-word sets overlap at or above this threshold collapse to the higher-ranked one and the loser is held naming the query it duplicates. 0.8 keeps a qualifier that changes the answer (0.75) as its own page.",
+  "demand_evidence_exempt_tiers": [
+   "T3"
+  ],
+  "demand_evidence_exempt_tiers_why": "T3 is defined in evidence_queries.json as 'real phrasing, no volume': a query observed verbatim in an agent run against a live answer engine, for which no volume figure exists. No volume figure CAN exist - this portfolio has no paid keyword source, and the one file a previous pass cited for it was found never to have existed. Requiring demand evidence of T3 therefore did not hold pages to a higher standard, it made a whole tier permanently unpublishable while query_atlas.json's own policy said 'pages may only be generated against evidence_tier T1-T3' and validate_query_atlas.js explicitly exempted T3 from the demand requirement. Two governing files disagreed and this one silently won. This records the resolution instead of leaving the contradiction in place.",
+  "minimum_citation_occupancy_for_demand_exempt_tiers": 0.5,
+  "minimum_citation_occupancy_for_demand_exempt_tiers_why": "A demand-exempt tier clears a higher winnability bar than the 0.3 base floor. Stated honestly: this does NOT substitute for demand evidence, because citation occupancy and search volume measure different things - a query nobody searches can still show a high unbranded share. What actually bounds the risk is that publication is itself the demand test here: the release cadence is 2 new URLs/day and maximum_candidates_per_run is 5, so an unwanted query costs one page and is observable, and ingest_gsc_evidence promotes a T3 row to T1 with superseded_tier as soon as Search Console measures it. The higher floor is a proportionate hedge, not a proof of demand."
+ },
+ "route_shape": {
+  "template": "/{canonical_vertical}/guides/{slug}/",
+  "route_family": "CREATE_GUIDE",
+  "why": "New query pages belong on the Velocity site under an existing governed vertical prefix. The join never invents a vertical: a query that matches no vertical's topic terms, or matches more than one equally, is HELD with a reason rather than routed by guess."
+ },
+ "vertical_source_records": {
+  "_why": "Every admitted page must carry source records that exist in data/evidence/source_registry.json, or validate_evidence_registry.js fails the build. This is the single authority for the per-vertical defaults; scripts/velocity_content_release.js and scripts/queries/join_atlas_to_release_queue.mjs both read it rather than each keeping a copy.",
+  "personal_injury": [
+   "SRC-CONGRESS-STATE-LEGISLATURES",
+   "SRC-CORNELL-SOL"
+  ],
+  "personal-injury": [
+   "SRC-CONGRESS-STATE-LEGISLATURES",
+   "SRC-CORNELL-SOL"
+  ],
+  "dentistry": [
+   "SRC-ADA-MOUTHHEALTHY"
+  ],
+  "trt": [
+   "SRC-FDA-TESTOSTERONE"
+  ],
+  "neuro": [
+   "SRC-NIMH-ADHD"
+  ],
+  "uscis-medical": [
+   "SRC-USCIS-I693"
+  ],
+  "uscis": [
+   "SRC-USCIS-I693"
+  ]
+ }
 }

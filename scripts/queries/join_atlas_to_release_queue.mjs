@@ -96,15 +96,30 @@ for (const q of atlas.queries) {
   const record = { query, evidence_tier: q.evidence_tier, rank_score: q.rank_score, rank_band: q.rank_band, citation_occupancy: q.citation_occupancy ?? null, winnability_basis: q.winnability_basis || null };
 
   if (!(rules.allowed_evidence_tiers || []).includes(q.evidence_tier)) reasons.push(`tier_not_admitted:${q.evidence_tier}`);
-  if (rules.require_demand_evidence && q.demand_basis === 'none') reasons.push('no_demand_evidence');
+  // Demand evidence is required except for tiers the contract exempts. T3 is
+  // "real phrasing, no volume" - a query observed verbatim against a live answer
+  // engine, for which no volume figure exists or can be obtained. Exempting it
+  // resolves a contradiction where query_atlas.json's policy and
+  // validate_query_atlas.js both admitted T3 while this join silently refused it.
+  const demandExemptTiers = rules.demand_evidence_exempt_tiers || [];
+  const demandExempt = demandExemptTiers.includes(q.evidence_tier);
+  if (rules.require_demand_evidence && !demandExempt && q.demand_basis === 'none') reasons.push('no_demand_evidence');
 
   // The gate that replaced the placebo. An unmeasured row ranks; it does not publish.
   if (q.winnability_basis !== rules.required_winnability_basis) {
     reasons.push(`winnability_not_measured:${q.winnability_basis || 'none'}`);
   } else if (typeof q.citation_occupancy !== 'number') {
     reasons.push('citation_occupancy_missing');
-  } else if (q.citation_occupancy < Number(rules.minimum_citation_occupancy)) {
-    reasons.push(`citation_occupancy_below_floor:${q.citation_occupancy}<${rules.minimum_citation_occupancy}`);
+  } else {
+    // A demand-exempt row carries no volume corroboration, so it clears a higher
+    // winnability floor than a row that does. Falls back to the base floor when the
+    // contract declares no separate one.
+    const floor = demandExempt && rules.minimum_citation_occupancy_for_demand_exempt_tiers != null
+      ? Number(rules.minimum_citation_occupancy_for_demand_exempt_tiers)
+      : Number(rules.minimum_citation_occupancy);
+    if (q.citation_occupancy < floor) {
+      reasons.push(`citation_occupancy_below_floor:${q.citation_occupancy}<${floor}`);
+    }
   }
 
   if (query.length < Number(rules.minimum_query_characters || 20)) reasons.push('query_too_short');
