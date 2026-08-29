@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
+// The evidence lane's write surface is derived from the registry's repair_writes,
+// so declaring it here cannot drift from what the lane can actually commit.
+const { committablePatterns } = require('../selfheal/lane_commit_contract.js');
 const workflowDir = path.join(ROOT, '.github/workflows');
 const lanes = {
   'validate-repo.yml': { lane: 'validate', status: 'replace', reason: 'Canonical validation lane replacing validate.yml.', command: 'npm run release:ci-validate', mutations: [] },
@@ -11,7 +14,15 @@ const lanes = {
   'velocity-full-rebuild.yml': { lane: 'full-rebuild', status: 'replace', reason: 'Canonical full rebuild lane replacing velocity_full_rebuild.yml.', command: 'npm run release:self-healing', mutations: ['content/_live/**', 'artifacts/validation/**', 'reports/**', 'llms*.txt', 'sitemap*.xml'] },
   'deploy-distribution.yml': { lane: 'deploy', status: 'modify', reason: 'Deploy lane consumes exact validated artifact and does not perform release mutation.', command: 'node scripts/prepare_distribution_from_attestation.js', mutations: ['.build/**', 'reports/indexnow-*.json'] },
   'search-intelligence-loop.yml': { lane: 'search-intelligence', status: 'add', reason: 'Scheduled read/diagnose/retest Search Intelligence lane with no independent publication authority.', command: 'npm run search:intelligence:closed-loop', mutations: ['data/search_intelligence/**', 'artifacts/validation/**'] },
-  'ci-health-recovery.yml': { lane: 'ci-health', status: 'add', reason: 'Exact-SHA CI red/recovery observation and governed issue alert lane.', command: 'node scripts/search_intelligence/ci_health_alert.js', mutations: ['data/search_intelligence/automation_health.json'] }
+  'ci-health-recovery.yml': { lane: 'ci-health', status: 'add', reason: 'Exact-SHA CI red/recovery observation and governed issue alert lane.', command: 'node scripts/search_intelligence/ci_health_alert.js', mutations: ['data/search_intelligence/automation_health.json'] },
+  // Both of these commit to main and neither was listed, so they fell through to
+  // the manual-maintenance default with mutations: []. The governance check in
+  // validate_workflow_runtime_mutations.js iterates allowed_runtime_mutations, so
+  // for the repo's only permitted scheduled committer it examined nothing at all
+  // and passed. Declaring the real write surface is what makes that check reach
+  // the workflows that actually write.
+  'query-evidence-refresh.yml': { lane: 'query-evidence', status: 'add', reason: 'Scheduled Search Console evidence refresh; the single allowed scheduled committer, whose commit surface is derived from the registry repair_writes.', command: 'npm run queries:join-release', mutations: committablePatterns(ROOT) },
+  'query-class-occupancy-probe.yml': { lane: 'measurement', status: 'add', reason: 'Dispatch-only citation occupancy probe that commits its measurement rather than uploading it.', command: 'node scripts/queries/probe_query_class_occupancy.mjs', mutations: ['data/signals/query_class_occupancy.json', 'data/authority_scale/query_atlas.json', 'data/queries/measured_demand_candidates.json', 'artifacts/validation/*.json'] }
 };
 const retired = [
   { path: '.github/workflows/validate.yml', action: 'REPLACE', replacement: '.github/workflows/validate-repo.yml' },
@@ -58,7 +69,7 @@ const workflows = fs.readdirSync(workflowDir).filter((f) => /\.ya?ml$/.test(f)).
     validation_owner: ['daily-citation-intelligence.yml','search-intelligence-loop.yml'].includes(name) ? 'citation/search-intelligence validators' : 'validation registry and workflow topology validators'
   };
 });
-const inventory = { schema_version: '1.4', repo: 'local-guides-citation-velocity', generated_at: new Date().toISOString(), workflow_count: workflows.length, workflows, retired_or_replaced_workflows: retired, canonical_lanes: ['validate','build','content-release','signal-intelligence','search-intelligence','ci-health','deploy','full-rebuild','manual-maintenance','retired'] };
+const inventory = { schema_version: '1.4', repo: 'local-guides-citation-velocity', generated_at: new Date().toISOString(), workflow_count: workflows.length, workflows, retired_or_replaced_workflows: retired, canonical_lanes: ['validate','build','content-release','signal-intelligence','search-intelligence','ci-health','deploy','full-rebuild','query-evidence','measurement','manual-maintenance','retired'] };
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), { recursive: true });
 fs.mkdirSync(path.join(ROOT, 'reports'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'artifacts/validation/workflow-yaml-inventory.json'), JSON.stringify(inventory, null, 2) + '\n');

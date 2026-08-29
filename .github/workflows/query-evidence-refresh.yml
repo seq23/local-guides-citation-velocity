@@ -98,14 +98,21 @@ jobs:
           CITATION_PROBE_MODE: grounded
         run: node scripts/llm_citation_probe.mjs --limit 25
       - name: Apply bounded self-healing repairs
+        id: selfheal
         # selfheal and selfheal:dry shipped here and no workflow invoked either,
         # so the loop never ran. It runs in this lane rather than a new one
         # because the contract allows exactly one scheduled workflow to commit
         # to main, and this is it. The validate step below is what makes the
         # repair safe: nothing is committed unless the repo validates after it.
-        run: |
-          npm run selfheal:dry
-          npm run selfheal
+        #
+        # The runner replaces two bare npm calls. Under the default bash -e those
+        # aborted the step whenever selfheal:dry exited non-zero, which it does
+        # precisely when there is something to repair - so the real pass only ever
+        # ran when there was nothing to do. The runner also derives this lane's
+        # commit surface from the registry's repair_writes and stops the run if a
+        # repair touched anything outside it, so the lane can no longer validate
+        # one tree and commit another.
+        run: node scripts/selfheal/run_lane_selfheal.mjs
       - name: Validate before publishing anything
         run: npm run validate
 
@@ -114,7 +121,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "query evidence refresh: measured GSC demand -> atlas -> release candidates"
-          file_pattern: "data/signals/*.json data/queries/*.json data/queries/evidence/*.json data/authority_scale/query_atlas.json artifacts/validation/*.json"
+          file_pattern: ${{ steps.selfheal.outputs.file_pattern }}
 
       - name: Hand measured candidates to Velocity Content Release
         # Only when the join actually produced candidates. A run that named a

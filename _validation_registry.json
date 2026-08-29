@@ -2430,7 +2430,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -3011,6 +3011,54 @@
       ],
       "mutates_files": [
         "artifacts/validation/self-heal-repair-contract.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
+      "id": "self-heal-commit-coverage",
+      "title": "Self-heal commit coverage",
+      "path": "scripts/validators/validate_self_heal_commit_coverage.js",
+      "command": "node scripts/validators/validate_self_heal_commit_coverage.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "self-healing",
+        "workflow",
+        "commit-surface"
+      ],
+      "risk_prevented": "The scheduled lane that runs the self-heal loop can heal a tree, validate the healed tree, then commit a different one, because the paths its repairs rewrite fall outside its commit pattern. The repair is discarded every run and the same defect is repaired forever.",
+      "why_existing_checks_do_not_cover": "self-heal-repair-contract proves a repair can clear its validator; nothing proved the lane running that repair could commit what it rewrote, and the workflow inventory declared no mutation surface for that lane at all.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
+      "failure_action": "stop release and widen the lane commit surface, or stop the lane committing a state it did not validate",
+      "depends_on": [
+        "self-heal-repair-contract"
+      ],
+      "requires_files": [
+        "_validation_registry.json",
+        ".github/workflows/query-evidence-refresh.yml",
+        "scripts/selfheal/run_lane_selfheal.mjs"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/self-heal-commit-coverage.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/self-heal-commit-coverage.json"
       ],
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
@@ -4029,10 +4077,13 @@
       ],
       "enforce_no_source_mutation": true,
       "repair_command": "npm run content:self-heal",
-      "repair_rationale": "Repairs thin/short programmatic source, then the substance validator re-runs. This is the pairing run_source_self_heal_loop.js already performed internally; declaring it here lets the general loop use it too.",
+      "repair_rationale": "Repairs thin/short programmatic source, then the substance validator re-runs. This is the pairing run_source_self_heal_loop.js already performed internally; declaring it here lets the general loop use it too. The declared write set is the full set npm run content:self-heal rewrites across both of its stages; an incomplete set let the scheduled lane commit a partial repair.",
       "repair_writes": [
-        "data/page_families/velocity_page_specs.json",
-        "data/evidence/source_registry.json"
+        "content/_live/pages.json",
+        "content/_staged/pages.json",
+        "data/evidence/source_registry.json",
+        "data/evidence/state_source_registry.json",
+        "data/page_families/velocity_page_specs.json"
       ]
     },
     {
@@ -4487,8 +4538,12 @@
       ],
       "enforce_no_source_mutation": true,
       "repair_command": "npm run content:self-heal",
-      "repair_rationale": "Same defect class measured on rendered output rather than source.",
+      "repair_rationale": "Same defect class measured on rendered output rather than source. The declared write set is the full set npm run content:self-heal rewrites across both of its stages; an incomplete set let the scheduled lane commit a partial repair.",
       "repair_writes": [
+        "content/_live/pages.json",
+        "content/_staged/pages.json",
+        "data/evidence/source_registry.json",
+        "data/evidence/state_source_registry.json",
         "data/page_families/velocity_page_specs.json"
       ]
     },

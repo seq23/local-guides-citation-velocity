@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "706ed3f23f86e0ba7710f928c34301014eb7c766dd306ac2b7dd6ed2055b6fb9",
+  "registry_sha256": "34e2eef378ee9a72359e24f71ca2829b10688df3328d133d770345007faa7b10",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 141,
-    "active": 114,
+    "total": 142,
+    "active": 115,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 112,
+    "hard_fail": 113,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -92,6 +92,7 @@
         "insights",
         "insights-manifest",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "live-hubs",
         "local-guides-tree-hygiene",
         "medium-articles",
@@ -182,6 +183,7 @@
         "browser-contract",
         "ui-test-parity",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "workflow-contract",
         "velocity-intake-workflow"
       ]
@@ -241,6 +243,7 @@
         "insights",
         "insights-manifest",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "live-hubs",
         "local-guides-tree-hygiene",
         "local-pantry",
@@ -415,6 +418,7 @@
         "distribution-inputs",
         "indexnow-batch-budget",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -476,6 +480,7 @@
         "insights",
         "insights-manifest",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "live-hubs",
         "local-guides-tree-hygiene",
         "local-pantry",
@@ -646,6 +651,7 @@
         "batch-de-completion",
         "ui-test-parity",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -739,6 +745,7 @@
         "insights",
         "insights-manifest",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "live-hubs",
         "local-guides-tree-hygiene",
         "local-pantry",
@@ -908,6 +915,7 @@
         "batch-de-completion",
         "ui-test-parity",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -974,6 +982,7 @@
         "insights",
         "insights-manifest",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "live-hubs",
         "llm-exports",
         "local-guides-tree-hygiene",
@@ -1155,6 +1164,7 @@
         "ui-test-parity",
         "release-batch-workflow",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -1314,6 +1324,7 @@
         "insights",
         "insights-manifest",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "live-hubs",
         "medium-articles",
         "monitor-future-append-self-test",
@@ -1398,6 +1409,7 @@
         "browser-contract",
         "ui-test-parity",
         "self-heal-repair-contract",
+        "self-heal-commit-coverage",
         "workflow-contract",
         "velocity-intake-workflow"
       ]
@@ -1927,6 +1939,10 @@
     {
       "from": "distribution-inputs",
       "to": "indexnow-batch-budget"
+    },
+    {
+      "from": "self-heal-repair-contract",
+      "to": "self-heal-commit-coverage"
     },
     {
       "from": "strategy-gate",
@@ -4040,6 +4056,47 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A validator can declare a repair_command that rewrites files the validator never reads. The self-heal loop then runs an inert command, it exits 0 having changed nothing, and every repair attempt is burned reaching the same failure.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "self-heal-commit-coverage",
+        "title": "Self-heal commit coverage",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 7",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_self_heal_commit_coverage.js",
+        "command": "node scripts/validators/validate_self_heal_commit_coverage.js",
+        "depends_on": [
+          "self-heal-repair-contract"
+        ],
+        "requires_files": [
+          "_validation_registry.json",
+          ".github/workflows/query-evidence-refresh.yml",
+          "scripts/selfheal/run_lane_selfheal.mjs"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/self-heal-commit-coverage.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/self-heal-commit-coverage.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "The scheduled lane that runs the self-heal loop can heal a tree, validate the healed tree, then commit a different one, because the paths its repairs rewrite fall outside its commit pattern. The repair is discarded every run and the same defect is repaired forever.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -11249,6 +11306,47 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A validator can declare a repair_command that rewrites files the validator never reads. The self-heal loop then runs an inert command, it exits 0 having changed nothing, and every repair attempt is burned reaching the same failure.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "self-heal-commit-coverage",
+        "title": "Self-heal commit coverage",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 7",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_self_heal_commit_coverage.js",
+        "command": "node scripts/validators/validate_self_heal_commit_coverage.js",
+        "depends_on": [
+          "self-heal-repair-contract"
+        ],
+        "requires_files": [
+          "_validation_registry.json",
+          ".github/workflows/query-evidence-refresh.yml",
+          "scripts/selfheal/run_lane_selfheal.mjs"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/self-heal-commit-coverage.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/self-heal-commit-coverage.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "The scheduled lane that runs the self-heal loop can heal a tree, validate the healed tree, then commit a different one, because the paths its repairs rewrite fall outside its commit pattern. The repair is discarded every run and the same defect is repaired forever.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
