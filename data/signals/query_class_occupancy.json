@@ -1,7 +1,7 @@
 {
   "$schema": "lkg-citation-occupancy-probe-v3",
   "measured_on": "2026-08-29",
-  "measured_at": "2026-08-29T01:12:06.992Z",
+  "measured_at": "2026-08-29T01:29:38.641Z",
   "purpose": "Measure who holds the citation slots an answer engine builds its answer from, per query. A page can only win an open slot, so unbranded_share is the winnability signal the query atlas and the page release join consume.",
   "method": {
     "channel": "OpenRouter chat/completions, model openai/gpt-4o-mini, plugins:[{id:'web', engine: WEB_ENGINE, mode: WEB_MODE,max_results:10}]. Cited hosts are read from message.annotations[].url_citation.url in the order returned.",
@@ -10,7 +10,7 @@
     "citation_occupancy": "unbranded_share = unbranded_slots / slots_read. Comparable across queries because slots_read is bounded by a declared max_results.",
     "honesty_note": "Probes whose provider errored or that returned no citation annotations are listed under discarded_probes and are NOT recorded as zero occupancy. A degraded channel is not a measurement.",
     "egress_caveat": "The egress IP is not pinned, so \"near me\" classes resolve against the runner region rather than a chosen market.",
-    "evidence_set_note": "Rows tagged role=evidence_set:citation_shape_open_ground_2026-08-28 were appended from data/queries/evidence/evidence_queries.json under the reviewed provenance set of that name. They are NOT in data/signals/query_class_probe_panel.json, because that panel requires every non-control row to be a query the property received Search Console impressions for and these rows have no impressions. Probing them here measures who holds their citation slots; it does not give them demand evidence and does not change their evidence tier.",
+    "evidence_set_note": "Rows tagged role=evidence_set:fix_record_unclassified_2026-08-28 were appended from data/queries/evidence/evidence_queries.json under the reviewed provenance set of that name. They are NOT in data/signals/query_class_probe_panel.json, because that panel requires every non-control row to be a query the property received Search Console impressions for and these rows have no impressions. Probing them here measures who holds their citation slots; it does not give them demand evidence and does not change their evidence tier.",
     "merge_policy": "Queries this run did not target kept their previous reading (carried_forward=true). Targeted queries were replaced by what this run saw."
   },
   "control_check": {
@@ -20,14 +20,14 @@
       {
         "query": "civil surgeon near me",
         "role": "control_known_open",
-        "measured_unbranded_share": 0.67,
+        "measured_unbranded_share": 0.44,
         "prior_unbranded_share": 0.7,
         "prior_channel": "bing_serp_top10"
       },
       {
         "query": "dentist that accepts medicaid near me",
         "role": "control_known_closed",
-        "measured_unbranded_share": 0.89,
+        "measured_unbranded_share": 0.88,
         "prior_unbranded_share": 0,
         "prior_channel": "bing_serp_top10"
       }
@@ -36,13 +36,13 @@
     "why": "The priors were taken on Bing SERP slots and this probe reads answer-engine citation slots. The two are different populations, so a divergence is a channel change, not drift, and the run is not failed on it. The controls are still run so a human can see whether the known-open and known-closed classes still separate in the same direction."
   },
   "summary": {
-    "attempted": 138,
-    "measured_this_run": 138,
+    "attempted": 63,
+    "measured_this_run": 63,
     "discarded_this_run": 0,
-    "carried_forward_from_previous_run": 20,
-    "measured": 158,
+    "carried_forward_from_previous_run": 142,
+    "measured": 205,
     "discarded": 0,
-    "mean_citation_occupancy": 0.869
+    "mean_citation_occupancy": 0.868
   },
   "probes": [
     {
@@ -50,53 +50,55 @@
       "role": "control_known_open",
       "property": "uscisexam.com",
       "prior_unbranded_share": 0.7,
-      "slots_read": 6,
+      "slots_read": 9,
       "cited_hosts_in_order": [
         "uat-my.uscis.dhs.gov",
-        "civilsurgeonfinder.com",
+        "texasmedclinic.com",
+        "medicine.louisville.edu",
         "uscisphysician.com",
         "orangecountync.gov",
         "naomedical.com",
-        "civilsurgeons.com"
+        "immigrantchild.ucsf.edu",
+        "uscis.gov",
+        "symphonyhealth.care"
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 2,
+      "national_slots": 5,
       "unbranded_slots": 4,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.33,
-      "unbranded_share": 0.67,
-      "citation_occupancy": 0.67
+      "national_share": 0.56,
+      "unbranded_share": 0.44,
+      "citation_occupancy": 0.44
     },
     {
       "query": "dentist that accepts medicaid near me",
       "role": "control_known_closed",
       "property": "dentistryguides.com",
       "prior_unbranded_share": 0,
-      "slots_read": 9,
+      "slots_read": 8,
       "cited_hosts_in_order": [
-        "skyview-dental.com",
-        "themeadowsdentalcare.com",
-        "richmonddentalspa.com",
-        "acceptsmedicaid.com",
-        "medicaiddentistfinder.com",
-        "zocdoc.com",
-        "toothhavenpediatricdentistry.com",
-        "newdaydentistrycolorado.com",
-        "rodeodental.com"
+        "westminsterdent.com",
+        "aventuradentalhoustonvmd.com",
+        "smilekingdomtx.com",
+        "npidashboard.com",
+        "riodentalgroup.com",
+        "medicaid.utah.gov",
+        "jeffersondentalclinics.com",
+        "denveryouthdentistry.com"
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
       "national_slots": 1,
-      "unbranded_slots": 8,
+      "unbranded_slots": 7,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.11,
-      "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "national_share": 0.13,
+      "unbranded_share": 0.88,
+      "citation_occupancy": 0.88
     },
     {
       "query": "hybrid event platform",
@@ -105,16 +107,16 @@
       "gsc_impressions_90d": 893,
       "slots_read": 10,
       "cited_hosts_in_order": [
-        "eventsx.com",
-        "virtualdays.com",
         "zoom.com",
+        "virtualdays.com",
+        "eventmobi.com",
         "nunify.com",
         "crowdcomms.com",
-        "pheedloop.com",
+        "cvent.com",
         "eventleaf.com",
-        "eventcombo.com",
-        "canapii.com",
-        "eventsair.com"
+        "prnewswire.com",
+        "eventhex.ai",
+        "canapii.com"
       ],
       "owned_slots": 0,
       "social_slots": 0,
@@ -138,8 +140,8 @@
         "gpj.com",
         "itagroup.com",
         "virtualdays.com",
-        "raffertyweiss.com",
         "virtualvelocity.com",
+        "raffertyweiss.com",
         "conexiantsolutions.com",
         "cti.com",
         "meetingtomorrow.com"
@@ -170,7 +172,7 @@
         "summitdentalteam.com",
         "torreyhillsdental.com",
         "manhattandentists.com",
-        "dentalprotection.org"
+        "compassdentalga.com"
       ],
       "owned_slots": 0,
       "social_slots": 0,
@@ -190,13 +192,13 @@
       "prior_unbranded_share": 0.8,
       "slots_read": 10,
       "cited_hosts_in_order": [
-        "cqc.org.uk",
-        "dentistry.uiowa.edu",
         "venicefamilyclinic.org",
+        "dentistry.uiowa.edu",
         "13abc.com",
+        "dentistry.vcu.edu",
+        "rocktownnow.com",
         "kswo.com",
         "freedentalcare.us",
-        "dentalclinics.org",
         "connector.hrsa.gov",
         "healthlinkdental.org",
         "benmasselldentalclinic.org"
@@ -204,13 +206,13 @@
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 2,
-      "unbranded_slots": 8,
+      "national_slots": 3,
+      "unbranded_slots": 7,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.2,
-      "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "national_share": 0.3,
+      "unbranded_share": 0.7,
+      "citation_occupancy": 0.7
     },
     {
       "query": "when to call a personal injury lawyer",
@@ -228,7 +230,7 @@
         "justinmintonlaw.com",
         "sswlawfl.com",
         "wdklawfirm.com",
-        "randspear.com"
+        "youraccidentattorneys.com"
       ],
       "owned_slots": 0,
       "social_slots": 0,
@@ -246,20 +248,23 @@
       "role": "measured",
       "property": "billionairehighperformancecoach.com",
       "gsc_impressions_90d": 190,
-      "slots_read": 6,
+      "slots_read": 9,
       "cited_hosts_in_order": [
-        "coachingfederation.org",
-        "instructionalcoaching.com",
-        "app.rocky.ai",
-        "sally.io",
-        "trainingindustry.com",
-        "aol.ca"
+        "coachbot.ai",
+        "coachassist.ai",
+        "coachhub.com",
+        "hedy.ai",
+        "fireflies.ai",
+        "anhco.org",
+        "toolify.ai",
+        "delenta.com",
+        "success.ai"
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
       "national_slots": 0,
-      "unbranded_slots": 6,
+      "unbranded_slots": 9,
       "owned_share": 0,
       "social_share": 0,
       "national_share": 0,
@@ -274,14 +279,14 @@
       "slots_read": 9,
       "cited_hosts_in_order": [
         "trt-nc.com",
-        "tucsonwellnessmd.com",
         "premierhormonehealth.com",
+        "tucsonwellnessmd.com",
         "gamedaymenshealth.com",
         "windermeremedical.com",
+        "endocrinecenter.com",
         "maximustribe.com",
         "gcn.nasa.gov",
-        "testocorehrt.com",
-        "alignedmodernhealth.com"
+        "testocorehrt.com"
       ],
       "owned_slots": 0,
       "social_slots": 0,
@@ -299,82 +304,79 @@
       "role": "measured",
       "property": "theindustryguides.com",
       "gsc_impressions_90d": 28,
-      "slots_read": 10,
+      "slots_read": 9,
       "cited_hosts_in_order": [
         "chicagoneurodevelopmentalcenter.org",
-        "chicagoneuro.org",
         "advocatechildrenshospital.com",
-        "uptodate.com",
+        "uclahealth.org",
+        "publications.aap.org",
         "rush.edu",
         "pubmed.ncbi.nlm.nih.gov",
         "thecenter4autism.org",
         "news.childrensmercy.org",
-        "psych.uic.edu",
         "psychiatry.uchicago.edu"
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 4,
+      "national_slots": 3,
       "unbranded_slots": 6,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.4,
-      "unbranded_share": 0.6,
-      "citation_occupancy": 0.6
+      "national_share": 0.33,
+      "unbranded_share": 0.67,
+      "citation_occupancy": 0.67
     },
     {
       "query": "horse bill of sale",
       "role": "measured",
       "property": "horselegalguide.com",
       "gsc_impressions_90d": 16,
-      "slots_read": 6,
+      "slots_read": 5,
       "cited_hosts_in_order": [
         "uslegalforms.com",
         "quarterborderhorses.com",
         "esign.com",
-        "blm.gov",
-        "smartsheet.com",
-        "freeforms.com"
-      ],
-      "owned_slots": 0,
-      "social_slots": 0,
-      "social_by_surface": {},
-      "national_slots": 1,
-      "unbranded_slots": 5,
-      "owned_share": 0,
-      "social_share": 0,
-      "national_share": 0.17,
-      "unbranded_share": 0.83,
-      "citation_occupancy": 0.83
-    },
-    {
-      "query": "document checklist for mortgage loan",
-      "role": "measured",
-      "property": "approvalprep.com",
-      "slots_read": 10,
-      "cited_hosts_in_order": [
-        "usmortgage.com",
-        "riverbankandtrust.com",
-        "purduefed.com",
-        "landmarkcu.com",
-        "sunflowerbank.com",
-        "u.bank",
-        "primeres.com",
-        "houseloan.com",
-        "greenbeltbank.bank",
-        "dart.bank"
+        "billofsalelegal.com",
+        "smartsheet.com"
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
       "national_slots": 0,
-      "unbranded_slots": 10,
+      "unbranded_slots": 5,
       "owned_share": 0,
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
       "citation_occupancy": 1
+    },
+    {
+      "query": "document checklist for mortgage loan",
+      "role": "measured",
+      "property": "approvalprep.com",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "files.consumerfinance.gov",
+        "money.usnews.com",
+        "landmarkcu.com",
+        "umb.com",
+        "sunflowerbank.com",
+        "u.bank",
+        "experian.com",
+        "phmloans.com",
+        "primeres.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.22,
+      "unbranded_share": 0.78,
+      "citation_occupancy": 0.78
     },
     {
       "query": "letter of explanation for credit",
@@ -418,8 +420,8 @@
         "pinotspalette.com",
         "mississaugaconvention.com",
         "graduationattire.com",
-        "gps.fsu.edu",
-        "raiseright.com"
+        "paperlesspost.com",
+        "gps.fsu.edu"
       ],
       "owned_slots": 0,
       "social_slots": 0,
@@ -436,20 +438,19 @@
       "query": "black therapist memphis tn",
       "role": "measured",
       "property": "hicksconsulting.org",
-      "slots_read": 6,
+      "slots_read": 5,
       "cited_hosts_in_order": [
         "downtownmemphis.com",
         "psychologytoday.com",
         "rbgmentalhealthandwellness.clientsecure.me",
         "anthonyblack629.dr-leonardo.com",
-        "actionnews5.com",
-        "rula.com"
+        "thriveworks.com"
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
       "national_slots": 0,
-      "unbranded_slots": 6,
+      "unbranded_slots": 5,
       "owned_share": 0,
       "social_share": 0,
       "national_share": 0,
@@ -466,12 +467,102 @@
         "afcurgentcare.com",
         "immigration-medical-exam.com",
         "bayviewphysicians.com",
-        "myprivia.com",
         "828urgentcare.com",
         "statcarewalkin.com",
         "chaudharylaw.com",
-        "health.ucsd.edu",
+        "manhattanmedicalarts.com",
+        "sirillp.com",
         "wahabmedical.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 10,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "emergency dentist near me open now",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "dentistry",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "gentledental.interdent.com",
+        "emergencydentaloftulsa.com",
+        "walkindentalclinic.ca",
+        "evergreensmilesdental.com",
+        "capendo.com",
+        "dentistry801.com",
+        "emergencydentalservice.com",
+        "teledentistry.com",
+        "emergencydentistquogue.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "adult specialist for anxiety vs ADHD evaluation near me who should I see",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 8,
+      "cited_hosts_in_order": [
+        "scottshapiromd.com",
+        "bostonneurobehavioral.com",
+        "aafp.org",
+        "adhdspecialist.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "novanthealth.org",
+        "rittenhousepa.com",
+        "turnwell.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.13,
+      "unbranded_share": 0.88,
+      "citation_occupancy": 0.88
+    },
+    {
+      "query": "child specialist work accommodations evaluation near me",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "jobs.mayoclinic.org",
+        "moss.uoregon.edu",
+        "childrens.com",
+        "rittenhousepa.com",
+        "manningchildrens.org",
+        "lincoln.omsd.net",
+        "oacas.org",
+        "my.clevelandclinic.org",
+        "governmentjobs.com",
+        "perryschools.org"
       ],
       "owned_slots": 0,
       "social_slots": 0,
@@ -483,6 +574,1322 @@
       "national_share": 0.1,
       "unbranded_share": 0.9,
       "citation_occupancy": 0.9
+    },
+    {
+      "query": "fast appointment anxiety vs ADHD evaluation near me",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "fastreat.com",
+        "infocusfirst.com",
+        "health.ucdavis.edu",
+        "bostonneurobehavioral.com",
+        "talkiatry.com",
+        "renewingmindsets.com",
+        "pinnaclebhw.com",
+        "adhdadvisor.org",
+        "rittenhousepa.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.11,
+      "unbranded_share": 0.89,
+      "citation_occupancy": 0.89
+    },
+    {
+      "query": "insurance friendly anxiety vs ADHD evaluation near me",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "studenthealth.virginia.edu",
+        "infocusfirst.com",
+        "blog.blackbirdhealth.com",
+        "cigna.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "adhdadvisor.org",
+        "legionhealth.com",
+        "aafp.org",
+        "talkiatry.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 3,
+      "unbranded_slots": 6,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.33,
+      "unbranded_share": 0.67,
+      "citation_occupancy": 0.67
+    },
+    {
+      "query": "insurance friendly memory testing near me",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "mindermemory.com",
+        "hebrewseniorlife.org",
+        "samhealth.org",
+        "alzfdn.org",
+        "smh.com",
+        "kmnpsych.com",
+        "mindbodycoop.com",
+        "hoag.org",
+        "universityhealthkc.org"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "best TRT clinic near me",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 6,
+      "cited_hosts_in_order": [
+        "trtmiami.com",
+        "advancedtrtclinic.com",
+        "klinic.com",
+        "synergenxhealth.com",
+        "lowtcenter.com",
+        "highlandlongevity.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 6,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "can i get a higher settlement if the other driver was drunk",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "findlaw.com",
+        "sinklaw.com",
+        "jtnylaw.com",
+        "benglasslaw.com",
+        "thelawman.net",
+        "augerlaw.com",
+        "avvo.com",
+        "phillipslawoffices.com",
+        "onmyside.com",
+        "prnewswire.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.2,
+      "unbranded_share": 0.8,
+      "citation_occupancy": 0.8
+    },
+    {
+      "query": "how much is my whiplash case worth in florida",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "theinjurylawyers.com",
+        "d2law.com",
+        "badgleylawgroup.com",
+        "florinroebig.com",
+        "sofferfirm.com",
+        "ljblegal.com",
+        "cardinal-law.com",
+        "ljlegal.com",
+        "dixoninjuryfirm.com",
+        "wfirm.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 10,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "is a $50,000 settlement fair for a concussion",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "ksl.com",
+        "biausa.org",
+        "courtnewsohio.gov",
+        "claimsjournal.com",
+        "ncaa.com",
+        "lawsuit-information-center.com",
+        "wwwnews.live.bbc.co.uk",
+        "govinfo.gov",
+        "law360.com",
+        "paed.uscourts.gov"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 3,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.3,
+      "unbranded_share": 0.7,
+      "citation_occupancy": 0.7
+    },
+    {
+      "query": "should i accept the first settlement offer from the insurance company",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "shookandstone.com",
+        "paulrobinsonlaw.com",
+        "sweetjames.com",
+        "dsblawfirm.com",
+        "injuryrelief.com",
+        "coloradolaw.net",
+        "lawcounty.com",
+        "reyeslaw.com",
+        "joyelawfirm.com",
+        "heraldonline.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 10,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "what factors increase the value of a personal injury settlement",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "rocklandtimes.com",
+        "bermansimmons.com",
+        "lexisnexis.com",
+        "wkfirm.com",
+        "lebovitzlaw.com",
+        "morrisjames.com",
+        "shapirolawaz.com",
+        "askadamskutner.com",
+        "sjlawgroup.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "what is the average settlement for a rear-end collision with a herniated disc",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "jtnylaw.com",
+        "maguirelawfirm.com",
+        "helbocklaw.com",
+        "feherlawfirm.com",
+        "govinfo.gov",
+        "allenandallen.com",
+        "blockotoole.com",
+        "autoaccident.com",
+        "thefloodlawfirm.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.11,
+      "unbranded_share": 0.89,
+      "citation_occupancy": 0.89
+    },
+    {
+      "query": "what is the maximum payout for a slip and fall at a grocery store",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "dklaw.com",
+        "lawlinq.com",
+        "myinjurypros.com",
+        "cutterlaw.com",
+        "cssfirm.com",
+        "develop.nydailynews.com",
+        "brownandcrouppen.com",
+        "karnsandkarns.com",
+        "uslegalforms.com",
+        "libertyliens.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 10,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "how to compare TRT clinic pricing",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 5,
+      "cited_hosts_in_order": [
+        "trt.med",
+        "men.med",
+        "vikingalternative.com",
+        "legerclinic.co.uk",
+        "defymedical.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 5,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "does health insurance cover the immigration medical exam",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "uscis-medical",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "myprivia.com",
+        "medicentres.com",
+        "immigration-medical-exam.com",
+        "washingtonhealth.com",
+        "healthcity.bmc.org",
+        "canada.ca",
+        "ou.edu",
+        "connectedhealthpgh.com",
+        "statcarewalkin.com",
+        "symphonyhealth.care"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "how much does the i-693 medical exam cost in 2026",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "uscis-medical",
+      "demand_basis": "none",
+      "slots_read": 5,
+      "cited_hosts_in_order": [
+        "usmedicalexams.com",
+        "easyime.com",
+        "lenoymed.com",
+        "welcomemedexams.com",
+        "lighthousehq.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 5,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "how to choose between adult anxiety and adhd neuropsych testing",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 8,
+      "cited_hosts_in_order": [
+        "journals.sagepub.com",
+        "pmc.ncbi.nlm.nih.gov",
+        "pubmed.ncbi.nlm.nih.gov",
+        "psychiatrynyc.com",
+        "novopsych.com",
+        "sciencedirect.com",
+        "sachscenter.com",
+        "pearsonassessments.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 6,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.25,
+      "unbranded_share": 0.75,
+      "citation_occupancy": 0.75
+    },
+    {
+      "query": "telehealth vs in person neuropsychological evaluation validity",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 6,
+      "cited_hosts_in_order": [
+        "pure.johnshopkins.edu",
+        "utsouthwestern.edu",
+        "pmc.ncbi.nlm.nih.gov",
+        "cdn.clinicaltrials.gov",
+        "ets.org",
+        "bmjopen.bmj.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 4,
+      "unbranded_slots": 2,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.67,
+      "unbranded_share": 0.33,
+      "citation_occupancy": 0.33
+    },
+    {
+      "query": "what questions to ask before booking a memory testing evaluation",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "memory.ucsf.edu",
+        "memoryloss.wustl.edu",
+        "recognitionhealth.com",
+        "westerntrust.hscni.net",
+        "alz-journals.onlinelibrary.wiley.com",
+        "adrc.pitt.edu",
+        "universityhealthkc.org",
+        "health.osu.edu",
+        "alz.org",
+        "mindermemory.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 4,
+      "unbranded_slots": 6,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.4,
+      "unbranded_share": 0.6,
+      "citation_occupancy": 0.6
+    },
+    {
+      "query": "should i give a recorded statement to the insurance adjuster",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "shookandstone.com",
+        "vilesandbeckman.com",
+        "avvo.com",
+        "gelbandgelb.com",
+        "m-n-law.com",
+        "habbaspilaw.com",
+        "awjlaw.com",
+        "bensonbingham.com",
+        "billallenlaw.com",
+        "parkerandparkerattorneys.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "what should i ask a personal injury lawyer in a free consultation",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "eisenberglaw.org",
+        "nolo.com",
+        "rosenbaumnylaw.com",
+        "gokenny.com",
+        "cataniaandcatania.com",
+        "shakedlaw.com",
+        "maafirm.com",
+        "benglasslaw.com",
+        "gluckstein.com",
+        "zayedlawoffices.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "checklist of symptoms for hypogonadism vs chronic fatigue syndrome",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 6,
+      "cited_hosts_in_order": [
+        "pmc.ncbi.nlm.nih.gov",
+        "medlineplus.gov",
+        "mayoclinic.org",
+        "bestpractice.bmj.com",
+        "ccjm.org",
+        "britannica.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 3,
+      "unbranded_slots": 3,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.5,
+      "unbranded_share": 0.5,
+      "citation_occupancy": 0.5
+    },
+    {
+      "query": "hair loss TRT what to ask your provider",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "blogs.bcm.edu",
+        "menshealth.com",
+        "miamihair.com",
+        "jack.health",
+        "struthealth.com",
+        "inspireusafoundation.org",
+        "boltpharmacy.co.uk",
+        "theradome.com",
+        "lasara.com",
+        "getheally.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "how to choose a peptide clinic",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 8,
+      "cited_hosts_in_order": [
+        "peptidesclinic.net",
+        "peptideclinicsusa.com",
+        "mypeptidematch.com",
+        "mypepconnect.com",
+        "peptideai.co",
+        "perxpeptides.com",
+        "aminova.health",
+        "lamkinclinic.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "how to compare local TRT clinics before enrolling",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 7,
+      "cited_hosts_in_order": [
+        "trt.med",
+        "trtnation.com",
+        "gamedaymenshealth.com",
+        "harleystreettrt.co.uk",
+        "policylab.us",
+        "nrgclinic.com",
+        "vikingalternative.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "how to evaluate a telehealth TRT clinic",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "trtnation.com",
+        "ama-assn.org",
+        "trtaustralia.com",
+        "premierhormonehealth.com",
+        "tctmed.com",
+        "sanctuarywellnessinstitute.com",
+        "gamedaymenshealth.com",
+        "defymedical.com",
+        "alphahormones.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "how to evaluate a TRT clinic",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "trtguide.com",
+        "trtclinicpro.com",
+        "trtaustralia.com",
+        "gamedaymenshealth.com",
+        "truetesthrt.com",
+        "trtcatalog.com",
+        "testosteronecenters.com",
+        "maleexcel.com",
+        "ldh.la.gov",
+        "origintrt.co.uk"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "online TRT vs local clinic which is safer",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 7,
+      "cited_hosts_in_order": [
+        "gamedaymenshealth.com",
+        "wittmerrejuvenationclinic.com",
+        "trtnation.com",
+        "vikingalternative.com",
+        "huddlemenshealth.com",
+        "jack.health",
+        "evolvetelemed.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "what questions should I ask a TRT clinic at the first consultation",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "testosteronereplacementnevada.com",
+        "trt.tips",
+        "apextrt.com.au",
+        "trtguide.com",
+        "revivelowt.com",
+        "trtaustralia.com",
+        "villagerehabteam.com",
+        "thetestoclinic.com.au",
+        "ruthormoneclinic.com",
+        "thehormonelab.com.au"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 10,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "what to verify before starting TRT",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "va.gov",
+        "trtnation.com",
+        "ubiehealth.com",
+        "brentwoodmd.com",
+        "lolahealth.com",
+        "my.clevelandclinic.org",
+        "maximustribe.com",
+        "marekhealth.com",
+        "hims.com",
+        "defymedical.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "is severe toothache a dental emergency",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "dentistry",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "monadnockdental.com",
+        "nhs.uk",
+        "whmcny.org",
+        "cheneywadentist.com",
+        "dentalgroupofchicago.com",
+        "mayoclinic.org",
+        "essexfamilydental.ca",
+        "bupa.co.uk",
+        "brightnow.com",
+        "gilaridgedental.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "difference between screening and comprehensive neuropsych testing",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "academic.oup.com",
+        "ldh.la.gov",
+        "thecenterforconnection.org",
+        "sciencedirect.com",
+        "comprehendthemind.com",
+        "lifestance.com",
+        "univerahealthcare.com",
+        "cnld.org",
+        "aetna.com",
+        "childrensnational.org"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.2,
+      "unbranded_share": 0.8,
+      "citation_occupancy": 0.8
+    },
+    {
+      "query": "how long does a full neuropsychological assessment take",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "renaissance.stonybrookmedicine.edu",
+        "smh.com",
+        "ncbi.nlm.nih.gov",
+        "biausa.org",
+        "barrowneuro.org",
+        "bu.edu",
+        "neuropsychologyllc.com",
+        "bellin.org",
+        "neurohealthah.com",
+        "drhallowell.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 3,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.3,
+      "unbranded_share": 0.7,
+      "citation_occupancy": 0.7
+    },
+    {
+      "query": "how to prepare for a pediatric neuropsych evaluation intake",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "my.clevelandclinic.org",
+        "seattlechildrens.org",
+        "tmh.org",
+        "pedpsych.org",
+        "kennedykrieger.org",
+        "bakercenter.org",
+        "childrenshospital.org",
+        "pediatrichealthnetwork.org",
+        "neurohealthah.com",
+        "rosscenter.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 10,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "how to read a neuropsychological evaluation report summary",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "neurohealthah.com",
+        "brownhealth.org",
+        "med.aws.emory.edu",
+        "nsuhealth.nova.edu",
+        "nesca-newton.com",
+        "southcountychildandfamily.com",
+        "nesplora.com",
+        "comprehendthemind.com",
+        "aafp.org"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.22,
+      "unbranded_share": 0.78,
+      "citation_occupancy": 0.78
+    },
+    {
+      "query": "what to do if insurance denies neuropsychological testing coverage",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "nj.gov",
+        "kmnpsych.com",
+        "cga.ct.gov",
+        "dfs.ny.gov",
+        "braincheck.com",
+        "acibademinternational.com",
+        "tdi.texas.gov",
+        "brightpinepsychology.com",
+        "brownhealth.org",
+        "nycourts.gov"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 5,
+      "unbranded_slots": 5,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.5,
+      "unbranded_share": 0.5,
+      "citation_occupancy": 0.5
+    },
+    {
+      "query": "workplace accommodations neuropsych testing process for adults",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "neuro",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "neurohealthah.com",
+        "nm.org",
+        "mountsinai.org",
+        "cphrbc.ca",
+        "cognitive-assessment.com",
+        "ummhealth.org",
+        "ohsu.edu",
+        "my.wlu.edu",
+        "rittenhousepa.com",
+        "sachscenter.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.2,
+      "unbranded_share": 0.8,
+      "citation_occupancy": 0.8
+    },
+    {
+      "query": "how do i calculate pain and suffering for a broken leg",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "shunnarah.com",
+        "cochranfirm.com",
+        "ecfr.gov",
+        "demayolaw.com",
+        "victimslawyer.com",
+        "schillerhamilton.com",
+        "chicagolawyer.com",
+        "davidchristensenlaw.com",
+        "law.cornell.edu",
+        "whitleylawfirm.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.2,
+      "unbranded_share": 0.8,
+      "citation_occupancy": 0.8
+    },
+    {
+      "query": "how long does a personal injury case usually take to settle",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 7,
+      "cited_hosts_in_order": [
+        "osborneslaw.com",
+        "ellisons.com",
+        "gainservicing.com",
+        "ledgerlaw.com",
+        "findlegaladvice.org",
+        "homefrontgroup.com",
+        "866attylaw.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "what to do after a car accident that wasn't my fault",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "statefarm.com",
+        "floridainjuryadvocate.com",
+        "benglasslaw.com",
+        "insurance.com",
+        "aica.com",
+        "gotodobbs.com",
+        "theinjurylawyers.com",
+        "shoreinjurylaw.com",
+        "phillipslawoffices.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 0,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0,
+      "unbranded_share": 1,
+      "citation_occupancy": 1
+    },
+    {
+      "query": "what to do after an accident with an autonomous rideshare vehicle",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "scinjurylawfirm.com",
+        "hauptman-obrien.net",
+        "roblevine.com",
+        "azleg.gov",
+        "telegram.com",
+        "bensonbingham.com",
+        "leg.state.nv.us",
+        "cnbc.com",
+        "carcomplaints.com",
+        "husbandandwifelawteam.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "will my personal injury case go to trial or settle",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "personal-injury",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "findlaw.com",
+        "greenspunlaw.com",
+        "richmondvona.com",
+        "willadamslawfirm.com",
+        "bergeronclifford.com",
+        "zehllaw.com",
+        "zayedlawoffices.com",
+        "fletcherlawusa.com",
+        "ilabacalaw.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.11,
+      "unbranded_share": 0.89,
+      "citation_occupancy": 0.89
+    },
+    {
+      "query": "is it safe to buy testosterone online",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "tdspharmacy.com",
+        "publications.aap.org",
+        "honehealth.com",
+        "vikingalternative.com",
+        "lowtcenter.com",
+        "struthealth.com",
+        "fda.gov",
+        "brentanofabrics.com",
+        "maximustribe.com",
+        "evolvetelemed.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 9,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9
+    },
+    {
+      "query": "TRT and fertility how to preserve sperm count",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 7,
+      "cited_hosts_in_order": [
+        "pmc.ncbi.nlm.nih.gov",
+        "myfertilitycenter.com",
+        "tctmed.com",
+        "hims.com",
+        "ivi-fertility.com",
+        "livvnatural.com",
+        "wjmh.org"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 1,
+      "unbranded_slots": 6,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.14,
+      "unbranded_share": 0.86,
+      "citation_occupancy": 0.86
+    },
+    {
+      "query": "why is my free testosterone low but my total testosterone is normal",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "trt",
+      "demand_basis": "none",
+      "slots_read": 10,
+      "cited_hosts_in_order": [
+        "academic.oup.com",
+        "austinurologyinstitute.com",
+        "research.manchester.ac.uk",
+        "my.clevelandclinic.org",
+        "jack.health",
+        "pmc.ncbi.nlm.nih.gov",
+        "superpower.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "lamkinclinic.com",
+        "endocrine.org"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 8,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.2,
+      "unbranded_share": 0.8,
+      "citation_occupancy": 0.8
+    },
+    {
+      "query": "can i go to my regular family doctor for the uscis medical exam",
+      "role": "evidence_set:fix_record_unclassified_2026-08-28",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T3",
+      "vertical": "uscis-medical",
+      "demand_basis": "none",
+      "slots_read": 9,
+      "cited_hosts_in_order": [
+        "uscis.gov",
+        "umc.edu",
+        "washingtonhealth.com",
+        "immigration-medical-exam.com",
+        "stilt.com",
+        "e7health.com",
+        "immihelp.com",
+        "citizenpath.com",
+        "afcurgentcare.com"
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "social_by_surface": {},
+      "national_slots": 2,
+      "unbranded_slots": 7,
+      "owned_share": 0,
+      "social_share": 0,
+      "national_share": 0.22,
+      "unbranded_share": 0.78,
+      "citation_occupancy": 0.78
     },
     {
       "query": "emergency dentist open now what to do first",
@@ -512,7 +1919,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how do I find the best dentist near me",
@@ -543,7 +1952,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "who is an in-network dentist for cigna near me",
@@ -572,7 +1983,9 @@
       "social_share": 0,
       "national_share": 0.5,
       "unbranded_share": 0.5,
-      "citation_occupancy": 0.5
+      "citation_occupancy": 0.5,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "child specialist for anxiety vs ADHD evaluation near me who should I see",
@@ -603,7 +2016,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to compare neuropsych evaluation providers near me using a checklist",
@@ -632,7 +2047,9 @@
       "social_share": 0,
       "national_share": 0.13,
       "unbranded_share": 0.88,
-      "citation_occupancy": 0.88
+      "citation_occupancy": 0.88,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "trusted memory testing near me for cognitive decline or dementia screening",
@@ -661,7 +2078,9 @@
       "social_share": 0,
       "national_share": 0.38,
       "unbranded_share": 0.63,
-      "citation_occupancy": 0.63
+      "citation_occupancy": 0.63,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "best workplace injury lawyer near me how to find",
@@ -690,7 +2109,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "no win no fee car accident lawyer near me",
@@ -720,7 +2141,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to choose a lawyer for truck accidents",
@@ -751,7 +2174,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "best testosterone clinic in Miami FL",
@@ -781,7 +2206,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "all-on-4 dental implants price 2026",
@@ -811,7 +2238,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "are dental implants worth it after 60",
@@ -842,7 +2271,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "average cost of clear aligners 2026",
@@ -869,7 +2300,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "cost of full mouth dental implants with insurance",
@@ -900,7 +2333,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "does insurance cover braces for adults",
@@ -927,7 +2362,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "does medicare cover dental implants",
@@ -958,7 +2395,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how much do dental implants cost",
@@ -989,7 +2428,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how much does a dental implant cost without insurance",
@@ -1019,7 +2460,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how much does dental work cost and what financing options exist",
@@ -1050,7 +2493,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to check if a dentist accepts my insurance",
@@ -1081,7 +2526,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "is invisalign cheaper than braces",
@@ -1112,7 +2559,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "is sedation dentistry safe and is it worth the extra cost",
@@ -1143,7 +2592,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what is the average cost of veneers",
@@ -1174,7 +2625,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how much does a neuropsychological evaluation cost out of pocket",
@@ -1204,7 +2657,9 @@
       "social_share": 0,
       "national_share": 0.33,
       "unbranded_share": 0.67,
-      "citation_occupancy": 0.67
+      "citation_occupancy": 0.67,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to ask a neuropsych provider for a price estimate before committing",
@@ -1235,7 +2690,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how should i compare contingency fees and case costs for injury lawyers",
@@ -1265,7 +2722,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "does insurance cover testosterone replacement therapy",
@@ -1296,7 +2755,9 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how much does TRT cost per month",
@@ -1326,7 +2787,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "at what age should my child first see a dentist and what should I expect",
@@ -1357,7 +2820,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how do I find a dentist who is good with anxious patients",
@@ -1388,7 +2853,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how do I find a good dentist for my child",
@@ -1417,7 +2884,9 @@
       "social_share": 0,
       "national_share": 0.13,
       "unbranded_share": 0.88,
-      "citation_occupancy": 0.88
+      "citation_occupancy": 0.88,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to compare local dental offices quickly",
@@ -1447,7 +2916,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to spot dental scam red flags before booking",
@@ -1478,7 +2949,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how do I choose the right neuropsych evaluation path",
@@ -1508,7 +2981,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to choose a neuropsych evaluator fast when I have a school deadline",
@@ -1539,7 +3014,9 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to choose between ADHD therapy, medication, or coaching after testing",
@@ -1566,7 +3043,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to choose the right neuropsychological evaluation for my child",
@@ -1597,7 +3076,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to compare ADHD testing options before booking an appointment",
@@ -1626,7 +3107,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to decide between ADHD testing autism evaluation or full neuropsych eval",
@@ -1654,7 +3137,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "neurologist evaluation what to expect",
@@ -1685,7 +3170,9 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "red flags to avoid when selecting a neuropsychological evaluator",
@@ -1715,7 +3202,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "should I get a second opinion from a neurologist",
@@ -1746,7 +3235,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what to expect during a neuropsychological evaluation session by session",
@@ -1777,7 +3268,9 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what to verify before booking concussion testing",
@@ -1808,7 +3301,9 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how should you compare personal injury lawyers without relying on best or top rated labels",
@@ -1839,7 +3334,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to check a personal injury lawyer's licensing and discipline record",
@@ -1864,7 +3361,9 @@
       "social_share": 0,
       "national_share": 0.25,
       "unbranded_share": 0.75,
-      "citation_occupancy": 0.75
+      "citation_occupancy": 0.75,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to choose a lawyer for serious injuries",
@@ -1895,7 +3394,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to choose a lawyer if you missed work due to an injury",
@@ -1926,7 +3427,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "should i pick a big firm or a local firm for my injury case",
@@ -1955,7 +3458,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what should i ask if two injury lawyers give different advice",
@@ -1986,7 +3491,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what should i bring to a free personal injury consultation",
@@ -2012,7 +3519,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what should i do if the other driver fled the scene",
@@ -2043,7 +3552,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what should i do if the other driver was uninsured",
@@ -2073,7 +3584,9 @@
       "social_share": 0,
       "national_share": 0.33,
       "unbranded_share": 0.67,
-      "citation_occupancy": 0.67
+      "citation_occupancy": 0.67,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "PRP vs microneedling for hair loss which works better",
@@ -2101,7 +3614,9 @@
       "social_share": 0,
       "national_share": 0.29,
       "unbranded_share": 0.71,
-      "citation_occupancy": 0.71
+      "citation_occupancy": 0.71,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "TRT injections vs gel — how to decide",
@@ -2132,7 +3647,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "best way to compare TRT clinics in 2026",
@@ -2159,7 +3676,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how do I verify a TRT clinic's credentials and licensing",
@@ -2187,7 +3706,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to know if i need testosterone therapy or if i'm just burnt out",
@@ -2217,7 +3738,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to talk to my doctor about starting trt if my levels are in range but low",
@@ -2246,7 +3769,9 @@
       "social_share": 0,
       "national_share": 0.13,
       "unbranded_share": 0.88,
-      "citation_occupancy": 0.88
+      "citation_occupancy": 0.88,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "is my hair loss hormonal or aesthetic how to tell the difference",
@@ -2277,7 +3802,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "peptide clinic red flags to avoid",
@@ -2308,7 +3835,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "peptides vs TRT which is better for men",
@@ -2338,7 +3867,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "red flags to avoid when choosing a TRT clinic",
@@ -2369,7 +3900,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "trt vs enclomiphene which is better for a 30 year old with low t",
@@ -2400,7 +3933,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what markers should i ask for in a full hormone panel besides just testosterone",
@@ -2430,7 +3965,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "red flags to watch out for when filing I-693 after medical exam",
@@ -2456,7 +3993,9 @@
       "social_share": 0,
       "national_share": 0.4,
       "unbranded_share": 0.6,
-      "citation_occupancy": 0.6
+      "citation_occupancy": 0.6,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "can a dental abscess wait until Monday or do I need emergency care now",
@@ -2487,7 +4026,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how do I know if I really need the dental work my dentist is recommending",
@@ -2518,7 +4059,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how long does teeth whitening last",
@@ -2548,7 +4091,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "common neurological disorders explained",
@@ -2579,7 +4124,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "neurological diagnostic tests overview",
@@ -2609,7 +4156,9 @@
       "social_share": 0,
       "national_share": 0.22,
       "unbranded_share": 0.78,
-      "citation_occupancy": 0.78
+      "citation_occupancy": 0.78,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "neurological exam what does it include",
@@ -2640,7 +4189,9 @@
       "social_share": 0,
       "national_share": 0.4,
       "unbranded_share": 0.6,
-      "citation_occupancy": 0.6
+      "citation_occupancy": 0.6,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "cranial nerve exam steps",
@@ -2670,7 +4221,9 @@
       "social_share": 0,
       "national_share": 0.44,
       "unbranded_share": 0.56,
-      "citation_occupancy": 0.56
+      "citation_occupancy": 0.56,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "difference between a tension headache and a migraine",
@@ -2701,7 +4254,9 @@
       "social_share": 0,
       "national_share": 0.3,
       "unbranded_share": 0.7,
-      "citation_occupancy": 0.7
+      "citation_occupancy": 0.7,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "do i need a referral for neuropsych testing",
@@ -2732,7 +4287,9 @@
       "social_share": 0,
       "national_share": 0.3,
       "unbranded_share": 0.7,
-      "citation_occupancy": 0.7
+      "citation_occupancy": 0.7,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to use neuropsych evaluation results to get school accommodations",
@@ -2763,7 +4320,9 @@
       "social_share": 0,
       "national_share": 0.3,
       "unbranded_share": 0.7,
-      "citation_occupancy": 0.7
+      "citation_occupancy": 0.7,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "is a sudden sharp pain in my head a sign of an aneurysm",
@@ -2794,7 +4353,9 @@
       "social_share": 0,
       "national_share": 0.5,
       "unbranded_share": 0.5,
-      "citation_occupancy": 0.5
+      "citation_occupancy": 0.5,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "my child shows both ADHD and autism symptoms what kind of eval do I need",
@@ -2824,7 +4385,9 @@
       "social_share": 0,
       "national_share": 0.22,
       "unbranded_share": 0.78,
-      "citation_occupancy": 0.78
+      "citation_occupancy": 0.78,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "neurology referral process explained",
@@ -2854,7 +4417,9 @@
       "social_share": 0,
       "national_share": 0.22,
       "unbranded_share": 0.78,
-      "citation_occupancy": 0.78
+      "citation_occupancy": 0.78,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "types of headache disorders neurology",
@@ -2883,7 +4448,9 @@
       "social_share": 0,
       "national_share": 0.25,
       "unbranded_share": 0.75,
-      "citation_occupancy": 0.75
+      "citation_occupancy": 0.75,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "we only discovered ASD through neuropsych evaluation because my child is highly functioning",
@@ -2914,7 +4481,9 @@
       "social_share": 0,
       "national_share": 0.5,
       "unbranded_share": 0.5,
-      "citation_occupancy": 0.5
+      "citation_occupancy": 0.5,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what causes migraines with aura",
@@ -2942,7 +4511,9 @@
       "social_share": 0,
       "national_share": 0.57,
       "unbranded_share": 0.43,
-      "citation_occupancy": 0.43
+      "citation_occupancy": 0.43,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what is an EMG test neurology",
@@ -2971,7 +4542,9 @@
       "social_share": 0,
       "national_share": 0.25,
       "unbranded_share": 0.75,
-      "citation_occupancy": 0.75
+      "citation_occupancy": 0.75,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "when to see a neurologist symptoms",
@@ -3001,7 +4574,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "which parts of a neuropsychological evaluation can be done via telehealth",
@@ -3030,7 +4605,9 @@
       "social_share": 0,
       "national_share": 0.75,
       "unbranded_share": 0.25,
-      "citation_occupancy": 0.25
+      "citation_occupancy": 0.25,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "why do i feel nauseous every time i get a headache",
@@ -3059,7 +4636,9 @@
       "social_share": 0,
       "national_share": 0.5,
       "unbranded_share": 0.5,
-      "citation_occupancy": 0.5
+      "citation_occupancy": 0.5,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "why does the light hurt my eyes when i have a headache",
@@ -3090,7 +4669,9 @@
       "social_share": 0,
       "national_share": 0.3,
       "unbranded_share": 0.7,
-      "citation_occupancy": 0.7
+      "citation_occupancy": 0.7,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "can i sue a chatbot for giving me wrong medical advice that caused an injury",
@@ -3121,7 +4702,9 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "can i sue for pain and suffering after a car accident",
@@ -3151,7 +4734,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "can i sue the software developer of a self-driving car",
@@ -3182,7 +4767,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "can i switch personal injury lawyers if i'm unhappy with mine",
@@ -3213,7 +4800,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "do i have to talk to the insurance company first after an accident",
@@ -3244,7 +4833,9 @@
       "social_share": 0,
       "national_share": 0.4,
       "unbranded_share": 0.6,
-      "citation_occupancy": 0.6
+      "citation_occupancy": 0.6,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "do i need a lawyer after a drunk driving accident",
@@ -3275,7 +4866,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how is fault determined in a personal injury case",
@@ -3306,7 +4899,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how long do i have to see a doctor after a car accident for a claim",
@@ -3337,7 +4932,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to avoid saying the wrong thing to the insurance company",
@@ -3366,7 +4963,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what mistakes cause problems with comparative and contributory fault in accident claims",
@@ -3396,7 +4995,9 @@
       "social_share": 0,
       "national_share": 0.56,
       "unbranded_share": 0.44,
-      "citation_occupancy": 0.44
+      "citation_occupancy": 0.44,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "who is liable if a waymo or tesla autopilot hits me",
@@ -3425,7 +5026,9 @@
       "social_share": 0,
       "national_share": 0.13,
       "unbranded_share": 0.88,
-      "citation_occupancy": 0.88
+      "citation_occupancy": 0.88,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "who is responsible if a delivery robot runs over my foot",
@@ -3456,7 +5059,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "who pays for my medical bills after a rideshare accident",
@@ -3487,7 +5092,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "who pays my medical bills after a hit and run",
@@ -3518,7 +5125,9 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "TRT monitoring what labs matter",
@@ -3548,7 +5157,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "TRT side effects what to watch for",
@@ -3578,7 +5189,9 @@
       "social_share": 0,
       "national_share": 0.22,
       "unbranded_share": 0.78,
-      "citation_occupancy": 0.78
+      "citation_occupancy": 0.78,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "does TRT affect fertility and sperm count",
@@ -3608,7 +5221,9 @@
       "social_share": 0,
       "national_share": 0.22,
       "unbranded_share": 0.78,
-      "citation_occupancy": 0.78
+      "citation_occupancy": 0.78,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "can TRT worsen sleep apnea symptoms",
@@ -3636,7 +5251,9 @@
       "social_share": 0,
       "national_share": 0.29,
       "unbranded_share": 0.71,
-      "citation_occupancy": 0.71
+      "citation_occupancy": 0.71,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "can enclomiphene raise my testosterone without shutting down natural production",
@@ -3667,7 +5284,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "can low testosterone cause sudden anxiety and panic attacks",
@@ -3697,7 +5316,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "do copper peptides actually regrow hair",
@@ -3727,7 +5348,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "does hair botox treatment actually stop hair loss",
@@ -3758,7 +5381,9 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "does testosterone replacement therapy cause hair loss",
@@ -3789,7 +5414,9 @@
       "social_share": 0,
       "national_share": 0.3,
       "unbranded_share": 0.7,
-      "citation_occupancy": 0.7
+      "citation_occupancy": 0.7,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "does testosterone therapy raise blood pressure",
@@ -3820,7 +5447,9 @@
       "social_share": 0,
       "national_share": 0.3,
       "unbranded_share": 0.7,
-      "citation_occupancy": 0.7
+      "citation_occupancy": 0.7,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how long until TRT works",
@@ -3851,7 +5480,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to micro dose testosterone cypionate to avoid the need for an aromatase inhibitor",
@@ -3882,7 +5513,9 @@
       "social_share": 0,
       "national_share": 0.3,
       "unbranded_share": 0.7,
-      "citation_occupancy": 0.7
+      "citation_occupancy": 0.7,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "protocol for hcg with trt to prevent testicular atrophy and maintain fertility",
@@ -3912,7 +5545,9 @@
       "social_share": 0,
       "national_share": 0.22,
       "unbranded_share": 0.78,
-      "citation_occupancy": 0.78
+      "citation_occupancy": 0.78,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "symptoms of low t in men over 40 that aren't just low libido",
@@ -3942,7 +5577,9 @@
       "social_share": 0,
       "national_share": 0.22,
       "unbranded_share": 0.78,
-      "citation_occupancy": 0.78
+      "citation_occupancy": 0.78,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "what is scrotal cream and is it more effective than standard trt gel",
@@ -3971,7 +5608,9 @@
       "social_share": 0,
       "national_share": 0.13,
       "unbranded_share": 0.88,
-      "citation_occupancy": 0.88
+      "citation_occupancy": 0.88,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "why is my hematocrit high on trt and how do i lower it without donating blood",
@@ -4001,7 +5640,9 @@
       "social_share": 0,
       "national_share": 0.11,
       "unbranded_share": 0.89,
-      "citation_occupancy": 0.89
+      "citation_occupancy": 0.89,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "do i need to fast before the immigration blood test",
@@ -4032,7 +5673,9 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how long is the I-693 medical exam valid for green card application",
@@ -4059,7 +5702,9 @@
       "social_share": 0,
       "national_share": 0.17,
       "unbranded_share": 0.83,
-      "citation_occupancy": 0.83
+      "citation_occupancy": 0.83,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how long does the whole uscis medical process take from start to finish",
@@ -4087,7 +5732,9 @@
       "social_share": 0,
       "national_share": 0.43,
       "unbranded_share": 0.57,
-      "citation_occupancy": 0.57
+      "citation_occupancy": 0.57,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "how to avoid RFE delays after submitting I-693 medical exam",
@@ -4113,7 +5760,9 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "list of items to bring to uscis medical exam appointment",
@@ -4140,7 +5789,9 @@
       "social_share": 0,
       "national_share": 0.5,
       "unbranded_share": 0.5,
-      "citation_occupancy": 0.5
+      "citation_occupancy": 0.5,
+      "measured_on": "2026-08-29",
+      "carried_forward": true
     },
     {
       "query": "personal injury guide",
