@@ -38,10 +38,21 @@ const reserveIndex = readJson('data/authority_scale/fanout_100k/index.json', nul
 // so ranking is never quietly discounted by a number nobody measured. The
 // publishing join is where measurement is REQUIRED; see
 // scripts/queries/join_atlas_to_release_queue.mjs.
+//
+// The probe now WITHHOLDS citation_occupancy when its control pair does not
+// separate - see signal_status in that file. A withheld reading is not a
+// measurement, so it must not create a measured row here. Keying on
+// citation_occupancy rather than on a bucket share is what makes that true: the
+// bucket shares are always recorded (they are the observation), and the probe
+// decides whether any of them is entitled to be read as winnability.
 const occupancy = readJson('data/signals/query_class_occupancy.json', null);
+const occupancySignalStatus = occupancy?.signal_status ?? null;
 const occupancyByQuery = new Map();
 for (const p of occupancy?.probes || []) {
-  if (typeof p.unbranded_share === 'number') occupancyByQuery.set(String(p.query).toLowerCase().trim(), p);
+  if (typeof p.citation_occupancy === 'number') occupancyByQuery.set(String(p.query).toLowerCase().trim(), p);
+}
+if (occupancySignalStatus && occupancySignalStatus.published === false) {
+  console.log(`query atlas: occupancy signal WITHHELD (${occupancySignalStatus.reason}) - every row will carry winnability_basis unmeasured_neutral. ${occupancySignalStatus.note ?? ''}`);
 }
 
 const EVIDENCE_WEIGHT = { T1: 1.0, T2a: 0.8, T2b: 0.6, T3: 0.35 };
@@ -57,7 +68,7 @@ const RANK_BANDS = {
 const RANK_FORMULA = {
   formula: 'rank_score = EVIDENCE_WEIGHT[evidence_tier] * max(demand_value, 1) * winnability_factor',
   winnability_factor: {
-    measured_answer_engine_citation_occupancy: 'citation_occupancy = unbranded_share of the citation slots an answer engine built its answer from, measured by scripts/queries/probe_query_class_occupancy.mjs. Preferred where present.',
+    measured_answer_engine_citation_occupancy: 'citation_occupancy = open_share of the citation slots an answer engine built its answer from, measured by scripts/queries/probe_query_class_occupancy.mjs. Preferred where present. That probe publishes the number ONLY while its known-open/known-closed control pair separates; while the controls do not separate it withholds citation_occupancy and no row here can carry this basis.',
     keyword_tool_supplied_weak_incumbent_score: 'weak_incumbent_score as supplied on the source row by a keyword tool. Used only where no citation occupancy has been measured.',
     unmeasured_neutral: '1.0. No winnability evidence exists for this query, so ranking is not adjusted at all.',
     replaced_placebo: 'weak_incumbent_score used to default to a hardcoded 0.5 on every row that lacked one - 64 of 68, including every measured T1 row. A constant factor changes no ordering and admits no page; it only made the file look as though winnability had been judged. It is gone: a row now carries a measurement, a supplied score, or an explicit neutral.',
@@ -148,7 +159,7 @@ for (const q of evidence.queries || []) {
   const suppliedWeakIncumbent = q.weak_incumbent_score === undefined || q.weak_incumbent_score === null
     ? null
     : Number(q.weak_incumbent_score);
-  const citationOccupancy = measured ? measured.unbranded_share : null;
+  const citationOccupancy = measured ? measured.citation_occupancy : null;
   const winnabilityBasis = measured ? 'measured_answer_engine_citation_occupancy'
     : suppliedWeakIncumbent !== null ? 'keyword_tool_supplied_weak_incumbent_score'
     : 'unmeasured_neutral';

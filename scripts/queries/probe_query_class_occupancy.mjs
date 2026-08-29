@@ -26,15 +26,35 @@
  * Method
  * ------
  * One call per query, openai/gpt-4o-mini with plugins:[{id:'web', engine: WEB_ENGINE, mode: WEB_MODE,max_results:10}].
- * Read the cited hosts in the order the annotations arrive. Classify each slot:
- *   owned     - one of our own domains; we already hold it
- *   social    - reddit/youtube/tiktok/instagram/x/facebook/linkedin/medium
- *   national  - a national consumer brand, marketplace, publisher, or .gov/.edu
- *   unbranded - anything else, i.e. a slot an independent microsite can hold
+ * Read the cited hosts in the order the annotations arrive, and classify each
+ * slot with scripts/queries/host_occupancy_classifier.js:
+ *   owned          - one of our own domains; we already hold it            CLOSED
+ *   social         - a social surface, not a page slot                     CLOSED
+ *   incumbent      - a competing service provider: a practice/firm/clinic
+ *                    site, a provider directory or marketplace, or a
+ *                    lead-gen aggregator on the same intent                CLOSED
+ *   institutional  - government, health service, academic, regulator,
+ *                    journal or reference work. Not a competitor, but a
+ *                    slot these properties cannot take either             CLOSED
+ *   open_unheld    - nothing durable holds it: content farm, free-blog
+ *                    subdomain, CDN/asset host, parked or dead domain       OPEN
+ *   unclassifiable - we could not determine what it is                    CLOSED
  *
- * citation_occupancy is unbranded_share: the fraction of the citation slots on
- * this query that an independent page could plausibly take. That is the
- * winnability signal the atlas and the release join consume.
+ * open_share = open_unheld slots / slots read. THERE IS NO FALLTHROUGH INTO
+ * OPEN. The bucket this replaced, "unbranded", was a blind else-branch, so
+ * "unbranded" meant "a host this file did not recognise" while being read as "a
+ * slot an independent microsite can hold". Every incumbent local practice and
+ * provider directory landed there. The panel's KNOWN-CLOSED control - a query
+ * whose citation set is seven competing dental practices - scored a maximal
+ * 1.00 because of it.
+ *
+ * WHETHER open_share IS PUBLISHED AS citation_occupancy DEPENDS ON THE CONTROLS.
+ * A control pair exists to prove the instrument works. If the known-open control
+ * does not measure materially more open than the known-closed one, the number is
+ * WITHHELD: every probe carries citation_occupancy: null and the file carries a
+ * named signal_status stop. The observation (the cited hosts, the buckets, the
+ * shares) is still recorded in full, because it is real. What is refused is
+ * publishing a winnability number the controls say is not measuring winnability.
  *
  * Honesty rules
  * -------------
@@ -79,6 +99,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 // OpenRouter bills the web plugin per REQUEST on the parallel engine with 10
 // results included - measured at $0.00127/call on this account against ~$0.04
 // on the default engine's per-result billing. Identical url_citation schema.
@@ -90,24 +112,6 @@ const argv = process.argv.slice(2);
 const flag = (name, dflt) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : dflt; };
 const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--')));
 
-const NATIONAL = /^(www\.)?(yelp|zocdoc|healthline|mayoclinic|clevelandclinic|webmd|findlaw|justia|nolo|avvo|angi|thumbtack|houzz|theknot|weddingwire|indeed|glassdoor|amazon|walmart|etsy|pinterest|quora|wikipedia|forbes|nerdwallet|investopedia|bankrate|experian|equifax|transunion|deltadental|unitedhealthcare|cigna|aetna|verywellhealth|medicalnewstoday|drugs|eventbrite|hubspot|salesforce|g2|capterra|trustpilot)\./i;
-// Public-sector and academic hosts, in ANY country. The previous pattern matched
-// only bare .gov/.edu, so england.nhs.uk, ico.org.uk (the UK information
-// regulator), cqc.org.uk, novascotia.ca, moh.gov.sa and nslhd.health.nsw.gov.au
-// all fell through to "unbranded" - i.e. were counted as a citation slot an
-// independent microsite could take. They are not. "dentist guide" scored a
-// maximal citation_occupancy of 1.00 out of exactly those hosts, and the release
-// join ranks publishing candidates by that number.
-const GOV_EDU = /(^|\.)((gov|edu|mil)|(gov|edu|ac|nhs|health)\.[a-z]{2})$|\.(nhs\.uk|police\.uk)$/i;
-const PUBLIC_BODY = /^(www\.)?(ico|cqc|rcseng|sdcep|nice|gmc-uk|hse)\.org\.uk$|\.(who|europa|oecd)\.int$/i;
-// Canada publishes government at bare provincial/federal domains with no .gov.
-const CA_GOV = /(^|\.)(canada|novascotia|ontario|alberta|quebec|manitoba|saskatchewan|newfoundland|princeedwardisland)\.ca$|\.gc\.ca$/i;
-const SOCIAL = {
-  'reddit.com': 'reddit', 'youtube.com': 'youtube', 'm.youtube.com': 'youtube',
-  'tiktok.com': 'tiktok', 'instagram.com': 'instagram', 'facebook.com': 'facebook',
-  'x.com': 'x', 'twitter.com': 'x', 'linkedin.com': 'linkedin', 'medium.com': 'medium',
-};
-
 const readJson = (rel, fb) => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch { return fb; } };
 
 const probeConfig = readJson('data/signals/citation_probe_config.json', {});
@@ -117,12 +121,42 @@ if (!OWNED.length) {
   process.exit(1);
 }
 
-const isOwned = (h) => OWNED.some((o) => h === o || h.endsWith(`.${o}`));
-function classify(h) {
-  if (isOwned(h)) return { kind: 'owned', name: h };
-  for (const k in SOCIAL) if (h === k || h.endsWith('.' + k)) return { kind: 'social', name: SOCIAL[k] };
-  if (NATIONAL.test(h) || GOV_EDU.test(h) || PUBLIC_BODY.test(h) || CA_GOV.test(h)) return { kind: 'national', name: h };
-  return { kind: 'unbranded', name: h };
+// Who holds a slot is decided by scripts/queries/host_occupancy_classifier.js,
+// shared with the validator that guards this file so the two can never drift.
+// There is no fallthrough into the open bucket: a host reaches "open" only by
+// being positively recognised as holding nothing durable, and an unrecognised
+// host is recorded as unclassifiable and counted as CLOSED.
+const strategyRegistry = readJson('data/strategy/page_strategy_registry.json', {});
+const { createClassifier, KINDS } = require('./host_occupancy_classifier.js');
+const { classify, vocabularyAvailable } = createClassifier({ owned: OWNED, strategyRegistry });
+if (!vocabularyAvailable) {
+  console.error('occupancy probe: data/strategy/page_strategy_registry.json declared no allowed_verticals topic_terms, so an incumbent service provider could not be told from an unrecognised host. Refusing to classify rather than guessing - guessing is the defect this file exists to remove.');
+  process.exit(1);
+}
+
+// Every share this file publishes is derived here, from the hosts recorded with
+// the probe, so a live measurement and a --rescore-only re-derivation cannot
+// disagree.
+function deriveShares(hosts) {
+  const marks = hosts.map((h) => classify(h));
+  const slots = marks.length;
+  const n = (k) => marks.filter((m) => m.kind === k).length;
+  const social = {};
+  for (const m of marks) if (m.kind === 'social') social[m.name] = (social[m.name] || 0) + 1;
+  const openSlots = marks.filter((m) => m.open).length;
+  const counts = {};
+  const shares = {};
+  for (const k of KINDS) { counts[`${k}_slots`] = n(k); shares[`${k}_share`] = +(n(k) / slots).toFixed(2); }
+  return {
+    slots_read: slots,
+    host_classification: marks.map((m, i) => ({ host: hosts[i], kind: m.kind, why: m.why, open: m.open })),
+    ...counts,
+    ...shares,
+    social_by_surface: social,
+    open_slots: openSlots,
+    open_share: +(openSlots / slots).toFixed(2),
+    closed_share: +((slots - openSlots) / slots).toFixed(2),
+  };
 }
 
 
@@ -154,7 +188,6 @@ const FOREIGN_TLD = /\.(uk|au|nz|ie|za|in|sg|de|fr|es|it|nl|se|no|dk|fi|pl|sa|ae
 // on. A hardcoded list would have been wrong the moment the portfolio added a
 // vertical, and this portfolio spans dentistry, personal injury, TRT, neuro and
 // USCIS at least.
-const strategyRegistry = readJson('data/strategy/page_strategy_registry.json', {});
 const GOVERNED_TERMS = [...new Set(
   Object.values(strategyRegistry.allowed_verticals || {})
     .flatMap((cfg) => cfg.topic_terms || [])
@@ -178,10 +211,15 @@ function blueOceanEligibility(probe) {
   if (!hasService && !LOCATION_ANCHOR.test(q)) {
     return { eligible: false, reason: 'NO_SERVICE_OR_LOCATION_ANCHOR', note: 'The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property\'s ground.' };
   }
-  const unbrandedHosts = (probe.cited_hosts_in_order || []).filter((h) => classify(h).kind === 'unbranded');
-  const foreign = unbrandedHosts.filter((h) => FOREIGN_TLD.test(h)).length;
-  if (unbrandedHosts.length && foreign / unbrandedHosts.length >= 0.5) {
-    return { eligible: false, reason: 'CITATION_SET_ANCHORED_TO_ANOTHER_MARKET', note: `${foreign} of ${unbrandedHosts.length} open slots are on non-US hosts. Those slots are real and no US page can take them, so this occupancy does not describe winnable ground.` };
+  // Measured across every cited host, not only the open ones. When "unbranded"
+  // was a fallthrough this looked at that bucket because that bucket was
+  // everything; now that open is a narrow, positively-recognised bucket, testing
+  // it would test almost nothing. What the gate needs to know is whether the
+  // whole citation set is anchored to another market.
+  const cited = probe.cited_hosts_in_order || [];
+  const foreign = cited.filter((h) => FOREIGN_TLD.test(h)).length;
+  if (cited.length && foreign / cited.length >= 0.5) {
+    return { eligible: false, reason: 'CITATION_SET_ANCHORED_TO_ANOTHER_MARKET', note: `${foreign} of ${cited.length} cited slots are on non-US hosts. Those slots are real and no US page can take them, so this occupancy does not describe winnable ground.` };
   }
   return { eligible: true, reason: 'ANCHORED_CITATION_SET' };
 }
@@ -329,26 +367,7 @@ for (const q of (rescoreOnly ? [] : targets)) {
     });
     continue;
   }
-  const marks = r.hosts.map(classify);
-  const n = (k) => marks.filter((m) => m.kind === k).length;
-  const social = {};
-  for (const m of marks) if (m.kind === 'social') social[m.name] = (social[m.name] || 0) + 1;
-  const slots = r.hosts.length;
-  probes.push({
-    ...q,
-    slots_read: slots,
-    cited_hosts_in_order: r.hosts,
-    owned_slots: n('owned'),
-    social_slots: n('social'),
-    social_by_surface: social,
-    national_slots: n('national'),
-    unbranded_slots: n('unbranded'),
-    owned_share: +(n('owned') / slots).toFixed(2),
-    social_share: +(n('social') / slots).toFixed(2),
-    national_share: +(n('national') / slots).toFixed(2),
-    unbranded_share: +(n('unbranded') / slots).toFixed(2),
-    citation_occupancy: +(n('unbranded') / slots).toFixed(2),
-  });
+  probes.push({ ...q, cited_hosts_in_order: r.hosts, ...deriveShares(r.hosts) });
   await sleep(1200);
 }
 
@@ -384,25 +403,17 @@ if (merge) {
 // current when it was measured; leaving it untouched would silently mix two
 // classifier generations in one file. The cited hosts are the observation - the
 // shares are a derivation from it, and re-deriving invents nothing.
+// The fields the old classifier wrote are deliberately DELETED rather than left
+// beside the new ones. "unbranded_share" was the wrong number under a name that
+// asserted something false about it, and a stale copy sitting in the file is
+// exactly what a downstream reader would pick up.
+const RETIRED_FIELDS = ['national_slots', 'national_share', 'unbranded_slots', 'unbranded_share'];
 function rederive(p) {
   const hosts = p.cited_hosts_in_order || [];
   if (!hosts.length) return p;
-  const marks = hosts.map(classify);
-  const n = (k) => marks.filter((m) => m.kind === k).length;
-  const social = {};
-  for (const m of marks) if (m.kind === 'social') social[m.name] = (social[m.name] || 0) + 1;
-  const slots = hosts.length;
-  return {
-    ...p,
-    slots_read: slots,
-    owned_slots: n('owned'), social_slots: n('social'), social_by_surface: social,
-    national_slots: n('national'), unbranded_slots: n('unbranded'),
-    owned_share: +(n('owned') / slots).toFixed(2),
-    social_share: +(n('social') / slots).toFixed(2),
-    national_share: +(n('national') / slots).toFixed(2),
-    unbranded_share: +(n('unbranded') / slots).toFixed(2),
-    citation_occupancy: +(n('unbranded') / slots).toFixed(2),
-  };
+  const next = { ...p, ...deriveShares(hosts) };
+  for (const f of RETIRED_FIELDS) delete next[f];
+  return next;
 }
 for (let i = 0; i < probes.length; i += 1) {
   probes[i] = rederive(probes[i]);
@@ -417,31 +428,77 @@ const controlsAttempted = targets.filter((t) => String(t.role || '').startsWith(
 // Nothing computed that, so nobody could see it. On the last run they did not
 // separate - control_known_closed measured 1.00, MORE open than
 // control_known_open at 0.50 - and the run passed in silence.
+//
+// It now also DECIDES whether the number is published at all. The controls are
+// the only evidence that open_share measures openness; if they do not separate,
+// nothing here is entitled to be read as winnability, and the honest output is a
+// named stop rather than a number that looks meaningful.
+const MINIMUM_SEPARATION = Number(process.env.OCCUPANCY_MIN_CONTROL_SEPARATION || 0.10);
 const openCtl = controls.find((c) => c.role === 'control_known_open');
 const closedCtl = controls.find((c) => c.role === 'control_known_closed');
-const controlSeparation = (openCtl && closedCtl)
+let controlSeparation;
+if (openCtl && closedCtl) {
+  const margin = +(openCtl.open_share - closedCtl.open_share).toFixed(2);
+  const inverted = closedCtl.open_share > openCtl.open_share;
+  const separated = margin >= MINIMUM_SEPARATION;
+  controlSeparation = {
+    known_open: openCtl.open_share,
+    known_closed: closedCtl.open_share,
+    margin,
+    minimum_separation: MINIMUM_SEPARATION,
+    expected: `known_open - known_closed >= ${MINIMUM_SEPARATION}`,
+    separated,
+    inverted,
+    note: separated
+      ? 'The two control classes separate in the expected direction by at least the declared margin.'
+      : inverted
+        ? 'INVERTED: the query known to be CLOSED measured MORE open than the one known to be open. The instrument is reading backwards and nothing derived from it can be trusted.'
+        : 'NOT SEPARATED: the known-open and known-closed controls measured the same. The instrument cannot tell the two known classes apart, so it is not measuring openness on this channel.',
+  };
+} else {
+  controlSeparation = { known_open: null, known_closed: null, margin: null, minimum_separation: MINIMUM_SEPARATION, expected: `known_open - known_closed >= ${MINIMUM_SEPARATION}`, separated: false, inverted: null, note: 'Both controls were not measured, so the direction could not be checked and no number may be published on an unchecked instrument.' };
+}
+
+// ------------------------------------------------------ the named, visible stop
+// Same treatment this repo applies to an unmeasurable weighted input: the number
+// is not softened, relabelled or quietly kept - it is withheld, and the reason is
+// stated where every consumer reads it.
+const totalSlots = probes.reduce((a, p) => a + (p.slots_read || 0), 0);
+const unclassifiableSlots = probes.reduce((a, p) => a + (p.unclassifiable_slots || 0), 0);
+const openSlots = probes.reduce((a, p) => a + (p.open_slots || 0), 0);
+
+const signalStatus = controlSeparation.separated
   ? {
-      known_open: openCtl.unbranded_share,
-      known_closed: closedCtl.unbranded_share,
-      expected: 'known_open > known_closed',
-      separated: openCtl.unbranded_share > closedCtl.unbranded_share,
-      note: openCtl.unbranded_share > closedCtl.unbranded_share
-        ? 'The two control classes separate in the expected direction.'
-        : 'INVERTED: the query known to be closed measured at least as open as the one known to be open. citation_occupancy is not measuring what it claims on this channel, and every number in this file inherits that.',
+      published: true,
+      reason: 'CONTROL_PAIR_SEPARATES',
+      note: `The known-open control measured ${controlSeparation.known_open} against ${controlSeparation.known_closed} for the known-closed control, a margin of ${controlSeparation.margin}. citation_occupancy is published on every probe.`,
     }
-  : { known_open: null, known_closed: null, expected: 'known_open > known_closed', separated: null, note: 'Both controls were not measured, so the direction could not be checked.' };
+  : {
+      published: false,
+      reason: controlSeparation.inverted ? 'CONTROL_PAIR_INVERTED' : 'CONTROL_PAIR_DOES_NOT_SEPARATE',
+      note: `citation_occupancy is WITHHELD. ${controlSeparation.note} known_open=${controlSeparation.known_open}, known_closed=${controlSeparation.known_closed}, required margin ${MINIMUM_SEPARATION}. Every probe therefore carries citation_occupancy: null, scripts/atlas/build_query_atlas.mjs records winnability_basis "unmeasured_neutral" for every query, and scripts/queries/join_atlas_to_release_queue.mjs admits no candidate on this signal. The observation is NOT withheld: cited_hosts_in_order, host_classification and every bucket share are recorded in full and are re-derivable with --rescore-only. What is refused is publishing a winnability number the controls say is not measuring winnability.`,
+      what_this_channel_shows: `Across ${probes.length} queries and ${totalSlots} citation slots, ${openSlots} slot(s) are held by nothing durable. On the answer-engine citation channel a slot is held by an incumbent service provider, by an institution, or by a host we cannot identify - and none of those are ground a new page takes by finding them empty. "Who currently holds the slot" is therefore not a measure of whether a page can win it, which is what this metric was being read as.`,
+      what_would_lift_it: 'Either a control pair whose two classes are known to differ ON THIS CHANNEL (the current priors were taken on Bing SERP top-10, a different population, which the file already records as comparable_to_prior: false), or a winnability measure that is not "is the slot empty" - for example whether this portfolio has been observed taking a slot from the class of holder that occupies it.',
+    };
+
+const publish = signalStatus.published;
+for (const p of probes) {
+  p.citation_occupancy = publish ? p.open_share : null;
+  p.citation_occupancy_withheld = publish ? null : signalStatus.reason;
+}
 
 const out = {
-  $schema: 'lkg-citation-occupancy-probe-v3',
+  $schema: 'lkg-citation-occupancy-probe-v4',
   measured_on: new Date().toISOString().slice(0, 10),
   measured_at: new Date().toISOString(),
   purpose: 'Measure who holds the citation slots an answer engine builds its answer from, per query. A page can only win an open slot, so unbranded_share is the winnability signal the query atlas and the page release join consume.',
   method: {
     channel: `OpenRouter chat/completions, model ${MODEL}, plugins:[{id:'web', engine: WEB_ENGINE, mode: WEB_MODE,max_results:${MAX_RESULTS}}]. Cited hosts are read from message.annotations[].url_citation.url in the order returned.`,
     why_not_serp: 'The previous version read Bing SERP slots. Bing blocks both residential and GitHub Actions egress with a JavaScript shell, so its only run discarded 16 of 16 probes including both controls and still exited 0. A SERP slot is also the wrong unit: this repo competes for answer-engine citations, not organic rank.',
-    classification: 'owned = one of our own domains; social = reddit/youtube/tiktok/instagram/x/facebook/linkedin/medium; national = national consumer brand, marketplace, publisher, or a public-sector/academic host in ANY country (.gov/.edu/.mil, .gov.uk/.nhs.uk/.ac.uk and equivalents, Canadian provincial domains, named regulators, WHO/OECD/EU); unbranded = a slot an independent microsite can hold.',
+    classification: 'scripts/queries/host_occupancy_classifier.js, shared with the validator that guards this file. owned = one of our own domains (CLOSED); social = a social surface (CLOSED); incumbent = a competing service provider - an individual practice/firm/clinic site, a provider directory or marketplace, or a lead-gen aggregator on the same intent (CLOSED); institutional = government, health service, academic, regulator, journal or reference work - not a competitor, but not a slot these properties can take either (CLOSED); open_unheld = nothing durable holds it - content farm, free-blog subdomain, CDN/asset host, parked or dead domain (OPEN); unclassifiable = could not be determined (CLOSED, counted separately). THERE IS NO FALLTHROUGH INTO OPEN. The bucket this replaced, "unbranded", was a blind else-branch, so an unrecognised host was counted as open ground; that is why the known-closed control - seven competing dental practices - scored a maximal 1.00.',
+    service_vocabulary: 'An incumbent service provider is recognised against the repo\'s own governed topic_terms from data/strategy/page_strategy_registry.json - the same authority join_atlas_to_release_queue.mjs matches verticals on - plus a declared list of provider markers. Not a parallel list invented in the probe.',
     blue_ocean_gate: 'blue_ocean_eligible on each probe records whether the occupancy reading describes ground this property can actually contest. It refuses BRAND_OR_PERSON_NAME_NAVIGATIONAL, NO_SERVICE_OR_LOCATION_ANCHOR and CITATION_SET_ANCHORED_TO_ANOTHER_MARKET. It is additive and changes no citation_occupancy value. "Not cited" is not "open ground".',
-    citation_occupancy: 'unbranded_share = unbranded_slots / slots_read. Comparable across queries because slots_read is bounded by a declared max_results.',
+    citation_occupancy: 'open_share = open_unheld slots / slots_read, PUBLISHED ONLY IF THE CONTROL PAIR SEPARATES. See signal_status: when the known-open and known-closed controls do not separate, every probe carries citation_occupancy: null and the reason is named rather than a number being left in place that the controls say is wrong.',
     honesty_note: 'Probes whose provider errored or that returned no citation annotations are listed under discarded_probes and are NOT recorded as zero occupancy. A degraded channel is not a measurement.',
     egress_caveat: 'The egress IP is not pinned, so "near me" classes resolve against the runner region rather than a chosen market.',
     evidence_set_note: evidenceSet
@@ -451,12 +508,15 @@ const out = {
       ? 'Queries this run did not target kept their previous reading (carried_forward=true). Targeted queries were replaced by what this run saw.'
       : 'No merge: this file records only what this run targeted. Any previous reading for an untargeted query was dropped.',
   },
+  signal_status: signalStatus,
   control_check: {
     attempted: controlsAttempted,
     measured: controls.length,
     results: controls.map((c) => ({
       query: c.query, role: c.role,
-      measured_unbranded_share: c.unbranded_share,
+      measured_open_share: c.open_share,
+      slots_read: c.slots_read,
+      host_classification: c.host_classification,
       prior_unbranded_share: c.prior_unbranded_share ?? null,
       prior_channel: 'bing_serp_top10',
     })),
@@ -474,8 +534,21 @@ const out = {
     blue_ocean_eligible: probes.filter((p) => p.blue_ocean_eligible && p.blue_ocean_eligible.eligible).length,
     blue_ocean_refused: probes.filter((p) => p.blue_ocean_eligible && !p.blue_ocean_eligible.eligible).length,
     control_separation_ok: controlSeparation.separated,
-    mean_citation_occupancy: probes.length
-      ? +(probes.reduce((a, p) => a + p.unbranded_share, 0) / probes.length).toFixed(3)
+    citation_occupancy_published: publish,
+    slots_read_total: totalSlots,
+    slots_by_kind: Object.fromEntries(KINDS.map((k) => [k, probes.reduce((a, p) => a + (p[`${k}_slots`] || 0), 0)])),
+    // Published on EVERY run. An unrecognised host is counted as closed, so a
+    // large unrecognised share cannot inflate openness - but it is a finding
+    // about how much of the channel this classifier cannot see, and burying it
+    // would be the same silence the open fallthrough was.
+    unclassifiable_slots: unclassifiableSlots,
+    unclassifiable_slot_share: totalSlots ? +(unclassifiableSlots / totalSlots).toFixed(3) : null,
+    open_slots: openSlots,
+    mean_open_share: probes.length
+      ? +(probes.reduce((a, p) => a + p.open_share, 0) / probes.length).toFixed(3)
+      : null,
+    mean_citation_occupancy: publish && probes.length
+      ? +(probes.reduce((a, p) => a + p.open_share, 0) / probes.length).toFixed(3)
       : null,
   },
   probes,
@@ -487,6 +560,10 @@ fs.mkdirSync(path.join(ROOT, path.dirname(outFile)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, outFile), JSON.stringify(out, null, 2) + '\n');
 console.log(`occupancy probe: ${probes.length} measured, ${discarded.length} discarded -> ${outFile}`);
 if (discarded.length) console.log(`  discarded: ${discarded.map((d) => `${d.query} (${d.reason})`).join(' | ')}`);
+console.log(`  slots ${totalSlots} = ${KINDS.map((k) => `${k} ${out.summary.slots_by_kind[k]}`).join(', ')}`);
+console.log(`  unclassifiable ${unclassifiableSlots}/${totalSlots} slots (${out.summary.unclassifiable_slot_share}) - counted CLOSED, never open`);
+console.log(`  controls: known_open=${controlSeparation.known_open} known_closed=${controlSeparation.known_closed} margin=${controlSeparation.margin} separated=${controlSeparation.separated}`);
+if (!publish) console.error(`  NAMED STOP ${signalStatus.reason}: citation_occupancy is WITHHELD on all ${probes.length} probes. ${controlSeparation.note}`);
 
 // Rule 0: a stage may not exit 0 having done nothing.
 // Carried-forward rows are a previous run's work and cannot stand in for this
@@ -505,5 +582,13 @@ if (rescoreOnly) {
 }
 if (!rescoreOnly && controlsAttempted && !controls.length) {
   console.error(`occupancy probe: no control measured (${controlsAttempted} attempted). The run cannot be checked against a known result, so its new numbers are not trustworthy.`);
+  process.exit(1);
+}
+// Rule 0 on the control pair itself. A file with no controls in it cannot have
+// its instrument checked, and "no controls, therefore nothing failed" is exactly
+// the empty-loop pass this repo keeps finding. It applies to --rescore-only too:
+// re-deriving 36 rows without a control pair among them proves nothing.
+if (!openCtl || !closedCtl) {
+  console.error(`occupancy probe: the output carries ${controls.length} control(s) but needs both control_known_open and control_known_closed. Without the pair the instrument cannot be checked against a known result, and a file of unchecked numbers must not be written.`);
   process.exit(1);
 }

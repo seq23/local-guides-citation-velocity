@@ -6271,6 +6271,42 @@
       "estimated_runtime_seconds": 2
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "occupancy-control-separation",
+      "title": "Citation-occupancy control separation and open-bucket integrity",
+      "path": "scripts/validators/validate_occupancy_control_separation.js",
+      "command": "node scripts/validators/validate_occupancy_control_separation.js",
+      "risk_prevented": "Makes the occupancy probe's own control pair binding. FAILS the run when the pair INVERTS - the query known to be CLOSED measuring more open than the one known to be OPEN, which is what happened (1.00 against 0.50) while the check was only a printed note and five pages were queued for publication off the numbers it did not stop. Re-classifies every recorded citation host with the shared classifier and FAILS if any unrecognised host is counted as open, or if a recorded open/unclassifiable count does not match what the hosts derive. FAILS if a citation_occupancy number is published while the controls do not separate, or withheld while they do. Requires the unclassifiable slot count on every run. Hard-fails if it examines zero probes, zero cited hosts or zero controls.",
+      "requires_files": [
+        "scripts/queries/host_occupancy_classifier.js",
+        "data/signals/query_class_occupancy.json",
+        "data/signals/citation_probe_config.json",
+        "data/strategy/page_strategy_registry.json"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "occupancy-probe-contract checks that the probe records a separation field and notes an inversion; it never failed on one, and it takes the probe's own arithmetic on trust. atlas-release-join checks a candidate's occupancy is traceable to a probe, not whether the probe measures openness at all. Neither re-derives the buckets from the recorded hosts, so a classifier that silently counted unrecognised hosts as open would pass both.",
+      "estimated_runtime_seconds": 2
+    },
+    {
       "id": "social-fallback-backlog-visibility",
       "title": "Social fallback backlog depth must be reported honestly",
       "path": "scripts/validators/validate_social_fallback_backlog_visibility.js",

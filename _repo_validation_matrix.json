@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "ab76d21cc01c2909b3fb274b01b4664238669d504a4e93e5c3d6f7a27785687f",
+  "registry_sha256": "fc9509262567e68f84104f21a200256a361f4cbec33603303a39268eb46f9c6b",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 143,
-    "active": 116,
+    "total": 144,
+    "active": 117,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 114,
+    "hard_fail": 115,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -124,11 +124,13 @@
         "workflow-topology",
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
-        "occupancy-probe-contract"
+        "occupancy-probe-contract",
+        "occupancy-control-separation"
       ],
       "execution_order": [
         "authority-contracts",
         "generator-instruction-refusal",
+        "occupancy-control-separation",
         "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
@@ -306,6 +308,7 @@
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
         "occupancy-probe-contract",
+        "occupancy-control-separation",
         "social-fallback-backlog-visibility"
       ],
       "execution_order": [
@@ -321,6 +324,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-control-separation",
         "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
@@ -544,6 +548,7 @@
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
         "occupancy-probe-contract",
+        "occupancy-control-separation",
         "social-fallback-backlog-visibility"
       ],
       "execution_order": [
@@ -559,6 +564,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-control-separation",
         "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
@@ -812,6 +818,7 @@
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
         "occupancy-probe-contract",
+        "occupancy-control-separation",
         "social-fallback-backlog-visibility"
       ],
       "execution_order": [
@@ -827,6 +834,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-control-separation",
         "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
@@ -1054,6 +1062,7 @@
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
         "occupancy-probe-contract",
+        "occupancy-control-separation",
         "social-fallback-backlog-visibility"
       ],
       "execution_order": [
@@ -1069,6 +1078,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-control-separation",
         "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
@@ -1460,6 +1470,7 @@
         "velocity-intake-workflow",
         "velocity-route-resolution-self-test",
         "occupancy-probe-contract",
+        "occupancy-control-separation",
         "social-fallback-backlog-visibility"
       ],
       "execution_order": [
@@ -1469,6 +1480,7 @@
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
+        "occupancy-control-separation",
         "occupancy-probe-contract",
         "portfolio-kpi-truth",
         "query-atlas",
@@ -1618,6 +1630,7 @@
         "velocity-route-resolution-self-test",
         "workflow-data-trace",
         "occupancy-probe-contract",
+        "occupancy-control-separation",
         "social-fallback-backlog-visibility"
       ],
       "execution_order": [
@@ -1630,6 +1643,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-control-separation",
         "occupancy-probe-contract",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
@@ -6507,6 +6521,43 @@
         "retirement_reason": null
       },
       {
+        "id": "occupancy-control-separation",
+        "title": "Citation-occupancy control separation and open-bucket integrity",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_occupancy_control_separation.js",
+        "command": "node scripts/validators/validate_occupancy_control_separation.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/queries/host_occupancy_classifier.js",
+          "data/signals/query_class_occupancy.json",
+          "data/signals/citation_probe_config.json",
+          "data/strategy/page_strategy_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Makes the occupancy probe's own control pair binding. FAILS the run when the pair INVERTS - the query known to be CLOSED measuring more open than the one known to be OPEN, which is what happened (1.00 against 0.50) while the check was only a printed note and five pages were queued for publication off the numbers it did not stop. Re-classifies every recorded citation host with the shared classifier and FAILS if any unrecognised host is counted as open, or if a recorded open/unclassifiable count does not match what the hosts derive. FAILS if a citation_occupancy number is published while the controls do not separate, or withheld while they do. Requires the unclassifiable slot count on every run. Hard-fails if it examines zero probes, zero cited hosts or zero controls.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "social-fallback-backlog-visibility",
         "title": "Social fallback backlog depth must be reported honestly",
         "status": "ACTIVE",
@@ -9311,6 +9362,43 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents a narrow occupancy run from silently DELETING the readings a wider run paid to take (--merge exists but neither caller passed it; 169 of 205 measured readings were destroyed by one scheduled refresh). Prevents \"unbranded\" reverting to a blind fallthrough in which foreign government, health-service and regulator hosts count as citation slots an independent microsite can hold. Prevents an occupancy reading being published with no blue_ocean_eligible gate, i.e. \"not cited\" read as \"open ground\". Fails if it examines zero probes.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "occupancy-control-separation",
+        "title": "Citation-occupancy control separation and open-bucket integrity",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_occupancy_control_separation.js",
+        "command": "node scripts/validators/validate_occupancy_control_separation.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/queries/host_occupancy_classifier.js",
+          "data/signals/query_class_occupancy.json",
+          "data/signals/citation_probe_config.json",
+          "data/strategy/page_strategy_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Makes the occupancy probe's own control pair binding. FAILS the run when the pair INVERTS - the query known to be CLOSED measuring more open than the one known to be OPEN, which is what happened (1.00 against 0.50) while the check was only a printed note and five pages were queued for publication off the numbers it did not stop. Re-classifies every recorded citation host with the shared classifier and FAILS if any unrecognised host is counted as open, or if a recorded open/unclassifiable count does not match what the hosts derive. FAILS if a citation_occupancy number is published while the controls do not separate, or withheld while they do. Requires the unclassifiable slot count on every run. Hard-fails if it examines zero probes, zero cited hosts or zero controls.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
