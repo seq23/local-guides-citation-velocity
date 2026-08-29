@@ -48,6 +48,16 @@ const run = (cmd) => {
   return { cmd, code: r.status ?? 1, out: `${r.stdout || ''}${r.stderr || ''}`, ms: Date.now() - started };
 };
 
+// Fingerprint of every tracked change in the working tree, used to tell a
+// repair that did work from one that exited 0 having done nothing. Returns null
+// when git cannot answer, in which case no-op detection stays silent rather
+// than guessing.
+function treeState() {
+  const r = spawnSync('git status --porcelain', { cwd: ROOT, shell: true, encoding: 'utf8' });
+  if (r.status !== 0 || typeof r.stdout !== 'string') return null;
+  return r.stdout;
+}
+
 // The registry runner writes a machine-readable summary; prefer it over parsing
 // console output, which changes shape between validators.
 function failedValidators() {
@@ -92,10 +102,26 @@ for (let attempt = 1; attempt <= MAX; attempt += 1) {
     const cmd = repairFor.get(id);
     if (DRY) { console.log(`  would repair ${id}: ${cmd}`); repaired.push({ id, cmd, code: 0, dry: true }); continue; }
     console.log(`  repairing ${id}: ${cmd}`);
+    const before = treeState();
     const r = run(cmd);
+    const after = treeState();
+    // A repair that exits 0 without touching a single file has done nothing.
+    // Left unnamed it reads as success, and the loop burns every remaining
+    // attempt re-running it to reach the same failure. Say so instead.
+    const noOp = r.code === 0 && before !== null && after !== null && before === after;
     if (r.code !== 0) console.log(`  repair FAILED for ${id} (exit ${r.code})`);
-    repaired.push({ id, cmd, code: r.code });
+    else if (noOp) console.log(`  repair NO-OP for ${id}: "${cmd}" exited 0 but changed no file, so ${id} cannot clear on a retry`);
+    repaired.push({ id, cmd, code: r.code, no_op: noOp });
   }
+
+  // Every repair this pass either failed or changed nothing, so the next pass
+  // would validate an identical tree. Stop and name it rather than looping.
+  if (repaired.length && repaired.every((x) => x.code !== 0 || x.no_op)) {
+    attempts.push({ attempt, failed, repaired, result: 'REPAIRS_CHANGED_NOTHING' });
+    console.log('[self-heal] no repair changed the tree this pass; retrying would validate the identical tree');
+    break;
+  }
+
   attempts.push({ attempt, failed, repaired, result: 'REPAIRED_RETRYING' });
   if (DRY) break;
 }
