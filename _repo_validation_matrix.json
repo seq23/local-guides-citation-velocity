@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "624d641e89884bda9143807419da82189dfcaae3f81481488e021e2679440755",
+  "registry_sha256": "f2c576d64242bcd465da86f736dbc120a03416f7545db9048e851292bf922e38",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 139,
-    "active": 112,
+    "total": 140,
+    "active": 113,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 110,
+    "hard_fail": 111,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -121,11 +121,13 @@
         "workflow-data-trace",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "occupancy-probe-contract"
       ],
       "execution_order": [
         "authority-contracts",
         "generator-instruction-refusal",
+        "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "query-atlas",
@@ -296,7 +298,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "occupancy-probe-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -311,6 +314,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
@@ -526,7 +530,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "occupancy-probe-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -541,6 +546,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
@@ -786,7 +792,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "occupancy-probe-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -801,6 +808,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
@@ -1020,7 +1028,8 @@
         "workflow-runtime-mutations",
         "workflow-topology",
         "workflow-yaml-inventory",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "occupancy-probe-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1035,6 +1044,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-probe-contract",
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
@@ -1414,7 +1424,8 @@
         "velocity-agent-source-coverage",
         "velocity-commercial-pages",
         "velocity-intake-workflow",
-        "velocity-route-resolution-self-test"
+        "velocity-route-resolution-self-test",
+        "occupancy-probe-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1423,6 +1434,7 @@
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
+        "occupancy-probe-contract",
         "portfolio-kpi-truth",
         "query-atlas",
         "atlas-unit-contract",
@@ -1568,7 +1580,8 @@
         "velocity-commercial-pages",
         "velocity-intake-workflow",
         "velocity-route-resolution-self-test",
-        "workflow-data-trace"
+        "workflow-data-trace",
+        "occupancy-probe-contract"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1580,6 +1593,7 @@
         "local-pantry",
         "local-pantry-trace",
         "nap-consistency",
+        "occupancy-probe-contract",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
         "query-atlas",
@@ -6334,6 +6348,42 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "occupancy-probe-contract",
+        "title": "Citation-occupancy probe contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_occupancy_probe_contract.js",
+        "command": "node scripts/validators/validate_occupancy_probe_contract.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/queries/probe_query_class_occupancy.mjs",
+          "data/signals/query_class_occupancy.json",
+          "data/strategy/page_strategy_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a narrow occupancy run from silently DELETING the readings a wider run paid to take (--merge exists but neither caller passed it; 169 of 205 measured readings were destroyed by one scheduled refresh). Prevents \"unbranded\" reverting to a blind fallthrough in which foreign government, health-service and regulator hosts count as citation slots an independent microsite can hold. Prevents an occupancy reading being published with no blue_ocean_eligible gate, i.e. \"not cited\" read as \"open ground\". Fails if it examines zero probes.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -9066,6 +9116,42 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A malformed workflow file can pass token-based trace checks but fail before any GitHub Actions job starts.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "occupancy-probe-contract",
+        "title": "Citation-occupancy probe contract",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_occupancy_probe_contract.js",
+        "command": "node scripts/validators/validate_occupancy_probe_contract.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/queries/probe_query_class_occupancy.mjs",
+          "data/signals/query_class_occupancy.json",
+          "data/strategy/page_strategy_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a narrow occupancy run from silently DELETING the readings a wider run paid to take (--merge exists but neither caller passed it; 169 of 205 measured readings were destroyed by one scheduled refresh). Prevents \"unbranded\" reverting to a blind fallthrough in which foreign government, health-service and regulator hosts count as citation slots an independent microsite can hold. Prevents an occupancy reading being published with no blue_ocean_eligible gate, i.e. \"not cited\" read as \"open ground\". Fails if it examines zero probes.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

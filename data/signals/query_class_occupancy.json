@@ -1,17 +1,18 @@
 {
   "$schema": "lkg-citation-occupancy-probe-v3",
   "measured_on": "2026-08-29",
-  "measured_at": "2026-08-29T06:42:01.213Z",
+  "measured_at": "2026-08-29T15:30:28.524Z",
   "purpose": "Measure who holds the citation slots an answer engine builds its answer from, per query. A page can only win an open slot, so unbranded_share is the winnability signal the query atlas and the page release join consume.",
   "method": {
     "channel": "OpenRouter chat/completions, model openai/gpt-4o-mini, plugins:[{id:'web', engine: WEB_ENGINE, mode: WEB_MODE,max_results:10}]. Cited hosts are read from message.annotations[].url_citation.url in the order returned.",
     "why_not_serp": "The previous version read Bing SERP slots. Bing blocks both residential and GitHub Actions egress with a JavaScript shell, so its only run discarded 16 of 16 probes including both controls and still exited 0. A SERP slot is also the wrong unit: this repo competes for answer-engine citations, not organic rank.",
-    "classification": "owned = one of our own domains; social = reddit/youtube/tiktok/instagram/x/facebook/linkedin/medium; national = national consumer brand, marketplace, publisher, or a .gov/.edu; unbranded = a slot an independent microsite can hold.",
+    "classification": "owned = one of our own domains; social = reddit/youtube/tiktok/instagram/x/facebook/linkedin/medium; national = national consumer brand, marketplace, publisher, or a public-sector/academic host in ANY country (.gov/.edu/.mil, .gov.uk/.nhs.uk/.ac.uk and equivalents, Canadian provincial domains, named regulators, WHO/OECD/EU); unbranded = a slot an independent microsite can hold.",
+    "blue_ocean_gate": "blue_ocean_eligible on each probe records whether the occupancy reading describes ground this property can actually contest. It refuses BRAND_OR_PERSON_NAME_NAVIGATIONAL, NO_SERVICE_OR_LOCATION_ANCHOR and CITATION_SET_ANCHORED_TO_ANOTHER_MARKET. It is additive and changes no citation_occupancy value. \"Not cited\" is not \"open ground\".",
     "citation_occupancy": "unbranded_share = unbranded_slots / slots_read. Comparable across queries because slots_read is bounded by a declared max_results.",
     "honesty_note": "Probes whose provider errored or that returned no citation annotations are listed under discarded_probes and are NOT recorded as zero occupancy. A degraded channel is not a measurement.",
     "egress_caveat": "The egress IP is not pinned, so \"near me\" classes resolve against the runner region rather than a chosen market.",
     "evidence_set_note": null,
-    "merge_policy": "No merge: this file records only what this run targeted. Any previous reading for an untargeted query was dropped."
+    "merge_policy": "Queries this run did not target kept their previous reading (carried_forward=true). Targeted queries were replaced by what this run saw."
   },
   "control_check": {
     "attempted": 2,
@@ -33,16 +34,26 @@
       }
     ],
     "comparable_to_prior": false,
+    "separation": {
+      "known_open": 0.5,
+      "known_closed": 1,
+      "expected": "known_open > known_closed",
+      "separated": false,
+      "note": "INVERTED: the query known to be closed measured at least as open as the one known to be open. citation_occupancy is not measuring what it claims on this channel, and every number in this file inherits that."
+    },
     "why": "The priors were taken on Bing SERP slots and this probe reads answer-engine citation slots. The two are different populations, so a divergence is a channel change, not drift, and the run is not failed on it. The controls are still run so a human can see whether the known-open and known-closed classes still separate in the same direction."
   },
   "summary": {
-    "attempted": 36,
-    "measured_this_run": 36,
+    "attempted": 16,
+    "measured_this_run": 0,
     "discarded_this_run": 0,
-    "carried_forward_from_previous_run": 0,
+    "carried_forward_from_previous_run": 36,
     "measured": 36,
     "discarded": 0,
-    "mean_citation_occupancy": 0.861
+    "blue_ocean_eligible": 26,
+    "blue_ocean_refused": 10,
+    "control_separation_ok": false,
+    "mean_citation_occupancy": 0.831
   },
   "probes": [
     {
@@ -72,7 +83,13 @@
       "social_share": 0,
       "national_share": 0.5,
       "unbranded_share": 0.5,
-      "citation_occupancy": 0.5
+      "citation_occupancy": 0.5,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "dentist that accepts medicaid near me",
@@ -98,7 +115,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "hybrid event platform",
@@ -126,7 +149,14 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "virtual event production",
@@ -153,7 +183,14 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "cosmetic dentistry questions",
@@ -181,7 +218,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "free dental clinic near me",
@@ -204,13 +247,19 @@
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 2,
-      "unbranded_slots": 8,
+      "national_slots": 3,
+      "unbranded_slots": 7,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.2,
-      "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "national_share": 0.3,
+      "unbranded_share": 0.7,
+      "citation_occupancy": 0.7,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "when to call a personal injury lawyer",
@@ -239,7 +288,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "ai coaching tools",
@@ -264,7 +319,14 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "am i a candidate for trt",
@@ -291,7 +353,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "neurodevelopmental evaluations chicago",
@@ -319,7 +387,13 @@
       "social_share": 0,
       "national_share": 0.44,
       "unbranded_share": 0.56,
-      "citation_occupancy": 0.56
+      "citation_occupancy": 0.56,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "horse bill of sale",
@@ -344,7 +418,14 @@
       "social_share": 0,
       "national_share": 0.17,
       "unbranded_share": 0.83,
-      "citation_occupancy": 0.83
+      "citation_occupancy": 0.83,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "document checklist for mortgage loan",
@@ -372,7 +453,14 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "letter of explanation for credit",
@@ -400,7 +488,14 @@
       "social_share": 0,
       "national_share": 0.2,
       "unbranded_share": 0.8,
-      "citation_occupancy": 0.8
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "graduation party planning",
@@ -429,7 +524,14 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "black therapist memphis tn",
@@ -453,7 +555,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "what happens after immigration medical exam",
@@ -481,7 +589,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "oral surgeon evaluation guide",
@@ -503,13 +617,19 @@
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 3,
-      "unbranded_slots": 6,
+      "national_slots": 5,
+      "unbranded_slots": 4,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.33,
-      "unbranded_share": 0.67,
-      "citation_occupancy": 0.67
+      "national_share": 0.56,
+      "unbranded_share": 0.44,
+      "citation_occupancy": 0.44,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "local dentistry guide",
@@ -532,13 +652,19 @@
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 0,
-      "unbranded_slots": 10,
+      "national_slots": 1,
+      "unbranded_slots": 9,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0,
-      "unbranded_share": 1,
-      "citation_occupancy": 1
+      "national_share": 0.1,
+      "unbranded_share": 0.9,
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "personal injury guide",
@@ -559,13 +685,19 @@
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 1,
-      "unbranded_slots": 7,
+      "national_slots": 2,
+      "unbranded_slots": 6,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.13,
-      "unbranded_share": 0.88,
-      "citation_occupancy": 0.88
+      "national_share": 0.25,
+      "unbranded_share": 0.75,
+      "citation_occupancy": 0.75,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "neuropsychological evaluation chicago il",
@@ -591,7 +723,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "comparing dental treatments",
@@ -619,7 +757,13 @@
       "social_share": 0,
       "national_share": 0.44,
       "unbranded_share": 0.56,
-      "citation_occupancy": 0.56
+      "citation_occupancy": 0.56,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "choose right dentist guide",
@@ -648,7 +792,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "dallas dental implant cost",
@@ -675,7 +825,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "dental implants cost dallas tx",
@@ -703,7 +859,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "fair personal injury settlements",
@@ -732,7 +894,13 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "local dental guide",
@@ -759,7 +927,13 @@
       "social_share": 0,
       "national_share": 0.25,
       "unbranded_share": 0.75,
-      "citation_occupancy": 0.75
+      "citation_occupancy": 0.75,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "dental implants comprehensive guide",
@@ -782,13 +956,19 @@
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 1,
-      "unbranded_slots": 9,
+      "national_slots": 2,
+      "unbranded_slots": 8,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.1,
-      "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "national_share": 0.2,
+      "unbranded_share": 0.8,
+      "citation_occupancy": 0.8,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "trustworthy dentist checklist",
@@ -817,7 +997,13 @@
       "social_share": 0,
       "national_share": 0.1,
       "unbranded_share": 0.9,
-      "citation_occupancy": 0.9
+      "citation_occupancy": 0.9,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "industry guides",
@@ -844,7 +1030,14 @@
       "social_share": 0,
       "national_share": 0.75,
       "unbranded_share": 0.25,
-      "citation_occupancy": 0.25
+      "citation_occupancy": 0.25,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "peptide therapy results timeline",
@@ -870,7 +1063,14 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "where can i compare upfront prices for a dental bridge across clinics without relying on a plan?",
@@ -898,7 +1098,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "dentist guide",
@@ -920,13 +1126,19 @@
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 0,
-      "unbranded_slots": 9,
+      "national_slots": 3,
+      "unbranded_slots": 6,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0,
-      "unbranded_share": 1,
-      "citation_occupancy": 1
+      "national_share": 0.33,
+      "unbranded_share": 0.67,
+      "citation_occupancy": 0.67,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "is 693",
@@ -954,7 +1166,14 @@
       "social_share": 0,
       "national_share": 0.67,
       "unbranded_share": 0.33,
-      "citation_occupancy": 0.33
+      "citation_occupancy": 0.33,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": false,
+        "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
+        "note": "The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property's ground."
+      }
     },
     {
       "query": "best neuro assessment adhd",
@@ -981,7 +1200,13 @@
       "social_share": 0,
       "national_share": 0.13,
       "unbranded_share": 0.88,
-      "citation_occupancy": 0.88
+      "citation_occupancy": 0.88,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "dallas dental implants cost",
@@ -1009,7 +1234,13 @@
       "social_share": 0,
       "national_share": 0,
       "unbranded_share": 1,
-      "citation_occupancy": 1
+      "citation_occupancy": 1,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     },
     {
       "query": "hospital vs private neuropsych testing",
@@ -1032,15 +1263,21 @@
       "owned_slots": 0,
       "social_slots": 0,
       "social_by_surface": {},
-      "national_slots": 3,
-      "unbranded_slots": 7,
+      "national_slots": 4,
+      "unbranded_slots": 6,
       "owned_share": 0,
       "social_share": 0,
-      "national_share": 0.3,
-      "unbranded_share": 0.7,
-      "citation_occupancy": 0.7
+      "national_share": 0.4,
+      "unbranded_share": 0.6,
+      "citation_occupancy": 0.6,
+      "measured_on": "2026-08-29",
+      "carried_forward": true,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      }
     }
   ],
   "discarded_probes": [],
-  "reproduce": "npm run probe:occupancy - requires OPENROUTER_API_KEY. Re-runs every query in the panel and rewrites this file. Add --atlas-top N to also measure the top N measured T1 atlas queries, --evidence-set ID to also measure every evidence_queries.json row carrying that provenance set, and --merge to keep readings for queries the run did not target."
+  "reproduce": "npm run probe:occupancy - requires OPENROUTER_API_KEY. Re-runs every query in the panel and rewrites this file. Add --atlas-top N to also measure the top N measured T1 atlas queries, --evidence-set ID to also measure every evidence_queries.json row carrying that provenance set, and --merge to keep readings for queries the run did not target. --rescore-only re-derives every recorded row with the current classifier and gate without calling the provider."
 }

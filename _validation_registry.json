@@ -2427,7 +2427,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -6121,6 +6121,41 @@
         "artifacts/validation/workflow-yaml-syntax.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "occupancy-probe-contract",
+      "title": "Citation-occupancy probe contract",
+      "path": "scripts/validators/validate_occupancy_probe_contract.js",
+      "command": "node scripts/validators/validate_occupancy_probe_contract.js",
+      "risk_prevented": "Prevents a narrow occupancy run from silently DELETING the readings a wider run paid to take (--merge exists but neither caller passed it; 169 of 205 measured readings were destroyed by one scheduled refresh). Prevents \"unbranded\" reverting to a blind fallthrough in which foreign government, health-service and regulator hosts count as citation slots an independent microsite can hold. Prevents an occupancy reading being published with no blue_ocean_eligible gate, i.e. \"not cited\" read as \"open ground\". Fails if it examines zero probes.",
+      "requires_files": [
+        "scripts/queries/probe_query_class_occupancy.mjs",
+        "data/signals/query_class_occupancy.json",
+        "data/strategy/page_strategy_registry.json"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "atlas-release-join checks that a candidate carries a measured occupancy figure and that it is traceable. Nothing checked whether that figure was measured on this property's ground, whether an earlier run's figure survived the next run, or whether the probe's own controls still separate in the expected direction.",
+      "estimated_runtime_seconds": 2
     }
   ],
   "legacy_policy": {

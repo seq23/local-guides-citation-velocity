@@ -56,7 +56,7 @@ jobs:
         # instead of reporting success over an empty result set.
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: node scripts/queries/probe_query_class_occupancy.mjs "${{ inputs.panel }}" data/signals/query_class_occupancy.json --atlas-top "${{ inputs.atlas_top || '0' }}"
+        run: node scripts/queries/probe_query_class_occupancy.mjs "${{ inputs.panel }}" data/signals/query_class_occupancy.json --atlas-top "${{ inputs.atlas_top || '0' }}" --merge
       - name: Summarise
         run: |
           node -e '

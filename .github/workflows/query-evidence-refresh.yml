@@ -73,7 +73,7 @@ jobs:
         continue-on-error: true
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: npm run probe:occupancy -- data/signals/query_class_probe_panel.json data/signals/query_class_occupancy.json --atlas-top 20
+        run: npm run probe:occupancy -- data/signals/query_class_probe_panel.json data/signals/query_class_occupancy.json --atlas-top 20 --merge
 
       - name: Rebuild the query atlas from refreshed evidence
         run: npm run atlas:build
