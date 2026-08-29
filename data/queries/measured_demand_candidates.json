@@ -15,18 +15,25 @@
     "allowed_evidence_tiers": [
       "T1",
       "T2a",
-      "T2b"
+      "T2b",
+      "T3"
     ],
     "require_demand_evidence": true,
     "minimum_query_characters": 20,
     "maximum_candidates_per_run": 5,
     "maximum_candidates_per_run_why": "A processing budget, never a publication quota. The same principle page_strategy_registry.json states for daily cadence.",
     "near_duplicate_jaccard": 0.8,
-    "near_duplicate_jaccard_why": "page_strategy_registry.json states that a wording variation is not a distinct page intent, but the release queue only compares routes and titles, so two orderings of the same words pass it as two pages. Candidates whose content-word sets overlap at or above this threshold collapse to the higher-ranked one and the loser is held naming the query it duplicates. 0.8 keeps a qualifier that changes the answer (0.75) as its own page."
+    "near_duplicate_jaccard_why": "page_strategy_registry.json states that a wording variation is not a distinct page intent, but the release queue only compares routes and titles, so two orderings of the same words pass it as two pages. Candidates whose content-word sets overlap at or above this threshold collapse to the higher-ranked one and the loser is held naming the query it duplicates. 0.8 keeps a qualifier that changes the answer (0.75) as its own page.",
+    "demand_evidence_exempt_tiers": [
+      "T3"
+    ],
+    "demand_evidence_exempt_tiers_why": "T3 is defined in evidence_queries.json as 'real phrasing, no volume': a query observed verbatim in an agent run against a live answer engine, for which no volume figure exists. No volume figure CAN exist - this portfolio has no paid keyword source, and the one file a previous pass cited for it was found never to have existed. Requiring demand evidence of T3 therefore did not hold pages to a higher standard, it made a whole tier permanently unpublishable while query_atlas.json's own policy said 'pages may only be generated against evidence_tier T1-T3' and validate_query_atlas.js explicitly exempted T3 from the demand requirement. Two governing files disagreed and this one silently won. This records the resolution instead of leaving the contradiction in place.",
+    "minimum_citation_occupancy_for_demand_exempt_tiers": 0.5,
+    "minimum_citation_occupancy_for_demand_exempt_tiers_why": "A demand-exempt tier clears a higher winnability bar than the 0.3 base floor. Stated honestly: this does NOT substitute for demand evidence, because citation occupancy and search volume measure different things - a query nobody searches can still show a high unbranded share. What actually bounds the risk is that publication is itself the demand test here: the release cadence is 2 new URLs/day and maximum_candidates_per_run is 5, so an unwanted query costs one page and is observable, and ingest_gsc_evidence promotes a T3 row to T1 with superseded_tier as soon as Search Console measures it. The higher floor is a proportionate hedge, not a proof of demand."
   },
   "ranked_by": "measured citation occupancy (unbranded share of answer-engine citation slots), then atlas rank_score within band",
-  "eligible_count": 12,
-  "distinct_intent_count": 10,
+  "eligible_count": 67,
+  "distinct_intent_count": 65,
   "candidate_count": 5,
   "held_count": 185,
   "stop_reason": null,
@@ -126,17 +133,48 @@
       "status_reason": "selected_from_measured_query_atlas_by_citation_occupancy"
     },
     {
-      "id": "atlas_63686f6f73652072",
+      "id": "atlas_545254206d6f6e69",
+      "status": "APPROVED",
+      "source": "measured_query_atlas",
+      "source_run_id": "query_atlas_2026-08-29",
+      "vertical": "trt",
+      "query": "TRT monitoring what labs matter",
+      "normalized_query": "trt monitoring what labs matter",
+      "llm_bait_phrase": "TRT monitoring what labs matter",
+      "operation": "CREATE_NEW_TARGET_PAGE",
+      "target_route": "/trt/guides/trt-monitoring-what-labs-matter/",
+      "renderedPath": "trt/guides/trt-monitoring-what-labs-matter/index.html",
+      "route_family": "CREATE_GUIDE",
+      "route_reason": "measured_query_demand_with_measured_citation_occupancy",
+      "route_shape": "guide_directory",
+      "route_authority": "query_atlas_measured_evidence",
+      "admission_basis": "MEASURED_QUERY_ATLAS_CANDIDATE",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "source_signal_ids": [
+        "query_atlas:2026-08-29:trt-monitoring-what-labs-matter"
+      ],
+      "citation_velocity": true,
+      "evidence_tier": "T3",
+      "rank_band": "unscored",
+      "rank_score": null,
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "status_reason": "selected_from_measured_query_atlas_by_citation_occupancy"
+    },
+    {
+      "id": "atlas_6172652064656e74",
       "status": "APPROVED",
       "source": "measured_query_atlas",
       "source_run_id": "query_atlas_2026-08-29",
       "vertical": "dentistry",
-      "query": "choose right dentist guide",
-      "normalized_query": "choose right dentist guide",
-      "llm_bait_phrase": "choose right dentist guide",
+      "query": "are dental implants worth it after 60",
+      "normalized_query": "are dental implants worth it after 60",
+      "llm_bait_phrase": "are dental implants worth it after 60",
       "operation": "CREATE_NEW_TARGET_PAGE",
-      "target_route": "/dentistry/guides/choose-right-dentist-guide/",
-      "renderedPath": "dentistry/guides/choose-right-dentist-guide/index.html",
+      "target_route": "/dentistry/guides/are-dental-implants-worth-it-after-60/",
+      "renderedPath": "dentistry/guides/are-dental-implants-worth-it-after-60/index.html",
       "route_family": "CREATE_GUIDE",
       "route_reason": "measured_query_demand_with_measured_citation_occupancy",
       "route_shape": "guide_directory",
@@ -146,44 +184,13 @@
         "SRC-ADA-MOUTHHEALTHY"
       ],
       "source_signal_ids": [
-        "query_atlas:2026-08-29:choose-right-dentist-guide"
+        "query_atlas:2026-08-29:are-dental-implants-worth-it-after-60"
       ],
       "citation_velocity": true,
-      "evidence_tier": "T1",
-      "rank_band": "own_impressions_only",
-      "rank_score": 10.8,
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "status_reason": "selected_from_measured_query_atlas_by_citation_occupancy"
-    },
-    {
-      "id": "atlas_6e6575726f707379",
-      "status": "APPROVED",
-      "source": "measured_query_atlas",
-      "source_run_id": "query_atlas_2026-08-29",
-      "vertical": "neuro",
-      "query": "neuropsychological evaluation chicago il",
-      "normalized_query": "neuropsychological evaluation chicago il",
-      "llm_bait_phrase": "neuropsychological evaluation chicago il",
-      "operation": "CREATE_NEW_TARGET_PAGE",
-      "target_route": "/neuro/guides/neuropsychological-evaluation-chicago-il/",
-      "renderedPath": "neuro/guides/neuropsychological-evaluation-chicago-il/index.html",
-      "route_family": "CREATE_GUIDE",
-      "route_reason": "measured_query_demand_with_measured_citation_occupancy",
-      "route_shape": "guide_directory",
-      "route_authority": "query_atlas_measured_evidence",
-      "admission_basis": "MEASURED_QUERY_ATLAS_CANDIDATE",
-      "source_records": [
-        "SRC-NIMH-ADHD"
-      ],
-      "source_signal_ids": [
-        "query_atlas:2026-08-29:neuropsychological-evaluation-chicago-il"
-      ],
-      "citation_velocity": true,
-      "evidence_tier": "T1",
-      "rank_band": "own_impressions_only",
-      "rank_score": 22.25,
-      "citation_occupancy": 0.89,
+      "evidence_tier": "T3",
+      "rank_band": "unscored",
+      "rank_score": null,
+      "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "status_reason": "selected_from_measured_query_atlas_by_citation_occupancy"
     }
@@ -228,7 +235,7 @@
     {
       "query": "oral surgeon evaluation guide",
       "evidence_tier": "T1",
-      "rank_score": 27,
+      "rank_score": 26,
       "rank_band": "own_impressions_only",
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
@@ -239,7 +246,7 @@
     {
       "query": "local dentistry guide",
       "evidence_tier": "T1",
-      "rank_score": 25,
+      "rank_score": 24,
       "rank_band": "own_impressions_only",
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
@@ -280,17 +287,6 @@
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
         "query_too_short",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "peptide therapy results timeline",
-      "evidence_tier": "T1",
-      "rank_score": 3,
-      "rank_band": "own_impressions_only",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
         "no_governed_vertical_matches_query_terms"
       ]
     },
@@ -349,6 +345,17 @@
       "winnability_basis": "unmeasured_neutral",
       "held_reasons": [
         "winnability_not_measured:unmeasured_neutral"
+      ]
+    },
+    {
+      "query": "peptide therapy results timeline",
+      "evidence_tier": "T1",
+      "rank_score": 2,
+      "rank_band": "own_impressions_only",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
       ]
     },
     {
@@ -837,129 +844,14 @@
       ]
     },
     {
-      "query": "emergency dentist open now what to do first",
+      "query": "PRP vs microneedling for hair loss which works better",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
-      "citation_occupancy": 1,
+      "citation_occupancy": 0.71,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how do I find the best dentist near me",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "prohibited_language:\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b"
-      ]
-    },
-    {
-      "query": "who is an in-network dentist for cigna near me",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.5,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "child specialist for anxiety vs ADHD evaluation near me who should I see",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to compare neuropsych evaluation providers near me using a checklist",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.88,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "trusted memory testing near me for cognitive decline or dementia screening",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.63,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "best workplace injury lawyer near me how to find",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "prohibited_language:\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b"
-      ]
-    },
-    {
-      "query": "no win no fee car accident lawyer near me",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to choose a lawyer for truck accidents",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "best testosterone clinic in Miami FL",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.89,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live",
-        "prohibited_language:\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b"
       ]
     },
     {
@@ -970,222 +862,6 @@
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "are dental implants worth it after 60",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "average cost of clear aligners 2026",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "cost of full mouth dental implants with insurance",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "does insurance cover braces for adults",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "does medicare cover dental implants",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how much do dental implants cost",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how much does a dental implant cost without insurance",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how much does dental work cost and what financing options exist",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to check if a dentist accepts my insurance",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "ambiguous_vertical:personal-injury|dentistry"
-      ]
-    },
-    {
-      "query": "is invisalign cheaper than braces",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "is sedation dentistry safe and is it worth the extra cost",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "what is the average cost of veneers",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how much does a neuropsychological evaluation cost out of pocket",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.67,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to ask a neuropsych provider for a price estimate before committing",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how should i compare contingency fees and case costs for injury lawyers",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.89,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "does insurance cover testosterone replacement therapy",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.8,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "ambiguous_vertical:personal-injury|trt"
-      ]
-    },
-    {
-      "query": "how much does TRT cost per month",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
       ]
     },
@@ -1197,329 +873,30 @@
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
       ]
     },
     {
-      "query": "how do I find a dentist who is good with anxious patients",
+      "query": "average cost of clear aligners 2026",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
+        "no_governed_vertical_matches_query_terms"
       ]
     },
     {
-      "query": "how do I find a good dentist for my child",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.88,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to compare local dental offices quickly",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how to spot dental scam red flags before booking",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how do I choose the right neuropsych evaluation path",
+      "query": "best testosterone clinic in Miami FL",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
       "citation_occupancy": 0.89,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to choose a neuropsych evaluator fast when I have a school deadline",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.8,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to choose between ADHD therapy, medication, or coaching after testing",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to choose the right neuropsychological evaluation for my child",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to compare ADHD testing options before booking an appointment",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to decide between ADHD testing autism evaluation or full neuropsych eval",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "neurologist evaluation what to expect",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.8,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "red flags to avoid when selecting a neuropsychological evaluator",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.89,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "should I get a second opinion from a neurologist",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "what to expect during a neuropsychological evaluation session by session",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.8,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "what to verify before booking concussion testing",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.8,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how should you compare personal injury lawyers without relying on best or top rated labels",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to check a personal injury lawyer's licensing and discipline record",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.75,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to choose a lawyer for serious injuries",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to choose a lawyer if you missed work due to an injury",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "should i pick a big firm or a local firm for my injury case",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "what should i ask if two injury lawyers give different advice",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "what should i bring to a free personal injury consultation",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "what should i do if the other driver fled the scene",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "what should i do if the other driver was uninsured",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.67,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "PRP vs microneedling for hair loss which works better",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.71,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "TRT injections vs gel — how to decide",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
+        "equivalent_title_already_live",
+        "prohibited_language:\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b"
       ]
     },
     {
@@ -1530,137 +907,18 @@
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "prohibited_language:\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b"
       ]
     },
     {
-      "query": "how do I verify a TRT clinic's credentials and licensing",
+      "query": "best workplace injury lawyer near me how to find",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to know if i need testosterone therapy or if i'm just burnt out",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how to talk to my doctor about starting trt if my levels are in range but low",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.88,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "is my hair loss hormonal or aesthetic how to tell the difference",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "peptide clinic red flags to avoid",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "peptides vs TRT which is better for men",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "red flags to avoid when choosing a TRT clinic",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "trt vs enclomiphene which is better for a 30 year old with low t",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "what markers should i ask for in a full hormone panel besides just testosterone",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "red flags to watch out for when filing I-693 after medical exam",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.6,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
+        "prohibited_language:\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b"
       ]
     },
     {
@@ -1671,34 +929,39 @@
       "citation_occupancy": 0.9,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
       ]
     },
     {
-      "query": "how do I know if I really need the dental work my dentist is recommending",
+      "query": "can i sue a chatbot for giving me wrong medical advice that caused an injury",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.8,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "can i sue the software developer of a self-driving car",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "can low testosterone cause sudden anxiety and panic attacks",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "how long does teeth whitening last",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.89,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
       ]
     },
@@ -1710,35 +973,18 @@
       "citation_occupancy": 0.9,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "no_governed_vertical_matches_query_terms"
       ]
     },
     {
-      "query": "neurological diagnostic tests overview",
+      "query": "cost of full mouth dental implants with insurance",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
-      "citation_occupancy": 0.78,
+      "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "neurological exam what does it include",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.6,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
+        "equivalent_title_already_live"
       ]
     },
     {
@@ -1749,8 +995,6 @@
       "citation_occupancy": 0.56,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "no_governed_vertical_matches_query_terms"
       ]
     },
@@ -1762,419 +1006,7 @@
       "citation_occupancy": 0.7,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "do i need a referral for neuropsych testing",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.7,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to use neuropsych evaluation results to get school accommodations",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.7,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "is a sudden sharp pain in my head a sign of an aneurysm",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.5,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "my child shows both ADHD and autism symptoms what kind of eval do I need",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.78,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "neurology referral process explained",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.78,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "types of headache disorders neurology",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.75,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "we only discovered ASD through neuropsych evaluation because my child is highly functioning",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.5,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "what causes migraines with aura",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.43,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "what is an EMG test neurology",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.75,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "when to see a neurologist symptoms",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.89,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "which parts of a neuropsychological evaluation can be done via telehealth",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.25,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "citation_occupancy_below_floor:0.25<0.3"
-      ]
-    },
-    {
-      "query": "why do i feel nauseous every time i get a headache",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.5,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "why does the light hurt my eyes when i have a headache",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.7,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "can i sue a chatbot for giving me wrong medical advice that caused an injury",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.8,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "can i sue for pain and suffering after a car accident",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.89,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "can i sue the software developer of a self-driving car",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "can i switch personal injury lawyers if i'm unhappy with mine",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "do i have to talk to the insurance company first after an accident",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.6,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "do i need a lawyer after a drunk driving accident",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how is fault determined in a personal injury case",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how long do i have to see a doctor after a car accident for a claim",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how to avoid saying the wrong thing to the insurance company",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "what mistakes cause problems with comparative and contributory fault in accident claims",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.44,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "who is liable if a waymo or tesla autopilot hits me",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.88,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "who is responsible if a delivery robot runs over my foot",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
-      ]
-    },
-    {
-      "query": "who pays for my medical bills after a rideshare accident",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "who pays my medical bills after a hit and run",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.8,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "TRT monitoring what labs matter",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "TRT side effects what to watch for",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.78,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "does TRT affect fertility and sperm count",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.78,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "can TRT worsen sleep apnea symptoms",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.71,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "can enclomiphene raise my testosterone without shutting down natural production",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "can low testosterone cause sudden anxiety and panic attacks",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 1,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "equivalent_title_already_live"
       ]
     },
     {
@@ -2185,8 +1017,17 @@
       "citation_occupancy": 0.89,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "do i need to fast before the immigration blood test",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
         "no_governed_vertical_matches_query_terms"
       ]
     },
@@ -2198,8 +1039,28 @@
       "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "does insurance cover testosterone replacement therapy",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.8,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "ambiguous_vertical:personal-injury|trt"
+      ]
+    },
+    {
+      "query": "does medicare cover dental implants",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
         "equivalent_title_already_live"
       ]
     },
@@ -2211,109 +1072,62 @@
       "citation_occupancy": 0.7,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
       ]
     },
     {
-      "query": "does testosterone therapy raise blood pressure",
+      "query": "emergency dentist open now what to do first",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
-      "citation_occupancy": 0.7,
+      "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "how long until TRT works",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
       ]
     },
     {
-      "query": "how to micro dose testosterone cypionate to avoid the need for an aromatase inhibitor",
+      "query": "how do I find a dentist who is good with anxious patients",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
-      "citation_occupancy": 0.7,
+      "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
+        "equivalent_title_already_live"
       ]
     },
     {
-      "query": "protocol for hcg with trt to prevent testicular atrophy and maintain fertility",
+      "query": "how do I find the best dentist near me",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
-      "citation_occupancy": 0.78,
+      "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
+        "prohibited_language:\\bbest\\b.*\\b(provider|lawyer|dentist|clinic|doctor)s?\\b"
       ]
     },
     {
-      "query": "symptoms of low t in men over 40 that aren't just low libido",
+      "query": "how do I know if I really need the dental work my dentist is recommending",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
-      "citation_occupancy": 0.78,
+      "citation_occupancy": 1,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
+        "equivalent_title_already_live"
       ]
     },
     {
-      "query": "what is scrotal cream and is it more effective than standard trt gel",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.88,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
-      ]
-    },
-    {
-      "query": "why is my hematocrit high on trt and how do i lower it without donating blood",
+      "query": "how long does teeth whitening last",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
       "citation_occupancy": 0.89,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
-      ]
-    },
-    {
-      "query": "do i need to fast before the immigration blood test",
-      "evidence_tier": "T3",
-      "rank_score": null,
-      "rank_band": "unscored",
-      "citation_occupancy": 0.9,
-      "winnability_basis": "measured_answer_engine_citation_occupancy",
-      "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
-        "no_governed_vertical_matches_query_terms"
       ]
     },
     {
@@ -2324,21 +1138,51 @@
       "citation_occupancy": 0.83,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
         "equivalent_title_already_live"
       ]
     },
     {
-      "query": "how long does the whole uscis medical process take from start to finish",
+      "query": "how long until TRT works",
       "evidence_tier": "T3",
       "rank_score": null,
       "rank_band": "unscored",
-      "citation_occupancy": 0.57,
+      "citation_occupancy": 0.9,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence"
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "how much do dental implants cost",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "how much does TRT cost per month",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "how much does a dental implant cost without insurance",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
       ]
     },
     {
@@ -2349,8 +1193,94 @@
       "citation_occupancy": 0.8,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "how to check if a dentist accepts my insurance",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "ambiguous_vertical:personal-injury|dentistry"
+      ]
+    },
+    {
+      "query": "how to compare local dental offices quickly",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "how to know if i need testosterone therapy or if i'm just burnt out",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "how to spot dental scam red flags before booking",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "how to talk to my doctor about starting trt if my levels are in range but low",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.88,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "is a sudden sharp pain in my head a sign of an aneurysm",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.5,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "is my hair loss hormonal or aesthetic how to tell the difference",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "is sedation dentistry safe and is it worth the extra cost",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
         "equivalent_title_already_live"
       ]
     },
@@ -2362,8 +1292,293 @@
       "citation_occupancy": 0.5,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
       "held_reasons": [
-        "tier_not_admitted:T3",
-        "no_demand_evidence",
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "neurological diagnostic tests overview",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.78,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "neurological exam what does it include",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.6,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "neurologist evaluation what to expect",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.8,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "neurology referral process explained",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.78,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "peptide clinic red flags to avoid",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "peptides vs TRT which is better for men",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "red flags to avoid when choosing a TRT clinic",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "red flags to watch out for when filing I-693 after medical exam",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.6,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "should I get a second opinion from a neurologist",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "symptoms of low t in men over 40 that aren't just low libido",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.78,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "types of headache disorders neurology",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.75,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "what causes migraines with aura",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.43,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "citation_occupancy_below_floor:0.43<0.5",
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "what is an EMG test neurology",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.75,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "what is the average cost of veneers",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "what markers should i ask for in a full hormone panel besides just testosterone",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "what mistakes cause problems with comparative and contributory fault in accident claims",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.44,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "citation_occupancy_below_floor:0.44<0.5"
+      ]
+    },
+    {
+      "query": "what should i do if the other driver fled the scene",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "what should i do if the other driver was uninsured",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.67,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "when to see a neurologist symptoms",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.89,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "which parts of a neuropsychological evaluation can be done via telehealth",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.25,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "citation_occupancy_below_floor:0.25<0.5"
+      ]
+    },
+    {
+      "query": "who is an in-network dentist for cigna near me",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.5,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "equivalent_title_already_live"
+      ]
+    },
+    {
+      "query": "who is liable if a waymo or tesla autopilot hits me",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.88,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "who is responsible if a delivery robot runs over my foot",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "why do i feel nauseous every time i get a headache",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.5,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "why does the light hurt my eyes when i have a headache",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.7,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
+        "no_governed_vertical_matches_query_terms"
+      ]
+    },
+    {
+      "query": "why is my hematocrit high on trt and how do i lower it without donating blood",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.89,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "held_reasons": [
         "equivalent_title_already_live"
       ]
     },
@@ -2408,6 +1623,730 @@
       ]
     },
     {
+      "query": "can i switch personal injury lawyers if i'm unhappy with mine",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury",
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/can-i-switch-personal-injury-lawyers-if-i-m-unhappy-with-mine/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "do i need a lawyer after a drunk driving accident",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "accident",
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/do-i-need-a-lawyer-after-a-drunk-driving-accident/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "does insurance cover braces for adults",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "insurance"
+      ],
+      "target_route": "/personal-injury/guides/does-insurance-cover-braces-for-adults/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how do I verify a TRT clinic's credentials and licensing",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "trt",
+        "clinic"
+      ],
+      "target_route": "/trt/guides/how-do-i-verify-a-trt-clinic-s-credentials-and-licensing/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how long do i have to see a doctor after a car accident for a claim",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "accident",
+        "claim"
+      ],
+      "target_route": "/personal-injury/guides/how-long-do-i-have-to-see-a-doctor-after-a-car-accident-for-a-claim/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how much does dental work cost and what financing options exist",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "dentistry",
+      "matched_terms": [
+        "dental"
+      ],
+      "target_route": "/dentistry/guides/how-much-does-dental-work-cost-and-what-financing-options-exist/",
+      "source_records": [
+        "SRC-ADA-MOUTHHEALTHY"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how should you compare personal injury lawyers without relying on best or top rated labels",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury",
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/how-should-you-compare-personal-injury-lawyers-without-relying-on-best-or-top-rated-labels/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to ask a neuropsych provider for a price estimate before committing",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych"
+      ],
+      "target_route": "/neuro/guides/how-to-ask-a-neuropsych-provider-for-a-price-estimate-before-committing/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to avoid saying the wrong thing to the insurance company",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "insurance"
+      ],
+      "target_route": "/personal-injury/guides/how-to-avoid-saying-the-wrong-thing-to-the-insurance-company/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to choose a lawyer for serious injuries",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/how-to-choose-a-lawyer-for-serious-injuries/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to choose a lawyer for truck accidents",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "accident",
+        "lawyer",
+        "truck"
+      ],
+      "target_route": "/personal-injury/guides/how-to-choose-a-lawyer-for-truck-accidents/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to choose a lawyer if you missed work due to an injury",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury",
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/how-to-choose-a-lawyer-if-you-missed-work-due-to-an-injury/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to choose between ADHD therapy, medication, or coaching after testing",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "adhd",
+        "testing"
+      ],
+      "target_route": "/neuro/guides/how-to-choose-between-adhd-therapy-medication-or-coaching-after-testing/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to choose the right neuropsychological evaluation for my child",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "evaluation"
+      ],
+      "target_route": "/neuro/guides/how-to-choose-the-right-neuropsychological-evaluation-for-my-child/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to compare ADHD testing options before booking an appointment",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "adhd",
+        "testing"
+      ],
+      "target_route": "/neuro/guides/how-to-compare-adhd-testing-options-before-booking-an-appointment/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to decide between ADHD testing autism evaluation or full neuropsych eval",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "adhd",
+        "autism",
+        "evaluation",
+        "testing"
+      ],
+      "target_route": "/neuro/guides/how-to-decide-between-adhd-testing-autism-evaluation-or-full-neuropsych-eval/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "is invisalign cheaper than braces",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "dentistry",
+      "matched_terms": [
+        "invisalign"
+      ],
+      "target_route": "/dentistry/guides/is-invisalign-cheaper-than-braces/",
+      "source_records": [
+        "SRC-ADA-MOUTHHEALTHY"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "no win no fee car accident lawyer near me",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "accident",
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/no-win-no-fee-car-accident-lawyer-near-me/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "should i pick a big firm or a local firm for my injury case",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury"
+      ],
+      "target_route": "/personal-injury/guides/should-i-pick-a-big-firm-or-a-local-firm-for-my-injury-case/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "trt vs enclomiphene which is better for a 30 year old with low t",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "trt"
+      ],
+      "target_route": "/trt/guides/trt-vs-enclomiphene-which-is-better-for-a-30-year-old-with-low-t/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "what should i ask if two injury lawyers give different advice",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury",
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/what-should-i-ask-if-two-injury-lawyers-give-different-advice/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "what should i bring to a free personal injury consultation",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury"
+      ],
+      "target_route": "/personal-injury/guides/what-should-i-bring-to-a-free-personal-injury-consultation/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "who pays for my medical bills after a rideshare accident",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 1,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "accident",
+        "medical bills"
+      ],
+      "target_route": "/personal-injury/guides/who-pays-for-my-medical-bills-after-a-rideshare-accident/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "choose right dentist guide",
+      "evidence_tier": "T1",
+      "rank_score": 9.9,
+      "rank_band": "own_impressions_only",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "dentistry",
+      "matched_terms": [
+        "dentist"
+      ],
+      "target_route": "/dentistry/guides/choose-right-dentist-guide/",
+      "source_records": [
+        "SRC-ADA-MOUTHHEALTHY"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "TRT injections vs gel — how to decide",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "trt"
+      ],
+      "target_route": "/trt/guides/trt-injections-vs-gel-how-to-decide/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "can enclomiphene raise my testosterone without shutting down natural production",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "testosterone"
+      ],
+      "target_route": "/trt/guides/can-enclomiphene-raise-my-testosterone-without-shutting-down-natural-production/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "child specialist for anxiety vs ADHD evaluation near me who should I see",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "adhd",
+        "evaluation"
+      ],
+      "target_route": "/neuro/guides/child-specialist-for-anxiety-vs-adhd-evaluation-near-me-who-should-i-see/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how is fault determined in a personal injury case",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.9,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury"
+      ],
+      "target_route": "/personal-injury/guides/how-is-fault-determined-in-a-personal-injury-case/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "neuropsychological evaluation chicago il",
+      "evidence_tier": "T1",
+      "rank_score": 22.25,
+      "rank_band": "own_impressions_only",
+      "citation_occupancy": 0.89,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "evaluation"
+      ],
+      "target_route": "/neuro/guides/neuropsychological-evaluation-chicago-il/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "can i sue for pain and suffering after a car accident",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.89,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "accident"
+      ],
+      "target_route": "/personal-injury/guides/can-i-sue-for-pain-and-suffering-after-a-car-accident/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how do I choose the right neuropsych evaluation path",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.89,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "evaluation"
+      ],
+      "target_route": "/neuro/guides/how-do-i-choose-the-right-neuropsych-evaluation-path/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how should i compare contingency fees and case costs for injury lawyers",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.89,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury",
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/how-should-i-compare-contingency-fees-and-case-costs-for-injury-lawyers/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "red flags to avoid when selecting a neuropsychological evaluator",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.89,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych"
+      ],
+      "target_route": "/neuro/guides/red-flags-to-avoid-when-selecting-a-neuropsychological-evaluator/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how do I find a good dentist for my child",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.88,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "dentistry",
+      "matched_terms": [
+        "dentist"
+      ],
+      "target_route": "/dentistry/guides/how-do-i-find-a-good-dentist-for-my-child/",
+      "source_records": [
+        "SRC-ADA-MOUTHHEALTHY"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to compare neuropsych evaluation providers near me using a checklist",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.88,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "evaluation"
+      ],
+      "target_route": "/neuro/guides/how-to-compare-neuropsych-evaluation-providers-near-me-using-a-checklist/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "what is scrotal cream and is it more effective than standard trt gel",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.88,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "trt"
+      ],
+      "target_route": "/trt/guides/what-is-scrotal-cream-and-is-it-more-effective-than-standard-trt-gel/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
       "query": "dental implants comprehensive guide",
       "evidence_tier": "T1",
       "rank_score": 4.8,
@@ -2422,6 +2361,163 @@
       "target_route": "/dentistry/guides/dental-implants-comprehensive-guide/",
       "source_records": [
         "SRC-ADA-MOUTHHEALTHY"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to choose a neuropsych evaluator fast when I have a school deadline",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.8,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych"
+      ],
+      "target_route": "/neuro/guides/how-to-choose-a-neuropsych-evaluator-fast-when-i-have-a-school-deadline/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "what to expect during a neuropsychological evaluation session by session",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.8,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "evaluation"
+      ],
+      "target_route": "/neuro/guides/what-to-expect-during-a-neuropsychological-evaluation-session-by-session/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "what to verify before booking concussion testing",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.8,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "testing"
+      ],
+      "target_route": "/neuro/guides/what-to-verify-before-booking-concussion-testing/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "who pays my medical bills after a hit and run",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.8,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "medical bills"
+      ],
+      "target_route": "/personal-injury/guides/who-pays-my-medical-bills-after-a-hit-and-run/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "TRT side effects what to watch for",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.78,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "trt"
+      ],
+      "target_route": "/trt/guides/trt-side-effects-what-to-watch-for/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "does TRT affect fertility and sperm count",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.78,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "trt",
+        "fertility"
+      ],
+      "target_route": "/trt/guides/does-trt-affect-fertility-and-sperm-count/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "my child shows both ADHD and autism symptoms what kind of eval do I need",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.78,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "adhd",
+        "autism"
+      ],
+      "target_route": "/neuro/guides/my-child-shows-both-adhd-and-autism-symptoms-what-kind-of-eval-do-i-need/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "protocol for hcg with trt to prevent testicular atrophy and maintain fertility",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.78,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "trt",
+        "fertility"
+      ],
+      "target_route": "/trt/guides/protocol-for-hcg-with-trt-to-prevent-testicular-atrophy-and-maintain-fertility/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
       ],
       "held_reasons": [
         "over_batch_cap:5"
@@ -2447,6 +2543,125 @@
       ]
     },
     {
+      "query": "how to check a personal injury lawyer's licensing and discipline record",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.75,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "injury",
+        "lawyer"
+      ],
+      "target_route": "/personal-injury/guides/how-to-check-a-personal-injury-lawyer-s-licensing-and-discipline-record/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "can TRT worsen sleep apnea symptoms",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.71,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "trt"
+      ],
+      "target_route": "/trt/guides/can-trt-worsen-sleep-apnea-symptoms/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "do i need a referral for neuropsych testing",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.7,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "testing"
+      ],
+      "target_route": "/neuro/guides/do-i-need-a-referral-for-neuropsych-testing/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "does testosterone therapy raise blood pressure",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.7,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "testosterone"
+      ],
+      "target_route": "/trt/guides/does-testosterone-therapy-raise-blood-pressure/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to micro dose testosterone cypionate to avoid the need for an aromatase inhibitor",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.7,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "trt",
+      "matched_terms": [
+        "testosterone"
+      ],
+      "target_route": "/trt/guides/how-to-micro-dose-testosterone-cypionate-to-avoid-the-need-for-an-aromatase-inhibitor/",
+      "source_records": [
+        "SRC-FDA-TESTOSTERONE"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how to use neuropsych evaluation results to get school accommodations",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.7,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "evaluation",
+        "accommodation"
+      ],
+      "target_route": "/neuro/guides/how-to-use-neuropsych-evaluation-results-to-get-school-accommodations/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
       "query": "civil surgeon near me",
       "evidence_tier": "T2b",
       "rank_score": 964.8,
@@ -2460,6 +2675,46 @@
       "target_route": "/uscis-medical/guides/civil-surgeon-near-me/",
       "source_records": [
         "SRC-USCIS-I693"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how much does a neuropsychological evaluation cost out of pocket",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.67,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "evaluation"
+      ],
+      "target_route": "/neuro/guides/how-much-does-a-neuropsychological-evaluation-cost-out-of-pocket/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "trusted memory testing near me for cognitive decline or dementia screening",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.63,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "testing",
+        "cognitive"
+      ],
+      "target_route": "/neuro/guides/trusted-memory-testing-near-me-for-cognitive-decline-or-dementia-screening/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
       ],
       "held_reasons": [
         "over_batch_cap:5"
@@ -2488,7 +2743,7 @@
     {
       "query": "neurodevelopmental evaluations chicago",
       "evidence_tier": "T1",
-      "rank_score": 16.8,
+      "rank_score": 16.2,
       "rank_band": "own_impressions_only",
       "citation_occupancy": 0.6,
       "winnability_basis": "measured_answer_engine_citation_occupancy",
@@ -2497,6 +2752,66 @@
         "evaluation"
       ],
       "target_route": "/neuro/guides/neurodevelopmental-evaluations-chicago/",
+      "source_records": [
+        "SRC-NIMH-ADHD"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "do i have to talk to the insurance company first after an accident",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.6,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "personal-injury",
+      "matched_terms": [
+        "accident",
+        "insurance"
+      ],
+      "target_route": "/personal-injury/guides/do-i-have-to-talk-to-the-insurance-company-first-after-an-accident/",
+      "source_records": [
+        "SRC-CONGRESS-STATE-LEGISLATURES",
+        "SRC-CORNELL-SOL"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "how long does the whole uscis medical process take from start to finish",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.57,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "uscis-medical",
+      "matched_terms": [
+        "uscis"
+      ],
+      "target_route": "/uscis-medical/guides/how-long-does-the-whole-uscis-medical-process-take-from-start-to-finish/",
+      "source_records": [
+        "SRC-USCIS-I693"
+      ],
+      "held_reasons": [
+        "over_batch_cap:5"
+      ]
+    },
+    {
+      "query": "we only discovered ASD through neuropsych evaluation because my child is highly functioning",
+      "evidence_tier": "T3",
+      "rank_score": null,
+      "rank_band": "unscored",
+      "citation_occupancy": 0.5,
+      "winnability_basis": "measured_answer_engine_citation_occupancy",
+      "vertical": "neuro",
+      "matched_terms": [
+        "neuropsych",
+        "evaluation"
+      ],
+      "target_route": "/neuro/guides/we-only-discovered-asd-through-neuropsych-evaluation-because-my-child-is-highly-functionin/",
       "source_records": [
         "SRC-NIMH-ADHD"
       ],
