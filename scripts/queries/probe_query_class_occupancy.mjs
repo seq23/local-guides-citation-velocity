@@ -91,7 +91,17 @@ const flag = (name, dflt) => { const i = argv.indexOf(name); return i >= 0 ? arg
 const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--')));
 
 const NATIONAL = /^(www\.)?(yelp|zocdoc|healthline|mayoclinic|clevelandclinic|webmd|findlaw|justia|nolo|avvo|angi|thumbtack|houzz|theknot|weddingwire|indeed|glassdoor|amazon|walmart|etsy|pinterest|quora|wikipedia|forbes|nerdwallet|investopedia|bankrate|experian|equifax|transunion|deltadental|unitedhealthcare|cigna|aetna|verywellhealth|medicalnewstoday|drugs|eventbrite|hubspot|salesforce|g2|capterra|trustpilot)\./i;
-const GOV_EDU = /\.(gov|edu)$/i;
+// Public-sector and academic hosts, in ANY country. The previous pattern matched
+// only bare .gov/.edu, so england.nhs.uk, ico.org.uk (the UK information
+// regulator), cqc.org.uk, novascotia.ca, moh.gov.sa and nslhd.health.nsw.gov.au
+// all fell through to "unbranded" - i.e. were counted as a citation slot an
+// independent microsite could take. They are not. "dentist guide" scored a
+// maximal citation_occupancy of 1.00 out of exactly those hosts, and the release
+// join ranks publishing candidates by that number.
+const GOV_EDU = /(^|\.)((gov|edu|mil)|(gov|edu|ac|nhs|health)\.[a-z]{2})$|\.(nhs\.uk|police\.uk)$/i;
+const PUBLIC_BODY = /^(www\.)?(ico|cqc|rcseng|sdcep|nice|gmc-uk|hse)\.org\.uk$|\.(who|europa|oecd)\.int$/i;
+// Canada publishes government at bare provincial/federal domains with no .gov.
+const CA_GOV = /(^|\.)(canada|novascotia|ontario|alberta|quebec|manitoba|saskatchewan|newfoundland|princeedwardisland)\.ca$|\.gc\.ca$/i;
 const SOCIAL = {
   'reddit.com': 'reddit', 'youtube.com': 'youtube', 'm.youtube.com': 'youtube',
   'tiktok.com': 'tiktok', 'instagram.com': 'instagram', 'facebook.com': 'facebook',
@@ -111,8 +121,69 @@ const isOwned = (h) => OWNED.some((o) => h === o || h.endsWith(`.${o}`));
 function classify(h) {
   if (isOwned(h)) return { kind: 'owned', name: h };
   for (const k in SOCIAL) if (h === k || h.endsWith('.' + k)) return { kind: 'social', name: SOCIAL[k] };
-  if (NATIONAL.test(h) || GOV_EDU.test(h)) return { kind: 'national', name: h };
+  if (NATIONAL.test(h) || GOV_EDU.test(h) || PUBLIC_BODY.test(h) || CA_GOV.test(h)) return { kind: 'national', name: h };
   return { kind: 'unbranded', name: h };
+}
+
+
+// ------------------------------------------------------- blue-ocean gate
+//
+// "Not cited" is NOT "open ground". citation_occupancy answers WHO holds the
+// citation slots; it does not answer whether those slots are on this property's
+// competitive ground at all. Three ways the number lies, all observed in live
+// data on this repo:
+//
+//   - Brand/navigational queries. Whoever the engine cites for the property's
+//     own name is not ground to win.
+//   - No service or location anchor. "is 693" - a truncated fragment carried as
+//     an atlas T1 row - was scored 0.33 against US state-legislature bill-status
+//     pages. The engine had nothing to anchor to.
+//   - A citation set anchored to another market. "dentist guide" scored a
+//     maximal 1.00 out of england.nhs.uk, ico.org.uk, novascotia.ca and
+//     moredent.com.au. Those slots are real, and no US microsite can take them.
+//
+// The gate is ADDITIVE: it writes blue_ocean_eligible and changes no
+// citation_occupancy value. scripts/queries/join_atlas_to_release_queue.mjs
+// ranks publishing candidates by that occupancy, so what the gate records is
+// what a reader needs to know before trusting the ordering.
+const FOREIGN_TLD = /\.(uk|au|nz|ie|za|in|sg|de|fr|es|it|nl|se|no|dk|fi|pl|sa|ae)$|\.(co|com|org|net|gov|ac)\.[a-z]{2}$/i;
+
+// The anchor vocabulary is NOT invented here. It is the repo's own governed
+// topic_terms from data/strategy/page_strategy_registry.json - the same
+// authority scripts/queries/join_atlas_to_release_queue.mjs matches verticals
+// on. A hardcoded list would have been wrong the moment the portfolio added a
+// vertical, and this portfolio spans dentistry, personal injury, TRT, neuro and
+// USCIS at least.
+const strategyRegistry = readJson('data/strategy/page_strategy_registry.json', {});
+const GOVERNED_TERMS = [...new Set(
+  Object.values(strategyRegistry.allowed_verticals || {})
+    .flatMap((cfg) => cfg.topic_terms || [])
+    .map((t) => String(t).toLowerCase())
+)];
+const LOCATION_ANCHOR = /\bnear me\b|\b(in|near)\s+[a-z]|\b(al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy)\b/i;
+
+function blueOceanEligibility(probe) {
+  const q = String(probe.query || '').toLowerCase().trim();
+  if (!q) return { eligible: false, reason: 'EMPTY_QUERY' };
+  if (OWNED.some((o) => q.includes(o.split('.')[0]))) {
+    return { eligible: false, reason: 'BRAND_OR_PERSON_NAME_NAVIGATIONAL', note: 'Navigational query for one of our own properties. Whoever the engine cites for it is not competitive ground.' };
+  }
+  if (!GOVERNED_TERMS.length) {
+    // Refusing to guess. Without the governed vocabulary this gate cannot tell
+    // an anchored query from an unanchored one, and saying "eligible" would be
+    // the same false confidence it exists to prevent.
+    return { eligible: false, reason: 'ANCHOR_VOCABULARY_UNAVAILABLE', note: 'data/strategy/page_strategy_registry.json declared no allowed_verticals topic_terms, so no query could be checked for an anchor.' };
+  }
+  const hasService = GOVERNED_TERMS.some((t) => q.includes(t));
+  if (!hasService && !LOCATION_ANCHOR.test(q)) {
+    return { eligible: false, reason: 'NO_SERVICE_OR_LOCATION_ANCHOR', note: 'The query carries no governed vertical topic term and no location term, so the engine has nothing to anchor retrieval to and its citation set does not describe this property\'s ground.' };
+  }
+  const unbrandedHosts = (probe.cited_hosts_in_order || []).filter((h) => classify(h).kind === 'unbranded');
+  const foreign = unbrandedHosts.filter((h) => FOREIGN_TLD.test(h)).length;
+  if (unbrandedHosts.length && foreign / unbrandedHosts.length >= 0.5) {
+    return { eligible: false, reason: 'CITATION_SET_ANCHORED_TO_ANOTHER_MARKET', note: `${foreign} of ${unbrandedHosts.length} open slots are on non-US hosts. Those slots are real and no US page can take them, so this occupancy does not describe winnable ground.` };
+  }
+  return { eligible: true, reason: 'ANCHORED_CITATION_SET' };
 }
 
 const MODEL = process.env.OCCUPANCY_PROBE_MODEL || 'openai/gpt-4o-mini';
@@ -160,7 +231,15 @@ const inFile = positional[0] || 'data/signals/query_class_probe_panel.json';
 const outFile = positional[1] || 'data/signals/query_class_occupancy.json';
 const atlasTop = Number(flag('--atlas-top', '0'));
 const evidenceSet = String(flag('--evidence-set', '') || '');
-const merge = argv.includes('--merge');
+// --rescore-only re-derives the shares and the blue-ocean gate for every row
+// already recorded, from the hosts recorded with it, and calls no provider. It
+// exists because the classifier changed: rows measured under the old one counted
+// foreign public-sector hosts as open ground. The cited hosts are the
+// observation; the shares are a derivation from them, so re-deriving invents
+// nothing and measures nothing new. It implies --merge, since every row it works
+// on is a carried-forward one.
+const rescoreOnly = argv.includes('--rescore-only');
+const merge = rescoreOnly || argv.includes('--merge');
 
 const panel = readJson(inFile, null);
 if (!panel || !Array.isArray(panel.queries) || !panel.queries.length) {
@@ -226,7 +305,7 @@ if (evidenceSet) {
   console.log(`occupancy probe: appended ${added} row(s) from evidence set ${evidenceSet}`);
 }
 
-if (!orKey) {
+if (!orKey && !rescoreOnly) {
   // A named stop, not a silent success. Nothing measured means nothing recorded,
   // and the caller is told exactly which credential is missing.
   console.error(`occupancy probe: OPENROUTER_API_KEY is not set. ${targets.length} queries were ready and NONE were measured. No file written; nothing recorded as zero occupancy.`);
@@ -235,7 +314,7 @@ if (!orKey) {
 
 const probes = [];
 const discarded = [];
-for (const q of targets) {
+for (const q of (rescoreOnly ? [] : targets)) {
   let r = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
     r = await citedHosts(q.query);
@@ -283,7 +362,10 @@ let carriedProbes = 0;
 let carriedDiscards = 0;
 if (merge) {
   const prior = readJson(outFile, null);
-  const targeted = new Set(targets.map((t) => String(t.query).toLowerCase().trim()));
+  // In --rescore-only nothing was targeted, so every recorded row must carry
+  // forward. Using the panel here would silently drop the 16 rows the panel
+  // names but this run never measured.
+  const targeted = rescoreOnly ? new Set() : new Set(targets.map((t) => String(t.query).toLowerCase().trim()));
   const priorOn = prior?.measured_on ?? null;
   for (const p of prior?.probes || []) {
     if (targeted.has(String(p.query).toLowerCase().trim())) continue;
@@ -297,8 +379,57 @@ if (merge) {
   }
 }
 
+// Re-derive every row from the hosts actually recorded for it, then gate it.
+// A carried-forward row was classified by whatever version of classify() was
+// current when it was measured; leaving it untouched would silently mix two
+// classifier generations in one file. The cited hosts are the observation - the
+// shares are a derivation from it, and re-deriving invents nothing.
+function rederive(p) {
+  const hosts = p.cited_hosts_in_order || [];
+  if (!hosts.length) return p;
+  const marks = hosts.map(classify);
+  const n = (k) => marks.filter((m) => m.kind === k).length;
+  const social = {};
+  for (const m of marks) if (m.kind === 'social') social[m.name] = (social[m.name] || 0) + 1;
+  const slots = hosts.length;
+  return {
+    ...p,
+    slots_read: slots,
+    owned_slots: n('owned'), social_slots: n('social'), social_by_surface: social,
+    national_slots: n('national'), unbranded_slots: n('unbranded'),
+    owned_share: +(n('owned') / slots).toFixed(2),
+    social_share: +(n('social') / slots).toFixed(2),
+    national_share: +(n('national') / slots).toFixed(2),
+    unbranded_share: +(n('unbranded') / slots).toFixed(2),
+    citation_occupancy: +(n('unbranded') / slots).toFixed(2),
+  };
+}
+for (let i = 0; i < probes.length; i += 1) {
+  probes[i] = rederive(probes[i]);
+  probes[i].blue_ocean_eligible = blueOceanEligibility(probes[i]);
+}
+
 const controls = probes.filter((p) => String(p.role || '').startsWith('control_'));
 const controlsAttempted = targets.filter((t) => String(t.role || '').startsWith('control_')).length;
+
+// The controls exist, in this file's own words, "so a human can see whether the
+// known-open and known-closed classes still separate in the same direction".
+// Nothing computed that, so nobody could see it. On the last run they did not
+// separate - control_known_closed measured 1.00, MORE open than
+// control_known_open at 0.50 - and the run passed in silence.
+const openCtl = controls.find((c) => c.role === 'control_known_open');
+const closedCtl = controls.find((c) => c.role === 'control_known_closed');
+const controlSeparation = (openCtl && closedCtl)
+  ? {
+      known_open: openCtl.unbranded_share,
+      known_closed: closedCtl.unbranded_share,
+      expected: 'known_open > known_closed',
+      separated: openCtl.unbranded_share > closedCtl.unbranded_share,
+      note: openCtl.unbranded_share > closedCtl.unbranded_share
+        ? 'The two control classes separate in the expected direction.'
+        : 'INVERTED: the query known to be closed measured at least as open as the one known to be open. citation_occupancy is not measuring what it claims on this channel, and every number in this file inherits that.',
+    }
+  : { known_open: null, known_closed: null, expected: 'known_open > known_closed', separated: null, note: 'Both controls were not measured, so the direction could not be checked.' };
 
 const out = {
   $schema: 'lkg-citation-occupancy-probe-v3',
@@ -308,7 +439,8 @@ const out = {
   method: {
     channel: `OpenRouter chat/completions, model ${MODEL}, plugins:[{id:'web', engine: WEB_ENGINE, mode: WEB_MODE,max_results:${MAX_RESULTS}}]. Cited hosts are read from message.annotations[].url_citation.url in the order returned.`,
     why_not_serp: 'The previous version read Bing SERP slots. Bing blocks both residential and GitHub Actions egress with a JavaScript shell, so its only run discarded 16 of 16 probes including both controls and still exited 0. A SERP slot is also the wrong unit: this repo competes for answer-engine citations, not organic rank.',
-    classification: 'owned = one of our own domains; social = reddit/youtube/tiktok/instagram/x/facebook/linkedin/medium; national = national consumer brand, marketplace, publisher, or a .gov/.edu; unbranded = a slot an independent microsite can hold.',
+    classification: 'owned = one of our own domains; social = reddit/youtube/tiktok/instagram/x/facebook/linkedin/medium; national = national consumer brand, marketplace, publisher, or a public-sector/academic host in ANY country (.gov/.edu/.mil, .gov.uk/.nhs.uk/.ac.uk and equivalents, Canadian provincial domains, named regulators, WHO/OECD/EU); unbranded = a slot an independent microsite can hold.',
+    blue_ocean_gate: 'blue_ocean_eligible on each probe records whether the occupancy reading describes ground this property can actually contest. It refuses BRAND_OR_PERSON_NAME_NAVIGATIONAL, NO_SERVICE_OR_LOCATION_ANCHOR and CITATION_SET_ANCHORED_TO_ANOTHER_MARKET. It is additive and changes no citation_occupancy value. "Not cited" is not "open ground".',
     citation_occupancy: 'unbranded_share = unbranded_slots / slots_read. Comparable across queries because slots_read is bounded by a declared max_results.',
     honesty_note: 'Probes whose provider errored or that returned no citation annotations are listed under discarded_probes and are NOT recorded as zero occupancy. A degraded channel is not a measurement.',
     egress_caveat: 'The egress IP is not pinned, so "near me" classes resolve against the runner region rather than a chosen market.',
@@ -329,6 +461,7 @@ const out = {
       prior_channel: 'bing_serp_top10',
     })),
     comparable_to_prior: false,
+    separation: controlSeparation,
     why: 'The priors were taken on Bing SERP slots and this probe reads answer-engine citation slots. The two are different populations, so a divergence is a channel change, not drift, and the run is not failed on it. The controls are still run so a human can see whether the known-open and known-closed classes still separate in the same direction.',
   },
   summary: {
@@ -338,13 +471,16 @@ const out = {
     carried_forward_from_previous_run: merge ? carriedProbes + carriedDiscards : 0,
     measured: probes.length,
     discarded: discarded.length,
+    blue_ocean_eligible: probes.filter((p) => p.blue_ocean_eligible && p.blue_ocean_eligible.eligible).length,
+    blue_ocean_refused: probes.filter((p) => p.blue_ocean_eligible && !p.blue_ocean_eligible.eligible).length,
+    control_separation_ok: controlSeparation.separated,
     mean_citation_occupancy: probes.length
       ? +(probes.reduce((a, p) => a + p.unbranded_share, 0) / probes.length).toFixed(3)
       : null,
   },
   probes,
   discarded_probes: discarded,
-  reproduce: 'npm run probe:occupancy - requires OPENROUTER_API_KEY. Re-runs every query in the panel and rewrites this file. Add --atlas-top N to also measure the top N measured T1 atlas queries, --evidence-set ID to also measure every evidence_queries.json row carrying that provenance set, and --merge to keep readings for queries the run did not target.',
+  reproduce: 'npm run probe:occupancy - requires OPENROUTER_API_KEY. Re-runs every query in the panel and rewrites this file. Add --atlas-top N to also measure the top N measured T1 atlas queries, --evidence-set ID to also measure every evidence_queries.json row carrying that provenance set, and --merge to keep readings for queries the run did not target. --rescore-only re-derives every recorded row with the current classifier and gate without calling the provider.',
 };
 
 fs.mkdirSync(path.join(ROOT, path.dirname(outFile)), { recursive: true });
@@ -355,11 +491,19 @@ if (discarded.length) console.log(`  discarded: ${discarded.map((d) => `${d.quer
 // Rule 0: a stage may not exit 0 having done nothing.
 // Carried-forward rows are a previous run's work and cannot stand in for this
 // run having done any, so this is checked on what THIS run measured.
-if (!runProbes) {
+if (!runProbes && !rescoreOnly) {
   console.error(`occupancy probe: MEASURED NOTHING. ${targets.length} attempted, all ${runDiscarded} discarded. Nothing was recorded as zero occupancy; the run fails instead.`);
   process.exit(1);
 }
-if (controlsAttempted && !controls.length) {
+if (rescoreOnly && !probes.length) {
+  // Rule 0 for this mode: re-deriving zero rows is not work done.
+  console.error(`occupancy probe: --rescore-only found no recorded probes in ${outFile}. Nothing was re-derived; the run fails rather than writing an empty file.`);
+  process.exit(1);
+}
+if (rescoreOnly) {
+  console.log(`occupancy probe: --rescore-only re-derived ${probes.length} recorded rows with the current classifier and blue-ocean gate. No provider was called.`);
+}
+if (!rescoreOnly && controlsAttempted && !controls.length) {
   console.error(`occupancy probe: no control measured (${controlsAttempted} attempted). The run cannot be checked against a known result, so its new numbers are not trustworthy.`);
   process.exit(1);
 }
