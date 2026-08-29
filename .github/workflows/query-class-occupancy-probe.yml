@@ -62,9 +62,14 @@ jobs:
           node -e '
             const d=require("./data/signals/query_class_occupancy.json");
             const pad=(s,n)=>String(s).padEnd(n);
-            console.log(pad("query",44),pad("slots",6),pad("occupancy",10),pad("social",7),pad("owned",6),"surfaces");
-            for(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.citation_occupancy,10),pad(p.social_share,7),pad(p.owned_share,6),JSON.stringify(p.social_by_surface));
-            console.log("\nCONTROLS:",JSON.stringify(d.control_check.results));
+            console.log(pad("query",44),pad("slots",6),pad("open",6),pad("incumb",7),pad("instit",7),pad("unclass",8),pad("published",10));
+            for(const p of d.probes) console.log(pad(p.query.slice(0,42),44),pad(p.slots_read,6),pad(p.open_share,6),pad(p.incumbent_slots,7),pad(p.institutional_slots,7),pad(p.unclassifiable_slots,8),pad(p.citation_occupancy===null?"WITHHELD":p.citation_occupancy,10));
+            const s=d.summary;
+            console.log("\nSLOTS:",JSON.stringify(s.slots_by_kind));
+            console.log("UNCLASSIFIABLE:",s.unclassifiable_slots,"of",s.slots_read_total,"slots ("+s.unclassifiable_slot_share+") - counted CLOSED, never open");
+            console.log("\nCONTROLS:",JSON.stringify(d.control_check.separation));
+            console.log("SIGNAL STATUS:",d.signal_status.published?"PUBLISHED":"WITHHELD - "+d.signal_status.reason);
+            if(!d.signal_status.published) console.log(d.signal_status.note);
             if(d.discarded_probes.length) console.log("\nDISCARDED (channel degraded, not zero):",d.discarded_probes.map(x=>x.query).join(" | "));
           '
       - name: Rebuild the atlas on the measured occupancy and re-derive candidates
@@ -72,7 +77,10 @@ jobs:
           npm run atlas:build
           npm run queries:join-release
       - name: Validate before recording anything
-        run: npm run validate
+        run: |
+          npm run validate:occupancy-probe
+          npm run validate:occupancy-controls
+          npm run validate
       - name: Commit the measurement
         uses: stefanzweifel/git-auto-commit-action@v5
         with:

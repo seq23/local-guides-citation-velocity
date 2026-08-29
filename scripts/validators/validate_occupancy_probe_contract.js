@@ -84,9 +84,30 @@ else if (!(entry.profiles || []).includes('core')) fail(`check "${entry.id}" is 
 // ------------------------------------ (2) unbranded must not be a blind fallthrough
 // Assert the CALL SITE, not just the declaration. Deleting the usage while
 // leaving the consts in place is exactly how this regresses unnoticed.
-const classifyBody = (src.match(/function classify\(h\)[\s\S]*?\n}/) || [''])[0];
-if (!/PUBLIC_BODY\.test\(h\)/.test(classifyBody) || !/CA_GOV\.test\(h\)/.test(classifyBody) || !/gov\|edu\|ac\|nhs/.test(src)) {
-  fail(`${SCRIPT} has lost its non-US public-sector classification. Foreign government, health-service, regulator and university hosts would again fall through into "unbranded" and be counted as citation slots an independent microsite can take.`);
+const CLASSIFIER = 'scripts/queries/host_occupancy_classifier.js';
+const classifierSrc = readText(CLASSIFIER);
+if (!/host_occupancy_classifier/.test(src)) {
+  fail(`${SCRIPT} no longer classifies hosts through ${CLASSIFIER}. A private copy of the classification inside the probe is how the probe and its guard drift apart.`);
+}
+// Matched on live code, not on prose: both files describe the retired bucket in
+// their own docstrings, and a comment explaining the defect is not the defect.
+const stripComments = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+if (/kind: *'unbranded'/.test(stripComments(src)) || /kind: *'unbranded'/.test(stripComments(classifierSrc))) {
+  fail('the "unbranded" bucket is back. It was a blind fallthrough: it meant "a host we did not recognise" while being read as "a slot an independent microsite can hold", and it scored the known-CLOSED control a maximal 1.00 out of seven competing dental practices.');
+}
+const classifyBody = (stripComments(classifierSrc).match(/function classify\(host\)[\s\S]*?\n  }\n/) || [''])[0];
+if (!/PUBLIC_BODY\.test\(h\)/.test(classifyBody) || !/CA_GOV\.test\(h\)/.test(classifyBody) || !/gov\|edu\|ac\|nhs/.test(classifierSrc)) {
+  fail(`${CLASSIFIER} has lost its non-US public-sector classification. Foreign government, health-service, regulator and university hosts would stop being recognised as institutional.`);
+}
+// The one structural property that makes "unrecognised is not open" true: the
+// last return in classify() must be the unclassifiable one.
+const returnedKinds = [...classifyBody.matchAll(/return \{ kind: '(\w+)'/g)].map((m) => m[1]);
+const finalReturn = returnedKinds[returnedKinds.length - 1];
+if (finalReturn !== 'unclassifiable') {
+  fail(`${CLASSIFIER}: the final branch of classify() returns "${finalReturn ?? 'nothing recognisable'}", not "unclassifiable". The fallthrough branch decides what an unrecognised host counts as, and anything but unclassifiable puts unrecognised hosts back into a bucket they did not earn.`);
+}
+if (!/page_strategy_registry/.test(classifierSrc) && !/strategyRegistry/.test(classifierSrc)) {
+  fail(`${CLASSIFIER} no longer takes the governed topic_terms vocabulary, so an incumbent service provider is recognised against a parallel hardcoded list that goes stale the moment a vertical is added.`);
 }
 if (!/blueOceanEligibility/.test(src) || !/blue_ocean_eligible/.test(src)) {
   fail(`${SCRIPT} no longer records blue_ocean_eligible, so nothing distinguishes an occupancy reading taken on this property's ground from one taken on somebody else's.`);
@@ -113,9 +134,14 @@ for (const p of probes) {
   if (p.citation_occupancy === 0 && !p.slots_read) {
     fail(`probe recorded as zero occupancy with no slots read, which is a discard dressed as a measurement: ${q}`);
   }
-  if (typeof p.citation_occupancy === 'number' && p.unbranded_share !== p.citation_occupancy) {
-    fail(`citation_occupancy and unbranded_share disagree, so the published winnability number is not the one that was measured: ${q}`);
+  if (typeof p.citation_occupancy === 'number' && p.open_share !== p.citation_occupancy) {
+    fail(`citation_occupancy and open_share disagree, so the published winnability number is not the one that was measured: ${q}`);
   }
+  if (Object.prototype.hasOwnProperty.call(p, 'unbranded_share')) {
+    fail(`probe still carries the retired unbranded_share field, which a downstream reader will pick up as winnability: ${q}`);
+  }
+  if (typeof p.open_share !== 'number') fail(`probe carries no open_share: ${q}`);
+  if (typeof p.unclassifiable_slots !== 'number') fail(`probe does not count its unclassifiable slots, so unrecognised hosts are invisible: ${q}`);
   const gate = p.blue_ocean_eligible;
   if (!gate || typeof gate.eligible !== 'boolean') {
     fail(`probe carries an occupancy reading with no blue_ocean_eligible gate, so "not cited" can be read as "open ground": ${q}`);
@@ -139,11 +165,11 @@ const sep = doc && doc.control_check && doc.control_check.separation;
 if (!sep) {
   fail(`${SIGNAL} records no control_check.separation. The controls exist so a human can see whether the known-open and known-closed classes still separate in the same direction; without this field nothing computes that and nobody can see it.`);
 } else if (sep.separated === false) {
-  // Deliberately a NAMED, LOUD note rather than a hard fail: the inversion is a
-  // real and currently-true condition of the measurement channel, and failing
-  // the repo's whole validation on it would only get the check disabled. It must
-  // never be silent, which is what it was.
-  notes.push(`CONTROL INVERTED — known_closed=${sep.known_closed} is not below known_open=${sep.known_open}. citation_occupancy is not separating the two known classes on this channel, and every number in ${SIGNAL} inherits that. Root cause: "unbranded" is a fallthrough bucket, so incumbent local practices holding every slot read as fully open ground. Fixing that needs a decision about which hosts count as incumbents, which is a decision, not a code change.`);
+  // No longer merely reported. The hard failure lives in
+  // validate_occupancy_control_separation.js, which fails the run on an
+  // inversion and on any number published while the controls do not separate.
+  // Here it is a named note so this validator's own output still says it.
+  notes.push(`CONTROL PAIR DOES NOT SEPARATE — known_open=${sep.known_open}, known_closed=${sep.known_closed}, margin=${sep.margin}. citation_occupancy is withheld across ${SIGNAL}; see signal_status and the occupancy-control-separation validator, which hard-fails if a number is published anyway or if the pair inverts.`);
 }
 
 // -------------------------------------------------------------------- verdict

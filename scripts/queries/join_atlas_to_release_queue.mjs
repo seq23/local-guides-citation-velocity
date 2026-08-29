@@ -233,10 +233,24 @@ const candidates = selected.map((e) => ({
 
 // A stop is only legitimate if it is named. "Nothing today" with no reason is the
 // failure mode this repo keeps finding; it is not available here.
+// The occupancy probe withholds citation_occupancy whenever its known-open /
+// known-closed control pair fails to separate. When that is why nothing is
+// admissible, "run the probe" is the WRONG stop to name - the probe has been
+// run, and it is refusing to publish a number its own controls say is not
+// measuring winnability. Naming the wrong stop would send a reader to re-run a
+// measurement that will withhold again.
+const occupancySignal = readJson('data/signals/query_class_occupancy.json', null);
+const occupancyWithheld = occupancySignal?.signal_status?.published === false
+  ? occupancySignal.signal_status
+  : null;
+
+const allHeldOnWinnability = held.length && held.every((h) => h.held_reasons.some((r) => r.startsWith('winnability_not_measured')));
 const stopReason = candidates.length
   ? null
   : (!atlas.queries.length ? 'atlas_empty'
-    : held.every((h) => h.held_reasons.some((r) => r.startsWith('winnability_not_measured')))
+    : allHeldOnWinnability && occupancyWithheld
+      ? `occupancy_signal_withheld:${occupancyWithheld.reason} - data/signals/query_class_occupancy.json is refusing to publish citation_occupancy because its control pair does not separate, so no query has an admissible winnability reading and this lane admits nothing. This is a measurement failure, not a missing run: re-running npm run probe:occupancy will withhold again. ${occupancyWithheld.what_would_lift_it ?? ''}`
+    : allHeldOnWinnability
       ? 'no_query_has_a_measured_citation_occupancy_reading_yet - run npm run probe:occupancy with OPENROUTER_API_KEY, then rebuild the atlas'
       : 'every_atlas_query_was_held_by_a_named_admission_rule');
 
@@ -248,6 +262,7 @@ const payload = {
     atlas: 'data/authority_scale/query_atlas.json',
     atlas_rows: atlas.queries.length,
     occupancy_signal: 'data/signals/query_class_occupancy.json',
+    occupancy_signal_status: occupancySignal?.signal_status ?? null,
   },
   admission_rules: rules,
   ranked_by: 'measured citation occupancy (unbranded share of answer-engine citation slots), then atlas rank_score within band',
