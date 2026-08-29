@@ -6269,6 +6269,51 @@
       "depends_on": [],
       "why_existing_checks_do_not_cover": "atlas-release-join checks that a candidate carries a measured occupancy figure and that it is traceable. Nothing checked whether that figure was measured on this property's ground, whether an earlier run's figure survived the next run, or whether the probe's own controls still separate in the expected direction.",
       "estimated_runtime_seconds": 2
+    },
+    {
+      "id": "social-fallback-backlog-visibility",
+      "title": "Social fallback backlog depth must be reported honestly",
+      "path": "scripts/validators/validate_social_fallback_backlog_visibility.js",
+      "command": "node scripts/validators/validate_social_fallback_backlog_visibility.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "content-release",
+        "local",
+        "release",
+        "social",
+        "audit",
+        "full-audit",
+        "strict"
+      ],
+      "tags": [
+        "social",
+        "backlog",
+        "visibility",
+        "measured-opportunity"
+      ],
+      "risk_prevented": "social_fallback_suppressed_count is bounded by the run's remaining capacity, so on any run where agent artifacts fill the daily target it reports 0 while a real eligible backlog sits unreleased. Measured on current data the true depth is 389 against a suppressed_count of 68. A human reading the plan then believes nothing is being held back. Suppressing social fallback is a deliberate contract-enforced policy and is not challenged here; only the honesty of the reported number is enforced.",
+      "why_existing_checks_do_not_cover": "validate_velocity_intake_workflow asserts the suppression env var is set, and validate_strategy_gap_fill_contract is RETIRED. Nothing asserts the plan discloses how much work the suppression is actually holding back.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/social-fallback-backlog-visibility.json",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/citation_velocity/prepare_velocity_intake_release.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/social-fallback-backlog-visibility.json"
+      ],
+      "failure_action": "restore capacity-independent backlog depth reporting in prepare_velocity_intake_release.js",
+      "mutates_files": [
+        "artifacts/validation/social-fallback-backlog-visibility.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {
