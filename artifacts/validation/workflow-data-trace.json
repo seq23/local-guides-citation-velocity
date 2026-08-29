@@ -1,9 +1,9 @@
 {
   "validator": "workflow-data-trace",
   "status": "PASS",
-  "workflow_count": 10,
-  "manual_ready_count": 10,
-  "scheduled_count": 4,
+  "workflow_count": 9,
+  "manual_ready_count": 9,
+  "scheduled_count": 3,
   "push_count": 2,
   "scheduled_mutation_count": 1,
   "lineage": [
@@ -67,30 +67,8 @@
       "upstream": [
         "validate-repo.yml"
       ],
-      "downstream": [
-        "postdeploy-public-audit.yml"
-      ],
-      "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
-    },
-    {
-      "file": "postdeploy-public-audit.yml",
-      "lane": "postdeploy-audit",
-      "triggers": [
-        "workflow_run:Deploy Distribution",
-        "schedule:23-11-utc-tue-fri",
-        "workflow_dispatch"
-      ],
-      "consumes": [
-        "deployed Velocity base URL"
-      ],
-      "produces": [
-        "artifacts/diagnostics/click-audit/**"
-      ],
-      "upstream": [
-        "deploy-distribution.yml"
-      ],
       "downstream": [],
-      "failure_boundary": "Requires real deployed URL and Playwright browser runtime; container browserless mock backup is not a substitute."
+      "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
     },
     {
       "file": "query-class-occupancy-probe.yml",

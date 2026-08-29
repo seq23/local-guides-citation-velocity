@@ -1,8 +1,8 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-08-29T06:47:01.365Z",
-  "workflow_count": 10,
+  "generated_at": "2026-08-29T13:56:03.646Z",
+  "workflow_count": 9,
   "workflows": [
     {
       "path": ".github/workflows/ci-health-recovery.yml",
@@ -104,39 +104,6 @@
         ".build/**",
         "reports/indexnow-*.json",
         "artifacts/validation/**"
-      ],
-      "validation_owner": "validation registry and workflow topology validators"
-    },
-    {
-      "path": ".github/workflows/postdeploy-public-audit.yml",
-      "name": "Postdeploy Public Audit",
-      "trigger": [
-        "schedule",
-        "workflow_dispatch",
-        "workflow_run"
-      ],
-      "primary_command": "npm run postdeploy:public-click-audit",
-      "repo_lane": "postdeploy-audit",
-      "current_status": "replace",
-      "reason": "Canonical postdeploy audit lane replacing postdeploy_public_audit.yml.",
-      "allowed_runtime_mutations": [
-        "artifacts/diagnostics/**"
-      ],
-      "forbidden_runtime_mutations": [
-        ".github/**",
-        "package.json",
-        "package-lock.json",
-        "scripts/**",
-        "docs/**",
-        "_repo*.json",
-        "_validation_registry.json",
-        "_repo_validation_matrix.json",
-        "_citation_intelligence_contract.json",
-        "_content_release_contract.json",
-        "data/strategy/**"
-      ],
-      "required_artifacts": [
-        "artifacts/diagnostics/click-audit/**"
       ],
       "validation_owner": "validation registry and workflow topology validators"
     },
@@ -382,6 +349,11 @@
       "path": ".github/workflows/postdeploy_public_audit.yml",
       "action": "REPLACE",
       "replacement": ".github/workflows/postdeploy-public-audit.yml"
+    },
+    {
+      "path": ".github/workflows/postdeploy-public-audit.yml",
+      "action": "DELETE",
+      "replacement": "npm run release:prepush:local"
     }
   ],
   "canonical_lanes": [
@@ -392,7 +364,6 @@
     "search-intelligence",
     "ci-health",
     "deploy",
-    "postdeploy-audit",
     "full-rebuild",
     "manual-maintenance",
     "retired"

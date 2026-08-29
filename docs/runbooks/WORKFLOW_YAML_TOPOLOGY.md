@@ -12,7 +12,6 @@ Each workflow maps to exactly one lane:
 - content-release
 - signal-intelligence
 - deploy
-- postdeploy-audit
 - full-rebuild
 - manual-maintenance
 - retired
@@ -24,7 +23,6 @@ Each workflow maps to exactly one lane:
 - `.github/workflows/daily-citation-intelligence.yml` — signal-intelligence lane
 - `.github/workflows/velocity-full-rebuild.yml` — full-rebuild lane
 - `.github/workflows/deploy-distribution.yml` — deploy lane
-- `.github/workflows/postdeploy-public-audit.yml` — postdeploy-audit lane
 
 ## Replaced / retired workflows
 
@@ -32,7 +30,7 @@ Each workflow maps to exactly one lane:
 - `.github/workflows/velocity-content-release.yml` replaced by `.github/workflows/velocity-content-release.yml`
 - `.github/workflows/release_batch.yml` merged into the manual input path of `.github/workflows/velocity-content-release.yml`
 - `.github/workflows/velocity-full-rebuild.yml` replaced by `.github/workflows/velocity-full-rebuild.yml`
-- `.github/workflows/postdeploy-public-audit.yml` replaced by `.github/workflows/postdeploy-public-audit.yml`
+- `.github/workflows/postdeploy-public-audit.yml` deleted 2026-08-29 by owner decision; the deployed click audit is not replaced, and `npm run release:prepush:local` remains the browser proof
 
 ## Runtime mutation law
 
