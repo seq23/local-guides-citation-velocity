@@ -59,6 +59,22 @@ function main(){
    run('node scripts/validators/validate_rich_new_page_contract.js');
    run('node scripts/validators/validate_page_family_contract.js');
    run('node scripts/build_page_admission_registry_2026_06_19.js');
+   // The sitemap is derived from data/content/page_admission_registry.json
+   // (scripts/build_site.js:203), and that registry is only rebuilt HERE - four
+   // steps after the build that reads it. So a route this release admitted could
+   // never appear in the sitemap this release publishes, and
+   // validate_page_release_law correctly reported it as sitemap_missing. On
+   // 2026-08-30 that took Velocity Content Release red on the first two rich
+   // pages the daily ceiling ever let through:
+   //   /dentistry/guides/dental-bridge-vs-implant-which-is-better/:sitemap_missing
+   //   /dentistry/guides/how-do-i-find-a-good-dentist-for-my-child/:sitemap_missing
+   //
+   // The registry cannot simply move earlier: isRendered() in the registry
+   // builder tests for built index.html on disk, so it has to run after a build.
+   // Re-derive instead, from the registry that now exists. restoreFrozenPages()
+   // still runs after this, so frozen page HTML is unaffected; the sitemap is not
+   // a frozen page and is exactly what needs to advance.
+   run('npm run build');
    const frozenNew=freezeNewAdmitted();
    const accepted=acceptMutationScope();
    const acceptedSet=new Set(accepted.routes||[]);

@@ -4655,6 +4655,47 @@
       "tier": "Tier 1",
       "scope": "CONTAINER",
       "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "main-writer-ordering",
+      "title": "The sitemap is derived after the registry it reads, and every main writer shares one lock",
+      "path": "scripts/validators/validate_main_writer_ordering.js",
+      "command": "node scripts/validators/validate_main_writer_ordering.js",
+      "risk_prevented": "build_site.js derives the sitemap from data/content/page_admission_registry.json, and finalize_content_release.js rebuilt that registry four steps AFTER the build that reads it, so a route the release had just admitted could never reach the sitemap it published - validate_page_release_law failed two dentistry guides as sitemap_missing on 2026-08-30. Separately, four workflows push to main and each held its own concurrency group, which serialises a workflow against itself but not against the branch; two overlapped and the second lost its push with a non-fast-forward rejection. Both are ordering and linkage facts that no content validator can see.",
+      "requires_files": [
+        "scripts/release/finalize_content_release.js",
+        ".github/workflows"
+      ],
+      "produces_files": [
+        "artifacts/validation/main-writer-ordering.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/main-writer-ordering.json"
+      ],
+      "evidence_file": "artifacts/validation/main-writer-ordering.json",
+      "failure_action": "re-derive the sitemap after the admission registry rebuild, or put the straying main-writer back in the shared concurrency group",
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "page-release-law detects the missing sitemap entry but cannot see why the pipeline is unable to satisfy it, and nothing in the repo reads workflow concurrency groups at all.",
+      "estimated_runtime_seconds": 1
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
         "audit",
         "core",
         "local",

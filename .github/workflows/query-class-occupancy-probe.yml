@@ -37,8 +37,11 @@ permissions:
 env:
   NODE_OPTIONS: --max-old-space-size=3072
 
+# Shares the single main-writer group: see query-evidence-refresh.yml. Four
+# workflows in this repo push to main and each used to hold its own group,
+# which serialises a workflow against itself and not against the branch.
 concurrency:
-  group: query-class-occupancy-probe
+  group: local-guides-main-writer
   cancel-in-progress: false
 
 jobs:

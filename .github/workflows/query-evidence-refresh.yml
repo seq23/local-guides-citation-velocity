@@ -34,8 +34,16 @@ permissions:
   # link that lets measured demand reach publishing without a human.
   actions: write
 
+# Every workflow in this repo that pushes to main shares ONE group. They used
+# to hold four separate ones - query-evidence-${{ github.ref }},
+# velocity-content-release-main, daily-citation-intelligence-main and
+# search-intelligence-closed-loop - so nothing serialised them against each
+# other. On 2026-08-30 two of them overlapped and the second lost its push
+# with `! [rejected] main -> main (non-fast-forward)`. A concurrency group per
+# workflow protects a workflow from itself; it does not protect the branch
+# they all write to.
 concurrency:
-  group: query-evidence-${{ github.ref }}
+  group: local-guides-main-writer
   cancel-in-progress: false
 
 env:
