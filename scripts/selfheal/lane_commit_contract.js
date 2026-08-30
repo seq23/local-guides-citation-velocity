@@ -14,6 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const cp = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
 
@@ -58,8 +59,33 @@ function activePrepareWrites(root = ROOT) {
   return [...out].sort();
 }
 
+// A declared write can be a build output the repo does not track - the
+// promotion-candidates validator declares both feeds/promotion-candidates.json
+// and its dist/ copy, and dist/ is in .gitignore. Handing an ignored path to
+// `git add` is a hard error, so the lane derived a correct surface and then
+// failed to commit it. An ignored path is not committable by anyone; it has no
+// business in a commit surface.
+//
+// Only literal paths are testable this way; the wildcard patterns above are the
+// lane's own long-standing evidence globs and are known to be tracked.
+function withoutIgnored(patterns, root = ROOT) {
+  const literals = patterns.filter((p) => !p.includes('*'));
+  if (!literals.length) return patterns;
+  const result = cp.spawnSync('git', ['check-ignore', '--stdin'], {
+    cwd: root, input: `${literals.join('\n')}\n`, encoding: 'utf8',
+  });
+  // 0 = some are ignored, 1 = none are, anything else = git could not answer and
+  // we must not silently drop paths on a guess.
+  if (result.status !== 0 && result.status !== 1) return patterns;
+  const ignored = new Set((result.stdout || '').split('\n').map((line) => line.trim()).filter(Boolean));
+  return patterns.filter((p) => !ignored.has(p));
+}
+
 function committablePatterns(root = ROOT) {
-  return [...new Set([...LANE_EVIDENCE_PATTERNS, ...activeRepairWrites(root), ...activePrepareWrites(root)])];
+  return withoutIgnored(
+    [...new Set([...LANE_EVIDENCE_PATTERNS, ...activeRepairWrites(root), ...activePrepareWrites(root)])],
+    root,
+  );
 }
 
 // git add glob semantics: '*' stops at a path separator, '**' spans them.
@@ -77,4 +103,4 @@ function isCommittable(filePath, patterns) {
   return patterns.some((p) => matches(p, filePath));
 }
 
-module.exports = { ROOT, LANE_EVIDENCE_PATTERNS, activeRepairWrites, activePrepareWrites, committablePatterns, matches, isCommittable };
+module.exports = { ROOT, LANE_EVIDENCE_PATTERNS, activeRepairWrites, activePrepareWrites, withoutIgnored, committablePatterns, matches, isCommittable };
