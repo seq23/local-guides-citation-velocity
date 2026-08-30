@@ -208,6 +208,7 @@ const backlogSummary = {
 };
 
 let backlogged = 0;
+let legacyGraded = 0;
 for (const row of dedupedRows) {
   const page = byRoute.get(row.route);
   // A missing page that is DECLARED unbuilt is accounted for, not graded - there
@@ -221,8 +222,32 @@ for (const row of dedupedRows) {
   const text = JSON.stringify(page).toLowerCase();
   if (requiresRichAuthorityPage(richType) && page.page_family === 'CREATE_COMMUNITY_QA') errors.push(`rich_page_downgraded_to_community_qa:${row.route}:${richType}`);
   if (requiresRichAuthorityPage(richType) && sections.length < 6) errors.push(`rich_page_too_thin:${row.route}:${richType}:${sections.length}`);
-  for (const phrase of ['direct answer', 'source basis', 'why this page exists']) {
-    if (!text.includes(phrase)) errors.push(`rich_page_missing_block:${row.route}:${phrase}`);
+  // Grade the block ROLES, not the headings.
+  //
+  // This used to require the literal strings "direct answer", "source basis" and
+  // "why this page exists" anywhere in the page JSON. scripts/lib/rich_new_page_blocks.js
+  // later rewrote those headings into plainer English and nothing linked the two,
+  // so every rich page built after that could not satisfy the contract. It hid
+  // because the 2/day new-URL ceiling meant no rich page was built for weeks and
+  // this validator prints PASS when it grades zero pages - then on 2026-08-30 the
+  // release built two dentistry guides and took the lane red on wording the
+  // generator is free to change.
+  //
+  // Roles are the contract. The legacy prose is still accepted for pages built
+  // before roles existed, so the 98 already-live guides keep passing; a page that
+  // carries neither is the real failure.
+  const roles = new Set(Array.isArray(page.semantic_block_roles)
+    ? page.semantic_block_roles
+    : (Array.isArray(page.sections) ? page.sections.map((sec) => sec && sec.block_role).filter(Boolean) : []));
+  const REQUIRED_BLOCKS = [
+    { role: 'direct_answer', legacy: 'direct answer' },
+    { role: 'source_basis', legacy: 'source basis' },
+    { role: 'why_this_page_exists', legacy: 'why this page exists' },
+  ];
+  for (const block of REQUIRED_BLOCKS) {
+    if (roles.has(block.role)) continue;
+    if (text.includes(block.legacy)) { legacyGraded += 1; continue; }
+    errors.push(`rich_page_missing_block:${row.route}:${block.role}`);
   }
   if (!page.content_atom) errors.push(`rich_page_missing_content_atom:${row.route}`);
   if (!page.admission_basis || !page.route_authority) errors.push(`rich_page_missing_admission_metadata:${row.route}`);
@@ -268,6 +293,7 @@ console.log('Rich new page contract');
 console.log(`  rich-authority rows in contract  : ${backlogSummary.rich_rows_in_contract} (${backlogSummary.rich_routes_in_contract} distinct route(s), ${datesSeen.length} run date(s))`);
 console.log(`  scoped to run date ${TARGET_RUN_DATE}  : ${dedupedRows.length} route(s) (${dateSource}; ${created.created.length} from the release)`);
 console.log(`    graded (page exists)           : ${checked.length}`);
+console.log(`    blocks accepted on legacy prose: ${legacyGraded}`);
 console.log(`    unbuilt, declared in backlog   : ${backlogged}  <-- NOT graded; there is no page to grade`);
 console.log('');
 console.log(`  DECLARED UNBUILT BACKLOG         : ${backlogSummary.declared_total}  <-- admitted for build, never built, awaiting the ${created.daily_new_url_ceiling || 2}/day release ceiling`);
