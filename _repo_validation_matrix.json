@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "2048f38b3608d7efcbdc4e72bdc5eb9a3557d4d19c332b290415614d68945a5c",
+  "registry_sha256": "d3d4bc73774bcbf2ec9eca99da4694ab51fe3c9aeec00ac9dbaccf23fbfcb539",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 156,
-    "active": 129,
+    "total": 157,
+    "active": 130,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 127,
+    "hard_fail": 128,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -103,6 +103,7 @@
         "operator-doc-currency",
         "page-record-identity",
         "page-release-law",
+        "vertical-topic-admission",
         "portfolio-kpi-truth",
         "programmatic-substance",
         "publish-inventory",
@@ -196,6 +197,7 @@
         "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
+        "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
         "rendered-route-admission-parity",
@@ -286,6 +288,7 @@
         "page-family-contract",
         "page-record-identity",
         "page-release-law",
+        "vertical-topic-admission",
         "portfolio-kpi-truth",
         "programmatic-substance",
         "provider-evidence",
@@ -450,6 +453,7 @@
         "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
+        "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
         "rendered-route-admission-parity",
@@ -551,6 +555,7 @@
         "page-family-contract",
         "page-record-identity",
         "page-release-law",
+        "vertical-topic-admission",
         "portfolio-kpi-truth",
         "programmatic-substance",
         "provider-evidence",
@@ -713,6 +718,7 @@
         "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
+        "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
         "rendered-route-admission-parity",
@@ -844,6 +850,7 @@
         "page-family-contract",
         "page-record-identity",
         "page-release-law",
+        "vertical-topic-admission",
         "portfolio-kpi-truth",
         "programmatic-substance",
         "provider-evidence",
@@ -1007,6 +1014,7 @@
         "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
+        "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
         "rendered-route-admission-parity",
@@ -1110,6 +1118,7 @@
         "page-family-contract",
         "page-record-identity",
         "page-release-law",
+        "vertical-topic-admission",
         "portfolio-kpi-truth",
         "programmatic-substance",
         "provider-evidence",
@@ -1280,6 +1289,7 @@
         "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
+        "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
         "rendered-route-admission-parity",
@@ -1475,6 +1485,7 @@
         "generator-instruction-refusal",
         "page-record-identity",
         "page-release-law",
+        "vertical-topic-admission",
         "portfolio-kpi-truth",
         "programmatic-substance",
         "publish-inventory",
@@ -1547,6 +1558,7 @@
         "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
+        "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
         "rendered-route-admission-parity",
@@ -1589,6 +1601,7 @@
         "page-family-contract",
         "page-record-identity",
         "page-release-law",
+        "vertical-topic-admission",
         "portfolio-kpi-truth",
         "provider-evidence",
         "query-atlas",
@@ -1661,6 +1674,7 @@
         "content-pattern-contract",
         "no-internal-instruction-leak",
         "frozen-output-integrity",
+        "vertical-topic-admission",
         "workflow-data-trace",
         "content-safety",
         "workflow-contract",
@@ -2163,6 +2177,10 @@
     {
       "from": "programmatic-substance",
       "to": "page-release-law"
+    },
+    {
+      "from": "page-release-law",
+      "to": "vertical-topic-admission"
     },
     {
       "from": "velocity-commercial-pages",
@@ -4713,6 +4731,48 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A page can be admitted or released without complete traceability, correct canonical output, sitemap presence, or applicable evidence requirements; future routes can also be blocked by a frozen total.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "vertical-topic-admission",
+        "title": "Admitted routes belong to the vertical whose path they occupy",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_vertical_topic_admission.js",
+        "command": "node scripts/validators/validate_vertical_topic_admission.js",
+        "depends_on": [
+          "page-release-law"
+        ],
+        "requires_files": [
+          "data/content/vertical_topic_contract.json",
+          "data/content/page_admission_registry.json",
+          "content/_live/pages.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/vertical-topic-admission.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/vertical-topic-admission.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "A route can be admitted under a vertical its subject has no relationship to. 183 such routes were retired on 2026-08-27 and 98 more on 2026-08-30 - scraped general-forum posts about IT degrees, IRS letters, custody disputes and hair transplants served under /personal-injury/ with that vertical legal citations and its accident-lead CTA. Nothing asserted the corpus stays on topic, so the first cleanup did not hold.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -11037,6 +11097,48 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A page can be admitted or released without complete traceability, correct canonical output, sitemap presence, or applicable evidence requirements; future routes can also be blocked by a frozen total.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "vertical-topic-admission",
+        "title": "Admitted routes belong to the vertical whose path they occupy",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_vertical_topic_admission.js",
+        "command": "node scripts/validators/validate_vertical_topic_admission.js",
+        "depends_on": [
+          "page-release-law"
+        ],
+        "requires_files": [
+          "data/content/vertical_topic_contract.json",
+          "data/content/page_admission_registry.json",
+          "content/_live/pages.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/vertical-topic-admission.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/vertical-topic-admission.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "A route can be admitted under a vertical its subject has no relationship to. 183 such routes were retired on 2026-08-27 and 98 more on 2026-08-30 - scraped general-forum posts about IT degrees, IRS letters, custody disputes and hair transplants served under /personal-injury/ with that vertical legal citations and its accident-lead CTA. Nothing asserted the corpus stays on topic, so the first cleanup did not hold.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

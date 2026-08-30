@@ -9,6 +9,13 @@ const {
   llmBaitPhrase,
   hash
 } = require('./signal_utils');
+const { contract, affinity, canonicalVertical } = require('../lib/vertical_topic_affinity');
+
+// The contract keys are the canonical vertical names. This pipeline has always emitted
+// its own shorter names downstream ('pi', 'uscis'), so translate on the way out rather
+// than renaming a field a dozen other scripts read.
+const CONTRACT_VERTICALS = Object.keys(contract());
+const SIGNAL_NAME = { personal_injury: 'pi', 'uscis-medical': 'uscis' };
 
 function classifyIntent(text) {
   const v = String(text || '').toLowerCase();
@@ -45,14 +52,41 @@ function verticalFromSignal(signal, sourceByKey) {
   const key = String(signal.source_key || '').toLowerCase();
   const text = `${signal.raw_signal_phrase || ''} ${signal.raw_title || ''} ${signal.short_excerpt || ''}`.toLowerCase();
 
-  if (source.vertical) return source.vertical;
-  if (key.includes('dentistry') || /dentist|dental|tooth|teeth|root canal|implant|invisalign|aligner/.test(text)) return 'dentistry';
-  if (key.includes('trt') || key.includes('hair') || /trt|testosterone|hormone|hair loss|hair transplant|iv therapy|prp/.test(text)) return 'trt';
-  if (key.includes('neuro') || /autism|adhd|neuropsych|developmental|aba therapy|speech therapy|occupational therapy|evaluation|assessment/.test(text)) return 'neuro';
-  if (key.includes('uscis') || /uscis|i-693|civil surgeon|green card|immigration medical|vaccination/.test(text)) return 'uscis';
-  if (key.includes('pi') || /personal injury|car accident|truck accident|injury|injured|hospital|medical bills|insurance claim|settlement after accident|injury lawyer|accident lawyer|truck accident lawyer|car accident lawyer|pain and suffering/.test(text)) return 'pi';
+  // THE VERTICAL COMES FROM THE POST'S SUBJECT, NEVER FROM WHERE IT WAS SCRAPED.
+  //
+  // This cascade used to open with `if (source.vertical) return source.vertical;` and to
+  // test `key.includes('pi')`, `key.includes('trt')` and friends BEFORE looking at the text.
+  // The source key is the subreddit, and three of the sources are general-interest forums:
+  //
+  //     reddit_pi_legaladvice  -> r/legaladvice
+  //     reddit_pi_insurance    -> r/Insurance
+  //     reddit_pi_ask_lawyers  -> r/Ask_Lawyers
+  //
+  // r/legaladvice carries custody disputes, IRS letters, unemployment appeals, speeding
+  // tickets and mobile-home arguments. Because the key contains "pi", every one of them was
+  // stamped personal-injury and went on to be published under /personal-injury/ with that
+  // vertical's legal citations and its accident-lead CTA. 183 such routes were retired on
+  // 2026-08-27 and 98 more on 2026-08-30; 85 of the 98 were under /personal-injury/.
+  //
+  // A source can now only SUGGEST a vertical. The post's own text has to agree, judged by
+  // data/content/vertical_topic_contract.json - the same contract the CI guard
+  // (scripts/validators/validate_vertical_topic_admission.js) uses, so ingestion and
+  // admission cannot drift apart. A signal whose subject matches no vertical is 'general',
+  // which does not become a page.
+  const affinities = CONTRACT_VERTICALS
+    .map((v) => ({ vertical: v, score: affinity(text, v) }))
+    .filter((a) => a.score > 0)
+    .sort((a, b) => b.score - a.score);
 
-  return 'general';
+  // The source's own vertical wins only when the text supports it at all.
+  const suggested = source.vertical ? canonicalVertical(source.vertical) : null;
+  if (suggested && affinities.some((a) => a.vertical === suggested)) return SIGNAL_NAME[suggested] || suggested;
+
+  if (!affinities.length) return 'general';
+  // Require the winner to be unambiguous: a text that matches two verticals equally is
+  // not evidence for either, and guessing is how the pile above was built.
+  if (affinities.length > 1 && affinities[0].score === affinities[1].score) return 'general';
+  return SIGNAL_NAME[affinities[0].vertical] || affinities[0].vertical;
 }
 
 function sourceWeight(signal, sourceByKey) {

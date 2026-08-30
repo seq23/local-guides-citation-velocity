@@ -7,6 +7,7 @@ const { routeForFamily } = require('./lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('./lib/page_family_authority');
 const { classifyRichNewPage, requiresRichAuthorityPage } = require('./lib/rich_new_page_classifier');
 const { buildRichSections } = require('./lib/rich_new_page_blocks');
+const { demandBackingPredicate, DEMAND_REL } = require('./lib/demand_backing');
 const ROOT = path.resolve(__dirname, '..');
 const DATE = process.env.SOURCE_DATE || '2026-06-19';
 const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
@@ -82,15 +83,40 @@ const configuredTiers = Array.isArray(velocityDecision.configured_scale_tiers) ?
 if (configuredTiers.length && !configuredTiers.includes(dailyCeiling)) namedStop('CEILING_OUTSIDE_CONFIGURED_TIERS', `the effective ceiling ${dailyCeiling} is not a member of the configured scale tiers [${configuredTiers.join(', ')}].`);
 const alreadyToday = (publicationLedger.runs||[]).filter((r)=>String(r.date||'')===DATE).reduce((n,r)=>n+Number(r.created||0),0);
 const remainingToday = Math.max(0,dailyCeiling-alreadyToday);
-const readyAll = (releaseQueue.records || []).filter((x)=>x.eligible === true && x.decision === 'SAFE_AUTOPUBLISH' && x.lifecycle_state === 'ADMITTED_FOR_BUILD');
+const admittedForBuild = (releaseQueue.records || []).filter((x)=>x.eligible === true && x.decision === 'SAFE_AUTOPUBLISH' && x.lifecycle_state === 'ADMITTED_FOR_BUILD');
+
+// THE DEMAND GATE IS APPLIED HERE, NOT ONLY DOWNSTREAM.
+//
+// This filter used not to exist. Selection was lifecycle-only, and the demand gate
+// lived exclusively in scripts/validation/validate_demand_backed_pages.js - after the
+// staging, after the build. So this lane could pick a route the gate was guaranteed
+// to reject in the same job and go red having done the work twice over. Reproduced on
+// runs 33320678174 / 33321455226 with
+// /dentistry/guides/dental-bridge-vs-implant-which-is-better/, selected out of 46
+// admitted rows, matching no query in data/demand/measured_demand.json.
+//
+// The predicate is not restated here - it is required from scripts/lib/demand_backing.js,
+// which the validator requires too, so the producer and the gate cannot drift. Rows
+// that fail it are NOT silently dropped: they stay in `skipped` under a named reason
+// so the backlog remains countable and the reason is legible to a human.
+let demandBacked;
+try { demandBacked = demandBackingPredicate(ROOT); }
+catch (e) { namedStop('UNREADABLE_MEASURED_DEMAND', `${DEMAND_REL} could not be read (${e.message}). Demand backing is unknown, and unknown demand holds - it does not wave rows through. Regenerate the measured demand corpus, then re-run.`); }
+if (!demandBacked.slugCount) namedStop('EMPTY_MEASURED_DEMAND', `${DEMAND_REL} yielded zero measured queries. Every candidate would fail the demand gate, so publishing anything would be publishing against no evidence at all.`);
+const demandRejected = admittedForBuild.filter((x)=>!demandBacked(x.target_route || ''));
+const readyAll = admittedForBuild.filter((x)=>demandBacked(x.target_route || ''));
 const ready = readyAll.slice(0, remainingToday);
-const report = {schema_version:'2.0',run_date:DATE,admitted_for_build:readyAll.length,selected_under_daily_new_url_ceiling:ready.length,daily_new_url_ceiling:dailyCeiling,already_published_today_before_run:alreadyToday,created:[],skipped:readyAll.slice(remainingToday).map((x)=>({id:x.id,reason:'daily_new_url_ceiling_reached'})),target:'content/_staged/pages.json'};
+const report = {schema_version:'2.0',run_date:DATE,admitted_for_build:admittedForBuild.length,demand_backed_admitted:readyAll.length,demand_rejected_admitted:demandRejected.length,selected_under_daily_new_url_ceiling:ready.length,daily_new_url_ceiling:dailyCeiling,already_published_today_before_run:alreadyToday,created:[],skipped:[...readyAll.slice(remainingToday).map((x)=>({id:x.id,reason:'daily_new_url_ceiling_reached'})),...demandRejected.map((x)=>({id:x.id,reason:'no_measured_demand_match',route:x.target_route||''}))],target:'content/_staged/pages.json'};
 // "Nothing was admitted" and "publishing is held at a ceiling of zero" are
 // different facts and used to print the same sentence. A declared full stop must
 // be readable as a full stop by whoever reads this line or the artifact.
 if (!ready.length) {
   if (dailyCeiling === 0) { report.stop_reason = 'DAILY_NEW_URL_CEILING_IS_ZERO'; report.stop_detail = `the governed ceiling is 0 - a declared full stop on new URLs - with ${readyAll.length} row(s) admitted and held.`; }
   else if (remainingToday === 0 && readyAll.length) { report.stop_reason = 'DAILY_NEW_URL_CEILING_ALREADY_SPENT'; report.stop_detail = `${alreadyToday} of ${dailyCeiling} new URL(s) were already published today.`; }
+  // "Nothing is admitted" and "everything admitted failed the demand gate" are also
+  // different facts. The second is a content problem with a named owner action, and it
+  // must not read as a quiet successful no-op (Rule 0).
+  else if (demandRejected.length && !readyAll.length) { report.stop_reason = 'NO_DEMAND_BACKED_ROWS_ADMITTED'; report.stop_detail = `all ${demandRejected.length} admitted row(s) match no query in ${DEMAND_REL}, so none may be published. Extend the measured demand corpus or withdraw the specs; this lane will not publish against absent evidence.`; }
   report.created_count = 0;
   write('artifacts/validation/velocity-content-release.json',report);
   console.log(report.stop_reason ? `No pages staged: ${report.stop_reason} - ${report.stop_detail}` : 'No Safe Harbor new pages admitted for build.');
