@@ -36,8 +36,30 @@ function activeRepairWrites(root = ROOT) {
   return [...out].sort();
 }
 
+// A validator's `prepare_commands` run before it checks anything, and what they
+// rewrite is as much a consequence of this lane running as a repair is. The
+// promotion-candidates feed is the case that proved it: it is a projection of
+// data/queries/measured_demand_candidates.json, the file this lane exists to
+// refresh, rebuilt by the `npm run build` prepare step of the
+// promotion-candidates-feed validator. Its own note says it is "rebuilt daily by
+// query-evidence-refresh.yml". The lane could not commit it, so on any day the
+// evidence actually moved - which is every day the lane does its job - the run
+// hard-stopped on a file it was supposed to be producing.
+//
+// Derived from the registry for the same reason repair_writes is: a declared
+// write widens the surface with it and cannot drift out of sync.
+function activePrepareWrites(root = ROOT) {
+  const registry = JSON.parse(fs.readFileSync(path.join(root, '_validation_registry.json'), 'utf8'));
+  const out = new Set();
+  for (const v of registry.validators || []) {
+    if (v.status !== 'ACTIVE' || !(v.prepare_commands || []).length) continue;
+    for (const w of [...(v.prepare_produces_files || []), ...(v.prepare_mutates_files || [])]) out.add(w);
+  }
+  return [...out].sort();
+}
+
 function committablePatterns(root = ROOT) {
-  return [...LANE_EVIDENCE_PATTERNS, ...activeRepairWrites(root)];
+  return [...new Set([...LANE_EVIDENCE_PATTERNS, ...activeRepairWrites(root), ...activePrepareWrites(root)])];
 }
 
 // git add glob semantics: '*' stops at a path separator, '**' spans them.
@@ -55,4 +77,4 @@ function isCommittable(filePath, patterns) {
   return patterns.some((p) => matches(p, filePath));
 }
 
-module.exports = { ROOT, LANE_EVIDENCE_PATTERNS, activeRepairWrites, committablePatterns, matches, isCommittable };
+module.exports = { ROOT, LANE_EVIDENCE_PATTERNS, activeRepairWrites, activePrepareWrites, committablePatterns, matches, isCommittable };

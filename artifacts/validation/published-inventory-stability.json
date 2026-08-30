@@ -1,17 +1,10 @@
 {
-  "validator": "self-heal-commit-coverage",
+  "schema_version": "1.0",
+  "validator": "published-inventory-stability",
   "status": "PASS",
-  "lane": ".github/workflows/query-evidence-refresh.yml",
-  "active_repair_writes": [
-    "content/_live/insights.json",
-    "content/_live/pages.json",
-    "content/_staged/pages.json",
-    "data/evidence/source_registry.json",
-    "data/evidence/state_source_registry.json",
-    "data/page_families/velocity_page_specs.json",
-    "data/report_fixes/agent_fix_ledger.json",
-    "data/signals/query_class_occupancy_highwater.json"
-  ],
+  "inventory_items": 2151,
+  "inventory_generated_at": "2026-08-29T00:00:00.000Z",
+  "declared_writes_checked": 16,
   "committable_patterns": [
     "data/signals/*.json",
     "data/queries/*.json",
@@ -30,7 +23,12 @@
     "dist/index.html",
     "feeds/promotion-candidates.json"
   ],
-  "error_count": 0,
+  "checks": [
+    "unchanged inventory, no SOURCE_DATE -> byte-identical",
+    "older SOURCE_DATE -> stamp held at 2026-08-29T00:00:00.000Z",
+    "changed inventory, newer SOURCE_DATE -> stamp advanced",
+    "16 declared validator write(s) all inside the lane surface"
+  ],
   "errors": [],
-  "checked_at": "2026-08-30"
+  "checked_at": "2026-08-30T13:09:42.095Z"
 }

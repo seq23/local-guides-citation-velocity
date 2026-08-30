@@ -711,12 +711,36 @@ function stableGeneratedAt() {
   throw new Error('SOURCE_DATE is required when no admitted monitor date exists.');
 }
 
+// `generated_at` used to be stamped from stableGeneratedAt() on every build, and
+// stableGeneratedAt() answers differently depending on which lane is asking:
+// velocity-content-release.yml sets SOURCE_DATE, query-evidence-refresh.yml does
+// not and falls through to the newest date in data/citation_velocity/runs.json.
+// So a release stamped 2026-08-29, the next evidence refresh rebuilt the same
+// unchanged inventory and stamped it 2026-06-23, that path is outside the
+// evidence lane's commit surface, and the lane hard-stopped - every day, on a
+// file whose contents nobody had changed.
+//
+// An inventory that did not change was not regenerated, so its timestamp must not
+// move; and a published surface's stamp must never travel backwards. Both rules
+// below, so the build is idempotent on this file no matter which lane runs it.
 function ensurePublishedUrlInventory(entries) {
+  const items = entries.sort((a, b) => a.url.localeCompare(b.url));
+  const previous = exists(PUBLISHED_URLS_PATH) ? JSON.parse(readUtf8(PUBLISHED_URLS_PATH)) : null;
+  const unchanged = previous
+    && previous.host === SITE_BASE
+    && previous.medium_articles_policy === 'crawlable-published-surface'
+    && JSON.stringify(previous.items || []) === JSON.stringify(items);
+  const stamped = stableGeneratedAt();
+  const priorStamp = previous && typeof previous.generated_at === 'string' ? previous.generated_at : null;
+  let generated_at;
+  if (unchanged && priorStamp) generated_at = priorStamp;
+  else if (priorStamp && priorStamp > stamped) generated_at = priorStamp;
+  else generated_at = stamped;
   const payload = {
-    generated_at: stableGeneratedAt(),
+    generated_at,
     host: SITE_BASE,
     medium_articles_policy: 'crawlable-published-surface',
-    items: entries.sort((a, b) => a.url.localeCompare(b.url))
+    items
   };
   writeUtf8(PUBLISHED_URLS_PATH, JSON.stringify(payload, null, 2) + '\n');
   return payload;

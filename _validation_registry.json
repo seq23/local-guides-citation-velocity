@@ -2433,7 +2433,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -6553,6 +6553,48 @@
       "depends_on": [],
       "why_existing_checks_do_not_cover": "No validator referenced the previous cross-repo feed at all, which is why it went stale unobserved. sitemap-parity and rendered-route-admission-parity govern HTML routes and ignore a .json data feed entirely; nothing else compares a published artifact against the live file it claims to project.",
       "estimated_runtime_seconds": 2
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "published-inventory-stability",
+      "title": "The published inventory stamp does not fight between lanes",
+      "path": "scripts/validators/validate_published_inventory_stability.js",
+      "command": "node scripts/validators/validate_published_inventory_stability.js",
+      "risk_prevented": "content/_live/published_urls.json was stamped from stableGeneratedAt(), which answers from SOURCE_DATE when a lane sets one and from data/citation_velocity/runs.json when none does. velocity-content-release.yml sets it, query-evidence-refresh.yml does not, so a release stamped 2026-08-29 and the next evidence refresh restamped the identical inventory 2026-06-23 - a publish-state path outside the evidence lane commit surface, taking that lane red daily over a file nobody changed. The same run also stopped on feeds/promotion-candidates.json, a projection of the evidence this lane refreshes that its surface did not cover. Asserts an unchanged inventory keeps its stamp with no SOURCE_DATE, that the stamp never regresses, that it still advances on a real change, and that every write an ACTIVE validator declares (repair or prepare) is inside the lane commit surface. Hard-fails on an empty inventory or an empty declared-write scan.",
+      "requires_files": [
+        "content/_live/published_urls.json",
+        "_validation_registry.json",
+        "scripts/lib/publish_contract.js",
+        "scripts/selfheal/lane_commit_contract.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/published-inventory-stability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/published-inventory-stability.json"
+      ],
+      "evidence_file": "artifacts/validation/published-inventory-stability.json",
+      "failure_action": "restore the non-regressing stamp rule in ensurePublishedUrlInventory, or widen the lane commit surface to cover the declared write",
+      "timeout_seconds": 120,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "deterministic-build and canonical-data-immutability both build inside a sandbox copy, so neither can see a build mutate the real workspace; self-heal-commit-coverage checks that the lane exists and derives its surface from the registry but never asks whether a declared write actually falls inside that surface.",
+      "estimated_runtime_seconds": 5
     },
     {
       "status": "ACTIVE",
