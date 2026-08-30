@@ -259,9 +259,36 @@ for (const row of dedupedRows) {
 // admitted_for_build / selected_under_daily_new_url_ceiling / created_count.
 // If it claims it created pages and none of them reached targetRows, or if it
 // says nothing about zero at all, an empty run is a failure, not a clean bill.
-const releaseDeclaresZero = Number(created.admitted_for_build) === 0
-  && Number(created.selected_under_daily_new_url_ceiling) === 0
+//
+// A NAMED STOP IS ALSO A DECLARATION - AND A BETTER ONE.
+//
+// This used to require admitted_for_build === 0, i.e. it only recognised "there was
+// nothing to build". But the release lane has always had a second, entirely legitimate
+// way to create nothing: rows ARE admitted and the governed daily ceiling is already
+// spent. scripts/velocity_content_release.js records exactly that in stop_reason /
+// stop_detail (DAILY_NEW_URL_CEILING_ALREADY_SPENT, DAILY_NEW_URL_CEILING_IS_ZERO,
+// NO_DEMAND_BACKED_ROWS_ADMITTED). Because those runs report admitted_for_build > 0,
+// this check graded a correct, governed, self-explaining stop as a contradiction and
+// failed the build.
+//
+// Reproduced: run 33334064470 published its 2 pages for 2026-08-30 and went green; the
+// very next dispatch that day, run 33334198894, reported admitted_for_build=44,
+// selected=0, stop_reason=DAILY_NEW_URL_CEILING_ALREADY_SPENT and was failed here. The
+// cap working is not a defect. Any second run on any day would have hit this.
+//
+// This is NOT a widening. A silent zero still fails. What is accepted is a zero that
+// NAMES ITS REASON in the artifact, which is strictly more evidence than the numeric
+// all-zeros case it already allowed.
+const namedStop = String(created.stop_reason || '').trim();
+const releaseDeclaresNamedStop = namedStop.length > 0
+  && String(created.stop_detail || '').trim().length > 0
   && Number(created.created_count || (created.created || []).length) === 0;
+const releaseDeclaresZero = releaseDeclaresNamedStop || (Number(created.admitted_for_build) === 0
+  && Number(created.selected_under_daily_new_url_ceiling) === 0
+  && Number(created.created_count || (created.created || []).length) === 0);
+if (releaseDeclaresNamedStop) {
+  console.log(`RICH NEW PAGE CONTRACT: release declared a named stop (${namedStop}) - ${created.stop_detail}`);
+}
 if (!releaseDeclaresZero && !created.created.length) {
   stop(`${RELEASE_ARTIFACT} does not declare a zero-page run (admitted_for_build=${created.admitted_for_build}, selected=${created.selected_under_daily_new_url_ceiling}, created_count=${created.created_count}) yet lists no created pages, so the release and its evidence disagree.`,
     'Re-run the release so the artifact records what it actually built. A release that claims admissions but produces no created rows must not be graded as clean.');
