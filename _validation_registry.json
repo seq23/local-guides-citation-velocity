@@ -3944,6 +3944,56 @@
       "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
+      "id": "vertical-topic-admission",
+      "title": "Admitted routes belong to the vertical whose path they occupy",
+      "path": "scripts/validators/validate_vertical_topic_admission.js",
+      "command": "node scripts/validators/validate_vertical_topic_admission.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "admission",
+        "topical-quality",
+        "offtopic",
+        "content-safety",
+        "future-proof"
+      ],
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [
+        "data/content/vertical_topic_contract.json",
+        "data/content/page_admission_registry.json",
+        "content/_live/pages.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/vertical-topic-admission.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/vertical-topic-admission.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "risk_prevented": "A route can be admitted under a vertical its subject has no relationship to. 183 such routes were retired on 2026-08-27 and 98 more on 2026-08-30 - scraped general-forum posts about IT degrees, IRS letters, custody disputes and hair transplants served under /personal-injury/ with that vertical legal citations and its accident-lead CTA. Nothing asserted the corpus stays on topic, so the first cleanup did not hold.",
+      "why_existing_checks_do_not_cover": "route-topic-quality checks the SHAPE of a title (truncation, leaked model names, scrape residue) and seals its findings in a baseline. Nothing checked whether a page SUBJECT matches the vertical it is filed under, which is a different defect: a perfectly well-formed title can still be about the wrong thing.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/vertical-topic-admission.json",
+      "failure_action": "retire the route with scripts/retire_offtopic_routes.js --apply, or correct data/content/vertical_topic_contract.json if the route is genuinely on topic. Never add the route to the debt ratchet to obtain a pass.",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": []
+    },
+    {
       "id": "portfolio-kpi-truth",
       "title": "Portfolio 100K surfacing KPI truth contract",
       "path": "scripts/validators/validate_portfolio_kpi_truth.js",

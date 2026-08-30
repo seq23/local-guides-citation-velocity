@@ -68,8 +68,18 @@ if (!exists(sitemapDir)) {
 // --- 2. pages that render into no public surface ----------------------------
 if (exists('content/_live/published_urls.json')) {
   const published = read('content/_live/published_urls.json');
-  const rows = Array.isArray(published) ? published : (published.urls || published.pages || []);
-  notes.push(`published inventory: ${rows.length} routes; admission registry: ${admittedRoutes().size}`);
+  // The file's array is `items`. This read was `published.urls || published.pages || []`,
+  // neither of which exists, so the note reported "published inventory: 0 routes" beside an
+  // admission registry of 2153 for as long as it has existed - a discrepancy that looks like
+  // a serious inventory failure and was only ever a wrong key. `items` first, and the shape
+  // is asserted rather than silently defaulted to an empty array.
+  const rows = Array.isArray(published) ? published : (published.items || published.urls || published.pages || null);
+  if (!Array.isArray(rows)) {
+    errors.push('content/_live/published_urls.json has no recognisable route array (expected `items`); '
+      + 'the published inventory cannot be compared with the admission registry.');
+  } else {
+    notes.push(`published inventory: ${rows.length} routes; admission registry: ${admittedRoutes().size}`);
+  }
 } else {
   absentInputs.push('content/_live/published_urls.json');
 }
