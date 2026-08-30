@@ -180,9 +180,23 @@ function asQuestion(query) {
 function atom(title, route, type = 'direct_answer_block') {
   return deriveContentAtom({ title, checklist: ['Verify the current source', 'Compare the decision criteria', 'Keep written notes'], red_flags: ['No source date', 'Pressure before questions are answered'] }, { sourceRoute: route, title, atom_type: type });
 }
+// `block_role` is the machine name of what a section IS, independent of the words
+// in its heading. validate_rich_new_page_contract.js used to assert the headings
+// themselves - it required the literal strings "direct answer", "source basis"
+// and "why this page exists". When those headings were rewritten into plainer
+// English here, the contract kept grepping for the old wording, so every rich
+// page built from that day forward could not satisfy it. It stayed invisible
+// because the 2/day new-URL ceiling meant no rich page was actually built for
+// weeks, and the validator prints PASS when it grades zero pages. The first two
+// that were built - two dentistry guides on 2026-08-30 - took Velocity Content
+// Release red on prose the generator has no reason to keep frozen.
+//
+// The heading is editorial and may be rewritten at any time. The role is the
+// contract.
 function section(q, a, route, extra = {}) {
   return {
     q,
+    block_role: extra.role || 'supporting_section',
     visible_q: q,
     a,
     checklist: extra.checklist || ['Verify the current primary source', 'Confirm the rule still applies to your situation', 'Use written notes before acting'],
@@ -206,6 +220,7 @@ function sourceSection({ query, route, sourceIds, profile, date }) {
     ? `The primary sources for ${asQuestion(query).replace(/\?$/, '')} are ${named.map((s) => `${s.publisher}${s.url ? ` (${s.url})` : ''}`).join(', ')}. Open the source before you act: requirements, fees and eligibility change, and a page that summarises them is only as current as the day it was written. This page is educational orientation, not ${profile.authority === 'the governing primary source' ? 'professional advice' : `advice from a ${profile.practitioner}`}.`
     : `Check ${profile.authority} directly before acting on ${asQuestion(query).replace(/\?$/, '')}. Requirements and fees change, and a summary is only as current as the day it was written. This page is educational orientation, not advice from a ${profile.practitioner}.`;
   return section('Where the answer comes from', body, route, {
+    role: 'source_basis',
     date_modified: date,
     checklist: named.length ? named.map((s) => `Open ${s.publisher}${s.retrieved_at ? ` (checked ${s.retrieved_at})` : ''}`) : profile.checklist.slice(0, 3),
     red_flags: ['A summary with no source link', 'A source with no date on it', 'Advice that contradicts the primary source']
@@ -254,8 +269,8 @@ function buildRichSections({ item, route, vertical, richType, date }) {
   const why = clean(item.why_worth_building).replace(/\s*\[NEW\]\s*$/, '');
 
   return [
-    section(question, `Start with what you can verify yourself: who has authority over ${profile.subject}, what the current source actually says, and what your own situation changes about the answer. ${stem} is a decision, not a lookup - the useful version of the answer is the short list of things you check before committing, which is what the rest of this page sets out.`, route, { date_modified: date, atom_type: 'direct_answer_block', checklist: profile.checklist, red_flags: profile.risks }),
-    section('Why this question is worth getting right', `${why ? `${why} ` : ''}People asking about ${stem.toLowerCase()} are usually about to spend money, book an appointment, or file something, and the cost of getting it wrong is a second appointment, a rejected filing, or a decision that cannot be undone cheaply. That is why this page routes you to ${profile.authority} rather than summarising it and leaving you there.`, route, { date_modified: date, red_flags: profile.risks }),
+    section(question, `Start with what you can verify yourself: who has authority over ${profile.subject}, what the current source actually says, and what your own situation changes about the answer. ${stem} is a decision, not a lookup - the useful version of the answer is the short list of things you check before committing, which is what the rest of this page sets out.`, route, { role: 'direct_answer', date_modified: date, atom_type: 'direct_answer_block', checklist: profile.checklist, red_flags: profile.risks }),
+    section('Why this question is worth getting right', `${why ? `${why} ` : ''}People asking about ${stem.toLowerCase()} are usually about to spend money, book an appointment, or file something, and the cost of getting it wrong is a second appointment, a rejected filing, or a decision that cannot be undone cheaply. That is why this page routes you to ${profile.authority} rather than summarising it and leaving you there.`, route, { role: 'why_this_page_exists', date_modified: date, red_flags: profile.risks }),
     sourceSection({ query, route, sourceIds, profile, date }),
     pageSpecificSection({ query, richType, route, profile, date }),
     section('What usually goes wrong', `The recurring failures around ${stem.toLowerCase()} are the same few: acting on an undated summary, comparing two options that do not cover the same steps, and letting someone else set the pace of the decision. Any of those is a reason to stop and check ${profile.authority} before going further.`, route, { date_modified: date, red_flags: profile.risks, checklist: profile.checklist }),

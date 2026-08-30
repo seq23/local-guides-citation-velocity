@@ -4614,6 +4614,47 @@
       "tier": "Tier 1",
       "scope": "CONTAINER",
       "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "rich-block-contract-link",
+      "title": "The rich-page generator emits every block role the contract requires",
+      "path": "scripts/validators/validate_rich_block_contract_link.js",
+      "command": "node scripts/validators/validate_rich_block_contract_link.js",
+      "risk_prevented": "validate_rich_new_page_contract asserted the literal headings \"direct answer\", \"source basis\" and \"why this page exists\"; rich_new_page_blocks.js later rewrote those headings and nothing linked the two lists, so every rich page built afterwards could not satisfy the contract. It hid for weeks because the contract grades only pages a release created, the 2/day ceiling created none, and grading zero pages printed PASS - then two dentistry guides were built on 2026-08-30 and Velocity Content Release went red on wording the generator is free to change. This generates a page for every rich page type and vertical in memory and proves each required block ROLE is emitted, so the link is exercised on every run whether or not a page was built.",
+      "requires_files": [
+        "scripts/lib/rich_new_page_blocks.js",
+        "scripts/validators/validate_rich_new_page_contract.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/rich-block-contract-link.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/rich-block-contract-link.json"
+      ],
+      "evidence_file": "artifacts/validation/rich-block-contract-link.json",
+      "failure_action": "emit the missing block role from scripts/lib/rich_new_page_blocks.js, or retire it from the contract deliberately",
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "rich-new-page-contract grades only pages a release actually created, so it is silent on every run that builds nothing - which is most runs under the daily new-URL ceiling. Nothing else exercises the generator against the contract.",
+      "estimated_runtime_seconds": 2
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
         "audit",
         "core",
         "local",
