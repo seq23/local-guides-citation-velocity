@@ -14,8 +14,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/pediatric-family/index.html | at what age should my child first see a dentist and what should I expect |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-insurance/index.html | how much does dental work cost and what financing options exist |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cosmetic-restorative/index.html | how long does teeth whitening last |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-q008-what-mistakes-cause-problems-with-comparative-and-contributory-fault.html | what mistakes cause problems with comparative and contributory fault in accident claims |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-medical-treatment-004-is-it-bad-if-i-waited-a-few-days-to-get-checked-after-a-crash.html | how long do i have to see a doctor after a car accident for a claim |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-q039-how-should-i-compare-options-involving-contingency-fees-and-case-costs.html | how should i compare contingency fees and case costs for injury lawyers |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-012-will-my-case-go-to-trial.html | will my personal injury case go to trial |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-cost-fees-004-how-do-case-expenses-affect-my-settlement-payout.html | how do case expenses affect my personal injury settlement payout |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-030-how-to-choose-a-lawyer-for-serious-injuries.html | how to choose a lawyer for serious injuries |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-switching-lawyers-001-dropping-my-pi-lawyer.html | can i fire or drop my personal injury lawyer if unhappy |
