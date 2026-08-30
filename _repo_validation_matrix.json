@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "6e62c5c1e6f469c4867f22d14006ab03dc8149ef1ea6ef579a52d9acf98eb706",
+  "registry_sha256": "dc38074574e296045557ec7c0798ea23c0f791e4e9f716f962c74d70e1516a5e",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 153,
-    "active": 126,
+    "total": 154,
+    "active": 127,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 124,
+    "hard_fail": 125,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -131,6 +131,7 @@
         "push-after-rebase-revalidates",
         "rendered-route-admission-parity",
         "promotion-candidates-feed",
+        "published-inventory-stability",
         "unbuilt-backlog-drain",
         "model-name-free-routes",
         "admission-reachability",
@@ -145,6 +146,7 @@
         "occupancy-reading-ratchet",
         "operator-doc-currency",
         "portfolio-kpi-truth",
+        "published-inventory-stability",
         "push-after-rebase-revalidates",
         "query-atlas",
         "atlas-unit-contract",
@@ -333,6 +335,7 @@
         "push-after-rebase-revalidates",
         "rendered-route-admission-parity",
         "promotion-candidates-feed",
+        "published-inventory-stability",
         "unbuilt-backlog-drain",
         "model-name-free-routes",
         "admission-reachability",
@@ -358,6 +361,7 @@
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "published-inventory-stability",
         "push-after-rebase-revalidates",
         "query-atlas",
         "atlas-unit-contract",
@@ -591,6 +595,7 @@
         "push-after-rebase-revalidates",
         "rendered-route-admission-parity",
         "promotion-candidates-feed",
+        "published-inventory-stability",
         "unbuilt-backlog-drain",
         "model-name-free-routes",
         "admission-reachability",
@@ -616,6 +621,7 @@
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "published-inventory-stability",
         "push-after-rebase-revalidates",
         "query-atlas",
         "atlas-unit-contract",
@@ -879,6 +885,7 @@
         "push-after-rebase-revalidates",
         "rendered-route-admission-parity",
         "promotion-candidates-feed",
+        "published-inventory-stability",
         "unbuilt-backlog-drain",
         "model-name-free-routes",
         "admission-reachability",
@@ -904,6 +911,7 @@
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "published-inventory-stability",
         "push-after-rebase-revalidates",
         "query-atlas",
         "atlas-unit-contract",
@@ -1141,6 +1149,7 @@
         "push-after-rebase-revalidates",
         "rendered-route-admission-parity",
         "promotion-candidates-feed",
+        "published-inventory-stability",
         "unbuilt-backlog-drain",
         "model-name-free-routes",
         "admission-reachability",
@@ -1166,6 +1175,7 @@
         "operator-doc-currency",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "published-inventory-stability",
         "push-after-rebase-revalidates",
         "query-atlas",
         "atlas-unit-contract",
@@ -1577,6 +1587,7 @@
         "occupancy-reading-ratchet",
         "llm-citation-observation-integrity",
         "promotion-candidates-feed",
+        "published-inventory-stability",
         "model-name-free-routes",
         "generated-page-substance"
       ],
@@ -1592,6 +1603,7 @@
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
         "portfolio-kpi-truth",
+        "published-inventory-stability",
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
@@ -1746,7 +1758,8 @@
         "social-fallback-backlog-visibility",
         "occupancy-reading-ratchet",
         "llm-citation-observation-integrity",
-        "promotion-candidates-feed"
+        "promotion-candidates-feed",
+        "published-inventory-stability"
       ],
       "execution_order": [
         "agent-artifact-continuity",
@@ -1764,6 +1777,7 @@
         "occupancy-reading-ratchet",
         "portfolio-kpi-truth",
         "citation-yield-feedback",
+        "published-inventory-stability",
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
@@ -6846,6 +6860,47 @@
         "retirement_reason": null
       },
       {
+        "id": "published-inventory-stability",
+        "title": "The published inventory stamp does not fight between lanes",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_published_inventory_stability.js",
+        "command": "node scripts/validators/validate_published_inventory_stability.js",
+        "depends_on": [],
+        "requires_files": [
+          "content/_live/published_urls.json",
+          "_validation_registry.json",
+          "scripts/lib/publish_contract.js",
+          "scripts/selfheal/lane_commit_contract.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/published-inventory-stability.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/published-inventory-stability.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "content/_live/published_urls.json was stamped from stableGeneratedAt(), which answers from SOURCE_DATE when a lane sets one and from data/citation_velocity/runs.json when none does. velocity-content-release.yml sets it, query-evidence-refresh.yml does not, so a release stamped 2026-08-29 and the next evidence refresh restamped the identical inventory 2026-06-23 - a publish-state path outside the evidence lane commit surface, taking that lane red daily over a file nobody changed. The same run also stopped on feeds/promotion-candidates.json, a projection of the evidence this lane refreshes that its surface did not cover. Asserts an unchanged inventory keeps its stamp with no SOURCE_DATE, that the stamp never regresses, that it still advances on a real change, and that every write an ACTIVE validator declares (repair or prepare) is inside the lane commit surface. Hard-fails on an empty inventory or an empty declared-write scan.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "unbuilt-backlog-drain",
         "title": "Unbuilt rich page backlog drain",
         "status": "ACTIVE",
@@ -9928,6 +9983,47 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Three steps push HEAD:main inside a retry loop that rebases onto whatever main has become. A rebase applying without conflict is not a rebase that changes nothing - origin/main moved, which is the only reason to rebase - so the pushed tree is a combination of two separately validated trees and is not itself validated. The absorption step in velocity-content-release.yml re-derived only on the CONFLICT path and pushed straight through on the clean one, and it is the step that runs first and most often. Checks the shell control flow, not proximity: an earlier draft of this validator matched a validate command anywhere between the rebase and the push and therefore PASSED the exact defect it was written to catch, because the defective step had one inside the conflict branch the clean path skips.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "published-inventory-stability",
+        "title": "The published inventory stamp does not fight between lanes",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_published_inventory_stability.js",
+        "command": "node scripts/validators/validate_published_inventory_stability.js",
+        "depends_on": [],
+        "requires_files": [
+          "content/_live/published_urls.json",
+          "_validation_registry.json",
+          "scripts/lib/publish_contract.js",
+          "scripts/selfheal/lane_commit_contract.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/published-inventory-stability.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/published-inventory-stability.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "content/_live/published_urls.json was stamped from stableGeneratedAt(), which answers from SOURCE_DATE when a lane sets one and from data/citation_velocity/runs.json when none does. velocity-content-release.yml sets it, query-evidence-refresh.yml does not, so a release stamped 2026-08-29 and the next evidence refresh restamped the identical inventory 2026-06-23 - a publish-state path outside the evidence lane commit surface, taking that lane red daily over a file nobody changed. The same run also stopped on feeds/promotion-candidates.json, a projection of the evidence this lane refreshes that its surface did not cover. Asserts an unchanged inventory keeps its stamp with no SOURCE_DATE, that the stamp never regresses, that it still advances on a real change, and that every write an ACTIVE validator declares (repair or prepare) is inside the lane commit surface. Hard-fails on an empty inventory or an empty declared-write scan.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
