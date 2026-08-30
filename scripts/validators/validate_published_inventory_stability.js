@@ -97,10 +97,24 @@ if (afterChange.generated_at !== '2099-01-01T00:00:00.000Z') {
 }
 restore();
 
-// B. Everything a validator declares it writes must be committable by the lane.
+// B. Everything a validator declares it writes must be committable by the lane -
+// unless git ignores it, in which case it is a build output that never reaches a
+// commit and never shows up in the lane's `git status` either.
+const cp = require('child_process');
 const patterns = contract.committablePatterns(ROOT);
+const isIgnored = (paths) => {
+  const literals = paths.filter((p) => !p.includes('*'));
+  if (!literals.length) return new Set();
+  const probe = cp.spawnSync('git', ['check-ignore', '--stdin'], { cwd: ROOT, input: `${literals.join('\n')}\n`, encoding: 'utf8' });
+  if (probe.status !== 0 && probe.status !== 1) {
+    fail(`git check-ignore could not answer (status ${probe.status}); refusing to assume anything about the commit surface`);
+    return null;
+  }
+  return new Set((probe.stdout || '').split('\n').map((line) => line.trim()).filter(Boolean));
+};
 const registry = JSON.parse(fs.readFileSync(path.join(ROOT, '_validation_registry.json'), 'utf8'));
 const declared = [];
+const allDeclared = [];
 for (const validator of registry.validators || []) {
   if (validator.status !== 'ACTIVE') continue;
   const writes = [
@@ -109,13 +123,33 @@ for (const validator of registry.validators || []) {
       ? [...(validator.prepare_produces_files || []), ...(validator.prepare_mutates_files || [])]
       : []),
   ];
-  for (const write of writes) {
-    declared.push({ id: validator.id, write });
-    if (!contract.isCommittable(write, patterns)) {
-      fail(`${validator.id} declares it writes ${write}, which is outside the evidence lane's commit surface; that lane will hard-stop the moment this write happens`);
-    }
+  for (const write of writes) allDeclared.push({ id: validator.id, write });
+}
+const ignoredWrites = isIgnored(allDeclared.map((d) => d.write)) || new Set();
+for (const { id, write } of allDeclared) {
+  if (ignoredWrites.has(write)) continue;
+  declared.push({ id, write });
+  if (!contract.isCommittable(write, patterns)) {
+    fail(`${id} declares it writes ${write}, which is outside the evidence lane's commit surface; that lane will hard-stop the moment this write happens`);
   }
 }
+// C. And nothing in that surface may be a path git refuses to add: the commit
+// step hands these straight to `git add`, and an ignored path is a hard error
+// there. dist/feeds/promotion-candidates.json is declared by a validator's
+// prepare step and dist/ is in .gitignore, which turned a correct surface into
+// a failing commit.
+const surfaceLiterals = patterns.filter((p) => !p.includes('*'));
+if (surfaceLiterals.length === 0) {
+  fail('the lane commit surface contains no literal paths to test against .gitignore; this check has stopped reaching what it governs');
+} else {
+  const ignoredSurface = isIgnored(surfaceLiterals);
+  if (ignoredSurface && ignoredSurface.size) {
+    fail(`the lane commit surface contains git-ignored path(s) that \`git add\` will reject: ${[...ignoredSurface].join(', ')}`);
+  } else if (ignoredSurface) {
+    checks.push(`${surfaceLiterals.length} literal surface path(s), none git-ignored`);
+  }
+}
+
 // Zero-item rule again: a scan of nothing proves nothing.
 if (declared.length === 0) {
   fail('no ACTIVE validator declares a repair or prepare write; either the registry keys were renamed or this check no longer reaches the code it governs');
@@ -130,6 +164,7 @@ const report = {
   inventory_items: items.length,
   inventory_generated_at: original.generated_at,
   declared_writes_checked: declared.length,
+  declared_writes_ignored_by_git: allDeclared.length - declared.length,
   committable_patterns: patterns,
   checks,
   errors,
