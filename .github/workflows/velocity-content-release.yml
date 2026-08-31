@@ -219,6 +219,18 @@ jobs:
               continue
             fi
             npm run build
+            # The cadence ledger records what the sitemap held the last time the gate
+            # ran. cadence_gate.js writes it, but the only other job that runs the gate
+            # is Validate Repo, which is read-only - so its copy dies with the runner.
+            # Nothing ever committed the ledger, so it stayed frozen at whatever a human
+            # last pushed (2026-08-27). Every page published after that read as "new",
+            # and the moment more than new_pages_per_week accumulated, the gate blocked
+            # Validate Repo permanently: the comparison it depends on could never
+            # advance on its own. Running it here - inside the loop that already
+            # rebuilds and amends - is what makes the ledger persist. It also enforces
+            # the weekly cap at the point of publication, where refusing is still
+            # possible, rather than after the pages are already on main.
+            npm run cadence:gate
             npm run validate:release
             npm run trace:agent-exact
             npm run validate:agent-exact
