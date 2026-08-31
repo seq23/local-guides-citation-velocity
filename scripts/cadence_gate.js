@@ -115,8 +115,43 @@ const ceiling = policy.refresh_capacity_per_week * Math.floor(policy.refresh_win
 const blocking = [];
 const warnings = [];
 
+// A stale ledger makes every count below fiction. It records what the sitemap held
+// the last time the gate RAN, and until 2026-08-31 nothing ever committed it - the
+// only jobs running the gate were read-only, so the file stayed frozen wherever a
+// human last pushed it and every page published since read as "new". That is what
+// wedged this repository. The release lane now refreshes and commits it, so if the
+// age below starts climbing, that persistence has broken again and these numbers
+// have quietly stopped meaning anything.
+if (ledgerExists) {
+  const gen = (() => { try { return JSON.parse(fs.readFileSync(ledgerPath, 'utf8')).generated_at; } catch { return null; } })();
+  const ageDays = gen ? Math.floor((Date.now() - Date.parse(gen)) / 86400000) : null;
+  if (ageDays === null) {
+    warnings.push('ledger_undated: data/cadence/known_urls.json carries no generated_at, so its age cannot be checked and "new since last run" cannot be trusted');
+  } else if (ageDays > 7) {
+    warnings.push(`ledger_stale: the cadence ledger was last written ${ageDays} days ago, so "${newUrls.length} new since the last run" counts everything published since then, not since the last release`);
+  }
+}
+
+// weekly_cap REPORTS, it does not block. Two reasons, both owner decisions of
+// 2026-08-31.
+//
+// First, the number is not evidence. policy.json's own provenance note says
+// refresh_capacity_per_week "is NOT a measurement... it traces to a single
+// unsourced sentence", and new_pages_per_week is the same editorial guess.
+// Failing CI on it made the repository red over an unsourced figure while the
+// two conditions below - pages ageing out of citability, and pages a crawler
+// cannot date - are evidence-backed and still block.
+//
+// Second, and decisive: pages here are published because measured demand or an
+// external citation-intelligence pass says they should exist. The owner's
+// instruction is that such work ships regardless of cadence planning. A volume
+// cap that vetoes demand-backed pages inverts the point of the repository.
+//
+// It still reports, every run, so publishing rate stays visible and a genuine
+// runaway is not silent. If a sustainable rate is ever actually measured, make
+// this block again - and say what measured it.
 if (ledgerExists && newUrls.length > policy.new_pages_per_week) {
-  blocking.push(`weekly_cap: ${newUrls.length} URLs are new since the last run, cap is ${policy.new_pages_per_week} per week`);
+  warnings.push(`weekly_cap: ${newUrls.length} URLs are new since the last run, against a declared cadence of ${policy.new_pages_per_week} per week (reported only - the cadence figure is a planning target, not a measured limit)`);
 }
 if (stalePct > policy.stale_tolerance_pct) {
   blocking.push(`refresh_debt: ${stale} of ${dated.length} pages (${stalePct.toFixed(0)}%) are older than ${policy.refresh_window_days} days, tolerance is ${policy.stale_tolerance_pct}%`);
