@@ -50,6 +50,8 @@ function main() {
   if (!manifest) errors.push('missing_semantic_acceptance_manifest');
   if (!manifest || manifest.generated_by !== 'compile_html_fix_acceptance_manifest.js') errors.push('semantic_manifest_must_be_generated_not_hand_authored');
   const planned = plannedPathSet(plan);
+  const ledger = readJson('data/report_fixes/agent_exact_implementation_ledger.json', { entries: [] });
+  const ledgered = new Set((ledger.entries || []).map((entry) => normalizePath(entry.implementation_path)).filter(Boolean));
   if (!manifest || !Array.isArray(manifest.entries) || (!manifest.entries.length && planned.size)) errors.push('semantic_acceptance_manifest_empty');
   const manifestPaths = new Set();
   for (const entry of manifest?.entries || []) {
@@ -59,7 +61,20 @@ function main() {
     const compileErrors = compiledArtifactErrors(entry);
     const renderErrors = [...compileErrors, ...validateEntryAgainstHtml(entry, html)];
     if (!html) renderErrors.push('missing_rendered_html');
-    if (!planned.has(implementationPath)) renderErrors.push('not_present_in_current_agent_exact_plan');
+    // The manifest is durable, not a per-run snapshot, so "in this run's plan" is the
+    // wrong test for whether an entry belongs.
+    //
+    // A row leaves the plan as soon as it lands in the exact-implementation ledger.
+    // Requiring every manifest entry to still be planned therefore forced the compiler
+    // to drop the entry the moment the work was proven - and with it the checklist and
+    // artifacts build_site.js injects into that page. The loss stayed invisible only
+    // because the affected pages are FROZEN and the build restored their accepted HTML.
+    //
+    // An entry is legitimate if this run planned it OR the durable ledger records that
+    // page as repaired: in both cases a real agent recommendation stands behind it.
+    // An entry backed by neither is still a failure, which is the case this was
+    // actually protecting against.
+    if (!planned.has(implementationPath) && !ledgered.has(implementationPath)) renderErrors.push('not_present_in_current_agent_exact_plan_or_ledger');
     for (const oldPath of entry.canonicalized_from || []) {
       const stillBlocked = (plan.specs || []).some((spec) => spec.status === 'BLOCKED' && normalizePath(spec.intended_winner_path || spec.target_route) === normalizePath(oldPath));
       if (stillBlocked) renderErrors.push(`canonicalized_path_still_blocked:${oldPath}`);

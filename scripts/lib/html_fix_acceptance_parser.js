@@ -487,6 +487,8 @@ function compileEntryFromSpec(spec) {
 }
 
 module.exports = {
+  phrasesTheFixAsksToRemove,
+  normalizeForbidden,
   extractInstructionRequirements,
   normalizeSpace,
   compact,

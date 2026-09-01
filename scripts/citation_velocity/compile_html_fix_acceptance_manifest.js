@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { compileEntryFromSpec } = require('../lib/html_fix_acceptance_parser');
+const { compileEntryFromSpec, phrasesTheFixAsksToRemove, normalizeForbidden } = require('../lib/html_fix_acceptance_parser');
 const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
@@ -29,7 +29,65 @@ function main() {
   const plan = readJson(PLAN_PATH, { specs: [] });
   const specs = (plan.specs || []).filter((spec) => spec && spec.status === 'PLANNED' && spec.operation === 'REPAIR_INTENDED_WINNER_PAGE');
   const compile = (spec) => authorityGroundedEntryForSpec(spec) || compileEntryFromSpec(spec);
-  const entries = specs.map(compile);
+  const compiled = specs.map(compile);
+
+  // The manifest is DURABLE, not a per-run snapshot.
+  //
+  // It was rewritten from scratch every run out of the current plan's PLANNED
+  // specs. But a row leaves the plan as soon as it lands in the exact-implementation
+  // ledger - that is what the ledger is for - so the page's semantic entry vanished
+  // on the very next compile, and with it the checklist, artifacts and required
+  // strings that build_site.js injects into the page through
+  // applyAgentExactRepairsToPage.
+  //
+  // Nothing surfaced this because almost every affected page is FROZEN: the build
+  // restored its accepted HTML and the loss stayed invisible. It became visible the
+  // moment two pages were legitimately thawed for an unrelated repair, and they came
+  // back 14KB and 22KB lighter - having silently dropped the 5-factor framework and
+  // the scoring rubric that a citation run had asked for and the pipeline had
+  // already delivered. Frozen output was the only thing standing between this and
+  // site-wide content loss.
+  //
+  // So entries are merged by implementation_path, exactly as mergeLedgerEntries
+  // already does for the ledger and for the same reason: this run's compile wins for
+  // a path it covers, and a path this run did not plan keeps what was proven for it
+  // before.
+  const existing = readJson(CURRENT_MANIFEST_PATH, { entries: [] });
+  const byPath = new Map();
+  for (const entry of existing.entries || []) {
+    const key = String(entry && entry.implementation_path || '');
+    if (key) byPath.set(key, entry);
+  }
+  // A carried entry was compiled before requiredStringsForArtifact learned to refuse
+  // a phrase its own fix asked to delete, so it can still be asserting one. The
+  // recommendation that proves it is stored on the entry as row_requirements[].source_fix,
+  // so the same filter is re-applied here rather than trusting an old compile.
+  const cleanCarried = (entry) => {
+    const forbidden = new Set();
+    for (const row of entry.row_requirements || []) {
+      for (const phrase of phrasesTheFixAsksToRemove(row.source_fix || '')) forbidden.add(phrase);
+    }
+    if (!forbidden.size) return entry;
+    const drop = (list) => (list || []).filter((value) => !forbidden.has(normalizeForbidden(value)));
+    return {
+      ...entry,
+      required_strings: drop(entry.required_strings),
+      checklist: drop(entry.checklist),
+      row_requirements: (entry.row_requirements || []).map((row) => ({ ...row, required_strings: drop(row.required_strings) }))
+    };
+  };
+
+  let carried = 0;
+  for (const key of [...byPath.keys()]) {
+    if (compiled.some((e) => String(e.implementation_path || '') === key)) continue;
+    carried += 1;
+    byPath.set(key, cleanCarried(byPath.get(key)));
+  }
+  for (const entry of compiled) {
+    const key = String(entry && entry.implementation_path || '');
+    if (key) byPath.set(key, entry);
+  }
+  const entries = [...byPath.values()].sort((a, b) => String(a.implementation_path).localeCompare(String(b.implementation_path)));
   const manifest = {
     schema_version: '2.0',
     status: 'PASS',
@@ -57,6 +115,6 @@ function main() {
   writeJson('artifacts/validation/html-fix-acceptance-compiler.json', {
     schema_version: '1.0', status: 'PASS', generated_at: DATE, source_plan: PLAN_PATH, entries: entries.length, row_requirements: manifest.row_requirement_count, manifest_path: CURRENT_MANIFEST_PATH, run_specific_manifests: [...grouped.keys()].map((key) => `${MANIFEST_DIR}/${key}.json`)
   });
-  console.log(`HTML FIX ACCEPTANCE COMPILER PASS: entries=${entries.length}; row_requirements=${manifest.row_requirement_count}`);
+  console.log(`HTML FIX ACCEPTANCE COMPILER PASS: entries=${entries.length} (${compiled.length} compiled this run, ${carried} carried forward); row_requirements=${manifest.row_requirement_count}`);
 }
 main();
