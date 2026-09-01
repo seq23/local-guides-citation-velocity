@@ -74,6 +74,28 @@ function main() {
       next.push(entry);
       continue;
     }
+    // AN ENTRY THAT NAMES BOTH PAGES MAY NOT BE MOVED OFF EITHER.
+    //
+    // A ledger entry accumulates every name its records used. When one of those other
+    // names still resolves to the target the entry currently sits on, the entry is
+    // covering two real pages and re-pointing it abandons one of them: the 2026-08-17
+    // personal-injury row named `personal-injury/index.html &bull; INTENT: ...`, and
+    // once the bullet shape parsed, this moved the whole 44-record entry there - off
+    // insights/personal-injury-042-..., which the 2026-08-03 and 2026-08-10 runs had
+    // named outright. Three runs went unaccounted for a repair that had been made.
+    // Splitting the entry is the intake's job, from the per-record resolution; here the
+    // only safe move is none.
+    const otherNames = [...new Set([...(entry.resolver_aliases || []), entry.intended_winner_path, entry.intended_winner_page].filter(Boolean))]
+      .filter((value) => String(value) !== String(named));
+    const stillNamesCurrent = otherNames.some((value) => {
+      try { return normalizeImplementationPath(resolveTargetPath({ value, query: (entry.queries || [])[0] }).implementation_path || '') === current; }
+      catch { return false; }
+    });
+    if (stillNamesCurrent) {
+      held.push({ named_target: named, kept: current, would_be: resolved, resolver_status: verdict.status, reason: 'Another name on this entry still resolves to the current target; moving it would abandon that page.' });
+      next.push({ ...entry, resolver_aliases: [...new Set([...(entry.resolver_aliases || []), named])] });
+      continue;
+    }
     moves.push({
       named_target: named,
       from: current,

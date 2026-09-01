@@ -18,8 +18,10 @@ function fileHash(p){ return fs.existsSync(rel(p)) ? crypto.createHash('sha256')
 function normalizeImplementationPath(value) {
   return normalizeRoutePath(value);
 }
+// Same evidence, same reason as the intake: a row that names its page by title can
+// only be resolved with the query it was testing and the vertical it belongs to.
 function resolveMissingTarget(row) {
-  return resolveTargetPath(row.intended_winner_path || row.intended_winner_page || row.target_route || '');
+  return resolveTargetPath({ value: row.intended_winner_path || row.intended_winner_page || row.target_route || '', query: row.query || '', family: row.vertical || '' });
 }
 
 function collectNormalizedRecords(){
@@ -115,6 +117,31 @@ function main(){
     && String(row.status||'')==='READY_TO_RELEASE'
     && !ledgeredIds.has(String(row.id));
   const carriedRows=allRows.filter(isCarryable);
+  // WHY a row was not worked is recorded, and it is usually not the budget.
+  //
+  // Every unselected ready row used to be stamped
+  // UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET whether or not the budget had
+  // anything to do with it. On 2026-09-01 the budget was 125 and twelve rows were
+  // selected - it never bound once - yet eight rows across the 2026-08-13 neuro and
+  // 2026-08-14 USCIS runs carried that reason, and the absorption report repeated it
+  // as the cause of the shortfall. The intake had already written the truth to the
+  // disposition ledger: `exact_title_already_exists_in_pages`. The page was there. A
+  // carried reason that names the wrong cause sends the next reader to raise a cap
+  // that was never the problem, so the recorded disposition wins over the default.
+  const dispositionById=new Map();
+  for(const entry of (readJson('data/report_fixes/agent_artifact_disposition_ledger.json',{entries:[]}).entries||[])){
+    if(entry && entry.id) dispositionById.set(String(entry.id), entry);
+  }
+  const carriedReasonFor=(row)=>{
+    const entry=dispositionById.get(String(row.id));
+    const reason=String(entry?.status_reason||'').trim();
+    // The STATUS stays CARRIED - downstream counts, the release budget and the
+    // "carried rows are recorded but never applied" policy all key on it, and moving a
+    // row out of CARRIED silently promoted eight skipped rows into plannable new pages.
+    // Only the REASON is corrected.
+    if(entry && String(entry.disposition||'')==='SKIPPED' && reason) return { status:'CARRIED', carried_reason:reason, carried_disposition:'SKIPPED_BY_INTAKE' };
+    return { status:'CARRIED', carried_reason:'UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET' };
+  };
   const specs=[];
   const groupedRepairs=new Map();
   for(const row of rows){
@@ -138,7 +165,7 @@ function main(){
       };
     }
     if(effectiveRow.operation==='REPAIR_INTENDED_WINNER_PAGE'){
-      const resolvedTarget = resolveTargetPath(effectiveRow.intended_winner_path || effectiveRow.target_route);
+      const resolvedTarget = resolveTargetPath({ value: effectiveRow.intended_winner_path || effectiveRow.target_route, query: effectiveRow.query || '', family: effectiveRow.vertical || '' });
       if (resolvedTarget.block_reason) {
         specs.push({record_id:effectiveRow.id, run_date:effectiveRow.run_date, query:effectiveRow.query, operation:effectiveRow.operation, intended_winner_page:effectiveRow.intended_winner_page||'', intended_winner_path:effectiveRow.intended_winner_path||'', target_route:effectiveRow.target_route||'', implementation_path:resolvedTarget.implementation_path||'', status:'BLOCKED', blocked_reason:resolvedTarget.block_reason, target_resolution:resolvedTarget});
         continue;
@@ -201,8 +228,7 @@ function main(){
       intended_winner_path:row.intended_winner_path||'',
       target_route:row.target_route||'',
       implementation_path:'',
-      status:'CARRIED',
-      carried_reason:'UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET',
+      ...carriedReasonFor(row),
       source_status:row.status||'',
       normalized_path:row.normalized_path||''
     });

@@ -97,16 +97,42 @@ function mergeAcceptedArtifacts(route, current) {
   // Deduping the delivered page against itself is the same silent loss this store
   // exists to stop. Only what the CURRENT build produces is deduped, and only against
   // what the accepted output already carries.
-  const acceptedKeys = new Set();
+  //
+  // A CURRENT block with an accepted block's key REPLACES it in place; it does not
+  // lose to it. Dropping the current copy froze every accepted route against its own
+  // future repairs: the 2026-09-01 absorption pass re-resolved seven TRT targets, the
+  // ledger issued fresh markers for them, insights.json carried the new markers - and
+  // the rendered pages kept the previous run's marker forever, because the repair
+  // block has the same type and title every time and so always lost the dedupe. The
+  // trace then reported repair_not_proven on a repair that had genuinely been made.
+  //
+  // Position and count come from the accepted list, so nothing is reordered and the
+  // two same-titled /neuro/ tables both survive. Only the CONTENT is refreshed, and
+  // only upward: a current block shorter than the accepted one is the shrink this
+  // store exists to prevent, so in that case the accepted copy stands.
+  const pending = new Map();
+  for (const artifact of Array.isArray(current) ? current : []) {
+    if (!artifact || !artifact.type || !artifact.title) continue;
+    const key = artifactKey(artifact);
+    if (!pending.has(key)) pending.set(key, []);
+    pending.get(key).push(artifact);
+  }
+  const weight = (artifact) => JSON.stringify(artifact || '').length;
+  const consumed = new Set();
   const out = [];
   for (const artifact of accepted) {
     if (!artifact || !artifact.type || !artifact.title) continue;
-    acceptedKeys.add(artifactKey(artifact));
-    out.push(artifact);
+    const key = artifactKey(artifact);
+    const queue = pending.get(key) || [];
+    const replacement = queue.shift();
+    if (replacement) {
+      consumed.add(replacement);
+      out.push(weight(replacement) >= weight(artifact) ? replacement : artifact);
+    } else out.push(artifact);
   }
   for (const artifact of Array.isArray(current) ? current : []) {
     if (!artifact || !artifact.type || !artifact.title) continue;
-    if (acceptedKeys.has(artifactKey(artifact))) continue;
+    if (consumed.has(artifact)) continue;
     out.push(artifact);
   }
   return out;

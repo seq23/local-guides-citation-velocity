@@ -338,6 +338,7 @@ function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackS
   if (Array.isArray(artifact.items)) artifact.items = artifact.items.filter(dropForbidden);
   return artifact;
 }
+const { mergeAcceptedArtifacts } = require('./accepted_artifacts');
 function requiredStringsForArtifact(artifact, recommendation) {
   // A derived title is this compiler's phrasing, not the agent's. Requiring it as a
   // string would re-impose the exact heading the contract deliberately stopped
@@ -476,8 +477,22 @@ function compileEntryFromSpec(spec) {
   const publishableRowRequirements = rowRequirements.filter((row) => publishableTitles.has(row.required_blocks?.[0]?.heading_exact));
   rowRequirements.length = 0;
   rowRequirements.push(...publishableRowRequirements);
+  // PROMISE WHAT THE RENDERER WILL RENDER, NOT WHAT THIS COMPILER MERGED.
+  //
+  // The page is not built from `mergedArtifacts` alone: every render site passes them
+  // through mergeAcceptedArtifacts first, which keeps the delivered copy of any
+  // artifact that already has one. So a freshly merged artifact can carry an item the
+  // published page will not - and required_strings, derived from the compiler's copy,
+  // then promised it. personal-injury/index.html asserted "Truck accident lawyer near
+  // me how to choose?" against a checklist whose accepted copy lists different
+  // questions: unsatisfiable by construction, and no amount of rebuilding fixes it.
+  //
+  // Running the same merge here asks the only question the trace can honestly enforce:
+  // what will actually be on the page?
+  const renderedArtifacts = mergeAcceptedArtifacts(implementationPath, mergedArtifacts);
+  const recommendationForArtifact = new Map(mergedArtifacts.map((artifact, index) => [artifact.title, recommendations[index] || recommendations[0] || '']));
   const requiredStrings = unique(
-    mergedArtifacts.flatMap((artifact, index) => requiredStringsForArtifact(artifact, recommendations[index] || recommendations[0] || ''))
+    renderedArtifacts.flatMap((artifact) => requiredStringsForArtifact(artifact, recommendationForArtifact.get(artifact.title) || recommendations[0] || ''))
   ).slice(0, 80);
   return {
     implementation_path: implementationPath,

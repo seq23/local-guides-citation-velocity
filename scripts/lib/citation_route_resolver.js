@@ -185,14 +185,102 @@ function resolveDescriptiveNumberedSlug(raw) {
 // run after run. Decoding restores the title, and the existing title similarity
 // scoring (with its tie check) then does the matching, so an ambiguous title
 // still blocks rather than guessing.
+// A third shape arrives from the HTML section of the artifact, where the fields are
+// bullet-separated instead of pipe-separated:
+//
+//   "personal-injury/index.html &bull; INTENT: informational &bull; DECISION: repair_existing"
+//
+// The path is the leading token and everything from the first field label onward is
+// prose. Splitting on "||" alone left the whole line intact, so the 2026-08-17
+// personal-injury run's only named target resolved to a directory literally called
+// "personal-injury/index.html &bull; INTENT: ..." and was written off as a malformed
+// source artifact - while personal-injury/index.html sat right there in the repo.
+const INSTRUCTION_FIELD_LABELS = /\s*(?:&bull;|•|\|\|)\s*(?:INTENT|DECISION|CURRENT|MISSING|EDIT|WHY|EVIDENCE|ACTION|NOTE)\s*:.*$/i;
 function canonicalizeRawTarget(raw) {
   let text = String(raw || '').trim();
   const filepath = text.match(/FILEPATH:\s*([^|]+?)\s*(?:\|\||$)/i);
   if (filepath) text = filepath[1].trim();
+  text = text.replace(INSTRUCTION_FIELD_LABELS, '').trim();
   if (/%[0-9a-f]{2}/i.test(text)) {
     try { text = decodeURIComponent(text); } catch { /* leave as-is if malformed */ }
   }
   return text;
+}
+
+// The agent frequently states the path in prose one field away from the field that
+// was supposed to carry it: the free_wins and outperform rows put a human title in the
+// winner field and "FILEPATH: trt/index.html || CURRENT: ..." in the recommendation.
+// That stated path is not a fallback guess - it is the agent naming its own target -
+// so both the intake and the absorption validator read it the same way, from here,
+// rather than each growing its own regex that drifts from the other.
+function statedFilepathFrom(text) {
+  const m = String(text || '').match(/FILEPATH:\s*([^|\u2022]+?)\s*(?:\|\||&bull;|\u2022|$)/i);
+  return m ? m[1].trim() : '';
+}
+
+// A TITLE is an identity too, when it names exactly one page's descriptive slug.
+//
+// The agent's free_wins and outperform sections do not carry a FILEPATH at all - they
+// carry the page's human title ("TRT and Sleep Apnea: What to Ask"). repoPathFromIntendedWinnerPage
+// turns that into the percent-encoded pseudo-path "TRT%20and%20Sleep%20Apnea:%20What%20to%20Ask",
+// which decodes fine but then has to beat 0.78 similarity against a comparable_path that
+// carries the family and serial the title has never heard of
+// ("insights-trt-020-trt-and-sleep-apnea-what-to-ask"). It scores 0.67 and loses. Every one
+// of those rows was recorded BLOCKED_MISSING_TARGET while the page it named existed - 22 of
+// the 2026-07-29 and 2026-08-05 TRT rows, none of them a real absence.
+//
+// Scoring is the wrong instrument here. insights pages are named
+// `<family>-<serial>-<descriptive-slug>.html`, so stripping the family and serial recovers
+// exactly the string a title normalizes to. Comparing THOSE is an equality test, not a guess.
+//
+// Two pages can share a descriptive slug across families (trt-008 and
+// trt-best-top-near-me-001 are both `how-to-choose-a-trt-provider`). The run's own vertical
+// breaks that tie - a TRT run means the canonical `trt` family, not one of its clusters -
+// and with no family given, or with the tie still standing after it, this returns nothing
+// and the caller falls through to scoring rather than picking one.
+function descriptiveSlugOf(implPath) {
+  const base = String(implPath || '').replace(/\/index\.html$/, '').replace(/\.html$/, '').split('/').pop() || '';
+  const m = base.match(/^([a-z]+(?:-[a-z]+)*)-(\d{2,})-(.+)$/i);
+  return m ? { family: m[1].toLowerCase(), descriptive: normalizeSlugComparable(m[3]) } : { family: '', descriptive: normalizeSlugComparable(base) };
+}
+function resolveDescriptiveTitle(raw, options = {}) {
+  const p = normalizeImplementationPath(raw);
+  // A bare title has no directory of its own; anything with a real path prefix is
+  // already handled by the exact/stem/section rules above.
+  if (!/^[^/]+\/index\.html$/.test(p) && !/^[^/]+\.html$/.test(p)) return '';
+  const wanted = normalizeSlugComparable(p);
+  if (!wanted || wanted.split('-').filter(Boolean).length < 3) return '';
+  // The intake spells verticals with underscores (personal_injury) and the filesystem
+  // with hyphens (personal-injury-001-...). Comparing them raw made the tie-break
+  // silently never fire for the one vertical whose name has two words.
+  const family = normalizeSlugComparable(options.family || '');
+  const registry = buildRouteRegistry().filter((r) => r.implementation_path !== p);
+  const scan = registry.map((r) => ({ path: r.implementation_path, ...descriptiveSlugOf(r.implementation_path) }));
+  const pick = (hits) => {
+    if (hits.length === 1) return hits[0].path;
+    if (!family) return '';
+    const preferred = hits.filter((h) => h.family === family);
+    return preferred.length === 1 ? preferred[0].path : '';
+  };
+  const exact = pick(scan.filter((h) => h.descriptive === wanted));
+  if (exact) return exact;
+  // "Is TRT a Scam" for `is-trt-a-scam-red-flags`: the agent drops the trailing
+  // qualifier. A token-boundary prefix is still an identity when exactly one page
+  // carries it; a bare-word prefix ("trt") is excluded by the 3-token floor above.
+  return pick(scan.filter((h) => h.descriptive.startsWith(`${wanted}-`)));
+}
+
+// A QUERY is an identity for the community-question pages, which are slugged from the
+// question itself. "how long until TRT works" is
+// trt/community-questions/how-long-until-trt-works/index.html to the character. When the
+// agent names a page by an invented title ("TRT Results Timeline: What to Expect") the
+// title matches nothing, but the query it was testing names the page exactly.
+function resolveQuerySlug(query) {
+  const wanted = normalizeSlugComparable(query);
+  if (!wanted || wanted.split('-').filter(Boolean).length < 3) return '';
+  const hits = buildRouteRegistry().map((r) => ({ path: r.implementation_path, ...descriptiveSlugOf(r.implementation_path) }))
+    .filter((h) => h.descriptive === wanted);
+  return hits.length === 1 ? hits[0].path : '';
 }
 
 function resolveFuzzyRoute(raw, options = {}) {
@@ -226,7 +314,16 @@ function resolveTargetPath(value) {
   const normalized = normalizeSlugComparable(raw);
   const exactComparable = buildRouteRegistry().filter(r => r.comparable_path === normalized || r.comparable_title === normalized);
   if (exactComparable.length === 1) return { implementation_path: exactComparable[0].implementation_path, status: 'SLUG_NORMALIZED_EXISTS', block_reason: '', route_family: routeFamilyForPath(exactComparable[0].implementation_path), canonicalized_from: [raw] };
-  if (exactComparable.length > 1) return { implementation_path: '', status: 'BLOCKED_AMBIGUOUS_FUZZY_ROUTE', block_reason: 'BLOCKED_AMBIGUOUS_FUZZY_ROUTE', route_family: 'UNKNOWN', canonicalized_from: [raw], candidates: exactComparable.map(x=>x.implementation_path) };
+  if (exactComparable.length > 1) {
+    // Two pages can carry the same title across families - trt-013 and
+    // trt-cost-insurance-006 are both "Does insurance cover TRT". That is not an
+    // unanswerable question when the run's own vertical names one of them, so the
+    // family tie-break gets a turn before this blocks. Without a family, or with the
+    // tie still standing after it, it blocks exactly as before.
+    const byFamily = resolveDescriptiveTitle(raw, { family: input.family });
+    if (byFamily) return { implementation_path: byFamily, status: 'DESCRIPTIVE_TITLE_RESOLVED', block_reason: '', route_family: routeFamilyForPath(byFamily), canonicalized_from: [raw], candidates: [byFamily] };
+    return { implementation_path: '', status: 'BLOCKED_AMBIGUOUS_FUZZY_ROUTE', block_reason: 'BLOCKED_AMBIGUOUS_FUZZY_ROUTE', route_family: 'UNKNOWN', canonicalized_from: [raw], candidates: exactComparable.map(x=>x.implementation_path) };
+  }
   // Descriptive slug before serial: see resolveDescriptiveNumberedSlug.
   const descriptive = resolveDescriptiveNumberedSlug(raw);
   if (descriptive) return { implementation_path: descriptive, status: 'DESCRIPTIVE_SLUG_RESOLVED', block_reason: '', route_family: routeFamilyForPath(descriptive), canonicalized_from: [raw], candidates: [descriptive] };
@@ -236,9 +333,36 @@ function resolveTargetPath(value) {
     if (candidates.length === 1) return { implementation_path: candidates[0], status: 'CANONICALIZED_BY_NUMBERED_INSIGHT', block_reason: '', route_family: routeFamilyForPath(candidates[0]), canonicalized_from: [raw], candidates };
     if (candidates.length > 1) return { implementation_path: '', status: 'AMBIGUOUS_TARGET_RESOLUTION', block_reason: 'AMBIGUOUS_TARGET_RESOLUTION', route_family: 'UNKNOWN', canonicalized_from: [raw], candidates };
   }
+  // Descriptive title and query slug are equality tests, so they run BEFORE scoring -
+  // and before the ambiguity check inside it, which is what used to swallow
+  // "Does Insurance Cover TRT" as BLOCKED_AMBIGUOUS_FUZZY_ROUTE while
+  // insights/trt-013-does-insurance-cover-trt.html named it unambiguously.
+  const titled = resolveDescriptiveTitle(raw, { family: input.family });
+  if (titled) return { implementation_path: titled, status: 'DESCRIPTIVE_TITLE_RESOLVED', block_reason: '', route_family: routeFamilyForPath(titled), canonicalized_from: [raw], candidates: [titled] };
+  // THE NAME ALONE FIRST, THEN THE NAME PLUS ITS CONTEXT.
+  //
+  // The query is a hint, and a hint must never overrule a name that already identifies a
+  // page. Folding it into the scoring haystack unconditionally DILUTES the name: the
+  // 2026-07-31 USCIS run named
+  // `uscis-medical/community-questionswhat-is-...-who-performs-it/` (one missing slash),
+  // which scores cleanly against that community question on its own, but adding
+  // "can i go to my regular family doctor..." dropped it under threshold and handed the
+  // row to an unrelated guide. So the bare name is scored first and the context only
+  // gets a turn where the name resolved to nothing.
+  const bare = resolveFuzzyRoute(raw, { title: input.title, threshold: input.threshold });
+  if (!bare.block_reason) return bare;
   const fuzzy = resolveFuzzyRoute(raw, { query: input.query, title: input.title, threshold: input.threshold });
   if (!fuzzy.block_reason) return fuzzy;
+  // LAST, and only last. The query describes what the agent was TESTING, not what it
+  // named, so it is the weakest of the identities here and must never displace a
+  // stronger one. Putting it ahead of scoring hijacked
+  // `dentistry/sedation-dentistry/index.html` - which the section rule inside
+  // resolveFuzzyRoute correctly places at `dentistry/sedation-fear/` - and sent it to a
+  // community-question page instead, purely because that page's slug happens to be the
+  // question. Behind scoring it only ever answers where nothing else could.
+  const queried = resolveQuerySlug(input.query);
+  if (queried) return { implementation_path: queried, status: 'QUERY_SLUG_RESOLVED', block_reason: '', route_family: routeFamilyForPath(queried), canonicalized_from: [raw], candidates: [queried] };
   return { implementation_path: raw, status: 'TARGET_NOT_FOUND', block_reason: 'TARGET_NOT_FOUND', route_family: routeFamilyForPath(raw), canonicalized_from: [] };
 }
 function routeFromPath(p) { return p ? `/${normalizeImplementationPath(p)}` : ''; }
-module.exports = { resolveDescriptiveNumberedSlug, canonicalizeRawTarget, normalizeImplementationPath, normalizeSlugComparable, similarityScore, buildRouteRegistry, resolveFuzzyRoute, routeFamilyForPath, resolveTargetPath, routeFromPath };
+module.exports = { statedFilepathFrom, resolveDescriptiveNumberedSlug, resolveDescriptiveTitle, resolveQuerySlug, descriptiveSlugOf, canonicalizeRawTarget, normalizeImplementationPath, normalizeSlugComparable, similarityScore, buildRouteRegistry, resolveFuzzyRoute, routeFamilyForPath, resolveTargetPath, routeFromPath };

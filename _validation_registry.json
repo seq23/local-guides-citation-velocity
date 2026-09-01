@@ -545,7 +545,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -2557,7 +2557,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -7171,6 +7171,90 @@
         "artifacts/validation/workflow-yaml-syntax.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "agent-named-target-parseability",
+      "title": "Every named repair target resolves to a page",
+      "path": "scripts/validators/validate_agent_named_target_parseability.js",
+      "command": "node scripts/validators/validate_agent_named_target_parseability.js",
+      "risk_prevented": "Prevents a target the agent named from being silently discarded as a malformed source artifact. Until 2026-09-01 the absorption join was a string transform, so a whole recommendation line ('FILEPATH: ... || CURRENT: ...'), a bullet-separated one ('personal-injury/index.html &bull; INTENT: ...') and a bare page title all produced keys no ledger could match. Fifty were reported as WARNINGS across five runs and none was ever read; the 2026-07-29 TRT run read 0 of 32 absorbed for five weeks while every page it named existed.",
+      "requires_files": [
+        "data/report_fixes/agent_runs",
+        "data/report_fixes/normalized_agent_runs",
+        "scripts/lib/citation_route_resolver.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-named-target-parseability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-named-target-parseability.json"
+      ],
+      "timeout_seconds": 300,
+      "depends_on": [
+        "agent-artifact-continuity"
+      ],
+      "why_existing_checks_do_not_cover": "agent-run-absorption-completeness asks whether a target was absorbed, which is only meaningful once the target has been turned into a page. It cannot distinguish 'not delivered' from 'never parsed', and it was the validator whose warning stream hid this for five weeks. velocity-route-resolution-self-test exercises the resolver on fixture inputs, not on the shapes the landed artifacts actually contain.",
+      "estimated_runtime_seconds": 45
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "carried-reason-truthfulness",
+      "title": "A carried row names the reason it was actually carried",
+      "path": "scripts/validators/validate_carried_reason_truthfulness.js",
+      "command": "node scripts/validators/validate_carried_reason_truthfulness.js",
+      "risk_prevented": "Prevents an unworked row from blaming a cap that never bound. On 2026-09-01 the processing budget was 125 and twelve rows were selected, yet eight rows across the 2026-08-13 neuro and 2026-08-14 USCIS runs carried UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET while the intake had recorded the real reason - exact_title_already_exists_in_pages. A wrong reason is load-bearing: it sends the next reader to raise a limit that was never the problem and hides that the work was already done.",
+      "requires_files": [
+        "data/report_fixes/agent_exact_implementation_plan.json",
+        "data/report_fixes/agent_artifact_disposition_ledger.json",
+        "artifacts/validation/velocity-intake-release-plan.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/carried-reason-truthfulness.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/carried-reason-truthfulness.json"
+      ],
+      "timeout_seconds": 120,
+      "depends_on": [
+        "agent-exact-implementation-plan"
+      ],
+      "why_existing_checks_do_not_cover": "agent-exact-implementation-plan validates that carried rows are RECORDED. Nothing compared the reason recorded against the disposition the intake actually took, so a uniformly-applied default reason passed every check while contradicting the ledger one directory away.",
+      "estimated_runtime_seconds": 3
     }
   ],
   "legacy_policy": {
