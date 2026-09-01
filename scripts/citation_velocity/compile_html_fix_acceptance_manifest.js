@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { compileEntryFromSpec, artifactFromFix, phrasesTheFixAsksToRemove, normalizeForbidden } = require('../lib/html_fix_acceptance_parser');
 const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
+const { mergeAcceptedArtifacts } = require('../lib/accepted_artifacts');
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const PLAN_PATH = 'artifacts/validation/agent-exact-implementation-plan.json';
@@ -116,7 +117,30 @@ function main() {
     const key = String(entry && entry.implementation_path || '');
     if (key) byPath.set(key, entry);
   }
-  const entries = [...byPath.values()].sort((a, b) => String(a.implementation_path).localeCompare(String(b.implementation_path)));
+  // A CARRIED entry's promises are re-tested against what will actually render.
+  //
+  // Carrying an entry forward carried its required_strings with it, including strings
+  // that were true of the compiler's copy of an artifact and never true of the
+  // delivered one. personal-injury/index.html asserted "Truck accident lawyer near me
+  // how to choose?" for a checklist whose accepted copy lists a different question -
+  // an unsatisfiable promise, held across every recompile because the entry was never
+  // recompiled. Fresh entries already derive their strings through
+  // mergeAcceptedArtifacts (see html_fix_acceptance_parser.js); carried entries are
+  // put through the same question here rather than being trusted.
+  //
+  // Only strings the merged artifacts do not contain are dropped, so nothing a page
+  // genuinely publishes stops being asserted, and an entry that loses every string
+  // keeps its row requirements and headings - the substantive part of the contract.
+  const renderedStrings = (entry) => {
+    const rendered = JSON.stringify(mergeAcceptedArtifacts(entry.implementation_path, entry.artifacts || []));
+    const keep = (value) => rendered.includes(JSON.stringify(String(value)).slice(1, -1));
+    return {
+      ...entry,
+      required_strings: (entry.required_strings || []).filter(keep),
+      row_requirements: (entry.row_requirements || []).map((row) => ({ ...row, required_strings: (row.required_strings || []).filter(keep) }))
+    };
+  };
+  const entries = [...byPath.values()].map(renderedStrings).sort((a, b) => String(a.implementation_path).localeCompare(String(b.implementation_path)));
   const manifest = {
     schema_version: '2.0',
     status: 'PASS',

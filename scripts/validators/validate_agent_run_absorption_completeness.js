@@ -30,7 +30,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { resolveTargetPath, normalizeImplementationPath } = require('../lib/citation_route_resolver');
+const { resolveTargetPath, normalizeImplementationPath, statedFilepathFrom } = require('../lib/citation_route_resolver');
 
 const ROOT = path.resolve(__dirname, '../..');
 const AGENT_RUNS = 'data/report_fixes/agent_runs';
@@ -105,13 +105,13 @@ function main() {
   // Resolving here is not leniency. It is the same function, on the same input, so the
   // question asked is the one that matters: is the page the agent MEANT accounted for?
   const resolvedCache = new Map();
-  const resolveNamed = (raw) => {
-    const key = String(raw || '');
-    if (!key) return '';
+  const resolveNamed = (raw, context = {}) => {
+    const key = `${String(raw || '')}\u0000${context.query || ''}\u0000${context.family || ''}`;
+    if (!String(raw || '')) return '';
     if (resolvedCache.has(key)) return resolvedCache.get(key);
     let out = '';
     try {
-      const verdict = resolveTargetPath({ value: key });
+      const verdict = resolveTargetPath({ value: raw, query: context.query || '', family: context.family || '' });
       out = verdict && !verdict.block_reason ? normalizeImplementationPath(verdict.implementation_path || '') : '';
     } catch { out = ''; }
     resolvedCache.set(key, out);
@@ -192,31 +192,61 @@ function main() {
         continue;
       }
 
+      // RESOLVE THE NAME BEFORE JUDGING IT.
+      //
+      // The join used to key on toImplPath(raw), which is a string operation with no
+      // idea what a page is. Three shapes the agent uses routinely survive it as
+      // garbage: a whole recommendation line ("FILEPATH: insights/trt-001-... || CURRENT:
+      // ..."), a bullet-separated one, and a bare human title. Each produced a key no
+      // ledger entry could ever match, and looksLikeRoute then dropped it as a malformed
+      // source artifact - a warning, not a failure, so 50 of them piled up unread while
+      // the pages they named sat absorbed in the ledger the whole time. That is the
+      // 2026-07-29 TRT run reporting 0 of 32 absorbed.
+      //
+      // The resolver already understands all three shapes. Asking it first turns the key
+      // into the path the agent MEANT, which is the only key the ledger was ever written
+      // under.
       const named = new Map();
       for (const row of normalized.records || []) {
         const raw = row.repo_file_path || row.intended_winner_page || row.target_url || '';
-        const impl = toImplPath(raw);
+        if (!String(raw).trim()) continue;
+        // Same order the intake uses, from the same shared reader: the name first, and
+        // only if that names no page, the FILEPATH the agent wrote into its own
+        // recommendation text. Reading the artifact rather than trusting the intake's
+        // stored answer keeps this an independent check - a wrong resolution upstream
+        // still has to survive being derived again here.
+        const resolvedImpl = resolveNamed(raw, { query: row.query || '', family: vertical })
+          || resolveNamed(statedFilepathFrom(row.recommendation || row.fix_recommendation || ''), { query: row.query || '', family: vertical });
+        const impl = resolvedImpl || toImplPath(raw);
         if (!impl) continue;
         const planned = plannedRecordIds.has(String(row.id))
           || (row.source_record_ids || []).some((x) => plannedRecordIds.has(String(x)))
           || plannedRecordIds.has(String(row.source_record_id));
-        if (!named.has(impl)) named.set(impl, { route: toRoute(raw), planned, status: row.status || '' });
-        else if (planned) named.get(impl).planned = true;
+        const existing = named.get(impl);
+        if (!existing) named.set(impl, { route: toRoute(resolvedImpl || raw), named_as: String(raw).replace(/\s+/g, ' ').slice(0, 160), resolved: Boolean(resolvedImpl), planned, status: row.status || '' });
+        else {
+          if (planned) existing.planned = true;
+          if (resolvedImpl) existing.resolved = true;
+        }
       }
 
       const unaccounted = [];
       const unresolved = [];
       const heldRoutes = [];
-      const malformed = [];
+      const unparseable = [];
       let absorbedHere = 0;
       for (const [impl, info] of named) {
         const route = info.route;
         namedTargetsExamined += 1;
-        if (!looksLikeRoute(route)) { malformed.push(route.slice(0, 120)); continue; }
-        const resolvedImpl = absorbed.has(impl) ? impl : resolveNamed(impl);
-        const isAbsorbed = absorbed.has(impl) || (resolvedImpl && absorbed.has(resolvedImpl));
+        // The resolver could not make a page of this AND it is not path-shaped. That is
+        // a target the repo cannot even ask a question about, so it is an ERROR, not a
+        // warning. It used to be a warning, which is how 50 of them accumulated: a
+        // finding nobody had to answer for is a finding nobody reads. Holding one now
+        // costs a named entry in the ratchet, which can only ever shrink.
+        if (!info.resolved && !looksLikeRoute(route)) { unparseable.push(info.named_as); continue; }
+        const isAbsorbed = absorbed.has(impl);
         if (isAbsorbed) absorbedHere += 1;
-        else if (!dispositions.has(impl) && !dispositions.has(resolvedImpl) && !info.planned) unaccounted.push(impl);
+        else if (!dispositions.has(impl) && !info.planned) unaccounted.push(impl);
 
         // Does the URL the agent tested actually resolve?
         if (realRoutes.has(route) || existsOnDisk(route)) continue;
@@ -237,7 +267,7 @@ function main() {
 
       for (const impl of unaccounted) errors.push(`${date}/${vertical}:named_target_unaccounted:${impl}`);
       for (const route of unresolved) errors.push(`${date}/${vertical}:named_route_does_not_resolve:${route}`);
-      for (const value of malformed) warnings.push(`${date}/${vertical}:malformed_target_in_source_artifact:${value}`);
+      for (const value of unparseable) errors.push(`${date}/${vertical}:named_target_unparseable:${value}`);
       for (const value of heldRoutes) warnings.push(`${date}/${vertical}:named_route_held_unbuilt:${value}`);
 
       runs.push({
@@ -248,7 +278,7 @@ function main() {
         absorbed: absorbedHere,
         unaccounted,
         unresolved_routes: unresolved,
-        malformed_targets: malformed,
+        unparseable_targets: unparseable,
         held_routes: heldRoutes
       });
     }
@@ -276,6 +306,7 @@ function main() {
     absorbed_targets: runs.reduce((n, r) => n + r.absorbed, 0),
     unaccounted_targets: errors.filter((e) => e.includes(':named_target_unaccounted:')).length,
     unresolved_routes: errors.filter((e) => e.includes(':named_route_does_not_resolve:')).length,
+    unparseable_targets: errors.filter((e) => e.includes(':named_target_unparseable:')).length,
     runs,
     errors,
     warnings

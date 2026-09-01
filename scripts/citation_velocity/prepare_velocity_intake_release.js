@@ -7,7 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
-const { resolveTargetPath, routeFromPath } = require('../lib/citation_route_resolver');
+const { resolveTargetPath, routeFromPath, statedFilepathFrom } = require('../lib/citation_route_resolver');
 const { parseManifestBundle, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -249,7 +249,27 @@ function chooseAgentOperation(row, vertical, query, policy) {
     return { operation: 'BLOCKED_EXTERNAL_DOMAIN', intended_winner_path: '', target_route: supportingRoute, renderedPath: '', supporting_route: '', blocked_reason: 'intended_winner_page_not_on_allowed_host', status: 'BLOCKED_EXTERNAL_DOMAIN' };
   }
   if (patch && intendedPath) {
-    const resolved = resolveTargetPath(intendedPath);
+    // The query and the vertical are evidence, and withholding them was the whole
+    // defect: the free_wins and outperform sections name a page by TITLE, never by
+    // path, so resolveTargetPath was handed a percent-encoded pseudo-path with no
+    // way to tell which page it meant. 22 rows across the 2026-07-29 and 2026-08-05
+    // TRT runs were recorded BLOCKED_MISSING_TARGET against pages that existed.
+    let resolved = resolveTargetPath({ value: intendedPath, query, family: vertical });
+    // THE AGENT WROTE THE PATH DOWN; USE IT.
+    //
+    // These sections carry a human title in the winner field and the real path inside
+    // the recommendation ("FILEPATH: trt/index.html || CURRENT: ..."). When the title
+    // resolves to nothing, the explicit FILEPATH is not a fallback guess - it is the
+    // agent naming its own target, and it outranks a title that matched no page. Three
+    // 2026-08-05 TRT free wins sat BLOCKED_MISSING_TARGET for five weeks with
+    // `trt/index.html` written in plain text one field away.
+    if (resolved.block_reason) {
+      const stated = statedFilepathFrom(row['Fix Recommendation'] || row.recommendation || row.fix_recommendation || '');
+      if (stated) {
+        const fromStatedPath = resolveTargetPath({ value: stated, query, family: vertical });
+        if (!fromStatedPath.block_reason) resolved = { ...fromStatedPath, canonicalized_from: [...(fromStatedPath.canonicalized_from || []), intendedPath], status: `${fromStatedPath.status}_VIA_STATED_FILEPATH` };
+      }
+    }
     if (!resolved.block_reason) return { operation: 'REPAIR_INTENDED_WINNER_PAGE', intended_winner_path: resolved.implementation_path, target_route: routeFromPath(resolved.implementation_path), renderedPath: resolved.implementation_path, supporting_route: supportingRoute, blocked_reason: '', status: 'READY_TO_RELEASE', target_resolution_status: resolved.status, canonicalized_from: resolved.canonicalized_from || [], route_family: 'REPAIR_EXISTING', route_reason: 'existing_target_repair', route_shape: routeShape(routeFromPath(resolved.implementation_path)), route_authority: 'artifact_admitted', admission_basis: 'AGENT_EXACT_REPAIR_TARGET' };
     return { operation: 'BLOCKED_MISSING_TARGET', intended_winner_path: intendedPath, target_route: routeFromRepoPath(intendedPath), renderedPath: intendedPath, supporting_route: supportingRoute, blocked_reason: resolved.block_reason || 'intended_winner_page_not_found_in_repo', status: 'BLOCKED_MISSING_TARGET', target_resolution_status: resolved.status };
   }
