@@ -59,6 +59,24 @@ function normalizeRoute(value) {
 }
 
 /**
+ * The route a page record actually publishes at.
+ *
+ * Ten records in content/_live/pages.json carry a `slug` that is not a path at all -
+ * "dentistry-second-opinion-do-i-need-a-second-opinion-for-dental-work" - while `path`
+ * holds the real route, /insights/<that>.html. Reading `slug` first normalized them into
+ * one-segment directory routes and they were counted as medical hubs: ten phantoms in an
+ * 86-route expectation set of which only 76 exist. A route claim has to be a route.
+ */
+function pageRoute(page) {
+  if (!page) return '';
+  const slug = String(page.slug || '');
+  if (slug.startsWith('/')) return slug;
+  const p = String(page.path || '');
+  if (p.startsWith('/')) return p;
+  return slug;
+}
+
+/**
  * A hub or sub-hub of a medical vertical: `/dentistry/` or `/dentistry/clear-aligners/`.
  * Deeper routes (community questions, question programs, guides) are individual
  * question pages; they are already FAQPage + HowTo and typing them as MedicalWebPage
@@ -105,8 +123,8 @@ function priceSpecificationNodes(slug) {
  */
 function medicalWebPageNode({ siteBase, page, absUrl, dateModified }) {
   const vertical = String(page.vertical || '');
-  const prices = priceSpecificationNodes(page.slug || page.path);
-  const spec = costSpecForRoute(page.slug || page.path);
+  const prices = priceSpecificationNodes(pageRoute(page));
+  const spec = costSpecForRoute(pageRoute(page));
   const node = {
     '@context': 'https://schema.org',
     '@type': 'MedicalWebPage',
@@ -157,6 +175,6 @@ function costSpecificationTable(slug) {
 }
 
 module.exports = {
-  COST_SPECS_REL, MEDICAL_VERTICALS, isMedicalHubRoute, normalizeRoute,
+  COST_SPECS_REL, MEDICAL_VERTICALS, isMedicalHubRoute, normalizeRoute, pageRoute,
   costSpecForRoute, priceSpecificationNodes, medicalWebPageNode, costSpecificationTable
 };

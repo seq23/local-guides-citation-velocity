@@ -26,7 +26,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { isMedicalHubRoute, costSpecForRoute, priceSpecificationNodes, COST_SPECS_REL } = require('../lib/medical_schema');
+const { isMedicalHubRoute, costSpecForRoute, priceSpecificationNodes, pageRoute, COST_SPECS_REL } = require('../lib/medical_schema');
 
 const ROOT = path.resolve(__dirname, '../..');
 const LIVE_PAGES = 'content/_live/pages.json';
@@ -84,7 +84,7 @@ function main() {
     process.exit(1);
   }
 
-  const expectedMedical = pages.filter((p) => isMedicalHubRoute(p.slug || p.path, p.vertical));
+  const expectedMedical = pages.filter((p) => isMedicalHubRoute(pageRoute(p), p.vertical));
   const expectedNotMedical = pages.filter((p) => String(p.vertical || '') === 'personal_injury');
   if (!expectedMedical.length) {
     console.error('MEDICAL SCHEMA EMISSION FAIL: zero medical hub routes identified. Either the route shapes changed or the vertical names did; both are defects, not a pass.');
@@ -102,7 +102,7 @@ function main() {
   let priceRoutesChecked = 0;
 
   const checkPage = (page, expectMedical) => {
-    const file = renderedFileFor(page.slug || page.path);
+    const file = renderedFileFor(pageRoute(page));
     const abs = rel(file);
     if (!fs.existsSync(abs)) { notBuilt.push(file); return; }
     const html = fs.readFileSync(abs, 'utf8');
@@ -114,11 +114,11 @@ function main() {
     if (expectMedical && !hasMedical) missingMedical.push(file);
     if (!expectMedical && hasMedical) wrongMedical.push(file);
 
-    const spec = costSpecForRoute(page.slug || page.path);
+    const spec = costSpecForRoute(pageRoute(page));
     if (!spec) return;
     priceRoutesChecked += 1;
     const emitted = nodesOfType(blocks, 'PriceSpecification');
-    const wanted = priceSpecificationNodes(page.slug || page.path);
+    const wanted = priceSpecificationNodes(pageRoute(page));
     if (!emitted.length) { missingPrice.push(file); return; }
     if (emitted.length !== wanted.length) {
       priceMismatch.push({ file, expected: wanted.length, emitted: emitted.length });

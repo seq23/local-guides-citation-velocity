@@ -51,7 +51,7 @@ const { mergeAcceptedArtifacts } = require('./lib/accepted_artifacts');
 // MedicalWebPage / PriceSpecification. See scripts/lib/medical_schema.js: FAQPage and
 // HowTo were live everywhere, the medical types were emitted nowhere, and the citation
 // runs asked for them on every neuro and dentistry sweep since July.
-const { isMedicalHubRoute, medicalWebPageNode, costSpecificationTable } = require('./lib/medical_schema');
+const { isMedicalHubRoute, medicalWebPageNode, costSpecificationTable, pageRoute } = require('./lib/medical_schema');
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
@@ -866,7 +866,7 @@ function buildProgrammaticPageSchemas({ siteBase, page, absUrl, sections }) {
   // Medical hubs and sub-hubs also declare what they are. Where the route carries
   // citable itemized costs, the same rows the visible table shows are attached as
   // PriceSpecification inside the node - never independently of the visible table.
-  if (isMedicalHubRoute(page.slug || page.path, page.vertical)) {
+  if (isMedicalHubRoute(pageRoute(page), page.vertical)) {
     graph.push(medicalWebPageNode({ siteBase, page, absUrl, dateModified }));
   }
   return graph;
@@ -2239,7 +2239,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const frameworkBox = pageShape ? renderFrameworkBox(pageShape.frameworkTitle, pageShape.frameworkBullets) : '';
     // The itemized cost table and the PriceSpecification schema come from one dataset,
     // so the markup can never quote a figure the page does not display.
-    const costSpecArtifact = costSpecificationTable(p.slug || p.path);
+    const costSpecArtifact = costSpecificationTable(pageRoute(p));
     const citationVelocityArtifacts = renderCitationVelocityArtifacts([
       ...(costSpecArtifact ? [costSpecArtifact] : []),
       ...mergeAcceptedArtifacts(p.slug || p.path, p.citation_velocity_artifacts || [])
