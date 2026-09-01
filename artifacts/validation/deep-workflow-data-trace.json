@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-08-31T13:48:45.731Z",
+  "generated_at": "2026-09-01T06:57:19.316Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -1059,12 +1059,17 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\nnpm run validate:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\n# The cadence ledger records what the sitemap held the last time the gate\n# ran. cadence_gate.js writes it, but the only other job that runs the gate\n# is Validate Repo, which is read-only - so its copy dies with the runner.\n# Nothing ever committed the ledger, so it stayed frozen at whatever a human\n# last pushed (2026-08-27). Every page published after that read as \"new\",\n# and the moment more than new_pages_per_week accumulated, the gate blocked\n# Validate Repo permanently: the comparison it depends on could never\n# advance on its own. Running it here - inside the loop that already\n# rebuilds and amends - is what makes the ledger persist. It also enforces\n# the weekly cap at the point of publication, where refusing is still\n# possible, rather than after the pages are already on main.\nnpm run cadence:gate\nnpm run validate:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "build",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "cadence:gate",
               "ok": true
             },
             {
@@ -1114,6 +1119,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/cadence_gate.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/validators/trace_agent_exact_implementation.js",
               "ok": true
             },
@@ -1140,6 +1150,7 @@
           ],
           "direct_npm_scripts": [
             "build",
+            "cadence:gate",
             "trace:agent-exact",
             "trace:citation-agent-fixes",
             "validate:agent-exact",
@@ -1148,6 +1159,7 @@
           ],
           "transitive_npm_scripts": [
             "build",
+            "cadence:gate",
             "trace:agent-exact",
             "trace:citation-agent-fixes",
             "validate:agent-exact",
