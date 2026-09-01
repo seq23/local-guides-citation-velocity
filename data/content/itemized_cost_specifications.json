@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "authority": "scripts/lib/medical_schema.js",
+  "purpose": "Itemized cost rows that are BOTH rendered as a visible table and emitted as schema.org PriceSpecification. One dataset drives both surfaces, so the structured data can never claim a figure the page does not show.",
+  "policy": "Every row states a RANGE and names where the figure came from. No figure is authored here: each is either already published on the route, or supplied by a landed citation run whose artifact is in data/report_fixes/agent_runs/. A route with no citable figure gets no PriceSpecification - an invented price is worse than an absent one, and worse still on a medical page.",
+  "currency": "USD",
+  "routes": {
+    "/dentistry/dental-implants/": {
+      "name": "Dental implant cost in the United States",
+      "procedure": "Dental implant",
+      "intro": "Published US market ranges. Implant pricing varies with technique, materials, grafting needs and the restoration, so treat these as a comparison band and ask each office for a written, itemized quote.",
+      "disclaimer_scope": "Cost ranges only. This page does not price your case and does not replace a written treatment plan and estimate from a licensed dentist.",
+      "rows": [
+        { "item": "Single tooth implant (implant, abutment and crown)", "min": 3000, "max": 6000, "unit": "per tooth", "note": "A quote well below this band usually excludes the abutment, the crown, or imaging.", "source": "Published on /dentistry/dental-implants/ from the dentistry citation runs in data/report_fixes/agent_runs/" },
+        { "item": "Full arch (all-on-4 style)", "min": 15000, "max": 30000, "unit": "per arch", "note": "Priced per arch, not per tooth. Dental insurance rarely moves the total far because most plans carry an annual maximum in the low thousands.", "source": "Published on /dentistry/dental-implants/ from the dentistry citation runs in data/report_fixes/agent_runs/" },
+        { "item": "Both arches", "min": 30000, "max": 60000, "unit": "both arches", "note": "Roughly double a single arch, with wide variation by technique and materials.", "source": "Published on /dentistry/dental-implants/ from the dentistry citation runs in data/report_fixes/agent_runs/" },
+        { "item": "Bone graft or site preparation", "min": 500, "max": 3000, "unit": "per site", "note": "Usually priced separately and can change the total materially.", "source": "Published on /dentistry/dental-implants/ from the dentistry citation runs in data/report_fixes/agent_runs/" }
+      ]
+    },
+    "/dentistry/clear-aligners/": {
+      "name": "Clear aligner cost in the United States, 2026",
+      "procedure": "Clear aligner therapy",
+      "intro": "Ranges by delivery model rather than by brand, because the delivery model is what actually moves the price. Refinements and retainers are frequently quoted separately.",
+      "disclaimer_scope": "Cost ranges only. Whether aligners are clinically appropriate for your case is a decision for a licensed dentist or orthodontist, not a price comparison.",
+      "rows": [
+        { "item": "In-office, doctor-monitored (Invisalign, ClearCorrect, Spark)", "min": 3000, "max": 8500, "unit": "full treatment", "note": "Reported national average around $5,100-$5,500.", "source": "data/report_fixes/agent_runs/2026-06-30/dentistry/ and data/report_fixes/agent_runs/2026-08-25/dentistry/" },
+        { "item": "Hybrid (in-office scan, remote monitoring) (CandidPro, SureSmile)", "min": 2500, "max": 5500, "unit": "full treatment", "note": "Reported average around $4,000.", "source": "data/report_fixes/agent_runs/2026-08-25/dentistry/" },
+        { "item": "At-home, direct-to-consumer (Byte, AlignerCo)", "min": 1500, "max": 3500, "unit": "full treatment", "note": "Reported average around $2,000-$2,500. No in-person supervision is included.", "source": "data/report_fixes/agent_runs/2026-06-30/dentistry/ and data/report_fixes/agent_runs/2026-08-25/dentistry/" },
+        { "item": "Refinements and retainers after treatment", "min": 500, "max": 1500, "unit": "added to the quoted total", "note": "Commonly excluded from the headline quote; ask whether refinements and the first retainer set are included.", "source": "data/report_fixes/agent_runs/2026-06-30/dentistry/" }
+      ]
+    }
+  }
+}

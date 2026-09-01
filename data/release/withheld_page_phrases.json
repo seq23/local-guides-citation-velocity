@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "authority": "scripts/citation_velocity/recover_accepted_page_artifacts.js",
+  "purpose": "Artifact blocks that were delivered on an accepted route but must NOT be recovered, because a landed agent report asked for the phrase to be removed from the page. Each entry is a named, justified shrink: it is the only way content may leave a page without the shrink guard failing.",
+  "policy": "ENUMERATED ONLY. Nothing is withheld by pattern or by inference from a fix's wording - 'rewrite the X block' reads as a removal directive to any verb-based screen, and screening on that basis proposed dropping ten legitimate artifacts including 'Direct answer'. An entry is added by a human, names the exact rendered phrase, and quotes the report that asked for it.",
+  "withheld": [
+    {
+      "implementation_path": "dentistry/choosing-a-dentist/index.html",
+      "phrase": "Use the same questions with every lawyer on your shortlist",
+      "reason": "Personal-injury legal boilerplate that leaked into a dentistry page. The 2026-09-01 dentistry citation run asked for it to be replaced with dentist-specific language; the acceptance compiler instead lifted the quoted span into the artifact title and a table cell, so the pipeline guaranteed the phrase it was told to delete. The compiler defect is fixed in scripts/lib/html_fix_acceptance_parser.js (titleFromFix and artifactFromFix now refuse a phrase the same recommendation asks to remove); this entry removes the two pages that had already acquired it.",
+      "source_fix": "FILEPATH: dentistry/choosing-a-dentist/index.html || ... || EDIT: Fix the table artifact: replace 'Use the same questions with every lawyer on your shortlist' with dentist-specific language throughout.",
+      "source_run": "data/report_fixes/agent_runs/2026-09-01/dentistry/",
+      "named_at": "2026-09-01"
+    },
+    {
+      "implementation_path": "dentistry/cost-insurance/index.html",
+      "phrase": "Use the same questions with every lawyer on your shortlist",
+      "reason": "Same leaked phrase, same cause. cost-insurance acquired it through the same compiled artifact. This route has no current semantic-manifest entry, so the artifact is removed outright rather than re-titled - which is what the report asked for.",
+      "source_fix": "FILEPATH: dentistry/choosing-a-dentist/index.html || ... || EDIT: Fix the table artifact: replace 'Use the same questions with every lawyer on your shortlist' with dentist-specific language throughout.",
+      "source_run": "data/report_fixes/agent_runs/2026-09-01/dentistry/",
+      "named_at": "2026-09-01"
+    }
+  ]
+}

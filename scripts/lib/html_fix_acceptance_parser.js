@@ -142,16 +142,30 @@ function fallbackTitle(query, type, fallbackSeq) {
 // "... - what to verify before you act" and the answer sentence
 // "No - since November 2023, ..." as <h2>s, while the renderer had written its own
 // question-form heading. The content requirement is unaffected and still enforced.
-function titleFromFix(edit, query, index = 0, type = 'agent_directive', fallbackSeq = null) {
+// A REMOVAL directive must not be able to name the heading either.
+//
+// requiredStringsForArtifact already refused to PROMISE a phrase the same fix asked
+// to delete. It was the wrong half of the defect on its own: `titleFromFix` reads the
+// identical quoted span and, finding nothing else quoted, made it the artifact TITLE -
+// which renders as the visible <h2> and as required_blocks[].heading_exact. So the
+// pipeline stopped asserting "Use the same questions with every lawyer on your
+// shortlist" while continuing to publish it as a heading on a dentistry page.
+//
+// `forbidden` is the normalized set from phrasesTheFixAsksToRemove for THIS
+// recommendation. Refusing a candidate degrades to the next candidate and finally to
+// fallbackTitle(), so a fix that only quotes the phrase it wants gone still gets a
+// readable heading - never that phrase.
+function titleFromFix(edit, query, index = 0, type = 'agent_directive', fallbackSeq = null, forbidden = new Set()) {
+  const allowed = (value) => Boolean(value) && !forbidden.has(normalizeForbidden(value));
   const titled = String(edit || '').match(/(?:h2|h3|section|block|callout|table|checklist|part [ab])[^.;]{0,80}?titled\s+['"“]([^'"”]{4,100})['"”]/i) || String(edit || '').match(/titled\s+['"“]([^'"”]{4,100})['"”]/i);
-  if (titled && usableAsCopy(titled[1])) return { title: normalizeSpace(titled[1]), source: 'named' };
-  const quoted = quotedPhrases(edit).filter(usableAsCopy);
+  if (titled && usableAsCopy(titled[1]) && allowed(titled[1])) return { title: normalizeSpace(titled[1]), source: 'named' };
+  const quoted = quotedPhrases(edit).filter(usableAsCopy).filter(allowed);
   const hTitle = quoted.find((q) => /[A-Za-z]/.test(q) && q.split(/\s+/).length >= 2 && q.length <= 90);
   if (hTitle) return { title: hTitle, source: 'derived' };
   const h2On = String(edit || '').match(/\badd\s+(?:a\s+|an\s+)?h[23]\s+section\s+on\s+([^.;]{8,90})/i);
-  if (h2On && usableAsCopy(h2On[1])) return { title: sentenceCase(h2On[1]), source: 'named' };
+  if (h2On && usableAsCopy(h2On[1]) && allowed(h2On[1])) return { title: sentenceCase(h2On[1]), source: 'named' };
   const afterAdd = edit.match(/(?:add|insert|create|open with|replace with)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:h2|h3|section|block|callout|table|checklist|script|scorecard|matrix)[^:.]*[:.]?\s*([^.;]{10,90})/i);
-  if (afterAdd && usableAsCopy(afterAdd[1])) return { title: sentenceCase(afterAdd[1]), source: 'named' };
+  if (afterAdd && usableAsCopy(afterAdd[1]) && allowed(afterAdd[1])) return { title: sentenceCase(afterAdd[1]), source: 'named' };
   return { title: fallbackTitle(query, type, fallbackSeq), source: 'derived' };
 }
 function typeFromFix(edit) {
@@ -284,7 +298,12 @@ function scriptLinesFromFix(edit, query, count) {
 function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null }) {
   const edit = stripPrefixes(recommendation);
   const type = typeFromFix(edit);
-  const { title, source: titleSource } = titleFromFix(edit, query, index, type, fallbackSeq);
+  // Every string this artifact can put on a public page is screened against the
+  // phrases THIS recommendation asks to remove - title, column headers, table cells,
+  // list items and script lines - not just the required_strings the trace enforces.
+  const forbidden = phrasesTheFixAsksToRemove(recommendation);
+  const dropForbidden = (value) => !forbidden.has(normalizeForbidden(value));
+  const { title, source: titleSource } = titleFromFix(edit, query, index, type, fallbackSeq, forbidden);
   const minRows = rowCountFromFix(edit, type);
   const headers = headersFromFix(edit, type);
   const artifact = {
@@ -307,13 +326,16 @@ function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackS
       'Flag any jurisdiction, provider, or policy limits that could change the answer.'
     ]).filter(usableAsCopy).slice(0, Math.max(minRows, 4));
   } else if (['comparison_table','decision_matrix','cost_table','timeline_table','scorecard','worksheet','severity_matrix'].includes(type)) {
-    artifact.headers = headers;
-    artifact.rows = rowsFromFix(edit, query, headers, minRows);
+    artifact.headers = headers.filter(dropForbidden);
+    artifact.rows = rowsFromFix(edit, query, artifact.headers, minRows)
+      .map((row) => row.map((cell) => (dropForbidden(cell) ? cell : '')))
+      .filter((row) => row.some((cell) => String(cell || '').trim()));
   } else if (type === 'script') {
-    artifact.lines = scriptLinesFromFix(edit, query, minRows);
+    artifact.lines = scriptLinesFromFix(edit, query, minRows).filter(dropForbidden);
   } else {
-    artifact.items = itemsFromFix(edit, query, minRows);
+    artifact.items = itemsFromFix(edit, query, minRows).filter(dropForbidden);
   }
+  if (Array.isArray(artifact.items)) artifact.items = artifact.items.filter(dropForbidden);
   return artifact;
 }
 function requiredStringsForArtifact(artifact, recommendation) {
@@ -358,14 +380,32 @@ function normalizeForbidden(value) {
 // a build-acceptance field flowing into reader copy. There the fix was to stop
 // emitting it; here the string is legitimate to extract in general, so what is
 // filtered is only the phrase this very recommendation asks to be rid of.
-const REMOVAL_VERB = '(?:replace|remove|delete|strip|drop|eliminate|rewrite|fix)';
+//
+// 2026-09-01, second pass: the verb list used to include `rewrite` and `fix`, and the
+// `replace` branch did not require a `with` clause. That made "rewrite the 'Direct
+// answer' block" and "fix the 'Will my case go to trial?' section" read as deletion
+// orders. Run across the whole implementation ledger it flagged 31 rendered pages,
+// 29 of them false - including a request to publish "Direct answer" being read as a
+// request to delete it. A predicate that over-fires here is not merely noisy: it
+// silently strips delivered copy out of artifacts, which is the same class of harm
+// this file exists to prevent, pointed the other way.
+//
+// So a removal has to be stated as one:
+//   `remove/delete/strip/drop/eliminate "X"`   - an unambiguous deletion verb, or
+//   `replace/swap/substitute "X" with ...`     - the `with` clause is what makes
+//                                                "replace" mean "get rid of", or
+//   `instead of / rather than / no longer / stop saying "X"`.
+// "Fix the table artifact: replace 'Use the same questions with every lawyer on your
+// shortlist' with dentist-specific language" still matches, on its `replace ... with`.
+const REMOVAL_VERB = '(?:remove|delete|strip|drop|eliminate)';
+const SWAP_VERB = '(?:replace|replacing|swap|swapping|substitute|substituting)';
 function phrasesTheFixAsksToRemove(recommendation) {
   const text = String(recommendation || '');
   const out = new Set();
   if (!text) return out;
-  // `replace 'X' with ...`, `remove "X"`, `instead of 'X'`, `rather than "X"`
   const patterns = [
     new RegExp(`${REMOVAL_VERB}[^'"\`]{0,40}['"\`]([^'"\`]{4,160})['"\`]`, 'gi'),
+    new RegExp(`${SWAP_VERB}[^'"\`]{0,40}['"\`]([^'"\`]{4,160})['"\`][^a-z0-9]{0,12}with\\b`, 'gi'),
     /(?:instead of|rather than|no longer|stop (?:saying|using))[^'"`]{0,20}['"`]([^'"`]{4,160})['"`]/gi
   ];
   for (const rx of patterns) {

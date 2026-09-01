@@ -3,7 +3,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/feeds/build_promotion_candidates_feed.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js",
+    "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/apply_medicaid_dental_fee_data.js && ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/feeds/build_promotion_candidates_feed.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js",
     "validate": "node scripts/validation/run_validation_registry.js --profile core",
     "release:batch": "node scripts/release_batch.js 10",
     "release:batch20": "node scripts/release_batch.js 20",
@@ -290,7 +290,12 @@
     "validate:admission-reachability": "node scripts/validation/run_validation_registry.js --id admission-reachability",
     "validate:generated-substance": "node scripts/validation/run_validation_registry.js --id generated-page-substance",
     "citation:sync-alias-redirects": "node scripts/citation_velocity/sync_agent_alias_redirects.js",
-    "validate:agent-run-absorption": "node scripts/validation/run_validation_registry.js --id agent-run-absorption-completeness"
+    "validate:agent-run-absorption": "node scripts/validation/run_validation_registry.js --id agent-run-absorption-completeness",
+    "recover:accepted-artifacts": "node scripts/citation_velocity/recover_accepted_page_artifacts.js",
+    "baseline:rendered-size": "node scripts/release/update_rendered_size_baseline.js",
+    "validate:shrink-guard": "node scripts/validation/run_validation_registry.js --id rendered-output-shrink-guard",
+    "validate:removal-directives": "node scripts/validation/run_validation_registry.js --id removal-directive-not-published",
+    "validate:medical-schema": "node scripts/validation/run_validation_registry.js --id medical-schema-emission"
   },
   "engines": {
     "node": "24.x"
