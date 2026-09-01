@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-01T13:45:17.511Z",
+  "generated_at": "2026-09-01T16:01:04.398Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -631,7 +631,7 @@
     },
     {
       "workflow": "velocity-content-release.yml",
-      "command_count": 13,
+      "command_count": 14,
       "status": "PASS",
       "commands": [
         {
@@ -659,6 +659,19 @@
           "command": "echo \"SOURCE_DATE=$(date -u +%F)\" >> \"$GITHUB_ENV",
           "status": "PASS",
           "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "set -euo pipefail\nif [ -n \"${VELOCITY_RELEASE_TARGET:-}\" ]; then\necho \"operator supplied batch_size=$VELOCITY_RELEASE_TARGET; leaving the budget capped as requested\"\necho \"VELOCITY_RELEASE_MAX=$(( VELOCITY_RELEASE_TARGET > 150 ? VELOCITY_RELEASE_TARGET : 150 ))\" >> \"$GITHUB_ENV\"\nexit 0\nfi\nBUDGET=\"$(node scripts/citation_velocity/resolve_release_budget.mjs)\"\necho \"VELOCITY_RELEASE_TARGET=$BUDGET\" >> \"$GITHUB_ENV\"\necho \"VELOCITY_RELEASE_MAX=$(( BUDGET > 150 ? BUDGET : 150 ))\" >> \"$GITHUB_ENV\"\necho \"resolved processing budget: $BUDGET row(s)\"",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/resolve_release_budget.mjs",
+              "ok": true
+            }
+          ],
           "direct_npm_scripts": [],
           "transitive_npm_scripts": []
         },
@@ -953,6 +966,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/citation_velocity/sync_agent_alias_redirects.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/release/finalize_content_release.js",
               "ok": true
             },
@@ -1027,6 +1045,7 @@
             "citation:compile-html-fix-acceptance",
             "citation:plan-agent-exact",
             "citation:prepare-velocity-intake",
+            "citation:sync-alias-redirects",
             "release:content-finalize",
             "release:velocity-content",
             "release:velocity-content:raw",

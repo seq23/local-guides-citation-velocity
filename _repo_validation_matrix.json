@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "d3d4bc73774bcbf2ec9eca99da4694ab51fe3c9aeec00ac9dbaccf23fbfcb539",
+  "registry_sha256": "c05da3b49e5d8356a1d0ee7086948e781aeccf0fd81ab27e15cd7b7660fd2879",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 157,
-    "active": 130,
+    "total": 158,
+    "active": 131,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 128,
+    "hard_fail": 129,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -69,6 +69,7 @@
       "collect_all": false,
       "promote_strong_warnings": false,
       "validator_ids": [
+        "agent-run-absorption-completeness",
         "archive-schema",
         "atlas-unit-contract",
         "atlas-release-join",
@@ -141,6 +142,8 @@
         "generated-page-substance"
       ],
       "execution_order": [
+        "agent-artifact-continuity",
+        "agent-run-absorption-completeness",
         "authority-contracts",
         "generator-instruction-refusal",
         "llm-citation-observation-integrity",
@@ -222,6 +225,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "agent-artifact-continuity",
+        "agent-run-absorption-completeness",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
@@ -354,6 +358,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-improvement-capability",
+        "agent-run-absorption-completeness",
         "atom-contract",
         "authority-contracts",
         "dynamic-page-contract-cross-vertical",
@@ -489,6 +494,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "agent-artifact-continuity",
+        "agent-run-absorption-completeness",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
@@ -620,6 +626,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-improvement-capability",
+        "agent-run-absorption-completeness",
         "atom-contract",
         "authority-contracts",
         "dynamic-page-contract-cross-vertical",
@@ -787,6 +794,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "agent-artifact-continuity",
+        "agent-run-absorption-completeness",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
@@ -916,6 +924,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-improvement-capability",
+        "agent-run-absorption-completeness",
         "atom-contract",
         "authority-contracts",
         "dynamic-page-contract-cross-vertical",
@@ -1047,6 +1056,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "agent-artifact-continuity",
+        "agent-run-absorption-completeness",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
@@ -1186,6 +1196,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-improvement-capability",
+        "agent-run-absorption-completeness",
         "atom-contract",
         "authority-contracts",
         "dynamic-page-contract-cross-vertical",
@@ -1584,6 +1595,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "agent-artifact-continuity",
+        "agent-run-absorption-completeness",
         "agent-artifact-priority",
         "agent-improvement-capability",
         "atlas-unit-contract",
@@ -1630,6 +1642,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-improvement-capability",
+        "agent-run-absorption-completeness",
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
@@ -1687,6 +1700,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "agent-artifact-continuity",
+        "agent-run-absorption-completeness",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
@@ -1717,6 +1731,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-improvement-capability",
+        "agent-run-absorption-completeness",
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "main-writer-ordering",
@@ -1751,6 +1766,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "agent-artifact-continuity",
+        "agent-run-absorption-completeness",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
@@ -1809,6 +1825,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-improvement-capability",
+        "agent-run-absorption-completeness",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -1962,6 +1979,10 @@
     }
   },
   "dependency_edges": [
+    {
+      "from": "agent-artifact-continuity",
+      "to": "agent-run-absorption-completeness"
+    },
     {
       "from": "agent-exact-implementation-trace",
       "to": "agent-exact-acceptance-manifest"
@@ -2331,6 +2352,51 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-run-absorption-completeness",
+        "title": "Landed agent runs are absorbed, not merely wired",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
+        "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
+        "depends_on": [
+          "agent-artifact-continuity"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_runs",
+          "data/report_fixes/agent_exact_implementation_ledger.json",
+          "data/report_fixes/agent_run_absorption_baseline.json",
+          "content/_live/pages.json",
+          "_redirects"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-run-absorption-completeness.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-run-absorption-completeness.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -4486,7 +4552,9 @@
         "prepare_produces_files": [
           "dist/index.html"
         ],
-        "prepare_mutates_files": [],
+        "prepare_mutates_files": [
+          "content/_shared/content_state.json"
+        ],
         "produces_files": [],
         "mutates_files": [
           "artifacts/validation/no-double-vertical-slugs.json"
@@ -7017,7 +7085,9 @@
           "feeds/promotion-candidates.json",
           "dist/feeds/promotion-candidates.json"
         ],
-        "prepare_mutates_files": [],
+        "prepare_mutates_files": [
+          "content/_shared/content_state.json"
+        ],
         "produces_files": [
           "artifacts/validation/promotion-candidates-feed.json"
         ],
@@ -8177,6 +8247,51 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-run-absorption-completeness",
+        "title": "Landed agent runs are absorbed, not merely wired",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
+        "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
+        "depends_on": [
+          "agent-artifact-continuity"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_runs",
+          "data/report_fixes/agent_exact_implementation_ledger.json",
+          "data/report_fixes/agent_run_absorption_baseline.json",
+          "content/_live/pages.json",
+          "_redirects"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-run-absorption-completeness.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/agent-run-absorption-completeness.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -12805,7 +12920,9 @@
         "prepare_produces_files": [
           "dist/index.html"
         ],
-        "prepare_mutates_files": [],
+        "prepare_mutates_files": [
+          "content/_shared/content_state.json"
+        ],
         "produces_files": [],
         "mutates_files": [
           "artifacts/validation/no-double-vertical-slugs.json"
@@ -13732,7 +13849,9 @@
           "feeds/promotion-candidates.json",
           "dist/feeds/promotion-candidates.json"
         ],
-        "prepare_mutates_files": [],
+        "prepare_mutates_files": [
+          "content/_shared/content_state.json"
+        ],
         "produces_files": [
           "artifacts/validation/promotion-candidates-feed.json"
         ],

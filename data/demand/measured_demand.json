@@ -19,7 +19,7 @@
   },
   "domain_note": "data/site.json publishes this repo at theindustryguides.com, which is the velocity FEEDER for the five canonical guide domains (uscisexam.com, hormonesivhair.com, theaccidentguides.com, dentistryguides.com, neuroevalguides.com). Overlap between the feeder and those domains is the architecture working, not duplication. The Semrush packet maps some queries here to the canonical domains; target_domain is carried through as the packet assigned it. Where a query is mapped to a canonical domain that currently serves no pages, that is a build-out gap on a real property - not a mapping error, and not a reason to retire anything.",
   "owner_seed_policy": "An owner may add a record with source_type owner_approved_seed and volume null. It must carry approved_by and approved_at. A record may also be added at evidence_tier T3 (real phrasing, no volume) when a measurement establishes the query is really asked and the network has no page for it. It must carry source_type, provenance naming the measurement set in provenance_sets, and volume null - T3 never asserts a volume.",
-  "record_count": 219,
+  "record_count": 220,
   "total_measured_volume_per_month": 16356,
   "by_tier": {
     "T2b": 5,
@@ -485,8 +485,8 @@
       "target_domain": "theindustryguides.com"
     },
     {
-      "query": "is it which clinics offer same\u2011day dental evaluations before aligning planning?",
-      "query_normalized": "is it which clinics offer same\u2011day dental evaluations before aligning planning?",
+      "query": "is it which clinics offer same‑day dental evaluations before aligning planning?",
+      "query_normalized": "is it which clinics offer same‑day dental evaluations before aligning planning?",
       "volume": 1,
       "keyword_difficulty": null,
       "source_type": "gsc_search_analytics",
@@ -1293,7 +1293,7 @@
       "provenance": "citation_shape_open_ground_2026-08-28"
     },
     {
-      "query": "TRT injections vs gel \u2014 how to decide",
+      "query": "TRT injections vs gel — how to decide",
       "query_normalized": "trt injections vs gel how to decide",
       "volume": null,
       "keyword_difficulty": null,
@@ -2398,6 +2398,19 @@
         "can i go to my regular family doctor for the uscis medical exam (Perplexity)",
         "can i go to my regular family doctor for the uscis medical exam (Gemini 1.5 Flash)"
       ]
+    },
+    {
+      "query": "dental implants",
+      "query_normalized": "dental implants",
+      "volume": null,
+      "keyword_difficulty": null,
+      "weak_incumbent_score": null,
+      "intent": "commercial",
+      "cpc_usd": null,
+      "source_type": "twin_agent_artifact_measured",
+      "evidence_tier": "T3",
+      "provenance": "twin_agent_artifact_2026-09-01_dentistry",
+      "target_domain": "dentistryguides.com"
     }
   ],
   "domain_policy": {
@@ -2458,6 +2471,14 @@
         "T3_selection_evaluating": 38,
         "T4_informational": 56
       }
+    },
+    "twin_agent_artifact_2026-09-01_dentistry": {
+      "set_id": "twin_agent_artifact_2026-09-01_dentistry",
+      "evidence_tier": "T3",
+      "tier_meaning": "real phrasing, no volume",
+      "measured": "Citation Velocity dentistry run of 2026-09-01 (data/report_fixes/agent_runs/2026-09-01/dentistry/). The run probed answer engines for 51 dentistry queries; 9 of its 51 rows - its single largest target - named dentistry/dental-implants/index.html as the intended winner page, across the phrasings \"cost of full mouth dental implants with insurance\", \"how much do dental implants cost\", \"how much is a single tooth implant\" and \"dental bridge vs implant which is better\". The repo published no page at that path, so every one of those rows resolved TARGET_NOT_FOUND. The same target was named by the 2026-08-18 and 2026-08-25 dentistry runs before it.",
+      "not_measured": "Search volume. T3 asserts the phrasing is really asked and unserved; it asserts no volume, and volume is null on the record.",
+      "admitted_under": "owner_seed_policy T3 clause: a measurement established the query is really asked and the network had no page for it."
     }
   }
 }

@@ -53,7 +53,15 @@ function insightItemExists(insights, route) {
 function isRenderedRepair(fixOrUnit) {
   return fixOrUnit && (fixOrUnit.operation === 'REPAIR_INTENDED_WINNER_PAGE' || String(fixOrUnit.target_route || '').startsWith('/insights/') || String(fixOrUnit.renderedPath || '').startsWith('insights/'));
 }
-function markersFor(fixOrUnit) { return Array.from(new Set(fixOrUnit.required_markers || [fixOrUnit.query].filter(Boolean))); }
+// A marker is text that must literally appear on the page, so it must be the reader's
+// question and nothing else. Ledger entries written before the parser learned to split
+// the answer-engine suffix still carry queries like "... (OpenAI GPT-4o)"; matching on
+// those reported missing_marker against pages that were correct. The same shared helper
+// the parser uses is applied here rather than restated, so the producer and this check
+// cannot drift, and historical rows compare on the same basis as new ones.
+const { splitEngineSuffix } = require('../lib/agent_artifact_source_parser');
+function readerFacingMarker(value) { const { query } = splitEngineSuffix(value); return query || String(value || ''); }
+function markersFor(fixOrUnit) { return Array.from(new Set((fixOrUnit.required_markers || [fixOrUnit.query].filter(Boolean)).map(readerFacingMarker).filter(Boolean))); }
 
 const semanticAcceptance = readJson('data/report_fixes/agent_exact_semantic_acceptance_manifest.json', { entries: [] });
 const acceptanceByRenderedPath = new Map((semanticAcceptance.entries || []).map((entry) => [String(entry.implementation_path || '').replace(/^\/+/, ''), entry]));
@@ -89,6 +97,26 @@ const velocityContentRelease = readJson('artifacts/validation/velocity-content-r
 const createdReleaseIds = new Set((velocityContentRelease.created || []).map((row) => row.id).filter(Boolean));
 const skippedReleaseById = new Map((velocityContentRelease.skipped || []).map((row) => [row.id, row]));
 function isDeferredByDailyCeiling(id) { const skipped = skippedReleaseById.get(id); return Boolean(skipped && String(skipped.reason || '').includes('daily_new_url_ceiling_reached')); }
+// The third named hold, matching the ceiling above and the queue refusal below.
+// velocity_content_release.js records a route with no match in
+// data/demand/measured_demand.json as skipped:no_measured_demand_match and never
+// stages it. That is the demand gate working, not a missing page, and reporting it
+// as live_missing_route made a correct evidence refusal read as a broken release.
+// Asking the predicate directly rather than only reading the release artifact's
+// skipped list. A row the release lane never enumerated - selected in an earlier run,
+// never queued - is held by exactly the same gate, but appeared in no skipped list and
+// so read as an unexplained missing page. The gate is a property of the ROUTE, not of
+// whether one particular run happened to look at it, so it is evaluated as one.
+// An unreadable corpus holds nothing open: it throws, and the caller below treats a
+// failure to answer as "not held", which keeps the check strict rather than lenient.
+let demandBackedRoute = null;
+try { demandBackedRoute = require('../lib/demand_backing').demandBackingPredicate(ROOT); } catch { demandBackedRoute = null; }
+function isHeldByMeasuredDemand(id, route) {
+  const skipped = skippedReleaseById.get(id);
+  if (skipped && String(skipped.reason || '') === 'no_measured_demand_match') return true;
+  if (!demandBackedRoute || !demandBackedRoute.slugCount || !route) return false;
+  return !demandBackedRoute(route);
+}
 // A create the release queue refused never reaches staged or live, by design. It
 // is not a missing route - it is a route governance declined to admit, and the
 // planner cannot filter it out because citation:plan-agent-exact runs before
@@ -112,6 +140,7 @@ for (const fix of selected) {
     continue;
   }
   if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:selected_new_page_deferred_by_daily_new_url_ceiling:${route}`); continue; }
+  if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isHeldByMeasuredDemand(id, route)) { warnings.push(`${id}:selected_new_page_held_by_measured_demand_gate:${route}`); continue; }
   if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isRefusedByReleaseQueue(id)) { warnings.push(`${id}:selected_new_page_refused_by_release_queue:${releaseQueueRefusedById.get(id)}:${route}`); continue; }
   for (const [label, payload] of [['staged', stagedPages], ['live', livePages]]) {
     if (!pageExists(payload, route)) { errors.push(`${id}:${label}_missing_route:${route}`); continue; }
@@ -146,11 +175,12 @@ if (plan && plan.selected_count > 0) {
     const liveExists = pageExists(livePages, unit.target_route);
     const stagedExists = pageExists(stagedPages, unit.target_route);
     if ((!liveExists || !stagedExists) && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:deferred_by_daily_new_url_ceiling:${unit.target_route}`); continue; }
+    if ((!liveExists || !stagedExists) && isHeldByMeasuredDemand(id, unit.target_route)) { warnings.push(`${id}:held_by_measured_demand_gate:${unit.target_route}`); continue; }
     if ((!liveExists || !stagedExists) && isRefusedByReleaseQueue(id)) { warnings.push(`${id}:refused_by_release_queue:${releaseQueueRefusedById.get(id)}:${unit.target_route}`); continue; }
     if (!liveExists) errors.push(`${id}:live_missing_route:${unit.target_route}`);
-    else if (!pageHasMarker(livePages, unit.target_route, unit.query)) errors.push(`${id}:live_missing_query`);
+    else if (!pageHasMarker(livePages, unit.target_route, readerFacingMarker(unit.query))) errors.push(`${id}:live_missing_query`);
     if (!stagedExists) errors.push(`${id}:staged_missing_route:${unit.target_route}`);
-    else if (!pageHasMarker(stagedPages, unit.target_route, unit.query)) errors.push(`${id}:staged_missing_query`);
+    else if (!pageHasMarker(stagedPages, unit.target_route, readerFacingMarker(unit.query))) errors.push(`${id}:staged_missing_query`);
   }
 }
 if (!plan) warnings.push('velocity_intake_release_plan_missing; no current intake release to trace');

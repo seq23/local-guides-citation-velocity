@@ -105,14 +105,38 @@ catch (e) { namedStop('UNREADABLE_MEASURED_DEMAND', `${DEMAND_REL} could not be 
 if (!demandBacked.slugCount) namedStop('EMPTY_MEASURED_DEMAND', `${DEMAND_REL} yielded zero measured queries. Every candidate would fail the demand gate, so publishing anything would be publishing against no evidence at all.`);
 const demandRejected = admittedForBuild.filter((x)=>!demandBacked(x.target_route || ''));
 const readyAll = admittedForBuild.filter((x)=>demandBacked(x.target_route || ''));
-const ready = readyAll.slice(0, remainingToday);
-const report = {schema_version:'2.0',run_date:DATE,admitted_for_build:admittedForBuild.length,demand_backed_admitted:readyAll.length,demand_rejected_admitted:demandRejected.length,selected_under_daily_new_url_ceiling:ready.length,daily_new_url_ceiling:dailyCeiling,already_published_today_before_run:alreadyToday,created:[],skipped:[...readyAll.slice(remainingToday).map((x)=>({id:x.id,reason:'daily_new_url_ceiling_reached'})),...demandRejected.map((x)=>({id:x.id,reason:'no_measured_demand_match',route:x.target_route||''}))],target:'content/_staged/pages.json'};
+// THE DAILY CEILING GOVERNS DISCOVERY, NOT DELIVERY.
+//
+// The ceiling exists to stop this repo from publishing speculative, self-generated
+// pages faster than a young domain can carry them. That is a real brake and it stays
+// on for rows this repo found by itself (the unbuilt rich-page backlog, social
+// fallback, measured-demand candidates).
+//
+// A row whose source is a twin_agent_artifact is not discovery. An external agent
+// named the page, the owner reviewed the run, and it landed in the repo as a
+// delivery. Holding those behind a 2/day discovery brake is what let 2026-09-01's
+// dentistry run report a page as missing that had been requested repeatedly: the
+// ceiling was spent by backlog rows before the agent's own rows were ever reached.
+//
+// So agent-directed rows are exempt and counted separately, and the exemption is
+// recorded in the artifact by run id so it is auditable rather than invisible.
+// Vertical-agnostic by construction: it keys off `source`, never off a vertical name.
+const isAgentDirected = (x) => x && x.source === 'twin_agent_artifact' && Boolean(x.source_run_id);
+const agentDirectedReady = readyAll.filter(isAgentDirected);
+const discoveryReady = readyAll.filter((x) => !isAgentDirected(x));
+const discoverySelected = discoveryReady.slice(0, remainingToday);
+const discoveryHeld = discoveryReady.slice(remainingToday);
+const ready = [...agentDirectedReady, ...discoverySelected];
+const report = {schema_version:'2.1',run_date:DATE,admitted_for_build:admittedForBuild.length,demand_backed_admitted:readyAll.length,demand_rejected_admitted:demandRejected.length,selected_under_daily_new_url_ceiling:discoverySelected.length,agent_directed_exempt_from_daily_ceiling:agentDirectedReady.length,agent_directed_exempt_runs:[...new Set(agentDirectedReady.map((x)=>x.source_run_id))].sort(),agent_directed_exempt_routes:agentDirectedReady.map((x)=>x.target_route||'').sort(),daily_new_url_ceiling:dailyCeiling,already_published_today_before_run:alreadyToday,created:[],skipped:[...discoveryHeld.map((x)=>({id:x.id,reason:'daily_new_url_ceiling_reached'})),...demandRejected.map((x)=>({id:x.id,reason:'no_measured_demand_match',route:x.target_route||''}))],target:'content/_staged/pages.json'};
+if (agentDirectedReady.length) {
+  console.log(`DAILY NEW-URL CEILING BYPASSED FOR DELIVERY: ${agentDirectedReady.length} agent-directed page(s) from run(s) ${report.agent_directed_exempt_runs.join(', ')} publish outside the ${dailyCeiling}/day discovery ceiling. Discovery rows remain capped: ${discoverySelected.length} selected, ${discoveryHeld.length} held.`);
+}
 // "Nothing was admitted" and "publishing is held at a ceiling of zero" are
 // different facts and used to print the same sentence. A declared full stop must
 // be readable as a full stop by whoever reads this line or the artifact.
 if (!ready.length) {
   if (dailyCeiling === 0) { report.stop_reason = 'DAILY_NEW_URL_CEILING_IS_ZERO'; report.stop_detail = `the governed ceiling is 0 - a declared full stop on new URLs - with ${readyAll.length} row(s) admitted and held.`; }
-  else if (remainingToday === 0 && readyAll.length) { report.stop_reason = 'DAILY_NEW_URL_CEILING_ALREADY_SPENT'; report.stop_detail = `${alreadyToday} of ${dailyCeiling} new URL(s) were already published today.`; }
+  else if (remainingToday === 0 && discoveryReady.length) { report.stop_reason = 'DAILY_NEW_URL_CEILING_ALREADY_SPENT'; report.stop_detail = `${alreadyToday} of ${dailyCeiling} new URL(s) were already published today, and no agent-directed row was admitted to publish alongside them.`; }
   // "Nothing is admitted" and "everything admitted failed the demand gate" are also
   // different facts. The second is a content problem with a named owner action, and it
   // must not read as a quiet successful no-op (Rule 0).

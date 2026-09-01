@@ -6,6 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { resolveTargetPath, normalizeImplementationPath: normalizeRoutePath, routeFromPath, routeFamilyForPath } = require('../lib/citation_route_resolver');
 const { routePage } = require('../lib/page_family_router');
+const { demandBackingPredicate, DEMAND_REL } = require('../lib/demand_backing');
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const POLICY_PATH = 'data/report_fixes/agent_exact_implementation_policy.json';
@@ -59,6 +60,20 @@ function mergeSourceArtifactObject(target, source) {
 function latestReleasePlan(){ return readJson('artifacts/validation/velocity-intake-release-plan.json',{selected_ids:[], selected_units:[]}); }
 function main(){
   const policy=readJson(POLICY_PATH,{effective_from:'9999-12-31'});
+  // An unreadable or empty demand corpus must stop the planner, never default. If it
+  // read as "nothing is backed" every create would be blocked and the run would look
+  // like a quiet success with no pages planned; if it read as "everything passes" the
+  // release lane would refuse them all downstream again. Both are worse than stopping.
+  let demandBacked;
+  try { demandBacked = demandBackingPredicate(ROOT); }
+  catch (e) {
+    console.error(`AGENT EXACT IMPLEMENTATION PLAN HALTED: ${DEMAND_REL} could not be read (${e.message}). Demand backing is unknown, and unknown demand holds - it does not wave creates through.`);
+    process.exit(1);
+  }
+  if (!demandBacked.slugCount) {
+    console.error(`AGENT EXACT IMPLEMENTATION PLAN HALTED: ${DEMAND_REL} yielded zero measured queries, so every new-page spec would be blocked against no evidence at all.`);
+    process.exit(1);
+  }
   const release=latestReleasePlan();
   const selectedIds=new Set(release.selected_ids||[]);
   const allRows=collectNormalizedRecords().filter(row=>row.source==='twin_agent_artifact');
@@ -149,6 +164,25 @@ function main(){
         continue;
       }
       const targetPath=String(routeDecision.renderedPath||row.target_route||'').replace(/^\//,'').replace(/\/$/,'/index.html');
+      // Do not plan a create the release lane is guaranteed to refuse.
+      //
+      // velocity_content_release.js applies the shared demand predicate and will not
+      // stage a route matching no query in data/demand/measured_demand.json. Planning
+      // it anyway produced a spec that could never be satisfied, and every downstream
+      // validator in turn reported it as unproven work - new_page_not_proven, then
+      // staged_missing_route, then live_missing_route - so one evidence refusal read
+      // as a broken pipeline in three different places.
+      //
+      // scripts/lib/demand_backing.js exists precisely so the producer and the gate
+      // share one predicate instead of each keeping a list; the planner is a producer
+      // and belongs on the same predicate. The corpus is on disk at plan time (the
+      // release QUEUE is not, which is why queue refusals are still reconciled
+      // downstream). A refused row becomes BLOCKED with a named reason, so it stays
+      // counted and legible rather than vanishing.
+      if (demandBacked && !demandBacked(routeDecision.target_route || row.target_route || '')) {
+        specs.push({record_id:row.id, run_date:row.run_date, query:row.query, intended_winner_page:row.intended_winner_page||'', intended_winner_path:row.intended_winner_path||'', target_route:routeDecision.target_route||row.target_route||'', implementation_path:targetPath, operation:'CREATE_NEW_TARGET_PAGE', ...compactSourceFields(row), before_hash:null, after_hash:null, status:'BLOCKED', blocked_reason:'BLOCKED_NO_MEASURED_DEMAND_FOR_ROUTE', route_family:routeDecision.family, route_reason:routeDecision.reason});
+        continue;
+      }
       specs.push({record_id:row.id, run_date:row.run_date, query:row.query, intended_winner_page:row.intended_winner_page||'', intended_winner_path:row.intended_winner_path||'', target_route:routeDecision.target_route||row.target_route||'', implementation_path:targetPath, operation:'CREATE_NEW_TARGET_PAGE', ...compactSourceFields(row), before_hash:fileHash(targetPath), after_hash:null, status:'PLANNED', blocked_reason:'', route_family:routeDecision.family, route_reason:routeDecision.reason});
     }
   }

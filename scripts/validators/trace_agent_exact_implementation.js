@@ -63,6 +63,19 @@ const plan = readJson('artifacts/validation/agent-exact-implementation-plan.json
 const apply = readJson('artifacts/validation/agent-exact-implementation-apply.json', { results: [] });
 const velocityContentRelease = readJson('artifacts/validation/velocity-content-release.json', { created: [], skipped: [] });
 const ceilingDeferredNewPageIds = new Set((velocityContentRelease.skipped || []).filter((row) => String(row.reason || '').includes('daily_new_url_ceiling_reached')).map((row) => row.id).filter(Boolean));
+// The third named hold, alongside the ceiling above and the queue refusal below.
+//
+// velocity_content_release.js applies a measured-demand gate: a route matching no
+// query in data/demand/measured_demand.json is recorded as skipped with reason
+// no_measured_demand_match and is never staged. That is an EVIDENCE refusal, and a
+// deliberate one - the lane will not publish against absent demand.
+//
+// This trace did not know about it, so those rows arrived here as
+// new_page_not_proven and read as a broken pipeline. They are the opposite: the
+// gate did its job and said so in the artifact. Held is not the same as dropped,
+// and neither is the same as failed. Recorded with the gate's own reason so a
+// genuinely unproven create still fails loudly.
+const demandHeldNewPageIds = new Set((velocityContentRelease.skipped || []).filter((row) => String(row.reason || '') === 'no_measured_demand_match').map((row) => row.id).filter(Boolean));
 // A create the release queue REFUSED is not unproven work - it is work the
 // governance layer forbade, and demanding proof of it makes a correctly-refused
 // release indistinguishable from a broken one.
@@ -160,13 +173,15 @@ for (const spec of plan.specs || []) {
     const implementationPath = normalizeImplementationPath(spec.implementation_path || routeToImplementationPath(spec.target_route));
     const exists = Boolean(livePageByPath.get(implementationPath) || fs.existsSync(rel(implementationPath)));
     const deferredByDailyCeiling = !exists && ceilingDeferredNewPageIds.has(spec.record_id);
-    const refusedByReleaseQueue = !exists && !deferredByDailyCeiling && queueRefusedNewPages.has(spec.record_id);
+    const heldByMeasuredDemand = !exists && !deferredByDailyCeiling && demandHeldNewPageIds.has(spec.record_id);
+    const refusedByReleaseQueue = !exists && !deferredByDailyCeiling && !heldByMeasuredDemand && queueRefusedNewPages.has(spec.record_id);
     const traceStatus = exists ? 'PASS'
       : deferredByDailyCeiling ? 'DEFERRED_BY_DAILY_CEILING'
+      : heldByMeasuredDemand ? 'HELD_BY_MEASURED_DEMAND_GATE'
       : refusedByReleaseQueue ? 'REFUSED_BY_RELEASE_QUEUE'
       : 'FAIL';
-    traces.push({ ...spec, trace_status: traceStatus, rendered_path: implementationPath, page_exists: exists, deferred_by_daily_ceiling: deferredByDailyCeiling, refused_by_release_queue: refusedByReleaseQueue, release_queue_decision: queueRefusedNewPages.get(spec.record_id) || '' });
-    if (!exists && !deferredByDailyCeiling && !refusedByReleaseQueue) errors.push(`${spec.record_id}:new_page_not_proven:${spec.target_route}`);
+    traces.push({ ...spec, trace_status: traceStatus, rendered_path: implementationPath, page_exists: exists, deferred_by_daily_ceiling: deferredByDailyCeiling, held_by_measured_demand_gate: heldByMeasuredDemand, refused_by_release_queue: refusedByReleaseQueue, release_queue_decision: queueRefusedNewPages.get(spec.record_id) || '' });
+    if (!exists && !deferredByDailyCeiling && !heldByMeasuredDemand && !refusedByReleaseQueue) errors.push(`${spec.record_id}:new_page_not_proven:${spec.target_route}`);
   }
 }
 
@@ -174,6 +189,7 @@ const countBy = (status) => traces.filter((t) => t.trace_status === status).leng
 const provenCount = countBy('PASS');
 const blockedCount = countBy('BLOCKED');
 const deferredCount = countBy('DEFERRED_BY_DAILY_CEILING');
+const demandHeldCount = countBy('HELD_BY_MEASURED_DEMAND_GATE');
 const carriedCount = countBy('CARRIED');
 const failedCount = countBy('FAIL');
 
@@ -189,6 +205,7 @@ const report = {
   proven_count: provenCount,
   blocked_count: blockedCount,
   deferred_count: deferredCount,
+  demand_held_count: demandHeldCount,
   carried_count: carriedCount,
   failed_count: failedCount,
   blocked_policy: 'BLOCKED and CARRIED specs do not fail the build, and are never counted as proven',
@@ -201,4 +218,4 @@ if (errors.length) {
   errors.forEach((error) => console.error(`- ${error}`));
   process.exit(1);
 }
-console.log(`AGENT EXACT IMPLEMENTATION TRACE PASS: ${traces.length} spec(s); proven=${provenCount}; blocked=${blockedCount}; carried=${carriedCount}; deferred=${deferredCount}`);
+console.log(`AGENT EXACT IMPLEMENTATION TRACE PASS: ${traces.length} spec(s); proven=${provenCount}; blocked=${blockedCount}; carried=${carriedCount}; deferred=${deferredCount}; demand_held=${demandHeldCount}`);
