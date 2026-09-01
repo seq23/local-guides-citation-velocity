@@ -5,6 +5,8 @@
     "core"
   ],
   "validator_ids": [
+    "agent-artifact-continuity",
+    "agent-run-absorption-completeness",
     "authority-contracts",
     "generator-instruction-refusal",
     "llm-citation-observation-integrity",
@@ -80,6 +82,8 @@
     "velocity-intake-workflow"
   ],
   "execution_order": [
+    "agent-artifact-continuity",
+    "agent-run-absorption-completeness",
     "authority-contracts",
     "generator-instruction-refusal",
     "llm-citation-observation-integrity",
@@ -159,75 +163,12 @@
   "include_local": false,
   "status": "PASS",
   "counts": {
-    "PASS": 73
+    "PASS": 75
   },
   "results": [
     {
-      "id": "authority-contracts",
-      "title": "Repository authority contracts",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 142,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": "artifacts/validation/authority-contracts.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/authority-contracts.log"
-    },
-    {
-      "id": "generator-instruction-refusal",
-      "title": "Generators refuse internal build instructions at source",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 140,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": "artifacts/validation/generator-instruction-refusal.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/generator-instruction-refusal.log"
-    },
-    {
-      "id": "llm-citation-observation-integrity",
-      "title": "LLM citation observation freshness, status and reading ratchet",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 133,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/llm-citation-observation-integrity.log"
-    },
-    {
-      "id": "main-writer-ordering",
-      "title": "The sitemap is derived after the registry it reads, and every main writer shares one lock",
+      "id": "agent-artifact-continuity",
+      "title": "Agent artifact continuity contract",
       "status": "PASS",
       "severity": "HARD_FAIL",
       "scope": "CONTAINER",
@@ -243,54 +184,119 @@
       "source_mutations": [],
       "forbidden_source_mutations": [],
       "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-06-23-56028/agent-artifact-continuity.log"
+    },
+    {
+      "id": "agent-run-absorption-completeness",
+      "title": "Landed agent runs are absorbed, not merely wired",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [
+        "agent-artifact-continuity"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 239,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-06-23-56028/agent-run-absorption-completeness.log"
+    },
+    {
+      "id": "authority-contracts",
+      "title": "Repository authority contracts",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 119,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/authority-contracts.json",
+      "log": "artifacts/validation/runtime/2026-06-23-56028/authority-contracts.log"
+    },
+    {
+      "id": "generator-instruction-refusal",
+      "title": "Generators refuse internal build instructions at source",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 122,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/generator-instruction-refusal.json",
+      "log": "artifacts/validation/runtime/2026-06-23-56028/generator-instruction-refusal.log"
+    },
+    {
+      "id": "llm-citation-observation-integrity",
+      "title": "LLM citation observation freshness, status and reading ratchet",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 117,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-06-23-56028/llm-citation-observation-integrity.log"
+    },
+    {
+      "id": "main-writer-ordering",
+      "title": "The sitemap is derived after the registry it reads, and every main writer shares one lock",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 117,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
       "evidence_file": "artifacts/validation/main-writer-ordering.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/main-writer-ordering.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/main-writer-ordering.log"
     },
     {
       "id": "occupancy-control-separation",
       "title": "Citation-occupancy control separation and open-bucket integrity",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 158,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/occupancy-control-separation.log"
-    },
-    {
-      "id": "occupancy-probe-contract",
-      "title": "Citation-occupancy probe contract",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 138,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/occupancy-probe-contract.log"
-    },
-    {
-      "id": "occupancy-reading-ratchet",
-      "title": "Occupancy measurement file may not shrink",
       "status": "PASS",
       "severity": "HARD_FAIL",
       "scope": "CONTAINER",
@@ -306,8 +312,50 @@
       "source_mutations": [],
       "forbidden_source_mutations": [],
       "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-06-23-56028/occupancy-control-separation.log"
+    },
+    {
+      "id": "occupancy-probe-contract",
+      "title": "Citation-occupancy probe contract",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 118,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-06-23-56028/occupancy-probe-contract.log"
+    },
+    {
+      "id": "occupancy-reading-ratchet",
+      "title": "Occupancy measurement file may not shrink",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 123,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
       "evidence_file": "artifacts/validation/occupancy-reading-ratchet.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/occupancy-reading-ratchet.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/occupancy-reading-ratchet.log"
     },
     {
       "id": "operator-doc-currency",
@@ -320,7 +368,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 147,
+      "duration_ms": 134,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -328,7 +376,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/operator-doc-currency.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/operator-doc-currency.log"
     },
     {
       "id": "portfolio-kpi-truth",
@@ -341,7 +389,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 128,
+      "duration_ms": 122,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -349,7 +397,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/portfolio-kpi-truth.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/portfolio-kpi-truth.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/portfolio-kpi-truth.log"
     },
     {
       "id": "published-inventory-stability",
@@ -370,7 +418,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/published-inventory-stability.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/published-inventory-stability.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/published-inventory-stability.log"
     },
     {
       "id": "push-after-rebase-revalidates",
@@ -383,7 +431,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 127,
+      "duration_ms": 117,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -391,7 +439,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/push-after-rebase-revalidates.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/push-after-rebase-revalidates.log"
     },
     {
       "id": "query-atlas",
@@ -404,7 +452,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 127,
+      "duration_ms": 116,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -412,7 +460,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/query-atlas.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/query-atlas.log"
     },
     {
       "id": "atlas-unit-contract",
@@ -427,7 +475,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 153,
+      "duration_ms": 133,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -435,7 +483,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/atlas-unit-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/atlas-unit-contract.log"
     },
     {
       "id": "atlas-release-join",
@@ -451,7 +499,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 138,
+      "duration_ms": 122,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -459,7 +507,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/atlas-release-join.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/atlas-release-join.log"
     },
     {
       "id": "rich-block-contract-link",
@@ -472,7 +520,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 148,
+      "duration_ms": 126,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -480,7 +528,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/rich-block-contract-link.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/rich-block-contract-link.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/rich-block-contract-link.log"
     },
     {
       "id": "route-topic-quality",
@@ -493,7 +541,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 343,
+      "duration_ms": 454,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -501,7 +549,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/route-topic-quality.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/route-topic-quality.log"
     },
     {
       "id": "strategy-gate",
@@ -514,7 +562,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 132,
+      "duration_ms": 117,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -522,7 +570,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/strategy-gate.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/strategy-gate.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/strategy-gate.log"
     },
     {
       "id": "local-guides-tree-hygiene",
@@ -537,7 +585,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 990,
+      "duration_ms": 753,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -545,7 +593,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/local-guides-tree-hygiene.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/local-guides-tree-hygiene.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/local-guides-tree-hygiene.log"
     },
     {
       "id": "validation-policy",
@@ -558,7 +606,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 134,
+      "duration_ms": 120,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -566,7 +614,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/validation-policy.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/validation-policy.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/validation-policy.log"
     },
     {
       "id": "validation-registry",
@@ -579,7 +627,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 202,
+      "duration_ms": 259,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -587,7 +635,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/validation-registry.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/validation-registry.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/validation-registry.log"
     },
     {
       "id": "workflow-yaml-inventory",
@@ -600,7 +648,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 127,
+      "duration_ms": 121,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -608,7 +656,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-yaml-inventory-validation.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/workflow-yaml-inventory.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/workflow-yaml-inventory.log"
     },
     {
       "id": "workflow-topology",
@@ -623,7 +671,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 139,
+      "duration_ms": 120,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -631,7 +679,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-topology.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/workflow-topology.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/workflow-topology.log"
     },
     {
       "id": "workflow-yaml-syntax",
@@ -644,7 +692,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 219,
+      "duration_ms": 302,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -652,7 +700,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-yaml-syntax.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/workflow-yaml-syntax.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/workflow-yaml-syntax.log"
     },
     {
       "id": "canonical-domains",
@@ -665,7 +713,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 2276,
+      "duration_ms": 3008,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -673,7 +721,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/canonical-domains.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/canonical-domains.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/canonical-domains.log"
     },
     {
       "id": "monitor-ledger",
@@ -686,7 +734,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 134,
+      "duration_ms": 131,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -694,7 +742,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/monitor-ledger.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/monitor-ledger.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/monitor-ledger.log"
     },
     {
       "id": "no-double-vertical-slugs",
@@ -707,7 +755,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 580,
+      "duration_ms": 404,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -715,7 +763,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/no-double-vertical-slugs.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/no-double-vertical-slugs.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/no-double-vertical-slugs.log"
     },
     {
       "id": "vertical-keys",
@@ -728,7 +776,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 480,
+      "duration_ms": 267,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -736,7 +784,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/vertical-keys.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/vertical-keys.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/vertical-keys.log"
     },
     {
       "id": "archive-schema",
@@ -749,7 +797,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 138,
+      "duration_ms": 123,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -757,7 +805,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/archive-schema.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/archive-schema.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/archive-schema.log"
     },
     {
       "id": "evidence-registry",
@@ -770,7 +818,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 264,
+      "duration_ms": 170,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -778,7 +826,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/evidence-registry.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/evidence-registry.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/evidence-registry.log"
     },
     {
       "id": "insights",
@@ -791,7 +839,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 457,
+      "duration_ms": 324,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -799,7 +847,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/insights.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/insights.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/insights.log"
     },
     {
       "id": "live-hubs",
@@ -812,7 +860,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 250,
+      "duration_ms": 168,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -820,7 +868,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/live-hubs.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/live-hubs.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/live-hubs.log"
     },
     {
       "id": "medium-articles",
@@ -833,7 +881,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 135,
+      "duration_ms": 126,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -841,7 +889,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/medium-articles.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/medium-articles.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/medium-articles.log"
     },
     {
       "id": "agent-run-artifact-intake",
@@ -854,7 +902,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 190,
+      "duration_ms": 139,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -862,7 +910,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-run-artifact-intake.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/agent-run-artifact-intake.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/agent-run-artifact-intake.log"
     },
     {
       "id": "citation-velocity-master-plan",
@@ -877,7 +925,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 205,
+      "duration_ms": 153,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -885,7 +933,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/citation-velocity.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/citation-velocity-master-plan.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/citation-velocity-master-plan.log"
     },
     {
       "id": "frozen-content-recoverability",
@@ -898,7 +946,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 537,
+      "duration_ms": 348,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -906,7 +954,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/frozen-content-recoverability.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/frozen-content-recoverability.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/frozen-content-recoverability.log"
     },
     {
       "id": "homepage-request-assistance",
@@ -919,7 +967,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 129,
+      "duration_ms": 118,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -927,7 +975,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/homepage-request-assistance.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/homepage-request-assistance.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/homepage-request-assistance.log"
     },
     {
       "id": "homepage-schema",
@@ -940,7 +988,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 136,
+      "duration_ms": 120,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -948,7 +996,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/homepage-schema.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/homepage-schema.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/homepage-schema.log"
     },
     {
       "id": "html-report-contract",
@@ -963,7 +1011,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 152,
+      "duration_ms": 133,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -971,7 +1019,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/html-report-contract-validation.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/html-report-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/html-report-contract.log"
     },
     {
       "id": "insights-manifest",
@@ -984,7 +1032,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 829,
+      "duration_ms": 412,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -992,7 +1040,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/insights-manifest.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/insights-manifest.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/insights-manifest.log"
     },
     {
       "id": "page-record-identity",
@@ -1005,7 +1053,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 368,
+      "duration_ms": 227,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1013,7 +1061,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/page-record-identity.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/page-record-identity.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/page-record-identity.log"
     },
     {
       "id": "programmatic-substance",
@@ -1026,7 +1074,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 1119,
+      "duration_ms": 831,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1034,7 +1082,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/programmatic-substance.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/programmatic-substance.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/programmatic-substance.log"
     },
     {
       "id": "generated-content-gate",
@@ -1049,7 +1097,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 2213,
+      "duration_ms": 1448,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1057,7 +1105,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/generated-content-gate.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/generated-content-gate.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/generated-content-gate.log"
     },
     {
       "id": "rendered-programmatic-substance",
@@ -1072,7 +1120,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 1072,
+      "duration_ms": 749,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1080,7 +1128,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/rendered-programmatic-substance.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/rendered-programmatic-substance.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/rendered-programmatic-substance.log"
     },
     {
       "id": "admission-reachability",
@@ -1093,7 +1141,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 276,
+      "duration_ms": 184,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1101,7 +1149,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/admission-reachability.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/admission-reachability.log"
     },
     {
       "id": "canonical-routing-law",
@@ -1114,7 +1162,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 353,
+      "duration_ms": 217,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1122,7 +1170,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/canonical-routing-law.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/canonical-routing-law.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/canonical-routing-law.log"
     },
     {
       "id": "executable-bits",
@@ -1135,7 +1183,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 137,
+      "duration_ms": 120,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1143,7 +1191,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/executable-bits.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/executable-bits.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/executable-bits.log"
     },
     {
       "id": "generated-page-substance",
@@ -1156,7 +1204,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 391,
+      "duration_ms": 243,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1164,7 +1212,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/generated-page-substance.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/generated-page-substance.log"
     },
     {
       "id": "model-name-free-routes",
@@ -1177,7 +1225,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 499,
+      "duration_ms": 287,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1185,7 +1233,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/model-name-free-routes.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/model-name-free-routes.log"
     },
     {
       "id": "network-crawler-contract",
@@ -1198,7 +1246,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 305,
+      "duration_ms": 184,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1206,7 +1254,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/network-crawler-contract.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/network-crawler-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/network-crawler-contract.log"
     },
     {
       "id": "promotion-candidates-feed",
@@ -1219,7 +1267,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 132,
+      "duration_ms": 121,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1227,7 +1275,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/promotion-candidates-feed.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/promotion-candidates-feed.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/promotion-candidates-feed.log"
     },
     {
       "id": "publish-inventory",
@@ -1240,7 +1288,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 204,
+      "duration_ms": 160,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1248,7 +1296,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/publish-inventory.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/publish-inventory.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/publish-inventory.log"
     },
     {
       "id": "full-scope-overhaul",
@@ -1265,7 +1313,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 436,
+      "duration_ms": 247,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1273,7 +1321,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/full-scope-overhaul.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/full-scope-overhaul.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/full-scope-overhaul.log"
     },
     {
       "id": "page-release-law",
@@ -1289,7 +1337,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 503,
+      "duration_ms": 332,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1297,7 +1345,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/page-release-law.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/page-release-law.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/page-release-law.log"
     },
     {
       "id": "content-pattern-contract",
@@ -1312,7 +1360,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 1596,
+      "duration_ms": 1113,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1320,7 +1368,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/content-pattern-contract.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/content-pattern-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/content-pattern-contract.log"
     },
     {
       "id": "no-internal-instruction-leak",
@@ -1335,7 +1383,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 1478,
+      "duration_ms": 1034,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1343,7 +1391,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/internal-instruction-leak.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/no-internal-instruction-leak.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/no-internal-instruction-leak.log"
     },
     {
       "id": "frozen-output-integrity",
@@ -1358,7 +1406,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 408,
+      "duration_ms": 329,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1366,7 +1414,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/frozen-output-integrity.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/frozen-output-integrity.log"
     },
     {
       "id": "vertical-topic-admission",
@@ -1381,7 +1429,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 287,
+      "duration_ms": 193,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1389,7 +1437,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/vertical-topic-admission.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/vertical-topic-admission.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/vertical-topic-admission.log"
     },
     {
       "id": "render-integrity",
@@ -1402,7 +1450,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 589,
+      "duration_ms": 432,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1410,7 +1458,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/render-integrity.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/render-integrity.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/render-integrity.log"
     },
     {
       "id": "rendered-internal-hrefs",
@@ -1423,7 +1471,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 812,
+      "duration_ms": 630,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1431,7 +1479,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/hrefs.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/rendered-internal-hrefs.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/rendered-internal-hrefs.log"
     },
     {
       "id": "rendered-route-admission-parity",
@@ -1444,7 +1492,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 162,
+      "duration_ms": 160,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1452,7 +1500,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/rendered-route-admission-parity.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/rendered-route-admission-parity.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/rendered-route-admission-parity.log"
     },
     {
       "id": "sitemap-parity",
@@ -1465,7 +1513,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 153,
+      "duration_ms": 139,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1473,7 +1521,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/sitemap-parity.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/sitemap-parity.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/sitemap-parity.log"
     },
     {
       "id": "demand-backed-pages",
@@ -1489,7 +1537,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 305,
+      "duration_ms": 204,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1497,7 +1545,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/demand-backed-pages.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/demand-backed-pages.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/demand-backed-pages.log"
     },
     {
       "id": "unbuilt-backlog-drain",
@@ -1510,7 +1558,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 126,
+      "duration_ms": 119,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1518,7 +1566,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-06-23-3726/unbuilt-backlog-drain.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/unbuilt-backlog-drain.log"
     },
     {
       "id": "workflow-data-trace",
@@ -1533,7 +1581,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 129,
+      "duration_ms": 119,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1541,7 +1589,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-data-trace.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/workflow-data-trace.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/workflow-data-trace.log"
     },
     {
       "id": "velocity-only-overhaul",
@@ -1558,7 +1606,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 967,
+      "duration_ms": 556,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1566,7 +1614,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/velocity-only-overhaul.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/velocity-only-overhaul.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/velocity-only-overhaul.log"
     },
     {
       "id": "content-safety",
@@ -1579,7 +1627,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 254,
+      "duration_ms": 171,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1587,7 +1635,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/safety.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/content-safety.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/content-safety.log"
     },
     {
       "id": "strategy-integrity-contract",
@@ -1604,7 +1652,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 3365,
+      "duration_ms": 3309,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1612,7 +1660,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/strategy-integrity-contract.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/strategy-integrity-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/strategy-integrity-contract.log"
     },
     {
       "id": "browser-contract",
@@ -1625,7 +1673,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 127,
+      "duration_ms": 124,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1633,7 +1681,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/browser-contract.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/browser-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/browser-contract.log"
     },
     {
       "id": "ui-test-parity",
@@ -1648,7 +1696,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 132,
+      "duration_ms": 117,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1656,7 +1704,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/ui-test-parity.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/ui-test-parity.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/ui-test-parity.log"
     },
     {
       "id": "self-heal-repair-contract",
@@ -1669,7 +1717,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 132,
+      "duration_ms": 123,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1677,7 +1725,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/self-heal-repair-contract.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/self-heal-repair-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/self-heal-repair-contract.log"
     },
     {
       "id": "self-heal-commit-coverage",
@@ -1692,7 +1740,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 144,
+      "duration_ms": 132,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1700,7 +1748,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/self-heal-commit-coverage.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/self-heal-commit-coverage.log"
     },
     {
       "id": "workflow-contract",
@@ -1715,7 +1763,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 135,
+      "duration_ms": 121,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1723,7 +1771,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/workflow-contract.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/workflow-contract.log"
     },
     {
       "id": "velocity-intake-workflow",
@@ -1738,7 +1786,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 131,
+      "duration_ms": 119,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1746,7 +1794,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/velocity-intake-workflow.json",
-      "log": "artifacts/validation/runtime/2026-06-23-3726/velocity-intake-workflow.log"
+      "log": "artifacts/validation/runtime/2026-06-23-56028/velocity-intake-workflow.log"
     }
   ]
 }

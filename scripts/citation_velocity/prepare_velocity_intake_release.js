@@ -13,7 +13,16 @@ const { parseManifestBundle, canonicalDedupeKey } = require('../lib/agent_artifa
 const ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_TARGET = 125;
 const MAX_TARGET = Number(process.env.VELOCITY_RELEASE_MAX || 150);
-const TARGET = clampInt(process.env.VELOCITY_RELEASE_TARGET || process.argv[2] || DEFAULT_TARGET, 1, MAX_TARGET);
+const REQUESTED_TARGET = process.env.VELOCITY_RELEASE_TARGET || process.argv[2] || DEFAULT_TARGET;
+const TARGET = clampInt(REQUESTED_TARGET, 1, MAX_TARGET);
+// A budget silently cut down to the ceiling is indistinguishable from a budget
+// that was granted, and the rows above the line become CARRIED_NOT_WORKED with
+// nothing in the log saying why. Say it out loud instead: the ceiling is a real
+// safety limit, but the operator has to be able to see it bind.
+if (Number.isFinite(Number.parseInt(String(REQUESTED_TARGET), 10))
+  && Number.parseInt(String(REQUESTED_TARGET), 10) > MAX_TARGET) {
+  console.warn(`VELOCITY RELEASE BUDGET TRUNCATED: requested ${REQUESTED_TARGET} rows but VELOCITY_RELEASE_MAX is ${MAX_TARGET}; ${Number.parseInt(String(REQUESTED_TARGET), 10) - MAX_TARGET} ready row(s) will be carried rather than worked. Raise VELOCITY_RELEASE_MAX to absorb them.`);
+}
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const AGENT_ROOT = 'data/report_fixes/agent_runs';
 const NORMALIZED_ROOT = 'data/report_fixes/normalized_agent_runs';

@@ -28,7 +28,13 @@ permissions:
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
-  VELOCITY_RELEASE_TARGET: ${{ inputs.batch_size || '5' }}
+  # An explicit batch_size from a human still caps the run. With no input the
+  # budget is resolved from the landed backlog by the "Size the processing
+  # budget" step below, because a fixed 5 applied to an agent artifact drop is a
+  # cadence choice overriding a delivery: on 2026-09-01 a dentistry run landed 70
+  # planable specs, 5 were worked and 53 were recorded CARRIED_NOT_WORKED, and
+  # across all verticals 336 ready rows had silted up behind that cap since June.
+  VELOCITY_RELEASE_TARGET: ${{ inputs.batch_size || '' }}
   ALLOW_SOCIAL_FALLBACK_RELEASE: "0"
 
 # Every workflow in this repo that pushes to main shares ONE group. They used
@@ -78,6 +84,25 @@ jobs:
           git reset --hard origin/main
       - name: Set release date
         run: echo "SOURCE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
+      - name: Size the processing budget to the landed backlog
+        # Runs before the first intake below, because both the normalization pass
+        # and the content release read VELOCITY_RELEASE_TARGET. A human-supplied
+        # batch_size is honoured verbatim; otherwise the budget is the count of
+        # ready, unledgered rows across every normalized run, so a vertical that
+        # first appears tomorrow is budgeted for with no code change naming it.
+        # VELOCITY_RELEASE_MAX is raised in step with it so the clamp inside
+        # prepare_velocity_intake_release.js cannot quietly truncate the answer.
+        run: |
+          set -euo pipefail
+          if [ -n "${VELOCITY_RELEASE_TARGET:-}" ]; then
+            echo "operator supplied batch_size=$VELOCITY_RELEASE_TARGET; leaving the budget capped as requested"
+            echo "VELOCITY_RELEASE_MAX=$(( VELOCITY_RELEASE_TARGET > 150 ? VELOCITY_RELEASE_TARGET : 150 ))" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          BUDGET="$(node scripts/citation_velocity/resolve_release_budget.mjs)"
+          echo "VELOCITY_RELEASE_TARGET=$BUDGET" >> "$GITHUB_ENV"
+          echo "VELOCITY_RELEASE_MAX=$(( BUDGET > 150 ? BUDGET : 150 ))" >> "$GITHUB_ENV"
+          echo "resolved processing budget: $BUDGET row(s)"
       - name: Run planning-only citation intelligence before Safe Harbor content release
         run: npm run release:daily-citation-intelligence:preview
       - name: Install Search Console client when credentials exist

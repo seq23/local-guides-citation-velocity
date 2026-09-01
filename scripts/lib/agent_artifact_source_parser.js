@@ -59,8 +59,36 @@ function flattenRecommendation(value) {
   }
   return { text: normalizeSpace(String(value)), fields: { raw: normalizeSpace(String(value)) } };
 }
-function questionFrom(row) { return normalizeSpace(row.Query || row.query || row['Target Query'] || row.query_target || row.Question || row['Recommendation Query'] || row.prompt || ''); }
-function modelFrom(row) { return normalizeSpace(row.Model || row.model || row['AI Model'] || row['Answer Engine'] || row.Engine || ''); }
+// Some report sections carry the answer engine glued onto the end of the query, as
+// "how long is the I-693 medical exam valid ... (OpenAI GPT-4o)". That suffix is
+// provenance, not part of what a reader ever types. Left attached it became the
+// query of record: the page got built, then trace_citation_agent_fixes looked for
+// the whole string including "(OpenAI GPT-4o)" in the rendered page, never found it,
+// and reported live_missing_query against a page that was in fact correct.
+//
+// Only a known answer-engine vocabulary is stripped, so a question that legitimately
+// ends in parentheses keeps them.
+const ENGINE_SUFFIX = /\s*\((?:openai|open ai|gpt[\s-]?[0-9a-z.]*|chatgpt|perplexity|claude|anthropic|gemini|google(?:\s+ai)?(?:\s+overviews?)?|bing|copilot|grok|llama|mistral|deepseek|you\.com|meta\s+ai)[^()]*\)\s*$/i;
+function splitEngineSuffix(value) {
+  const text = normalizeSpace(value);
+  const match = text.match(ENGINE_SUFFIX);
+  if (!match) return { query: text, engine: '' };
+  return { query: normalizeSpace(text.slice(0, match.index)), engine: normalizeSpace(match[0]).replace(/^\(|\)$/g, '') };
+}
+function questionFrom(row) {
+  const raw = normalizeSpace(row.Query || row.query || row['Target Query'] || row.query_target || row.Question || row['Recommendation Query'] || row.prompt || '');
+  const { query } = splitEngineSuffix(raw);
+  // Never strip the whole value: a row whose query is nothing but an engine name is
+  // malformed, and blanking it would turn a bad row into an invisible one.
+  return query || raw;
+}
+function modelFrom(row) {
+  const declared = normalizeSpace(row.Model || row.model || row['AI Model'] || row['Answer Engine'] || row.Engine || '');
+  if (declared) return declared;
+  const raw = normalizeSpace(row.Query || row.query || row['Target Query'] || row.query_target || row.Question || row['Recommendation Query'] || row.prompt || '');
+  const { query, engine } = splitEngineSuffix(raw);
+  return query ? engine : '';
+}
 function targetFrom(row) { return normalizeSpace(row['Repo File Path'] || row.repo_file_path || row['File Path'] || row.file_path || row.intended_winner_path || row['Intended Winner Page'] || row.intended_winner_page || row.url || row.URL || row.page || row['Target URL'] || row.target_url || row.target_page || row.target_filepath || ''); }
 function recommendationFrom(row) {
   const flattened = flattenRecommendation(row.fix_recommendation || row['Fix Recommendation'] || row.fix || row.edit_instruction || row.recommendation || row['Recommended Fix'] || row.why_worth_building || row.why_build || row.reason || row.exact_edit || '');
@@ -156,7 +184,30 @@ function parseHtmlRecords(root, htmlPath, context) {
     if (!current) continue;
     const src = line.match(/^(?:SOURCE|Discovery Source)\s*:\s*(.+)$/i); if (src) { current.source = src[1]; continue; }
     const why = line.match(/^WHY(?:\s+BUILD|\s+Worth\s+Building)?\s*:\s*(.+)$/i); if (why) { current.why_worth_building = unique([current.why_worth_building, why[1]]).join(' '); current.action_tier = current.action_tier || 'free win'; current.gap_type = current.gap_type || 'new page opportunity'; current._fallbackType = 'new_page_opportunity'; continue; }
-    const page = line.match(/^(?:PAGE|URL|FILE|TARGET)\s*:\s*(.+)$/i); if (page) { current.repo_file_path = page[1]; continue; }
+    // The HTML report renders this meta line as `FILE: <code>path</code> | LEVEL: L1 |
+    // GAP: medium incumbent`. htmlToText flattens it to one line, so a greedy `(.+)$`
+    // captured the trailing pipe-delimited metadata as part of the path. Downstream,
+    // normalizeImplementationPath then appended `/index.html` to the whole string and the
+    // route resolver reported TARGET_NOT_FOUND - which is how a reported 404 on a page
+    // that has a perfectly good canonical target went unabsorbed run after run.
+    // A repo path never contains a pipe, so the first segment is the path and the rest is
+    // `KEY: value` metadata worth keeping rather than discarding.
+    const page = line.match(/^(?:PAGE|URL|FILE|TARGET)\s*:\s*(.+)$/i);
+    if (page) {
+      const [rawPath, ...meta] = String(page[1]).split('|').map((part) => normalizeSpace(part));
+      current.repo_file_path = rawPath;
+      for (const segment of meta) {
+        const kv = segment.match(/^([A-Za-z][A-Za-z _-]*)\s*:\s*(.+)$/);
+        if (!kv) continue;
+        const key = kv[1].trim().toLowerCase();
+        // `GAP: medium incumbent` is the same vocabulary the CSV carries in its
+        // `Gap Type` column, so feeding it here gives an HTML-derived row the same
+        // gap_type as its CSV twin and lets the two dedupe against each other
+        // instead of surviving as near-duplicate records.
+        if (key === 'gap') current.gap_type = current.gap_type || kv[2].trim();
+      }
+      continue;
+    }
     const fix = line.match(/^FIX(?:\s+RECOMMENDATION)?\s*:\s*(.+)$/i); if (fix) { current.fix_recommendation = unique([current.fix_recommendation, fix[1]]).join(' '); current._fallbackType = 'existing_page_fix'; continue; }
   }
   flush();
@@ -185,4 +236,4 @@ function parseManifestBundle({ manifestPath, root }) {
   if (!manifest) return { manifest_path: manifestPath, records: [], errors: [`${manifestPath}:invalid_json`], duplicate_groups: [] };
   return parseAgentRunBundle({ root, manifest, manifestPath });
 }
-module.exports = { parseAgentRunBundle, parseManifestBundle, parseCsvRecords, parseJsonRecords, parseHtmlRecords, flattenRecommendation, normalizeSourceRecord, canonicalSourceRecordId, canonicalDedupeKey, canonicalNewPageKey, canonicalPageFixKey, classifyRecommendationType, duplicateGroups, normalizeSpace, questionFrom, modelFrom, slugify };
+module.exports = { parseAgentRunBundle, parseManifestBundle, parseCsvRecords, parseJsonRecords, parseHtmlRecords, flattenRecommendation, normalizeSourceRecord, canonicalSourceRecordId, canonicalDedupeKey, canonicalNewPageKey, canonicalPageFixKey, classifyRecommendationType, duplicateGroups, normalizeSpace, questionFrom, modelFrom, splitEngineSuffix, slugify };

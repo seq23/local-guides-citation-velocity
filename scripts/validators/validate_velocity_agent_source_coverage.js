@@ -22,7 +22,14 @@ const statuses = {};
 function mark(id, status){ if(!id) return; accounted.add(String(id)); (statuses[id] ||= new Set()).add(status); }
 for(const row of normalized){ for(const id of [...(row.source_record_ids || []), row.source_record_id].filter(Boolean)) mark(id, row.status || 'NORMALIZED'); }
 for(const row of fixLedger.fixes || []){ for(const id of [...(row.source_record_ids || []), row.source_record_id].filter(Boolean)) mark(id, row.implementation_status || 'LEDGERED'); }
-for(const spec of exactPlan.specs || []){ for(const id of [...(spec.source_record_ids || []), ...(spec.record_ids || []), spec.source_record_id, spec.record_id].filter(Boolean)) mark(id, spec.status || 'PLANNED'); }
+// The plan's own blocked_reason is marked alongside the status. Marking only the
+// status meant a row the PLAN blocked arrived here as a bare "BLOCKED" with no
+// reason token, and the missing-reason check below then failed it for being
+// unexplained - even though the plan had recorded a perfectly good reason one field
+// away. Rows blocked earlier, at normalization, only passed because their normalized
+// status already carried the reason in its name. This closes that asymmetry for any
+// plan-level block, not just one reason code.
+for(const spec of exactPlan.specs || []){ for(const id of [...(spec.source_record_ids || []), ...(spec.record_ids || []), spec.source_record_id, spec.record_id].filter(Boolean)) { mark(id, spec.status || 'PLANNED'); if(spec.blocked_reason) mark(id, String(spec.blocked_reason)); if(spec.carried_reason) mark(id, String(spec.carried_reason)); } }
 for(const row of acceptance.entries || acceptance.repairs || []){ for(const id of [...(row.source_record_ids || []), ...(row.record_ids || []), row.source_record_id, row.record_id].filter(Boolean)) mark(id, row.status || 'ACCEPTED'); }
 for(const row of [...(htmlReport.fixes || []), ...(htmlReport.page_specs || []), ...(htmlReport.approval_records_added || []), ...(htmlReport.approval_records_skipped || [])]){ for(const id of [...(row.source_record_ids || []), row.source_record_id].filter(Boolean)) mark(id, row.status || row.canonical_status || row.skipped_reason || 'HTML_REPORT_ACCOUNTED'); }
 for(const row of Array.isArray(approval) ? approval : []){ for(const id of [...(row.source_record_ids || []), row.source_record_id].filter(Boolean)) mark(id, row.status || 'QUEUED_APPROVAL'); }

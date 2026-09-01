@@ -188,6 +188,50 @@
         "agent-run",
         "audit",
         "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "agent-run-absorption-completeness",
+      "title": "Landed agent runs are absorbed, not merely wired",
+      "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
+      "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "requires_files": [
+        "data/report_fixes/agent_runs",
+        "data/report_fixes/agent_exact_implementation_ledger.json",
+        "data/report_fixes/agent_run_absorption_baseline.json",
+        "content/_live/pages.json",
+        "_redirects"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-run-absorption-completeness.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-run-absorption-completeness.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [
+        "agent-artifact-continuity"
+      ],
+      "why_existing_checks_do_not_cover": "agent-artifact-priority and agent-artifact-continuity assert the wiring and the artifact quartet. Neither compares what a run ASKED FOR against what the repo actually contains, which is why a fully-wired, fully-continuous pipeline absorbed a third of a run and reported success.",
+      "estimated_runtime_seconds": 15
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
         "full-audit",
         "local",
         "release",
@@ -3599,7 +3643,9 @@
       "prepare_produces_files": [
         "dist/index.html"
       ],
-      "prepare_mutates_files": [],
+      "prepare_mutates_files": [
+        "content/_shared/content_state.json"
+      ],
       "produces_files": [],
       "mutates_files": [
         "artifacts/validation/no-double-vertical-slugs.json"
@@ -6659,7 +6705,9 @@
         "feeds/promotion-candidates.json",
         "dist/feeds/promotion-candidates.json"
       ],
-      "prepare_mutates_files": [],
+      "prepare_mutates_files": [
+        "content/_shared/content_state.json"
+      ],
       "enforce_no_source_mutation": true,
       "id": "promotion-candidates-feed",
       "title": "Public candidate feed is a live projection, not a souvenir",
