@@ -2,19 +2,18 @@
 
 Status: **PASS**
 Release date: 2026-09-01
-Target publish units: 191
-Selected units: 13
-Twin agent units: 13
+Target publish units: 164
+Selected units: 12
+Twin agent units: 12
 Social fallback units: 0
 Social fallback allowed: true
 Social fallback suppressed: 0
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 1
+Repair units: 0
 New page units: 12
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/dental-implants/index.html | how much do dental implants cost |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/early-signs-of-ms-in-women-under-40/ | early signs of ms in women under 40 |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/why-am-i-having-trouble-swallowing-with-pd/ | why am i having trouble swallowing with pd |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/are-there-any-stem-cell-trials-for-parkinsons-in-2026/ | are there any stem cell trials for parkinsons in 2026 |

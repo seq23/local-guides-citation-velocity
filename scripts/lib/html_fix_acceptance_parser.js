@@ -330,7 +330,52 @@ function requiredStringsForArtifact(artifact, recommendation) {
   if (Array.isArray(artifact.lines)) out.push(...artifact.lines.filter((line) => String(line || '').length <= 90).slice(0, 10));
   // A required_string is a promise the trace enforces against the rendered page.
   // Requiring a build directive would compel the renderer to publish one.
-  return unique(out).filter((value) => !isInternalInstructionText(value)).slice(0, 30);
+  const forbidden = phrasesTheFixAsksToRemove(recommendation);
+  return unique(out)
+    .filter((value) => !isInternalInstructionText(value))
+    .filter((value) => !forbidden.has(normalizeForbidden(value)))
+    .slice(0, 30);
+}
+
+function normalizeForbidden(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+// An instruction to DELETE a phrase must never become a promise to PUBLISH it.
+//
+// The 2026-09-01 dentistry run said, of dentistry/choosing-a-dentist/index.html:
+// "Fix the table artifact: replace 'Use the same questions with every lawyer on your
+// shortlist' with dentist-specific language throughout." The quoted phrase is legal
+// boilerplate that had leaked across verticals, and the agent was asking for it to
+// go. This compiler extracted the quoted span as a required_string, the trace then
+// enforced its presence, and rowRequirement.required_strings feed the reader-facing
+// `checklist` - so two live dentistry pages ended up carrying, under a visible
+// heading, an instruction to ask the same questions of every lawyer on your
+// shortlist. The report asked for the artifact to be removed and the pipeline
+// guaranteed it stayed.
+//
+// This is the same defect the red_flags fix addressed on 2026-08-27, one field over:
+// a build-acceptance field flowing into reader copy. There the fix was to stop
+// emitting it; here the string is legitimate to extract in general, so what is
+// filtered is only the phrase this very recommendation asks to be rid of.
+const REMOVAL_VERB = '(?:replace|remove|delete|strip|drop|eliminate|rewrite|fix)';
+function phrasesTheFixAsksToRemove(recommendation) {
+  const text = String(recommendation || '');
+  const out = new Set();
+  if (!text) return out;
+  // `replace 'X' with ...`, `remove "X"`, `instead of 'X'`, `rather than "X"`
+  const patterns = [
+    new RegExp(`${REMOVAL_VERB}[^'"\`]{0,40}['"\`]([^'"\`]{4,160})['"\`]`, 'gi'),
+    /(?:instead of|rather than|no longer|stop (?:saying|using))[^'"`]{0,20}['"`]([^'"`]{4,160})['"`]/gi
+  ];
+  for (const rx of patterns) {
+    let m;
+    while ((m = rx.exec(text)) !== null) {
+      const phrase = normalizeForbidden(m[1]);
+      if (phrase) out.add(phrase);
+    }
+  }
+  return out;
 }
 // `artifact` lets a caller that has already compiled the artifact reuse it. Building
 // it twice would advance the shared fallback-heading counter twice and number the
