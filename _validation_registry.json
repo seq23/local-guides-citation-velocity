@@ -2807,6 +2807,45 @@
       "enforce_no_source_mutation": true
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 60,
+      "id": "historic-artifact-recovery",
+      "title": "Artifact blocks lost before the store existed stay recovered",
+      "path": "scripts/validators/validate_historic_artifact_recovery.js",
+      "command": "node scripts/validators/validate_historic_artifact_recovery.js",
+      "risk_prevented": "Prevents the 187 reader-facing artifact blocks recovered from git on 2026-09-01 - lost by the 2026-08-24 and 2026-08-27 thaw-rebuild-reaccept cycles - from silently leaving again, and prevents internal build-directive text that three landed PRs deliberately deleted from being restored along with them.",
+      "requires_files": [
+        "data/release/historic_page_maximum.json",
+        "data/release/historic_recovered_artifacts.json",
+        "data/release/withheld_page_phrases.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/historic-artifact-recovery.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/historic-artifact-recovery.json"
+      ],
+      "why_existing_checks_do_not_cover": "accepted-artifact-recovery reads the CURRENT accepted output, so it can only preserve what a page still has. Nothing checked what a page used to have and lost."
+    },
+    {
       "id": "homepage-request-assistance",
       "title": "Homepage Find a Provider and editorial architecture",
       "path": "scripts/validators/validate_homepage_request_assistance.js",
