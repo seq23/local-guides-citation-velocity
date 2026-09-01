@@ -9,13 +9,13 @@ Social fallback units: 0
 Social fallback allowed: false
 Social fallback suppressed: 0
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 5
-New page units: 0
+Repair units: 4
+New page units: 1
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-q024-how-should-i-compare-options-involving-evidence-after-an-accident.html | how should i preserve and compare evidence after an accident |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-065-best-workplace-injury-lawyer-near-me.html | best workplace injury lawyer near me how to find |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-medical-treatment-004-is-it-bad-if-i-waited-a-few-days-to-get-checked-after-a-crash.html | how long do i have to see a doctor after a car accident for a claim |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-switching-lawyers-001-dropping-my-pi-lawyer.html | can i fire or drop my personal injury lawyer if unhappy |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-q008-what-mistakes-cause-problems-with-comparative-and-contributory-fault.html | what mistakes cause problems with comparative and contributory fault in accident claims |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/anxiety-trust/index.html | how do I find a dentist who is good with anxious patients |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/choosing-a-dentist/index.html | how do I choose a dentist? |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/second-opinion/index.html | how to avoid unnecessary dental treatment when visiting a new dentist |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | dentistry | /dentistry/community-questions/are-dental-implants-worth-it-after-60/ | are dental implants worth it after 60 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/sedation-fear/index.html | is sedation dentistry safe and is it worth the extra cost |
