@@ -23,6 +23,20 @@
  *     again) FAILS, so the list may only shrink - the same ratchet discipline the
  *     absorption baseline uses.
  *
+ * A FLOOR IS NOT ENOUGH ON ITS OWN.
+ *
+ * The floor file was seeded from the rendered output as it stood on 2026-09-01, so it
+ * protects every page from that day forward and silently blesses whatever size a page
+ * had already been reduced to. sprylabs-hpc-site was audited against this same defect
+ * list on the same day and found 18 pages already re-frozen thinner on HEAD - invisible
+ * to a forward-only guard. Measured here the same way: 862 accepted routes sit below
+ * their historic maximum, and 111 of them have lost 626 delivered artifact blocks.
+ *
+ * data/release/historic_page_maximum.json enumerates them, and this validator treats
+ * that list as a shrink-only ratchet: a route that falls below its historic maximum
+ * without being on the list is a NEW occurrence and fails, and a listed route that
+ * climbs back must be deleted from the list.
+ *
  * Rule 0: measuring zero pages is a failure. An empty loop and a clean site are
  * indistinguishable from the outside, and that is exactly how this defect hid.
  */
@@ -32,6 +46,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
 const BASELINE = 'data/release/rendered_size_baseline.json';
+const HISTORIC = 'data/release/historic_page_maximum.json';
 const OUT = 'artifacts/validation/rendered-output-shrink-guard.json';
 
 function rel(p) { return path.join(ROOT, p); }
@@ -79,6 +94,31 @@ function main() {
     if (size !== Number(named.to_bytes)) staleJustifications.push({ implementation_path: relPath, expected_bytes: Number(named.to_bytes), current_bytes: size });
   }
 
+  // Retrospective half: routes already below their historic maximum before the floor
+  // existed. Enumerated, ratcheted, and checked in both directions.
+  const historic = readJson(HISTORIC, null);
+  if (!historic || !Array.isArray(historic.routes)) {
+    console.error(`RENDERED OUTPUT SHRINK GUARD FAIL: ${HISTORIC} is missing. A floor seeded from today cannot see a page that was already re-frozen thinner, so pre-existing shrink is UNKNOWN rather than absent.`);
+    console.error('  Run `node scripts/release/measure_historic_page_maximum.js`, review the result, and commit it.');
+    process.exit(1);
+  }
+  const knownBelow = new Map(historic.routes.map((r) => [String(r.implementation_path || ''), r]));
+  const newBelowHistoric = [];
+  const recoveredAboveHistoric = [];
+  let historicChecked = 0;
+  for (const [relPath, row] of knownBelow) {
+    const abs = rel(relPath);
+    if (!fs.existsSync(abs)) continue;
+    historicChecked += 1;
+    if (fs.statSync(abs).size >= Number(row.historic_max_bytes)) {
+      recoveredAboveHistoric.push({ implementation_path: relPath, historic_max_bytes: Number(row.historic_max_bytes), current_bytes: fs.statSync(abs).size });
+    }
+  }
+  if (historic.routes.length && historicChecked === 0) {
+    console.error(`RENDERED OUTPUT SHRINK GUARD FAIL: ${historic.routes.length} route(s) recorded below their historic maximum and none is on disk. Nothing was checked.`);
+    process.exit(1);
+  }
+
   if (measured === 0) {
     console.error(`RENDERED OUTPUT SHRINK GUARD FAIL: ${Object.keys(baseline.routes).length} route floor(s) recorded, zero measurable on disk.`);
     console.error('  Nothing was checked. Build the site, then re-run.');
@@ -98,11 +138,25 @@ function main() {
     pages_at_or_above_floor: atOrAbove,
     pages_not_on_disk: missing.length,
     justified_shrinks: baseline.justified_shrinks || [],
+    historic_ratchet: {
+      source: HISTORIC,
+      measured_at: historic.measured_at,
+      routes_below_historic_max: historic.routes.length,
+      routes_that_lost_artifact_blocks: historic.routes_that_lost_artifact_blocks,
+      artifact_blocks_lost: historic.artifact_blocks_lost,
+      checked_on_disk: historicChecked,
+      recovered_above_historic_max: recoveredAboveHistoric
+    },
     unjustified_shrinks: shrunk,
     stale_justifications: staleJustifications,
     total_bytes_lost: shrunk.reduce((n, s) => n + s.lost_bytes, 0)
   }, null, 2)}\n`);
 
+  if (recoveredAboveHistoric.length) {
+    console.error(`RENDERED OUTPUT SHRINK GUARD FAIL: ${recoveredAboveHistoric.length} route(s) listed as below their historic maximum have climbed back. A ratchet may only tighten - delete these from ${HISTORIC}:`);
+    for (const r of recoveredAboveHistoric.slice(0, 25)) console.error(`  ${r.implementation_path}  historic max ${r.historic_max_bytes}B, page is ${r.current_bytes}B`);
+    process.exit(1);
+  }
   if (staleJustifications.length) {
     console.error(`RENDERED OUTPUT SHRINK GUARD FAIL: ${staleJustifications.length} justified shrink(s) no longer reproduce. A shrink licence may not outlive its shrink - delete these from ${BASELINE}:`);
     for (const s of staleJustifications) console.error(`  ${s.implementation_path}  named ${s.expected_bytes}B, page is ${s.current_bytes}B`);
@@ -116,6 +170,8 @@ function main() {
     process.exit(1);
   }
   console.log(`RENDERED OUTPUT SHRINK GUARD PASS: ${measured} page(s) measured against their accepted floor; ${(baseline.justified_shrinks || []).length} named shrink(s) still reproducing; ${missing.length} floor(s) with no file on disk.`);
+  console.log(`  HISTORIC RATCHET: ${historicChecked} of ${historic.routes.length} route(s) enumerated as below their historic maximum are on disk and still below it.`);
+  console.log(`                    ${historic.routes_that_lost_artifact_blocks} of them have lost ${historic.artifact_blocks_lost} delivered artifact block(s) - pre-existing, dated, and recorded in ${HISTORIC}.`);
 }
 
 main();
