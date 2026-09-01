@@ -36,13 +36,30 @@ const { artifactKey } = require('./rendered_artifact_recovery');
 
 const ROOT = path.resolve(__dirname, '../..');
 const STORE_REL = 'data/release/accepted_page_artifacts.json';
+// Blocks a page carried at its historic maximum and lost through a thaw-rebuild-reaccept
+// cycle (2026-08-24 and 2026-08-27). Recovered from git rather than from the accepted
+// output, because the accepted output no longer has them. See
+// scripts/citation_velocity/recover_historic_artifact_loss.js.
+const HISTORIC_REL = 'data/release/historic_recovered_artifacts.json';
 
 let CACHE = null;
+function readRoutes(relPath) {
+  try { return (JSON.parse(fs.readFileSync(path.join(ROOT, relPath), 'utf8')).routes) || {}; }
+  catch { return {}; }
+}
 function loadStore() {
   if (CACHE) return CACHE;
-  try { CACHE = JSON.parse(fs.readFileSync(path.join(ROOT, STORE_REL), 'utf8')); }
-  catch { CACHE = { schema_version: '1.0', routes: {} }; }
-  CACHE.routes = CACHE.routes || {};
+  const accepted = readRoutes(STORE_REL);
+  const historic = readRoutes(HISTORIC_REL);
+  // Accepted first, historic appended: what the page still has keeps its delivered order,
+  // and what it lost is restored after it rather than shuffled into the middle.
+  const routes = {};
+  for (const [key, record] of Object.entries(accepted)) routes[key] = { ...record, artifacts: [...(record.artifacts || [])] };
+  for (const [key, record] of Object.entries(historic)) {
+    if (!routes[key]) routes[key] = { ...record, artifacts: [] };
+    routes[key].artifacts = [...routes[key].artifacts, ...(record.artifacts || [])];
+  }
+  CACHE = { schema_version: '1.0', routes };
   return CACHE;
 }
 function resetCache() { CACHE = null; }
@@ -95,4 +112,4 @@ function mergeAcceptedArtifacts(route, current) {
   return out;
 }
 
-module.exports = { STORE_REL, acceptedArtifactsFor, mergeAcceptedArtifacts, renderedRelFor, resetCache };
+module.exports = { STORE_REL, HISTORIC_REL, acceptedArtifactsFor, mergeAcceptedArtifacts, renderedRelFor, resetCache };

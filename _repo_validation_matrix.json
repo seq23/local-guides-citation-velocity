@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "b5ef021f13752b301f277ea35745863243ec0855d71141d226af89e3c463f4f1",
+  "registry_sha256": "b1b268f9bad5b7269fe74c80b90266a1c6e69f69096336849d127e67850f5230",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 163,
-    "active": 136,
+    "total": 164,
+    "active": 137,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 134,
+    "hard_fail": 135,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -91,6 +91,7 @@
         "generated-content-gate",
         "generated-page-substance",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "homepage-request-assistance",
         "homepage-schema",
         "html-report-contract",
@@ -152,6 +153,7 @@
         "agent-run-absorption-completeness",
         "authority-contracts",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
         "main-writer-ordering",
@@ -281,6 +283,7 @@
         "generated-content-gate",
         "generated-page-substance",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "homepage-request-assistance",
         "homepage-schema",
         "html-fix-acceptance-compiler",
@@ -381,6 +384,7 @@
         "firehose-source-contract",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
         "local-pantry",
@@ -560,6 +564,7 @@
         "generated-content-gate",
         "generated-page-substance",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "homepage-request-assistance",
         "homepage-schema",
         "html-fix-acceptance-compiler",
@@ -659,6 +664,7 @@
         "firehose-source-contract",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
         "local-pantry",
@@ -869,6 +875,7 @@
         "generated-content-gate",
         "generated-page-substance",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "homepage-request-assistance",
         "homepage-schema",
         "html-report-contract",
@@ -967,6 +974,7 @@
         "firehose-source-contract",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
         "local-pantry",
@@ -1146,6 +1154,7 @@
         "generated-content-gate",
         "generated-page-substance",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "homepage-request-assistance",
         "homepage-schema",
         "html-fix-acceptance-compiler",
@@ -1249,6 +1258,7 @@
         "firehose-source-contract",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
         "local-pantry",
@@ -1660,6 +1670,7 @@
         "generated-content-gate",
         "generated-page-substance",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "html-report-contract",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
@@ -1702,6 +1713,7 @@
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
+        "historic-artifact-recovery",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
         "main-writer-ordering",
@@ -1844,6 +1856,7 @@
         "deep-workflow-data-trace",
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
+        "historic-artifact-recovery",
         "html-fix-acceptance-compiler",
         "html-report-contract",
         "ledger-reresolution",
@@ -1895,6 +1908,7 @@
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
+        "historic-artifact-recovery",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
         "local-pantry",
@@ -4281,6 +4295,46 @@
         "retirement_reason": null
       },
       {
+        "id": "historic-artifact-recovery",
+        "title": "Artifact blocks lost before the store existed stay recovered",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_historic_artifact_recovery.js",
+        "command": "node scripts/validators/validate_historic_artifact_recovery.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/release/historic_page_maximum.json",
+          "data/release/historic_recovered_artifacts.json",
+          "data/release/withheld_page_phrases.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/historic-artifact-recovery.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/historic-artifact-recovery.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents the 187 reader-facing artifact blocks recovered from git on 2026-09-01 - lost by the 2026-08-24 and 2026-08-27 thaw-rebuild-reaccept cycles - from silently leaving again, and prevents internal build-directive text that three landed PRs deliberately deleted from being restored along with them.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "homepage-request-assistance",
         "title": "Homepage Find a Provider and editorial architecture",
         "status": "ACTIVE",
@@ -5817,7 +5871,8 @@
         "command": "node scripts/validators/validate_rendered_output_shrink_guard.js",
         "depends_on": [],
         "requires_files": [
-          "data/release/rendered_size_baseline.json"
+          "data/release/rendered_size_baseline.json",
+          "data/release/historic_page_maximum.json"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
@@ -5829,7 +5884,7 @@
           "artifacts/validation/rendered-output-shrink-guard.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Prevents a thaw-rebuild-reaccept cycle installing a thinner page as the new baseline. That is exactly how 14 KB and 22 KB of delivered content left two dentistry pages with CI green. Floors rise only; a page below its floor fails unless data/release/rendered_size_baseline.json names the shrink and the exact byte count.",
+        "risk_prevented": "Prevents a thaw-rebuild-reaccept cycle installing a thinner page as the new baseline. That is exactly how 14 KB and 22 KB of delivered content left two dentistry pages with CI green. Floors rise only; a page below its floor fails unless data/release/rendered_size_baseline.json names the shrink and the exact byte count. A floor seeded today cannot see a page that was ALREADY re-frozen thinner - a sibling repo audited on the same day had 18 in that state - so data/release/historic_page_maximum.json enumerates this repo's 862 routes below their historic maximum (111 of which lost 626 delivered artifact blocks) as a shrink-only ratchet, and a new occurrence fails.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -9232,6 +9287,46 @@
         "retirement_reason": null
       },
       {
+        "id": "historic-artifact-recovery",
+        "title": "Artifact blocks lost before the store existed stay recovered",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_historic_artifact_recovery.js",
+        "command": "node scripts/validators/validate_historic_artifact_recovery.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/release/historic_page_maximum.json",
+          "data/release/historic_recovered_artifacts.json",
+          "data/release/withheld_page_phrases.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/historic-artifact-recovery.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/historic-artifact-recovery.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents the 187 reader-facing artifact blocks recovered from git on 2026-09-01 - lost by the 2026-08-24 and 2026-08-27 thaw-rebuild-reaccept cycles - from silently leaving again, and prevents internal build-directive text that three landed PRs deliberately deleted from being restored along with them.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "html-fix-acceptance-compiler",
         "title": "HTML FIX acceptance compiler",
         "status": "ACTIVE",
@@ -10098,7 +10193,8 @@
         "command": "node scripts/validators/validate_rendered_output_shrink_guard.js",
         "depends_on": [],
         "requires_files": [
-          "data/release/rendered_size_baseline.json"
+          "data/release/rendered_size_baseline.json",
+          "data/release/historic_page_maximum.json"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
@@ -10110,7 +10206,7 @@
           "artifacts/validation/rendered-output-shrink-guard.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Prevents a thaw-rebuild-reaccept cycle installing a thinner page as the new baseline. That is exactly how 14 KB and 22 KB of delivered content left two dentistry pages with CI green. Floors rise only; a page below its floor fails unless data/release/rendered_size_baseline.json names the shrink and the exact byte count.",
+        "risk_prevented": "Prevents a thaw-rebuild-reaccept cycle installing a thinner page as the new baseline. That is exactly how 14 KB and 22 KB of delivered content left two dentistry pages with CI green. Floors rise only; a page below its floor fails unless data/release/rendered_size_baseline.json names the shrink and the exact byte count. A floor seeded today cannot see a page that was ALREADY re-frozen thinner - a sibling repo audited on the same day had 18 in that state - so data/release/historic_page_maximum.json enumerates this repo's 862 routes below their historic maximum (111 of which lost 626 delivered artifact blocks) as a shrink-only ratchet, and a new occurrence fails.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

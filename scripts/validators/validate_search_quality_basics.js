@@ -59,9 +59,25 @@ for(const abs of walk(ROOT).filter(p=>p.endsWith('.html'))){
   if(h1!==1)errors.push(`${rel}:h1_count_${h1}`);
   indexable.push({rel,route:routeNorm,canonical,text:strip(html)});
 }
+// The loc PATH has to equal the redirect source, not merely end with it.
+//
+// `[^<]+` used to swallow any number of leading path segments, so the redirect source
+// /neuro-033-adult-specialist-anxiety-vs-adhd-eval-near-me/ matched the sitemap entry
+// for /insights/neuro-033-adult-specialist-anxiety-vs-adhd-eval-near-me - a different
+// URL, correctly advertised, and the only one of the two that exists. Three legitimate
+// agent-URL aliases turned this validator amber on 2026-09-01 for URLs the sitemap does
+// not contain. The host is matched explicitly and the path is anchored, so an alias only
+// trips this when the sitemap really does advertise the address being redirected away.
+const sitemapPaths=new Set();
+for(const m of sitemapText.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)){
+  let loc=m[1].replace(/^https?:\/\/[^/]+/,'').replace(/[?#].*$/,'');
+  if(!loc.startsWith('/'))loc=`/${loc}`;
+  sitemapPaths.add(loc);
+  sitemapPaths.add(loc.endsWith('/')?loc.slice(0,-1):`${loc}/`);
+}
 for(const source of redirects){
   const escaped=source.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  if(new RegExp(`<loc>https?://[^<]+${escaped.replace(/\/$/,'/?')}</loc>`).test(sitemapText))errors.push(`redirect_source_in_sitemap:${source}`);
+  if(sitemapPaths.has(source))errors.push(`redirect_source_in_sitemap:${source}`);
   if(new RegExp(`"path"\\s*:\\s*"${escaped.replace(/\//g,'\\/')}"`).test(admission))errors.push(`redirect_source_admitted:${source}`);
 }
 const exact=new Map();
