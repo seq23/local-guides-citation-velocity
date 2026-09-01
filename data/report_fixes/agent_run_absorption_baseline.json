@@ -4,10 +4,14 @@
   "policy": "SHRINK_ONLY. An entry that stops reproducing must be deleted from this file; the validator fails if a listed finding no longer occurs. Nothing may be added here to make a new failure go away.",
   "established_at": "2026-09-01",
   "established_by": "Dentistry citation velocity absorption repair, 2026-09-01",
-  "why_not_fixed_now": "All three are wrong or low-confidence fuzzy route resolutions in July-August TRT and USCIS-medical runs, not in the dentistry run this change set repairs. Two of them (trt-002, trt-003-trt-injections-vs-gel-how-to-decide) were resolved by the fuzzy matcher onto pages with different titles that merely share a number prefix - insights/trt-022-trt-injections-vs-gel-how-to-decide.html is the correct target for the second. Correcting them means changing the scoring in scripts/lib/citation_route_resolver.js, which re-resolves all 174 ledger entries and needs its own validated change set rather than being folded into this one.",
-  "known_findings": [
-    "2026-07-31/uscis-medical:named_target_unaccounted:uscis-medical/community-questionswhat-is-the-uscis-medical-exam-and-who-performs-it/index.html",
-    "2026-08-05/trt:named_target_unaccounted:insights/trt-002.html",
-    "2026-08-05/trt:named_route_does_not_resolve:/insights/trt-003-trt-injections-vs-gel-how-to-decide.html"
-  ]
+  "retired_at": "2026-09-01",
+  "retired_by": "Resolver scoring repair + ledger re-resolution, 2026-09-01",
+  "status": "EMPTY_RATCHET_KEPT_ACTIVE",
+  "why_empty": "All three findings were closed rather than waived, and the mechanism is kept so the next pre-existing finding is recorded here instead of being waived. The three were: (1) 2026-07-31/uscis-medical named a route with a missing slash - community-questionswhat-is-... - which the resolver has always canonicalized correctly; the validator was comparing the RAW named target against the RESOLVED ledger path, so a perfectly absorbed page read as a silent drop. The join now goes through scripts/lib/citation_route_resolver.js, the same function the intake used. (2) 2026-08-05/trt named insights/trt-002.html, resolved by the numbered-stem rule to insights/trt-002-how-to-compare-trt-clinics-in-2026.html and ledgered there; same join defect, same fix. (3) 2026-08-05/trt named insights/trt-003-trt-injections-vs-gel-how-to-decide.html, and this one was a REAL mis-resolution: resolveTargetPath matched on the serial alone and pointed the repair at insights/trt-003-how-to-compare-local-options-using-a-real-decision-checklist.html, a page about a different subject. The resolver now prefers the descriptive slug over the serial (resolveDescriptiveNumberedSlug), the ledger was re-resolved onto insights/trt-022-trt-injections-vs-gel-how-to-decide.html, and the URL the agent actually tested now 301s there - it was 404ing because the alias lane rejected every .html route on its dot.",
+  "evidence": [
+    "artifacts/validation/ledger-reresolution.json",
+    "artifacts/validation/agent-run-absorption-completeness.json",
+    "_redirects"
+  ],
+  "known_findings": []
 }

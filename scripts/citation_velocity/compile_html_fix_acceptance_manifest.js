@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { compileEntryFromSpec, phrasesTheFixAsksToRemove, normalizeForbidden } = require('../lib/html_fix_acceptance_parser');
+const { compileEntryFromSpec, artifactFromFix, phrasesTheFixAsksToRemove, normalizeForbidden } = require('../lib/html_fix_acceptance_parser');
 const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
@@ -62,18 +62,47 @@ function main() {
   // a phrase its own fix asked to delete, so it can still be asserting one. The
   // recommendation that proves it is stored on the entry as row_requirements[].source_fix,
   // so the same filter is re-applied here rather than trusting an old compile.
+  //
+  // 2026-09-01: dropping it from the required_strings was only half the repair. The
+  // same quoted span had also been chosen as the artifact TITLE, which renders as the
+  // visible <h2> and is copied into required_blocks[].heading_exact - so
+  // /dentistry/choosing-a-dentist/ went on publishing a heading reading "Use the same
+  // questions with every lawyer on your shortlist" while asserting nothing about it.
+  // A carried artifact whose title is a phrase its own fix asked to delete is now
+  // RECOMPILED from that same source_fix through the repaired parser, rather than
+  // merely un-asserted, and its row's heading_exact is re-pointed at the new title.
   const cleanCarried = (entry) => {
     const forbidden = new Set();
     for (const row of entry.row_requirements || []) {
       for (const phrase of phrasesTheFixAsksToRemove(row.source_fix || '')) forbidden.add(phrase);
     }
     if (!forbidden.size) return entry;
-    const drop = (list) => (list || []).filter((value) => !forbidden.has(normalizeForbidden(value)));
+    const isForbidden = (value) => forbidden.has(normalizeForbidden(value));
+    const drop = (list) => (list || []).filter((value) => !isForbidden(value));
+    const rowForTitle = (title) => (entry.row_requirements || [])
+      .find((row) => (row.required_blocks || []).some((block) => block && block.heading_exact === title));
+    const retitled = new Map();
+    const artifacts = (entry.artifacts || []).map((artifact) => {
+      if (!artifact || !isForbidden(artifact.title)) return artifact;
+      const row = rowForTitle(artifact.title);
+      if (!row) return null; // Nothing to recompile from: refuse to publish it at all.
+      const rebuilt = artifactFromFix({ recommendation: row.source_fix, query: row.query, recordId: row.row_id, index: 0 });
+      retitled.set(artifact.title, rebuilt.title);
+      return { ...rebuilt, id: artifact.id, marker: artifact.marker };
+    }).filter(Boolean);
     return {
       ...entry,
+      title: isForbidden(entry.title) ? (retitled.get(entry.title) || artifacts[0]?.title || entry.title) : entry.title,
+      artifacts,
       required_strings: drop(entry.required_strings),
       checklist: drop(entry.checklist),
-      row_requirements: (entry.row_requirements || []).map((row) => ({ ...row, required_strings: drop(row.required_strings) }))
+      row_requirements: (entry.row_requirements || []).map((row) => ({
+        ...row,
+        required_blocks: (row.required_blocks || []).map((block) => (block && isForbidden(block.heading_exact)
+          ? { ...block, heading_exact: retitled.get(block.heading_exact) || block.heading_exact, heading_source: 'derived' }
+          : block)),
+        required_strings: drop(row.required_strings)
+      }))
     };
   };
 

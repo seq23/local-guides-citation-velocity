@@ -79,13 +79,29 @@ const byRoute = new Map(pages.map(p => [p.path || p.slug, p]));
 
 // Routes proven to lose content, by actually thawing them in a throwaway
 // worktree, rebuilding, and diffing. These are measurements, not estimates.
-const CONFIRMED = {
-  '/dentistry/choosing-a-dentist/': 1172,
-  '/dentistry/dental-bridge-vs-implant/': 1269,
-  '/dentistry/cosmetic-restorative/': 621,
-  '/dentistry/pediatric-family/': 519,
-  '/dentistry/clear-aligners/': 488,
-};
+// 2026-09-01: EMPTY, because the five confirmed routes were REPAIRED, not because the
+// measurement was wrong.
+//
+// The five below lost 4,069 words between them on a thaw-and-rebuild. A full-portfolio
+// measurement then found the same defect on 249 routes, 1,145,001 bytes: artifact blocks
+// re-derived at build time from a semantic manifest that was a per-run snapshot, so the
+// frozen store held the only copy. The blocks are now parsed back out of the accepted
+// output into data/release/accepted_page_artifacts.json and merged in at every render
+// site, and a full thaw loses zero artifacts.
+//
+//   /dentistry/dental-bridge-vs-implant/  1269w    /dentistry/pediatric-family/  519w
+//   /dentistry/choosing-a-dentist/        1172w    /dentistry/clear-aligners/    488w
+//   /dentistry/cosmetic-restorative/       621w
+//
+// Leaving them listed would have this validator asserting, in prose, a loss that no
+// longer happens - the exact "validator that asserts a claim rather than behaviour"
+// failure. What actually measures recoverability now is accepted-artifact-recovery
+// (is every delivered block still reproducible?) and rendered-output-shrink-guard (did
+// any page get smaller without a named reason?). Both hard-fail. This one keeps its
+// SCREEN, which is still useful for spotting the NEXT route that drifts from source.
+//
+// A new confirmed route belongs here, with the measurement that proved it.
+const CONFIRMED = {};
 
 const at_risk = [];
 let checked = 0;

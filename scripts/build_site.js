@@ -43,6 +43,15 @@ const {
 const { buildFanoutData, injectFanoutIntoHtml, inferPageFamily } = require('./lib/fanout');
 const { getPageShapeConfig } = require('./lib/page_shape_config');
 const { renderCitationVelocityArtifacts } = require('./lib/citation_velocity_artifacts');
+// Artifact blocks already DELIVERED on an accepted route, merged back in at render
+// time. See scripts/lib/accepted_artifacts.js: until the semantic manifest became
+// durable it was a per-run snapshot, so 249 accepted pages rebuilt 1,145,001 bytes
+// lighter and only the frozen guard's restore hid it.
+const { mergeAcceptedArtifacts } = require('./lib/accepted_artifacts');
+// MedicalWebPage / PriceSpecification. See scripts/lib/medical_schema.js: FAQPage and
+// HowTo were live everywhere, the medical types were emitted nowhere, and the citation
+// runs asked for them on every neuro and dentistry sweep since July.
+const { isMedicalHubRoute, medicalWebPageNode, costSpecificationTable, pageRoute } = require('./lib/medical_schema');
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
@@ -854,6 +863,12 @@ function buildProgrammaticPageSchemas({ siteBase, page, absUrl, sections }) {
       ]
     }
   ];
+  // Medical hubs and sub-hubs also declare what they are. Where the route carries
+  // citable itemized costs, the same rows the visible table shows are attached as
+  // PriceSpecification inside the node - never independently of the visible table.
+  if (isMedicalHubRoute(pageRoute(page), page.vertical)) {
+    graph.push(medicalWebPageNode({ siteBase, page, absUrl, dateModified }));
+  }
   return graph;
 }
 
@@ -1976,7 +1991,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
       // direct answer, the decision checklist and the citation artifacts that make
       // the page worth citing in the first place.
       const liveRepaired = liveRecord ? applyAgentExactRepairsToPage(JSON.parse(JSON.stringify(liveRecord)), loadAgentExactLedger()) : null;
-      const liveArtifacts = liveRepaired ? renderCitationVelocityArtifacts(liveRepaired.citation_velocity_artifacts || []) : '';
+      const liveArtifacts = liveRepaired ? renderCitationVelocityArtifacts(mergeAcceptedArtifacts(pathSlug, liveRepaired.citation_velocity_artifacts || [])) : '';
       const liveAnswer = liveRepaired && liveRepaired.answer
         ? `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(liveRepaired.answer)}</p></section>`
         : '';
@@ -2222,7 +2237,13 @@ for (const [vertical, meta] of Object.entries(registry)) {
       ? renderComparisonTable(pageShape.costTableTitle, pageShape.costTableHeaders, pageShape.costTableRows, 'Cost table')
       : '';
     const frameworkBox = pageShape ? renderFrameworkBox(pageShape.frameworkTitle, pageShape.frameworkBullets) : '';
-    const citationVelocityArtifacts = renderCitationVelocityArtifacts(p.citation_velocity_artifacts || []);
+    // The itemized cost table and the PriceSpecification schema come from one dataset,
+    // so the markup can never quote a figure the page does not display.
+    const costSpecArtifact = costSpecificationTable(pageRoute(p));
+    const citationVelocityArtifacts = renderCitationVelocityArtifacts([
+      ...(costSpecArtifact ? [costSpecArtifact] : []),
+      ...mergeAcceptedArtifacts(p.slug || p.path, p.citation_velocity_artifacts || [])
+    ]);
     const sensitivityDisclosure = p.disclaimer ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(p.disclaimer)}</p></section>` : '';
     const editorialSourceLinks = (p.source_records || []).map((id)=>editorialSourceMap.get(id)).filter(Boolean).map((src)=>`<li><a href="${htmlEscape(src.url)}">${htmlEscape(src.title || src.publisher || src.source_id)}</a> <span class="muted">— ${htmlEscape(src.authority_scope || src.publisher || 'Primary source')}; reviewed ${htmlEscape(src.retrieved_at || p.date_modified || nowISODate())}</span></li>`).join('');
     const editorialSourceBlock = editorialSourceLinks ? `<section class="card primary-sources" data-primary-sources="true"><div class="badge">Primary sources</div><h2 class="h2" style="margin-top:8px">Verify the source before acting</h2><ul>${editorialSourceLinks}</ul></section>` : '';
@@ -2515,7 +2536,7 @@ ${m}`;
     const rootClusterMeta = clusterRegistry[h.v] && clusterRegistry[h.v].clusters ? clusterRegistry[h.v].clusters[rootClusterSlug] : null;
     const rootAtlasConfig = atlasStructures.atlas[h.v] || null;
     const rootClusterKnowledge = rootClusterMeta ? renderClusterKnowledgeBlock({ vertical: h.v, cluster: rootClusterSlug }, rootClusterMeta, rootAtlasConfig, atlasInsightItems, clusterPages) : '';
-    const citationVelocityArtifacts = renderCitationVelocityArtifacts(page.citation_velocity_artifacts || []);
+    const citationVelocityArtifacts = renderCitationVelocityArtifacts(mergeAcceptedArtifacts(page.slug || h.slug, page.citation_velocity_artifacts || []));
     const pageAtom = renderProgrammaticContentAtom(page.content_atom, page.title || h.title);
     const hubDirectAnswer = `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title || h.title, page.description || h.desc, 70, page.content_atom))}</p></section>`;
     const sensitivityDisclosure = page.disclaimer ? `<section class="card sensitivity-disclosure"><div class="badge">Important boundary</div><h2 class="h2" style="margin-top:8px">What this page cannot decide for you</h2><p>${htmlEscape(page.disclaimer)}</p></section>` : '';

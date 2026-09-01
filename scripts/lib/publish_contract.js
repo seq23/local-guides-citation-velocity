@@ -9,6 +9,7 @@ function ensureMetaDescription(desc, title) {
 'use strict';
 
 const { renderCitationVelocityArtifacts } = require('./citation_velocity_artifacts');
+const { mergeAcceptedArtifacts } = require('./accepted_artifacts');
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, validateContentAtom } = require('./content_atom');
 const { LEDGER_PATH, applyAgentExactRepairsToInsightItem } = require('./agent_exact_repairs');
 const { headingFor } = require('./answer_shape');
@@ -550,7 +551,7 @@ function renderInsightPage(item) {
   // this can legitimately be empty. When it is, the heading is omitted rather than
   // printing "Red flags to watch" above an empty list.
   const redFlags = withoutBuildAcceptanceCriteria(item.red_flags || []).map(i => `<li>${htmlEscape(i)}</li>`).join('');
-  const citationVelocityArtifacts = renderCitationVelocityArtifacts(item.citation_velocity_artifacts || []);
+  const citationVelocityArtifacts = renderCitationVelocityArtifacts(mergeAcceptedArtifacts(item.publish_path || item.slug, item.citation_velocity_artifacts || []));
   const contentAtom = renderContentAtom(item.content_atom);
   const relatedQuestions = (item.related_questions || []).slice(0, 6).map((rel) => `<li><a href="${htmlEscape(toPublicUrl(rel.publish_path))}">${htmlEscape(rel.title)}</a></li>`).join('');
   const nextQuestions = (item.next_questions || []).slice(0, 4).map((rel) => `<li><a href="${htmlEscape(toPublicUrl(rel.publish_path))}">${htmlEscape(rel.title)}</a></li>`).join('');

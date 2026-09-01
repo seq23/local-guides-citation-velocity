@@ -30,6 +30,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveTargetPath, normalizeImplementationPath } = require('../lib/citation_route_resolver');
 
 const ROOT = path.resolve(__dirname, '../..');
 const AGENT_RUNS = 'data/report_fixes/agent_runs';
@@ -82,7 +83,40 @@ function main() {
       const v = toImplPath(entry[key]);
       if (v) absorbed.add(v);
     }
+    // Every URL the agent named for this page, kept across ledger merges.
+    for (const alias of entry.resolver_aliases || []) {
+      const v = toImplPath(alias);
+      if (v) absorbed.add(v);
+    }
   }
+
+  // THE JOIN HAS TO GO THROUGH THE SAME RESOLVER THE INTAKE USED.
+  //
+  // A run names the URL it tested. The ledger records the page this repo actually
+  // repaired, which scripts/lib/citation_route_resolver.js derived from that name and
+  // is frequently a different string - insights/trt-002.html is
+  // insights/trt-002-how-to-compare-trt-clinics-in-2026.html, and
+  // uscis-medical/community-questionswhat-is-...-performs-it/ is the same page with the
+  // missing slash restored. Comparing the raw name against the resolved path therefore
+  // reported perfectly absorbed targets as silent drops. Two of the three findings in
+  // the absorption ratchet were this, not a real absorption failure: both pages were in
+  // the ledger the whole time, under the name the resolver gave them.
+  //
+  // Resolving here is not leniency. It is the same function, on the same input, so the
+  // question asked is the one that matters: is the page the agent MEANT accounted for?
+  const resolvedCache = new Map();
+  const resolveNamed = (raw) => {
+    const key = String(raw || '');
+    if (!key) return '';
+    if (resolvedCache.has(key)) return resolvedCache.get(key);
+    let out = '';
+    try {
+      const verdict = resolveTargetPath({ value: key });
+      out = verdict && !verdict.block_reason ? normalizeImplementationPath(verdict.implementation_path || '') : '';
+    } catch { out = ''; }
+    resolvedCache.set(key, out);
+    return out;
+  };
 
   // A spec the plan recorded - blocked, carried, or planned - is accounted for even
   // when it did not land. Absence of a RECORD is the defect; a recorded hold is not.
@@ -179,9 +213,10 @@ function main() {
         const route = info.route;
         namedTargetsExamined += 1;
         if (!looksLikeRoute(route)) { malformed.push(route.slice(0, 120)); continue; }
-        const isAbsorbed = absorbed.has(impl);
+        const resolvedImpl = absorbed.has(impl) ? impl : resolveNamed(impl);
+        const isAbsorbed = absorbed.has(impl) || (resolvedImpl && absorbed.has(resolvedImpl));
         if (isAbsorbed) absorbedHere += 1;
-        else if (!dispositions.has(impl) && !info.planned) unaccounted.push(impl);
+        else if (!dispositions.has(impl) && !dispositions.has(resolvedImpl) && !info.planned) unaccounted.push(impl);
 
         // Does the URL the agent tested actually resolve?
         if (realRoutes.has(route) || existsOnDisk(route)) continue;

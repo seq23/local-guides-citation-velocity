@@ -147,6 +147,86 @@
       "tier": "Tier 1",
       "scope": "CONTAINER",
       "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 60,
+      "id": "accepted-artifact-recovery",
+      "title": "Delivered artifacts stay derivable from source",
+      "path": "scripts/validators/validate_accepted_artifact_recovery.js",
+      "command": "node scripts/validators/validate_accepted_artifact_recovery.js",
+      "risk_prevented": "Prevents the frozen store becoming the only copy of delivered content. The semantic acceptance manifest was a per-run snapshot until 2026-09-01, so 249 accepted routes rebuilt 1,145,001 bytes lighter and the frozen restore hid it; the loss only became visible when a page was legitimately thawed. This proves data/release/accepted_page_artifacts.json still matches the accepted output, so every delivered artifact block is reproducible by a build.",
+      "requires_files": [
+        "data/release/frozen_page_registry.json",
+        "data/release/accepted_page_artifacts.json",
+        "data/release/withheld_page_phrases.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/accepted-artifact-recovery.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/accepted-artifact-recovery.json"
+      ],
+      "why_existing_checks_do_not_cover": "frozen-output-integrity proves the accepted bytes are intact; frozen-content-recoverability screens for routes that render more than their sections. Neither proves the artifact blocks on an accepted page can still be produced by a build, which is the condition that turned a routine thaw into silent content loss."
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 5",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "admission-reachability",
+      "title": "Released-page admission reachability",
+      "path": "scripts/validators/validate_admission_reachability.js",
+      "command": "node scripts/validators/validate_admission_reachability.js",
+      "tags": [
+        "admission",
+        "sitemap",
+        "release"
+      ],
+      "risk_prevented": "The admission registry is built from published_urls.json, which is built from the routes the admission registry admits. That fixed point meant no page released after the 2026-06-19 baseline could ever enter it: eleven routes were promoted to live as ADMITTED, rendered as indexable HTML, and named by no sitemap, feed or llms export. Left in place it would have turned the newly wired 46-route backlog drain into 46 new orphans. This fails if any released, rendered, non-retired page is missing from the registry.",
+      "why_existing_checks_do_not_cover": "rendered-route-admission-parity accepts a declared exclusion or a 301 as a complete answer, so a route can satisfy it forever while staying unreachable. sitemap-parity compares two artifacts derived from the same array and agrees with itself by construction. This one asks the different question: was the page the release lane actually released ever made findable?",
+      "requires_files": [
+        "content/_live/pages.json",
+        "data/content/page_admission_registry.json",
+        "_redirects"
+      ],
+      "produces_files": [],
+      "mutates_files": []
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
         "agent-run",
         "audit",
         "content-release",
@@ -178,50 +258,6 @@
       "depends_on": [],
       "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
       "estimated_runtime_seconds": 20
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "agent-run",
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "agent-run-absorption-completeness",
-      "title": "Landed agent runs are absorbed, not merely wired",
-      "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
-      "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
-      "requires_files": [
-        "data/report_fixes/agent_runs",
-        "data/report_fixes/agent_exact_implementation_ledger.json",
-        "data/report_fixes/agent_run_absorption_baseline.json",
-        "content/_live/pages.json",
-        "_redirects"
-      ],
-      "produces_files": [
-        "artifacts/validation/agent-run-absorption-completeness.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/agent-run-absorption-completeness.json"
-      ],
-      "timeout_seconds": 180,
-      "depends_on": [
-        "agent-artifact-continuity"
-      ],
-      "why_existing_checks_do_not_cover": "agent-artifact-priority and agent-artifact-continuity assert the wiring and the artifact quartet. Neither compares what a run ASKED FOR against what the repo actually contains, which is why a fully-wired, fully-continuous pipeline absorbed a third of a run and reported success.",
-      "estimated_runtime_seconds": 15
     },
     {
       "status": "ACTIVE",
@@ -485,6 +521,50 @@
       "depends_on": [],
       "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
       "estimated_runtime_seconds": 20
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "agent-run-absorption-completeness",
+      "title": "Landed agent runs are absorbed, not merely wired",
+      "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
+      "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "requires_files": [
+        "data/report_fixes/agent_runs",
+        "data/report_fixes/agent_exact_implementation_ledger.json",
+        "data/report_fixes/agent_run_absorption_baseline.json",
+        "content/_live/pages.json",
+        "_redirects"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-run-absorption-completeness.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-run-absorption-completeness.json"
+      ],
+      "timeout_seconds": 180,
+      "depends_on": [
+        "agent-artifact-continuity"
+      ],
+      "why_existing_checks_do_not_cover": "agent-artifact-priority and agent-artifact-continuity assert the wiring and the artifact quartet. Neither compares what a run ASKED FOR against what the repo actually contains, which is why a fully-wired, fully-continuous pipeline absorbed a third of a run and reported success.",
+      "estimated_runtime_seconds": 15
     },
     {
       "id": "agent-run-artifact-intake",
@@ -762,42 +842,6 @@
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "enforce_no_source_mutation": true,
-      "id": "atlas-unit-contract",
-      "title": "Query atlas demand-unit contract",
-      "path": "scripts/validators/validate_atlas_units.js",
-      "command": "node scripts/validators/validate_atlas_units.js",
-      "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
-      "requires_files": [
-        "data/queries/evidence/evidence_queries.json",
-        "data/authority_scale/query_atlas.json"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "timeout_seconds": 180,
-      "depends_on": [
-        "query-atlas"
-      ],
-      "why_existing_checks_do_not_cover": "The query-atlas gate checks that demand evidence exists; it cannot check what unit that evidence is in, and no other validator inspects search_volume, impressions_90d, demand_basis, or rank_band at all.",
-      "estimated_runtime_seconds": 5
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
       "id": "atlas-release-join",
       "title": "Measured demand to release-queue join",
       "path": "scripts/validators/validate_atlas_release_join.js",
@@ -818,6 +862,42 @@
       ],
       "why_existing_checks_do_not_cover": "query-atlas checks that demand evidence exists and atlas-unit-contract checks what unit that demand is in. Neither inspects winnability at all, and nothing validated the release-queue candidate lane, which did not exist until the atlas was joined to publishing.",
       "estimated_runtime_seconds": 4
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "atlas-unit-contract",
+      "title": "Query atlas demand-unit contract",
+      "path": "scripts/validators/validate_atlas_units.js",
+      "command": "node scripts/validators/validate_atlas_units.js",
+      "risk_prevented": "Prevents monthly search volume and this domain's own GSC impressions from being stored in one field and compared by rank_score. Fails on any surviving `volume` key, a GSC row claiming search_volume without keyword-tool provenance, a demand_basis that disagrees with the populated fields, an unbanded or cross-band rank_score, and any source file still reading `.volume` off a query row.",
+      "requires_files": [
+        "data/queries/evidence/evidence_queries.json",
+        "data/authority_scale/query_atlas.json"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "timeout_seconds": 180,
+      "depends_on": [
+        "query-atlas"
+      ],
+      "why_existing_checks_do_not_cover": "The query-atlas gate checks that demand evidence exists; it cannot check what unit that evidence is in, and no other validator inspects search_volume, impressions_90d, demand_basis, or rank_band at all.",
+      "estimated_runtime_seconds": 5
     },
     {
       "id": "atom-contract",
@@ -2639,6 +2719,94 @@
       "enforce_no_source_mutation": true
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 5",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict",
+        "content-release"
+      ],
+      "id": "generated-page-substance",
+      "title": "Generated page substance and vertical fit",
+      "path": "scripts/validators/validate_generated_page_substance.js",
+      "command": "node scripts/validators/validate_generated_page_substance.js",
+      "tags": [
+        "content",
+        "generator",
+        "quality"
+      ],
+      "risk_prevented": "The release lane's section builder wrote instructions to the page about itself with the query pasted in - 'dallas dental implant cost is an admitted community question answer, so the direct answer must stay tied to current source review' - so a page could name Dallas in its title and mention it nowhere in its body. It also emitted a hardcoded USCIS civil-surgeon comparison table for every comparison_guide whatever the vertical, and the oldest row in the unbuilt backlog is a dentistry comparison guide. This fails on self-referential template phrasing in a published page and on a decision table written in another vertical's vocabulary.",
+      "why_existing_checks_do_not_cover": "rendered-programmatic-substance counts words, sources and sections, all of which the template text satisfied - four such pages measured 561-576 projected words with six sections and a source record each. Word count cannot tell a page about its subject from a page about itself, and nothing at all checked that a table matched its vertical.",
+      "requires_files": [
+        "content/_live/pages.json",
+        "content/_staged/pages.json",
+        "scripts/lib/rich_new_page_blocks.js"
+      ],
+      "produces_files": [],
+      "mutates_files": []
+    },
+    {
+      "id": "generator-instruction-refusal",
+      "title": "Generators refuse internal build instructions at source",
+      "path": "scripts/validators/validate_generator_instruction_refusal.js",
+      "command": "node scripts/validators/validate_generator_instruction_refusal.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "generator"
+      ],
+      "risk_prevented": "no-internal-instruction-leak scans published HTML, so it fires only after a generator has already written a build directive into a page, on whatever run happens to rebuild it. a5bd62cc8 removed the two known render sites, added looksLikeInternalInstruction() to agent_exact_repairs.js and never called it, and never touched the compiler; html_fix_acceptance_parser.js went on lifting an agent's quoted example of the defect into an artifact title and a required_string, which is how insights/neuro-013 shipped an <h2> reading 'Citation-ready update: FILEPATH...'. This asserts both producers import the shared predicate and call it, and that the gate's pattern set and the generator's refusal set cannot drift apart.",
+      "why_existing_checks_do_not_cover": "The published-page scan proves a rendered page is clean on the run it happens to execute; it cannot prove the compiler will refuse to author the directive as acceptance criteria, nor that a guard function is invoked rather than merely defined.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/generator-instruction-refusal.json",
+      "failure_action": "restore the shared refusal in scripts/lib/internal_instruction_text.js and its call sites in the compiler and renderer; do not widen the published-page gate instead",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/lib/internal_instruction_text.js",
+        "scripts/lib/html_fix_acceptance_parser.js",
+        "scripts/lib/agent_exact_repairs.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/generator-instruction-refusal.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/generator-instruction-refusal.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "homepage-request-assistance",
       "title": "Homepage Find a Provider and editorial architecture",
       "path": "scripts/validators/validate_homepage_request_assistance.js",
@@ -3019,97 +3187,41 @@
       ]
     },
     {
-      "id": "self-heal-repair-contract",
-      "title": "Self-heal repair contract",
-      "path": "scripts/validators/validate_self_heal_repair_contract.js",
-      "command": "node scripts/validators/validate_self_heal_repair_contract.js",
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
-      "tier": "Tier 7",
+      "tier": "Tier 1",
       "scope": "CONTAINER",
       "profiles": [
         "audit",
+        "content-release",
         "core",
+        "full-audit",
         "local",
-        "postrelease",
         "release",
         "strict"
       ],
-      "tags": [
-        "self-healing",
-        "validation",
-        "registry"
-      ],
-      "risk_prevented": "A validator can declare a repair_command that rewrites files the validator never reads. The self-heal loop then runs an inert command, it exits 0 having changed nothing, and every repair attempt is burned reaching the same failure.",
-      "why_existing_checks_do_not_cover": "The registry validator checks registry schema and the self-heal loop trusts repair_command blindly; nothing proved a declared repair can affect the validator that declares it.",
-      "estimated_runtime_seconds": 2,
-      "timeout_seconds": 60,
-      "evidence_file": "artifacts/validation/self-heal-repair-contract.json",
-      "failure_action": "stop release and repoint the repair at a command that rewrites what the validator reads",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
       "depends_on": [],
+      "estimated_runtime_seconds": 90,
+      "id": "ledger-reresolution",
+      "title": "The implementation ledger agrees with the route resolver",
+      "path": "scripts/validators/validate_ledger_reresolution.js",
+      "command": "node scripts/validators/validate_ledger_reresolution.js",
+      "risk_prevented": "Prevents the ledger silently disagreeing with the resolver after a scoring change. insights/trt-003-trt-injections-vs-gel-how-to-decide.html was resolved on its serial alone onto a page about a different subject, the repair landed there, and the tested URL went on 404ing - a finding that sat ratcheted for a month.",
       "requires_files": [
-        "_validation_registry.json",
-        "package.json"
+        "data/report_fixes/agent_exact_implementation_ledger.json"
       ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
       "produces_files": [
-        "artifacts/validation/self-heal-repair-contract.json"
+        "artifacts/validation/ledger-reresolution.json"
       ],
       "mutates_files": [
-        "artifacts/validation/self-heal-repair-contract.json"
+        "artifacts/validation/ledger-reresolution.json"
       ],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
-    },
-    {
-      "id": "self-heal-commit-coverage",
-      "title": "Self-heal commit coverage",
-      "path": "scripts/validators/validate_self_heal_commit_coverage.js",
-      "command": "node scripts/validators/validate_self_heal_commit_coverage.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 7",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "self-healing",
-        "workflow",
-        "commit-surface"
-      ],
-      "risk_prevented": "The scheduled lane that runs the self-heal loop can heal a tree, validate the healed tree, then commit a different one, because the paths its repairs rewrite fall outside its commit pattern. The repair is discarded every run and the same defect is repaired forever.",
-      "why_existing_checks_do_not_cover": "self-heal-repair-contract proves a repair can clear its validator; nothing proved the lane running that repair could commit what it rewrote, and the workflow inventory declared no mutation surface for that lane at all.",
-      "estimated_runtime_seconds": 2,
-      "timeout_seconds": 60,
-      "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
-      "failure_action": "stop release and widen the lane commit surface, or stop the lane committing a state it did not validate",
-      "depends_on": [
-        "self-heal-repair-contract"
-      ],
-      "requires_files": [
-        "_validation_registry.json",
-        ".github/workflows/query-evidence-refresh.yml",
-        "scripts/selfheal/run_lane_selfheal.mjs"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/self-heal-commit-coverage.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/self-heal-commit-coverage.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+      "why_existing_checks_do_not_cover": "agent-exact-implementation validates ledger shape and coverage. Nothing re-ran the resolver over landed entries, so a resolver improvement left every earlier entry pointing wherever the old scoring sent it."
     },
     {
       "id": "live-hubs",
@@ -3187,6 +3299,43 @@
         "artifacts/validation/lkg-candidates.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "llm-citation-observation-integrity",
+      "title": "LLM citation observation freshness, status and reading ratchet",
+      "path": "scripts/validators/validate_llm_citation_observation_integrity.js",
+      "command": "node scripts/validators/validate_llm_citation_observation_integrity.js",
+      "risk_prevented": "data/signals/llm_citation_observations.json had NO consumer and NO validator - a repo-wide grep found only its writer - so every regression in the only real citation measurement this repo takes was invisible. Prevents a provider-error run overwriting latest_summary with a null rate stamped with today's date (reproduced with an invalid key: a MEASURED 25-observation summary became answered:0, self_cited_rate_pct:null). Prevents the rolling window silently dropping paid grounded runs, ratcheting the file's depth against an external high-water mark exactly as the occupancy ratchet does after 170 paid readings were deleted by an exit-0 run on 2026-08-29. Fails a stale file whose probe has quietly stopped running, and fails on zero runs or zero observations examined.",
+      "requires_files": [
+        "scripts/llm_citation_probe.mjs",
+        "data/signals/llm_citation_observations.json",
+        "data/signals/llm_citation_observations_highwater.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/llm-citation-observation-integrity.json"
+      ],
+      "mutates_files": [],
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "occupancy-reading-ratchet covers data/signals/query_class_occupancy.json only. No validator referenced llm_citation_observations.json at all; the atlas does not read it and the atlas->release join does not read it, so nothing in the repo would have noticed the file being truncated, gone stale, or having its measured rate replaced by a null.",
+      "estimated_runtime_seconds": 2
     },
     {
       "id": "llm-exports",
@@ -3382,6 +3531,85 @@
       "enforce_no_source_mutation": false
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "main-writer-ordering",
+      "title": "The sitemap is derived after the registry it reads, and every main writer shares one lock",
+      "path": "scripts/validators/validate_main_writer_ordering.js",
+      "command": "node scripts/validators/validate_main_writer_ordering.js",
+      "risk_prevented": "build_site.js derives the sitemap from data/content/page_admission_registry.json, and finalize_content_release.js rebuilt that registry four steps AFTER the build that reads it, so a route the release had just admitted could never reach the sitemap it published - validate_page_release_law failed two dentistry guides as sitemap_missing on 2026-08-30. Separately, four workflows push to main and each held its own concurrency group, which serialises a workflow against itself but not against the branch; two overlapped and the second lost its push with a non-fast-forward rejection. Both are ordering and linkage facts that no content validator can see.",
+      "requires_files": [
+        "scripts/release/finalize_content_release.js",
+        ".github/workflows"
+      ],
+      "produces_files": [
+        "artifacts/validation/main-writer-ordering.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/main-writer-ordering.json"
+      ],
+      "evidence_file": "artifacts/validation/main-writer-ordering.json",
+      "failure_action": "re-derive the sitemap after the admission registry rebuild, or put the straying main-writer back in the shared concurrency group",
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "page-release-law detects the missing sitemap entry but cannot see why the pipeline is unable to satisfy it, and nothing in the repo reads workflow concurrency groups at all.",
+      "estimated_runtime_seconds": 1
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 60,
+      "id": "medical-schema-emission",
+      "title": "MedicalWebPage and PriceSpecification are emitted and match the page",
+      "path": "scripts/validators/validate_medical_schema_emission.js",
+      "command": "node scripts/validators/validate_medical_schema_emission.js",
+      "risk_prevented": "Prevents the medical schema types the citation runs asked for from being declared but not emitted, and prevents price markup quoting a figure the reader cannot see. content/_live/pages.json carried a schema_eligibility.medical_web_page flag on 220 records that no code path read.",
+      "requires_files": [
+        "content/_live/pages.json",
+        "data/content/itemized_cost_specifications.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/medical-schema-emission.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/medical-schema-emission.json"
+      ],
+      "why_existing_checks_do_not_cover": "The existing schema checks assert Article, FAQPage, HowTo and BreadcrumbList. None asserts the medical types, and none checks that a price in the markup is also visible on the page."
+    },
+    {
       "id": "medium-articles",
       "title": "Medium article contract",
       "path": "scripts/validate_medium_articles.js",
@@ -3422,6 +3650,49 @@
       ],
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 5",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict",
+        "content-release"
+      ],
+      "id": "model-name-free-routes",
+      "title": "Model-name-free public routes",
+      "path": "scripts/validators/validate_model_name_free_routes.js",
+      "command": "node scripts/validators/validate_model_name_free_routes.js",
+      "tags": [
+        "routes",
+        "slugs",
+        "admission"
+      ],
+      "risk_prevented": "Seven live indexable pages carried the generating model in the URL and the title (-openai-gpt-4o, -perplexity, -gemini-1-5-flash) because an LLM answer panel's display string - question plus answering model - was written into the query field and slugified whole. A public URL that names the model that wrote the page is a generation artifact in the address bar, and it undermines the citation goal these properties exist for. This fails on any route, title, admitted build candidate or rendered page that names a model and is not retired by a 301.",
+      "why_existing_checks_do_not_cover": "No existing validator inspects slug composition. rendered-route-admission-parity asks whether a route is submitted or withheld and is indifferent to what the route says; the release law gates topic, family, duplication and neutrality, none of which a model name trips.",
+      "requires_files": [
+        "scripts/lib/model_name_guard.js",
+        "content/_live/published_urls.json",
+        "data/content/page_admission_registry.json",
+        "_redirects"
+      ],
+      "produces_files": [],
+      "mutates_files": []
     },
     {
       "id": "monitor-future-append-self-test",
@@ -3705,10 +3976,6 @@
       "_retired_prepare_reason": "Unreachable: every prerequisite is a committed file, so run_validation_registry.js could never fire this prepare. These validators grade the committed rendered tree, which is the tree that was pushed; the declared refresh never ran and claiming it did was the untruth."
     },
     {
-      "id": "generator-instruction-refusal",
-      "title": "Generators refuse internal build instructions at source",
-      "path": "scripts/validators/validate_generator_instruction_refusal.js",
-      "command": "node scripts/validators/validate_generator_instruction_refusal.js",
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "tier": "Tier 1",
@@ -3717,38 +3984,111 @@
         "audit",
         "content-release",
         "core",
+        "full-audit",
         "local",
-        "postrelease",
         "release",
         "strict"
-      ],
-      "tags": [
-        "content-quality",
-        "agent-artifacts",
-        "generator"
-      ],
-      "risk_prevented": "no-internal-instruction-leak scans published HTML, so it fires only after a generator has already written a build directive into a page, on whatever run happens to rebuild it. a5bd62cc8 removed the two known render sites, added looksLikeInternalInstruction() to agent_exact_repairs.js and never called it, and never touched the compiler; html_fix_acceptance_parser.js went on lifting an agent's quoted example of the defect into an artifact title and a required_string, which is how insights/neuro-013 shipped an <h2> reading 'Citation-ready update: FILEPATH...'. This asserts both producers import the shared predicate and call it, and that the gate's pattern set and the generator's refusal set cannot drift apart.",
-      "why_existing_checks_do_not_cover": "The published-page scan proves a rendered page is clean on the run it happens to execute; it cannot prove the compiler will refuse to author the directive as acceptance criteria, nor that a guard function is invoked rather than merely defined.",
-      "estimated_runtime_seconds": 3,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/generator-instruction-refusal.json",
-      "failure_action": "restore the shared refusal in scripts/lib/internal_instruction_text.js and its call sites in the compiler and renderer; do not widen the published-page gate instead",
-      "depends_on": [],
-      "requires_files": [
-        "scripts/lib/internal_instruction_text.js",
-        "scripts/lib/html_fix_acceptance_parser.js",
-        "scripts/lib/agent_exact_repairs.js"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "occupancy-control-separation",
+      "title": "Citation-occupancy control separation and open-bucket integrity",
+      "path": "scripts/validators/validate_occupancy_control_separation.js",
+      "command": "node scripts/validators/validate_occupancy_control_separation.js",
+      "risk_prevented": "Makes the occupancy probe's own control pair binding. FAILS the run when the pair INVERTS - the query known to be CLOSED measuring more open than the one known to be OPEN, which is what happened (1.00 against 0.50) while the check was only a printed note and five pages were queued for publication off the numbers it did not stop. Re-classifies every recorded citation host with the shared classifier and FAILS if any unrecognised host is counted as open, or if a recorded open/unclassifiable count does not match what the hosts derive. FAILS if a citation_occupancy number is published while the controls do not separate, or withheld while they do. Requires the unclassifiable slot count on every run. Hard-fails if it examines zero probes, zero cited hosts or zero controls.",
+      "requires_files": [
+        "scripts/queries/host_occupancy_classifier.js",
+        "data/signals/query_class_occupancy.json",
+        "data/signals/citation_probe_config.json",
+        "data/strategy/page_strategy_registry.json"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "occupancy-probe-contract checks that the probe records a separation field and notes an inversion; it never failed on one, and it takes the probe's own arithmetic on trust. atlas-release-join checks a candidate's occupancy is traceable to a probe, not whether the probe measures openness at all. Neither re-derives the buckets from the recorded hosts, so a classifier that silently counted unrecognised hosts as open would pass both.",
+      "estimated_runtime_seconds": 2
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "occupancy-probe-contract",
+      "title": "Citation-occupancy probe contract",
+      "path": "scripts/validators/validate_occupancy_probe_contract.js",
+      "command": "node scripts/validators/validate_occupancy_probe_contract.js",
+      "risk_prevented": "Prevents a narrow occupancy run from silently DELETING the readings a wider run paid to take (--merge exists but neither caller passed it; 169 of 205 measured readings were destroyed by one scheduled refresh). Prevents \"unbranded\" reverting to a blind fallthrough in which foreign government, health-service and regulator hosts count as citation slots an independent microsite can hold. Prevents an occupancy reading being published with no blue_ocean_eligible gate, i.e. \"not cited\" read as \"open ground\". Fails if it examines zero probes.",
+      "requires_files": [
+        "scripts/queries/probe_query_class_occupancy.mjs",
+        "data/signals/query_class_occupancy.json",
+        "data/strategy/page_strategy_registry.json"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "atlas-release-join checks that a candidate carries a measured occupancy figure and that it is traceable. Nothing checked whether that figure was measured on this property's ground, whether an earlier run's figure survived the next run, or whether the probe's own controls still separate in the expected direction.",
+      "estimated_runtime_seconds": 2
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "occupancy-reading-ratchet",
+      "title": "Occupancy measurement file may not shrink",
+      "path": "scripts/validators/validate_occupancy_reading_ratchet.js",
+      "command": "node scripts/validators/validate_occupancy_reading_ratchet.js",
+      "risk_prevented": "Detects destruction of paid citation-occupancy measurements. On 2026-08-29 a scheduled run rewrote data/signals/query_class_occupancy.json without --merge and 205 recorded readings became 36: 170 grounded provider calls deleted by a run that exited 0 and reported success. The missing --merge was fixed the same day and the file was NOT rehydrated, because nothing in the repo knew how many readings there were supposed to be. This holds the expected depth outside the file, ratchets it upward only, and hard-fails when the measurement file falls below it or when a query that once carried a reading no longer does. A query may leave the panel only via an explicit retired_queries entry carrying a reason. Hard-fails on zero probes examined and on an empty high-water mark.",
+      "requires_files": [
+        "data/signals/query_class_occupancy.json",
+        "data/signals/query_class_occupancy_highwater.json"
+      ],
       "produces_files": [
-        "artifacts/validation/generator-instruction-refusal.json"
+        "artifacts/validation/occupancy-reading-ratchet.json"
       ],
       "mutates_files": [
-        "artifacts/validation/generator-instruction-refusal.json"
+        "artifacts/validation/occupancy-reading-ratchet.json"
       ],
-      "enforce_no_source_mutation": true
+      "evidence_file": "artifacts/validation/occupancy-reading-ratchet.json",
+      "failure_action": "restore the truncated readings from a prior commit and re-derive with --rescore-only; never advance the mark to match the damage",
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "repair_command": "npm run occupancy:ratchet",
+      "repair_writes": [
+        "data/signals/query_class_occupancy_highwater.json"
+      ],
+      "why_existing_checks_do_not_cover": "occupancy-probe-contract and occupancy-control-separation both validate the CONTENTS of whatever rows the file happens to hold; both passed at 36 rows and would pass at 1. Neither knows how many rows there ought to be, so neither can see the file being truncated.",
+      "estimated_runtime_seconds": 2
     },
     {
       "id": "operator-doc-currency",
@@ -3990,56 +4330,6 @@
       "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
-      "id": "vertical-topic-admission",
-      "title": "Admitted routes belong to the vertical whose path they occupy",
-      "path": "scripts/validators/validate_vertical_topic_admission.js",
-      "command": "node scripts/validators/validate_vertical_topic_admission.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "admission",
-        "topical-quality",
-        "offtopic",
-        "content-safety",
-        "future-proof"
-      ],
-      "depends_on": [
-        "page-release-law"
-      ],
-      "requires_files": [
-        "data/content/vertical_topic_contract.json",
-        "data/content/page_admission_registry.json",
-        "content/_live/pages.json"
-      ],
-      "produces_files": [
-        "artifacts/validation/vertical-topic-admission.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/vertical-topic-admission.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "risk_prevented": "A route can be admitted under a vertical its subject has no relationship to. 183 such routes were retired on 2026-08-27 and 98 more on 2026-08-30 - scraped general-forum posts about IT degrees, IRS letters, custody disputes and hair transplants served under /personal-injury/ with that vertical legal citations and its accident-lead CTA. Nothing asserted the corpus stays on topic, so the first cleanup did not hold.",
-      "why_existing_checks_do_not_cover": "route-topic-quality checks the SHAPE of a title (truncation, leaked model names, scrape residue) and seals its findings in a baseline. Nothing checked whether a page SUBJECT matches the vertical it is filed under, which is a different defect: a perfectly well-formed title can still be about the wrong thing.",
-      "estimated_runtime_seconds": 3,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/vertical-topic-admission.json",
-      "failure_action": "retire the route with scripts/retire_offtopic_routes.js --apply, or correct data/content/vertical_topic_contract.json if the route is genuinely on topic. Never add the route to the debt ratchet to obtain a pass.",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": []
-    },
-    {
       "id": "portfolio-kpi-truth",
       "title": "Portfolio 100K surfacing KPI truth contract",
       "path": "scripts/validators/validate_portfolio_kpi_truth.js",
@@ -4174,6 +4464,56 @@
       ]
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 5",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [
+        "npm run build"
+      ],
+      "prepare_produces_files": [
+        "feeds/promotion-candidates.json",
+        "dist/feeds/promotion-candidates.json"
+      ],
+      "prepare_mutates_files": [
+        "content/_shared/content_state.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "id": "promotion-candidates-feed",
+      "title": "Public candidate feed is a live projection, not a souvenir",
+      "path": "scripts/validators/validate_promotion_candidates_feed.js",
+      "command": "node scripts/validators/validate_promotion_candidates_feed.js",
+      "risk_prevented": "local-guides-generator consumes this feed over plain HTTPS. The previous cross-repo feed, content/_shared/promotion_candidates.json, froze on 2026-04-13 when both of its writers were retired and nothing noticed for four months because no validator named the file - the consumer read a stale snapshot and reported success. Asserts the feed agrees with the live source it projects (same count, same generated_at), carries only whitelisted public fields so an internal scoring field cannot reach a public URL by being added upstream, names a stop reason whenever it is empty so an empty feed is distinguishable from a dead producer, and is not advertised as a page. Hard-fails on zero assertions made.",
+      "requires_files": [
+        "feeds/promotion-candidates.json",
+        "dist/feeds/promotion-candidates.json",
+        "data/queries/measured_demand_candidates.json",
+        "scripts/feeds/build_promotion_candidates_feed.js",
+        "robots.txt"
+      ],
+      "produces_files": [
+        "artifacts/validation/promotion-candidates-feed.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/promotion-candidates-feed.json"
+      ],
+      "evidence_file": "artifacts/validation/promotion-candidates-feed.json",
+      "failure_action": "rebuild the feed from its source before publishing",
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "No validator referenced the previous cross-repo feed at all, which is why it went stale unobserved. sitemap-parity and rendered-route-admission-parity govern HTML routes and ignore a .json data feed entirely; nothing else compares a published artifact against the live file it claims to project.",
+      "estimated_runtime_seconds": 2
+    },
+    {
       "id": "provider-evidence",
       "title": "Provider evidence contract validator",
       "path": "scripts/validators/validate_provider_evidence.js",
@@ -4290,6 +4630,85 @@
       ],
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "published-inventory-stability",
+      "title": "The published inventory stamp does not fight between lanes",
+      "path": "scripts/validators/validate_published_inventory_stability.js",
+      "command": "node scripts/validators/validate_published_inventory_stability.js",
+      "risk_prevented": "content/_live/published_urls.json was stamped from stableGeneratedAt(), which answers from SOURCE_DATE when a lane sets one and from data/citation_velocity/runs.json when none does. velocity-content-release.yml sets it, query-evidence-refresh.yml does not, so a release stamped 2026-08-29 and the next evidence refresh restamped the identical inventory 2026-06-23 - a publish-state path outside the evidence lane commit surface, taking that lane red daily over a file nobody changed. The same run also stopped on feeds/promotion-candidates.json, a projection of the evidence this lane refreshes that its surface did not cover. Asserts an unchanged inventory keeps its stamp with no SOURCE_DATE, that the stamp never regresses, that it still advances on a real change, and that every write an ACTIVE validator declares (repair or prepare) is inside the lane commit surface. Hard-fails on an empty inventory or an empty declared-write scan.",
+      "requires_files": [
+        "content/_live/published_urls.json",
+        "_validation_registry.json",
+        "scripts/lib/publish_contract.js",
+        "scripts/selfheal/lane_commit_contract.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/published-inventory-stability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/published-inventory-stability.json"
+      ],
+      "evidence_file": "artifacts/validation/published-inventory-stability.json",
+      "failure_action": "restore the non-regressing stamp rule in ensurePublishedUrlInventory, or widen the lane commit surface to cover the declared write",
+      "timeout_seconds": 120,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "deterministic-build and canonical-data-immutability both build inside a sandbox copy, so neither can see a build mutate the real workspace; self-heal-commit-coverage checks that the lane exists and derives its surface from the registry but never asks whether a declared write actually falls inside that surface.",
+      "estimated_runtime_seconds": 5
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "push-after-rebase-revalidates",
+      "title": "A lane may not push a tree it did not validate",
+      "path": "scripts/validators/validate_push_after_rebase_revalidates.js",
+      "command": "node scripts/validators/validate_push_after_rebase_revalidates.js",
+      "risk_prevented": "Three steps push HEAD:main inside a retry loop that rebases onto whatever main has become. A rebase applying without conflict is not a rebase that changes nothing - origin/main moved, which is the only reason to rebase - so the pushed tree is a combination of two separately validated trees and is not itself validated. The absorption step in velocity-content-release.yml re-derived only on the CONFLICT path and pushed straight through on the clean one, and it is the step that runs first and most often. Checks the shell control flow, not proximity: an earlier draft of this validator matched a validate command anywhere between the rebase and the push and therefore PASSED the exact defect it was written to catch, because the defective step had one inside the conflict branch the clean path skips.",
+      "requires_files": [
+        ".github/workflows/velocity-content-release.yml",
+        ".github/workflows/velocity-full-rebuild.yml"
+      ],
+      "produces_files": [
+        "artifacts/validation/push-after-rebase-revalidates.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/push-after-rebase-revalidates.json"
+      ],
+      "timeout_seconds": 30,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "workflow-contract and velocity-intake-workflow assert that named tokens are PRESENT in the workflow text - including 'git push origin HEAD:main' and 'npm run validate:release'. Both were present in the defective step. Neither reads the shell control flow, so neither could tell that the validation sat on a branch the push path skips.",
+      "estimated_runtime_seconds": 1
     },
     {
       "status": "ACTIVE",
@@ -4488,6 +4907,44 @@
       "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "id": "removal-directive-not-published",
+      "title": "A phrase a report asked to delete is not published",
+      "path": "scripts/validators/validate_removal_directive_not_published.js",
+      "command": "node scripts/validators/validate_removal_directive_not_published.js",
+      "risk_prevented": "Prevents the acceptance compiler turning a quoted DELETION order into page copy. The 2026-09-01 dentistry run asked for \"Use the same questions with every lawyer on your shortlist\" to be replaced; the compiler made it a required_string and an artifact title, so two dentistry pages published it as a visible <h2> under a Cost table badge.",
+      "requires_files": [
+        "data/release/withheld_page_phrases.json",
+        "data/report_fixes/agent_exact_implementation_ledger.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/removal-directive-not-published.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/removal-directive-not-published.json"
+      ],
+      "why_existing_checks_do_not_cover": "no-internal-instruction-leak and generator-instruction-refusal catch build directives leaking into copy. A legal boilerplate phrase quoted by an agent is not a build directive; it passed both while the pipeline guaranteed its presence."
+    },
+    {
       "id": "render-integrity",
       "title": "Rendered hierarchy integrity",
       "path": "scripts/validate_render_integrity.js",
@@ -4568,6 +5025,43 @@
       "enforce_no_source_mutation": true
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "id": "rendered-output-shrink-guard",
+      "title": "No page loses content without a named reason",
+      "path": "scripts/validators/validate_rendered_output_shrink_guard.js",
+      "command": "node scripts/validators/validate_rendered_output_shrink_guard.js",
+      "risk_prevented": "Prevents a thaw-rebuild-reaccept cycle installing a thinner page as the new baseline. That is exactly how 14 KB and 22 KB of delivered content left two dentistry pages with CI green. Floors rise only; a page below its floor fails unless data/release/rendered_size_baseline.json names the shrink and the exact byte count.",
+      "requires_files": [
+        "data/release/rendered_size_baseline.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/rendered-output-shrink-guard.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/rendered-output-shrink-guard.json"
+      ],
+      "why_existing_checks_do_not_cover": "published-inventory-stability counts pages and frozen-output-integrity hashes accepted bytes. Neither notices a page that is still present, still frozen and still hashing correctly after being re-accepted several kilobytes smaller."
+    },
+    {
       "id": "rendered-programmatic-substance",
       "title": "Rendered programmatic evidence and usability gate",
       "path": "scripts/content/validate_rendered_programmatic_substance.js",
@@ -4627,6 +5121,50 @@
       "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
+      "id": "rendered-route-admission-parity",
+      "title": "Rendered route admission parity",
+      "path": "scripts/validators/validate_rendered_route_admission_parity.js",
+      "command": "node scripts/validators/validate_rendered_route_admission_parity.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 5",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "render",
+        "sitemap",
+        "admission"
+      ],
+      "risk_prevented": "Pages render as live, crawlable, indexable HTML while appearing in no sitemap and carrying no noindex - neither published nor withheld - and the gap grows silently because nothing records it. 197 such pages were found on 2026-08-29; 183 turned out to be a legitimate named stop (retired via ACTIVE_301 in _redirects) and 15 were a genuine undeclared backlog. build_site.js only console.warn'd the difference, which is why the gap grew from the 190 named in page_admission.js's own header to 198 with nothing noticing.",
+      "why_existing_checks_do_not_cover": "sitemap-parity compares content/_live/published_urls.json against sitemaps/sitemap_all.xml, two artifacts written from the same allUrls array a few lines apart in build_site.js. It agrees with itself by construction and never walks the rendered tree, so a page that never entered allUrls is invisible to it. This validator walks the rendered tree instead, and also checks the reverse direction - routes advertised in a sitemap with no rendered file.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/rendered-route-admission-parity.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "data/content/rendered_route_exclusions.json",
+        "_redirects",
+        "sitemaps/sitemap_all.xml"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [],
+      "mutates_files": [
+        "artifacts/validation/rendered-route-admission-parity.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
       "id": "repo-hygiene",
       "title": "Repository and packaging hygiene",
       "path": "scripts/validators/validate_repo_hygiene.js",
@@ -4663,46 +5201,6 @@
         "artifacts/validation/repo-hygiene.json"
       ],
       "enforce_no_source_mutation": true
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "agent-run",
-        "audit",
-        "content-release",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "rich-new-page-contract",
-      "title": "Rich new page build contract",
-      "path": "scripts/validators/validate_rich_new_page_contract.js",
-      "command": "node scripts/validators/validate_rich_new_page_contract.js",
-      "risk_prevented": "Prevents Pages to Build recommendations from being downgraded into thin generic community-question pages when the artifact calls for a guide, checklist, comparison, timeline, process, edge-case, or source reference page.",
-      "requires_files": [
-        "scripts/lib/rich_new_page_classifier.js",
-        "scripts/lib/rich_new_page_blocks.js",
-        "content/_live/pages.json",
-        "content/_staged/pages.json"
-      ],
-      "produces_files": [
-        "artifacts/validation/rich-new-page-contract.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/rich-new-page-contract.json"
-      ],
-      "timeout_seconds": 180,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
-      "estimated_runtime_seconds": 20
     },
     {
       "status": "ACTIVE",
@@ -4754,7 +5252,6 @@
         "agent-run",
         "audit",
         "content-release",
-        "core",
         "full-audit",
         "local",
         "release",
@@ -4764,27 +5261,27 @@
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "enforce_no_source_mutation": true,
-      "id": "main-writer-ordering",
-      "title": "The sitemap is derived after the registry it reads, and every main writer shares one lock",
-      "path": "scripts/validators/validate_main_writer_ordering.js",
-      "command": "node scripts/validators/validate_main_writer_ordering.js",
-      "risk_prevented": "build_site.js derives the sitemap from data/content/page_admission_registry.json, and finalize_content_release.js rebuilt that registry four steps AFTER the build that reads it, so a route the release had just admitted could never reach the sitemap it published - validate_page_release_law failed two dentistry guides as sitemap_missing on 2026-08-30. Separately, four workflows push to main and each held its own concurrency group, which serialises a workflow against itself but not against the branch; two overlapped and the second lost its push with a non-fast-forward rejection. Both are ordering and linkage facts that no content validator can see.",
+      "id": "rich-new-page-contract",
+      "title": "Rich new page build contract",
+      "path": "scripts/validators/validate_rich_new_page_contract.js",
+      "command": "node scripts/validators/validate_rich_new_page_contract.js",
+      "risk_prevented": "Prevents Pages to Build recommendations from being downgraded into thin generic community-question pages when the artifact calls for a guide, checklist, comparison, timeline, process, edge-case, or source reference page.",
       "requires_files": [
-        "scripts/release/finalize_content_release.js",
-        ".github/workflows"
+        "scripts/lib/rich_new_page_classifier.js",
+        "scripts/lib/rich_new_page_blocks.js",
+        "content/_live/pages.json",
+        "content/_staged/pages.json"
       ],
       "produces_files": [
-        "artifacts/validation/main-writer-ordering.json"
+        "artifacts/validation/rich-new-page-contract.json"
       ],
       "mutates_files": [
-        "artifacts/validation/main-writer-ordering.json"
+        "artifacts/validation/rich-new-page-contract.json"
       ],
-      "evidence_file": "artifacts/validation/main-writer-ordering.json",
-      "failure_action": "re-derive the sitemap after the admission registry rebuild, or put the straying main-writer back in the shared concurrency group",
-      "timeout_seconds": 60,
+      "timeout_seconds": 180,
       "depends_on": [],
-      "why_existing_checks_do_not_cover": "page-release-law detects the missing sitemap entry but cannot see why the pipeline is unable to satisfy it, and nothing in the repo reads workflow concurrency groups at all.",
-      "estimated_runtime_seconds": 1
+      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
+      "estimated_runtime_seconds": 20
     },
     {
       "status": "ACTIVE",
@@ -5098,6 +5595,99 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "self-heal-commit-coverage",
+      "title": "Self-heal commit coverage",
+      "path": "scripts/validators/validate_self_heal_commit_coverage.js",
+      "command": "node scripts/validators/validate_self_heal_commit_coverage.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "self-healing",
+        "workflow",
+        "commit-surface"
+      ],
+      "risk_prevented": "The scheduled lane that runs the self-heal loop can heal a tree, validate the healed tree, then commit a different one, because the paths its repairs rewrite fall outside its commit pattern. The repair is discarded every run and the same defect is repaired forever.",
+      "why_existing_checks_do_not_cover": "self-heal-repair-contract proves a repair can clear its validator; nothing proved the lane running that repair could commit what it rewrote, and the workflow inventory declared no mutation surface for that lane at all.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
+      "failure_action": "stop release and widen the lane commit surface, or stop the lane committing a state it did not validate",
+      "depends_on": [
+        "self-heal-repair-contract"
+      ],
+      "requires_files": [
+        "_validation_registry.json",
+        ".github/workflows/query-evidence-refresh.yml",
+        "scripts/selfheal/run_lane_selfheal.mjs"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/self-heal-commit-coverage.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/self-heal-commit-coverage.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
+      "id": "self-heal-repair-contract",
+      "title": "Self-heal repair contract",
+      "path": "scripts/validators/validate_self_heal_repair_contract.js",
+      "command": "node scripts/validators/validate_self_heal_repair_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "self-healing",
+        "validation",
+        "registry"
+      ],
+      "risk_prevented": "A validator can declare a repair_command that rewrites files the validator never reads. The self-heal loop then runs an inert command, it exits 0 having changed nothing, and every repair attempt is burned reaching the same failure.",
+      "why_existing_checks_do_not_cover": "The registry validator checks registry schema and the self-heal loop trusts repair_command blindly; nothing proved a declared repair can affect the validator that declares it.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/self-heal-repair-contract.json",
+      "failure_action": "stop release and repoint the repair at a command that rewrites what the validator reads",
+      "depends_on": [],
+      "requires_files": [
+        "_validation_registry.json",
+        "package.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/self-heal-repair-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/self-heal-repair-contract.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
       "id": "seo-execution-contract",
       "title": "SEO execution contract validator",
       "path": "scripts/validators/validate_seo_execution_contract.js",
@@ -5294,6 +5884,51 @@
       "mutates_files": [
         "artifacts/validation/social-content-loop.json"
       ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "social-fallback-backlog-visibility",
+      "title": "Social fallback backlog depth must be reported honestly",
+      "path": "scripts/validators/validate_social_fallback_backlog_visibility.js",
+      "command": "node scripts/validators/validate_social_fallback_backlog_visibility.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "content-release",
+        "local",
+        "release",
+        "social",
+        "audit",
+        "full-audit",
+        "strict"
+      ],
+      "tags": [
+        "social",
+        "backlog",
+        "visibility",
+        "measured-opportunity"
+      ],
+      "risk_prevented": "social_fallback_suppressed_count is bounded by the run's remaining capacity, so on any run where agent artifacts fill the daily target it reports 0 while a real eligible backlog sits unreleased. Measured on current data the true depth is 389 against a suppressed_count of 68. A human reading the plan then believes nothing is being held back. Suppressing social fallback is a deliberate contract-enforced policy and is not challenged here; only the honesty of the reported number is enforced.",
+      "why_existing_checks_do_not_cover": "validate_velocity_intake_workflow asserts the suppression env var is set, and validate_strategy_gap_fill_contract is RETIRED. Nothing asserts the plan discloses how much work the suppression is actually holding back.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/social-fallback-backlog-visibility.json",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/citation_velocity/prepare_velocity_intake_release.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/social-fallback-backlog-visibility.json"
+      ],
+      "failure_action": "restore capacity-independent backlog depth reporting in prepare_velocity_intake_release.js",
+      "mutates_files": [
+        "artifacts/validation/social-fallback-backlog-visibility.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
       "enforce_no_source_mutation": true
     },
     {
@@ -5530,6 +6165,47 @@
         "artifacts/validation/ui-test-parity.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 5",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "unbuilt-backlog-drain",
+      "title": "Unbuilt rich page backlog drain",
+      "path": "scripts/validators/validate_unbuilt_backlog_drain.js",
+      "command": "node scripts/validators/validate_unbuilt_backlog_drain.js",
+      "tags": [
+        "backlog",
+        "release",
+        "drain"
+      ],
+      "risk_prevented": "136 routes were admitted for build and never built, the oldest waiting since 2026-06-23, because nothing read the declared backlog: build_page_release_queue.js took intake from the approval queue and the measured atlas only, so an admitted row that reached the backlog had no path back out. A queue with no consumer is measured demand that produces nothing wearing the paperwork of a decision. This fails if the backlog is ever again offered to no one, if the release law refuses every row it is offered, if an entry is marked as awaiting a lane that cannot admit it, or if a retirement carries no recorded reason.",
+      "why_existing_checks_do_not_cover": "rich-new-page-contract proves the backlog is declared, complete and not growing. It cannot prove the backlog is shrinking: a fully declared backlog that never moves passes it exactly as a draining one does. This checks the consumer, not the declaration.",
+      "requires_files": [
+        "data/content/unbuilt_rich_page_backlog.json",
+        "data/release/page_release_queue.json",
+        "data/authority_scale/velocity_decision.json"
+      ],
+      "produces_files": [],
+      "mutates_files": []
     },
     {
       "id": "validation-policy",
@@ -6074,6 +6750,56 @@
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
     },
     {
+      "id": "vertical-topic-admission",
+      "title": "Admitted routes belong to the vertical whose path they occupy",
+      "path": "scripts/validators/validate_vertical_topic_admission.js",
+      "command": "node scripts/validators/validate_vertical_topic_admission.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "admission",
+        "topical-quality",
+        "offtopic",
+        "content-safety",
+        "future-proof"
+      ],
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [
+        "data/content/vertical_topic_contract.json",
+        "data/content/page_admission_registry.json",
+        "content/_live/pages.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/vertical-topic-admission.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/vertical-topic-admission.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "risk_prevented": "A route can be admitted under a vertical its subject has no relationship to. 183 such routes were retired on 2026-08-27 and 98 more on 2026-08-30 - scraped general-forum posts about IT degrees, IRS letters, custody disputes and hair transplants served under /personal-injury/ with that vertical legal citations and its accident-lead CTA. Nothing asserted the corpus stays on topic, so the first cleanup did not hold.",
+      "why_existing_checks_do_not_cover": "route-topic-quality checks the SHAPE of a title (truncation, leaked model names, scrape residue) and seals its findings in a baseline. Nothing checked whether a page SUBJECT matches the vertical it is filed under, which is a different defect: a perfectly well-formed title can still be about the wrong thing.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/vertical-topic-admission.json",
+      "failure_action": "retire the route with scripts/retire_offtopic_routes.js --apply, or correct data/content/vertical_topic_contract.json if the route is genuinely on topic. Never add the route to the debt ratchet to obtain a pass.",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": []
+    },
+    {
       "id": "workflow-artifacts",
       "title": "Workflow artifact contract",
       "path": "scripts/validators/validate_workflow_artifacts.js",
@@ -6405,543 +7131,6 @@
         "artifacts/validation/workflow-yaml-syntax.json"
       ],
       "enforce_no_source_mutation": true
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "occupancy-probe-contract",
-      "title": "Citation-occupancy probe contract",
-      "path": "scripts/validators/validate_occupancy_probe_contract.js",
-      "command": "node scripts/validators/validate_occupancy_probe_contract.js",
-      "risk_prevented": "Prevents a narrow occupancy run from silently DELETING the readings a wider run paid to take (--merge exists but neither caller passed it; 169 of 205 measured readings were destroyed by one scheduled refresh). Prevents \"unbranded\" reverting to a blind fallthrough in which foreign government, health-service and regulator hosts count as citation slots an independent microsite can hold. Prevents an occupancy reading being published with no blue_ocean_eligible gate, i.e. \"not cited\" read as \"open ground\". Fails if it examines zero probes.",
-      "requires_files": [
-        "scripts/queries/probe_query_class_occupancy.mjs",
-        "data/signals/query_class_occupancy.json",
-        "data/strategy/page_strategy_registry.json"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "timeout_seconds": 60,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "atlas-release-join checks that a candidate carries a measured occupancy figure and that it is traceable. Nothing checked whether that figure was measured on this property's ground, whether an earlier run's figure survived the next run, or whether the probe's own controls still separate in the expected direction.",
-      "estimated_runtime_seconds": 2
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "occupancy-control-separation",
-      "title": "Citation-occupancy control separation and open-bucket integrity",
-      "path": "scripts/validators/validate_occupancy_control_separation.js",
-      "command": "node scripts/validators/validate_occupancy_control_separation.js",
-      "risk_prevented": "Makes the occupancy probe's own control pair binding. FAILS the run when the pair INVERTS - the query known to be CLOSED measuring more open than the one known to be OPEN, which is what happened (1.00 against 0.50) while the check was only a printed note and five pages were queued for publication off the numbers it did not stop. Re-classifies every recorded citation host with the shared classifier and FAILS if any unrecognised host is counted as open, or if a recorded open/unclassifiable count does not match what the hosts derive. FAILS if a citation_occupancy number is published while the controls do not separate, or withheld while they do. Requires the unclassifiable slot count on every run. Hard-fails if it examines zero probes, zero cited hosts or zero controls.",
-      "requires_files": [
-        "scripts/queries/host_occupancy_classifier.js",
-        "data/signals/query_class_occupancy.json",
-        "data/signals/citation_probe_config.json",
-        "data/strategy/page_strategy_registry.json"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "timeout_seconds": 60,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "occupancy-probe-contract checks that the probe records a separation field and notes an inversion; it never failed on one, and it takes the probe's own arithmetic on trust. atlas-release-join checks a candidate's occupancy is traceable to a probe, not whether the probe measures openness at all. Neither re-derives the buckets from the recorded hosts, so a classifier that silently counted unrecognised hosts as open would pass both.",
-      "estimated_runtime_seconds": 2
-    },
-    {
-      "id": "social-fallback-backlog-visibility",
-      "title": "Social fallback backlog depth must be reported honestly",
-      "path": "scripts/validators/validate_social_fallback_backlog_visibility.js",
-      "command": "node scripts/validators/validate_social_fallback_backlog_visibility.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "content-release",
-        "local",
-        "release",
-        "social",
-        "audit",
-        "full-audit",
-        "strict"
-      ],
-      "tags": [
-        "social",
-        "backlog",
-        "visibility",
-        "measured-opportunity"
-      ],
-      "risk_prevented": "social_fallback_suppressed_count is bounded by the run's remaining capacity, so on any run where agent artifacts fill the daily target it reports 0 while a real eligible backlog sits unreleased. Measured on current data the true depth is 389 against a suppressed_count of 68. A human reading the plan then believes nothing is being held back. Suppressing social fallback is a deliberate contract-enforced policy and is not challenged here; only the honesty of the reported number is enforced.",
-      "why_existing_checks_do_not_cover": "validate_velocity_intake_workflow asserts the suppression env var is set, and validate_strategy_gap_fill_contract is RETIRED. Nothing asserts the plan discloses how much work the suppression is actually holding back.",
-      "estimated_runtime_seconds": 3,
-      "timeout_seconds": 60,
-      "evidence_file": "artifacts/validation/social-fallback-backlog-visibility.json",
-      "depends_on": [],
-      "requires_files": [
-        "scripts/citation_velocity/prepare_velocity_intake_release.js"
-      ],
-      "produces_files": [
-        "artifacts/validation/social-fallback-backlog-visibility.json"
-      ],
-      "failure_action": "restore capacity-independent backlog depth reporting in prepare_velocity_intake_release.js",
-      "mutates_files": [
-        "artifacts/validation/social-fallback-backlog-visibility.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "occupancy-reading-ratchet",
-      "title": "Occupancy measurement file may not shrink",
-      "path": "scripts/validators/validate_occupancy_reading_ratchet.js",
-      "command": "node scripts/validators/validate_occupancy_reading_ratchet.js",
-      "risk_prevented": "Detects destruction of paid citation-occupancy measurements. On 2026-08-29 a scheduled run rewrote data/signals/query_class_occupancy.json without --merge and 205 recorded readings became 36: 170 grounded provider calls deleted by a run that exited 0 and reported success. The missing --merge was fixed the same day and the file was NOT rehydrated, because nothing in the repo knew how many readings there were supposed to be. This holds the expected depth outside the file, ratchets it upward only, and hard-fails when the measurement file falls below it or when a query that once carried a reading no longer does. A query may leave the panel only via an explicit retired_queries entry carrying a reason. Hard-fails on zero probes examined and on an empty high-water mark.",
-      "requires_files": [
-        "data/signals/query_class_occupancy.json",
-        "data/signals/query_class_occupancy_highwater.json"
-      ],
-      "produces_files": [
-        "artifacts/validation/occupancy-reading-ratchet.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/occupancy-reading-ratchet.json"
-      ],
-      "evidence_file": "artifacts/validation/occupancy-reading-ratchet.json",
-      "failure_action": "restore the truncated readings from a prior commit and re-derive with --rescore-only; never advance the mark to match the damage",
-      "timeout_seconds": 60,
-      "depends_on": [],
-      "repair_command": "npm run occupancy:ratchet",
-      "repair_writes": [
-        "data/signals/query_class_occupancy_highwater.json"
-      ],
-      "why_existing_checks_do_not_cover": "occupancy-probe-contract and occupancy-control-separation both validate the CONTENTS of whatever rows the file happens to hold; both passed at 36 rows and would pass at 1. Neither knows how many rows there ought to be, so neither can see the file being truncated.",
-      "estimated_runtime_seconds": 2
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "llm-citation-observation-integrity",
-      "title": "LLM citation observation freshness, status and reading ratchet",
-      "path": "scripts/validators/validate_llm_citation_observation_integrity.js",
-      "command": "node scripts/validators/validate_llm_citation_observation_integrity.js",
-      "risk_prevented": "data/signals/llm_citation_observations.json had NO consumer and NO validator - a repo-wide grep found only its writer - so every regression in the only real citation measurement this repo takes was invisible. Prevents a provider-error run overwriting latest_summary with a null rate stamped with today's date (reproduced with an invalid key: a MEASURED 25-observation summary became answered:0, self_cited_rate_pct:null). Prevents the rolling window silently dropping paid grounded runs, ratcheting the file's depth against an external high-water mark exactly as the occupancy ratchet does after 170 paid readings were deleted by an exit-0 run on 2026-08-29. Fails a stale file whose probe has quietly stopped running, and fails on zero runs or zero observations examined.",
-      "requires_files": [
-        "scripts/llm_citation_probe.mjs",
-        "data/signals/llm_citation_observations.json",
-        "data/signals/llm_citation_observations_highwater.json"
-      ],
-      "produces_files": [
-        "artifacts/validation/llm-citation-observation-integrity.json"
-      ],
-      "mutates_files": [],
-      "timeout_seconds": 60,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "occupancy-reading-ratchet covers data/signals/query_class_occupancy.json only. No validator referenced llm_citation_observations.json at all; the atlas does not read it and the atlas->release join does not read it, so nothing in the repo would have noticed the file being truncated, gone stale, or having its measured rate replaced by a null.",
-      "estimated_runtime_seconds": 2
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "push-after-rebase-revalidates",
-      "title": "A lane may not push a tree it did not validate",
-      "path": "scripts/validators/validate_push_after_rebase_revalidates.js",
-      "command": "node scripts/validators/validate_push_after_rebase_revalidates.js",
-      "risk_prevented": "Three steps push HEAD:main inside a retry loop that rebases onto whatever main has become. A rebase applying without conflict is not a rebase that changes nothing - origin/main moved, which is the only reason to rebase - so the pushed tree is a combination of two separately validated trees and is not itself validated. The absorption step in velocity-content-release.yml re-derived only on the CONFLICT path and pushed straight through on the clean one, and it is the step that runs first and most often. Checks the shell control flow, not proximity: an earlier draft of this validator matched a validate command anywhere between the rebase and the push and therefore PASSED the exact defect it was written to catch, because the defective step had one inside the conflict branch the clean path skips.",
-      "requires_files": [
-        ".github/workflows/velocity-content-release.yml",
-        ".github/workflows/velocity-full-rebuild.yml"
-      ],
-      "produces_files": [
-        "artifacts/validation/push-after-rebase-revalidates.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/push-after-rebase-revalidates.json"
-      ],
-      "timeout_seconds": 30,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "workflow-contract and velocity-intake-workflow assert that named tokens are PRESENT in the workflow text - including 'git push origin HEAD:main' and 'npm run validate:release'. Both were present in the defective step. Neither reads the shell control flow, so neither could tell that the validation sat on a branch the push path skips.",
-      "estimated_runtime_seconds": 1
-    },
-    {
-      "id": "rendered-route-admission-parity",
-      "title": "Rendered route admission parity",
-      "path": "scripts/validators/validate_rendered_route_admission_parity.js",
-      "command": "node scripts/validators/validate_rendered_route_admission_parity.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "render",
-        "sitemap",
-        "admission"
-      ],
-      "risk_prevented": "Pages render as live, crawlable, indexable HTML while appearing in no sitemap and carrying no noindex - neither published nor withheld - and the gap grows silently because nothing records it. 197 such pages were found on 2026-08-29; 183 turned out to be a legitimate named stop (retired via ACTIVE_301 in _redirects) and 15 were a genuine undeclared backlog. build_site.js only console.warn'd the difference, which is why the gap grew from the 190 named in page_admission.js's own header to 198 with nothing noticing.",
-      "why_existing_checks_do_not_cover": "sitemap-parity compares content/_live/published_urls.json against sitemaps/sitemap_all.xml, two artifacts written from the same allUrls array a few lines apart in build_site.js. It agrees with itself by construction and never walks the rendered tree, so a page that never entered allUrls is invisible to it. This validator walks the rendered tree instead, and also checks the reverse direction - routes advertised in a sitemap with no rendered file.",
-      "estimated_runtime_seconds": 20,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/rendered-route-admission-parity.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [
-        "data/content/rendered_route_exclusions.json",
-        "_redirects",
-        "sitemaps/sitemap_all.xml"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [
-        "artifacts/validation/rendered-route-admission-parity.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
-        "feeds/promotion-candidates.json",
-        "dist/feeds/promotion-candidates.json"
-      ],
-      "prepare_mutates_files": [
-        "content/_shared/content_state.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "id": "promotion-candidates-feed",
-      "title": "Public candidate feed is a live projection, not a souvenir",
-      "path": "scripts/validators/validate_promotion_candidates_feed.js",
-      "command": "node scripts/validators/validate_promotion_candidates_feed.js",
-      "risk_prevented": "local-guides-generator consumes this feed over plain HTTPS. The previous cross-repo feed, content/_shared/promotion_candidates.json, froze on 2026-04-13 when both of its writers were retired and nothing noticed for four months because no validator named the file - the consumer read a stale snapshot and reported success. Asserts the feed agrees with the live source it projects (same count, same generated_at), carries only whitelisted public fields so an internal scoring field cannot reach a public URL by being added upstream, names a stop reason whenever it is empty so an empty feed is distinguishable from a dead producer, and is not advertised as a page. Hard-fails on zero assertions made.",
-      "requires_files": [
-        "feeds/promotion-candidates.json",
-        "dist/feeds/promotion-candidates.json",
-        "data/queries/measured_demand_candidates.json",
-        "scripts/feeds/build_promotion_candidates_feed.js",
-        "robots.txt"
-      ],
-      "produces_files": [
-        "artifacts/validation/promotion-candidates-feed.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/promotion-candidates-feed.json"
-      ],
-      "evidence_file": "artifacts/validation/promotion-candidates-feed.json",
-      "failure_action": "rebuild the feed from its source before publishing",
-      "timeout_seconds": 60,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "No validator referenced the previous cross-repo feed at all, which is why it went stale unobserved. sitemap-parity and rendered-route-admission-parity govern HTML routes and ignore a .json data feed entirely; nothing else compares a published artifact against the live file it claims to project.",
-      "estimated_runtime_seconds": 2
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "published-inventory-stability",
-      "title": "The published inventory stamp does not fight between lanes",
-      "path": "scripts/validators/validate_published_inventory_stability.js",
-      "command": "node scripts/validators/validate_published_inventory_stability.js",
-      "risk_prevented": "content/_live/published_urls.json was stamped from stableGeneratedAt(), which answers from SOURCE_DATE when a lane sets one and from data/citation_velocity/runs.json when none does. velocity-content-release.yml sets it, query-evidence-refresh.yml does not, so a release stamped 2026-08-29 and the next evidence refresh restamped the identical inventory 2026-06-23 - a publish-state path outside the evidence lane commit surface, taking that lane red daily over a file nobody changed. The same run also stopped on feeds/promotion-candidates.json, a projection of the evidence this lane refreshes that its surface did not cover. Asserts an unchanged inventory keeps its stamp with no SOURCE_DATE, that the stamp never regresses, that it still advances on a real change, and that every write an ACTIVE validator declares (repair or prepare) is inside the lane commit surface. Hard-fails on an empty inventory or an empty declared-write scan.",
-      "requires_files": [
-        "content/_live/published_urls.json",
-        "_validation_registry.json",
-        "scripts/lib/publish_contract.js",
-        "scripts/selfheal/lane_commit_contract.js"
-      ],
-      "produces_files": [
-        "artifacts/validation/published-inventory-stability.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/published-inventory-stability.json"
-      ],
-      "evidence_file": "artifacts/validation/published-inventory-stability.json",
-      "failure_action": "restore the non-regressing stamp rule in ensurePublishedUrlInventory, or widen the lane commit surface to cover the declared write",
-      "timeout_seconds": 120,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "deterministic-build and canonical-data-immutability both build inside a sandbox copy, so neither can see a build mutate the real workspace; self-heal-commit-coverage checks that the lane exists and derives its surface from the registry but never asks whether a declared write actually falls inside that surface.",
-      "estimated_runtime_seconds": 5
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "depends_on": [],
-      "estimated_runtime_seconds": 20,
-      "timeout_seconds": 300,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "failure_action": "stop release and repair",
-      "tier": "Tier 5",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "id": "unbuilt-backlog-drain",
-      "title": "Unbuilt rich page backlog drain",
-      "path": "scripts/validators/validate_unbuilt_backlog_drain.js",
-      "command": "node scripts/validators/validate_unbuilt_backlog_drain.js",
-      "tags": [
-        "backlog",
-        "release",
-        "drain"
-      ],
-      "risk_prevented": "136 routes were admitted for build and never built, the oldest waiting since 2026-06-23, because nothing read the declared backlog: build_page_release_queue.js took intake from the approval queue and the measured atlas only, so an admitted row that reached the backlog had no path back out. A queue with no consumer is measured demand that produces nothing wearing the paperwork of a decision. This fails if the backlog is ever again offered to no one, if the release law refuses every row it is offered, if an entry is marked as awaiting a lane that cannot admit it, or if a retirement carries no recorded reason.",
-      "why_existing_checks_do_not_cover": "rich-new-page-contract proves the backlog is declared, complete and not growing. It cannot prove the backlog is shrinking: a fully declared backlog that never moves passes it exactly as a draining one does. This checks the consumer, not the declaration.",
-      "requires_files": [
-        "data/content/unbuilt_rich_page_backlog.json",
-        "data/release/page_release_queue.json",
-        "data/authority_scale/velocity_decision.json"
-      ],
-      "produces_files": [],
-      "mutates_files": []
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "depends_on": [],
-      "estimated_runtime_seconds": 20,
-      "timeout_seconds": 300,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "failure_action": "stop release and repair",
-      "tier": "Tier 5",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict",
-        "content-release"
-      ],
-      "id": "model-name-free-routes",
-      "title": "Model-name-free public routes",
-      "path": "scripts/validators/validate_model_name_free_routes.js",
-      "command": "node scripts/validators/validate_model_name_free_routes.js",
-      "tags": [
-        "routes",
-        "slugs",
-        "admission"
-      ],
-      "risk_prevented": "Seven live indexable pages carried the generating model in the URL and the title (-openai-gpt-4o, -perplexity, -gemini-1-5-flash) because an LLM answer panel's display string - question plus answering model - was written into the query field and slugified whole. A public URL that names the model that wrote the page is a generation artifact in the address bar, and it undermines the citation goal these properties exist for. This fails on any route, title, admitted build candidate or rendered page that names a model and is not retired by a 301.",
-      "why_existing_checks_do_not_cover": "No existing validator inspects slug composition. rendered-route-admission-parity asks whether a route is submitted or withheld and is indifferent to what the route says; the release law gates topic, family, duplication and neutrality, none of which a model name trips.",
-      "requires_files": [
-        "scripts/lib/model_name_guard.js",
-        "content/_live/published_urls.json",
-        "data/content/page_admission_registry.json",
-        "_redirects"
-      ],
-      "produces_files": [],
-      "mutates_files": []
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "depends_on": [],
-      "estimated_runtime_seconds": 20,
-      "timeout_seconds": 300,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "failure_action": "stop release and repair",
-      "tier": "Tier 5",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "id": "admission-reachability",
-      "title": "Released-page admission reachability",
-      "path": "scripts/validators/validate_admission_reachability.js",
-      "command": "node scripts/validators/validate_admission_reachability.js",
-      "tags": [
-        "admission",
-        "sitemap",
-        "release"
-      ],
-      "risk_prevented": "The admission registry is built from published_urls.json, which is built from the routes the admission registry admits. That fixed point meant no page released after the 2026-06-19 baseline could ever enter it: eleven routes were promoted to live as ADMITTED, rendered as indexable HTML, and named by no sitemap, feed or llms export. Left in place it would have turned the newly wired 46-route backlog drain into 46 new orphans. This fails if any released, rendered, non-retired page is missing from the registry.",
-      "why_existing_checks_do_not_cover": "rendered-route-admission-parity accepts a declared exclusion or a 301 as a complete answer, so a route can satisfy it forever while staying unreachable. sitemap-parity compares two artifacts derived from the same array and agrees with itself by construction. This one asks the different question: was the page the release lane actually released ever made findable?",
-      "requires_files": [
-        "content/_live/pages.json",
-        "data/content/page_admission_registry.json",
-        "_redirects"
-      ],
-      "produces_files": [],
-      "mutates_files": []
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "depends_on": [],
-      "estimated_runtime_seconds": 20,
-      "timeout_seconds": 300,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "failure_action": "stop release and repair",
-      "tier": "Tier 5",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict",
-        "content-release"
-      ],
-      "id": "generated-page-substance",
-      "title": "Generated page substance and vertical fit",
-      "path": "scripts/validators/validate_generated_page_substance.js",
-      "command": "node scripts/validators/validate_generated_page_substance.js",
-      "tags": [
-        "content",
-        "generator",
-        "quality"
-      ],
-      "risk_prevented": "The release lane's section builder wrote instructions to the page about itself with the query pasted in - 'dallas dental implant cost is an admitted community question answer, so the direct answer must stay tied to current source review' - so a page could name Dallas in its title and mention it nowhere in its body. It also emitted a hardcoded USCIS civil-surgeon comparison table for every comparison_guide whatever the vertical, and the oldest row in the unbuilt backlog is a dentistry comparison guide. This fails on self-referential template phrasing in a published page and on a decision table written in another vertical's vocabulary.",
-      "why_existing_checks_do_not_cover": "rendered-programmatic-substance counts words, sources and sections, all of which the template text satisfied - four such pages measured 561-576 projected words with six sections and a source record each. Word count cannot tell a page about its subject from a page about itself, and nothing at all checked that a table matched its vertical.",
-      "requires_files": [
-        "content/_live/pages.json",
-        "content/_staged/pages.json",
-        "scripts/lib/rich_new_page_blocks.js"
-      ],
-      "produces_files": [],
-      "mutates_files": []
     }
   ],
   "legacy_policy": {
