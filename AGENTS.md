@@ -2,6 +2,19 @@
 
 This repository must be treated as a deterministic content pipeline, not a loose collection of scripts. Agent-written changes must preserve source-of-truth boundaries, fail before writing bad output, and validate the release contract before suggesting any fix is complete.
 
+## Merging
+
+Merge to main/default is permitted ONLY when every required check is green: never
+with `--admin`, never force-pushed, never on a RED or UNPROVEN result. A blocker
+that cannot go green on its own — a credential, an account setting, a product
+decision — is reported as a NAMED STOP, never merged around.
+
+This is stated explicitly because its absence was itself a defect. This repo had
+no merge rule at all, so an agent that fixed a failing lane at the root, proved it
+with a negative proof and watched CI go green still stopped and waited for a
+person — leaving the lane red, and the owner paged daily for a failure that was
+already fixed and merely unmerged. Silence is not permission to stop.
+
 ## Mandatory workflow
 
 1. Inspect before mutation.
