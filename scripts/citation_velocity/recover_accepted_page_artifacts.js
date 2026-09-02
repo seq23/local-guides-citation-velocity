@@ -161,8 +161,28 @@ function main() {
     withheld,
     routes
   };
-  const nextText = `${JSON.stringify(store, null, 2)}\n`;
   const prevText = fs.existsSync(rel(STORE_REL)) ? fs.readFileSync(rel(STORE_REL), 'utf8') : '';
+
+  // `generated_at` is a wall-clock stamp living INSIDE the payload that --check
+  // byte-compares, so the store expired at every UTC midnight. The accepted bytes
+  // had not moved and the artifacts were identical - only the date was newer - yet
+  // accepted-artifact-recovery is a Tier 1 HARD_FAIL, so from 00:00 UTC it blocked
+  // validate:release in the content-release lane, the query-evidence self-heal
+  // loop, and every profile that includes it. Regenerating and committing the
+  // store cleared it for exactly one day, which is why this kept coming back.
+  //
+  // The store is a function of the accepted bytes, not of when it was written.
+  // Re-serializing the freshly computed store under the PREVIOUS stamp is an exact
+  // byte test for "nothing but the date moved": if that reproduces the committed
+  // file, keep the old stamp and the store is genuinely unchanged. If any artifact,
+  // route, or withholding differs, the bytes differ under any stamp, the new date
+  // stands, and --check still fails exactly as it should.
+  const prevGeneratedAt = typeof previous.generated_at === 'string' ? previous.generated_at : '';
+  if (prevGeneratedAt && prevText
+    && `${JSON.stringify({ ...store, generated_at: prevGeneratedAt }, null, 2)}\n` === prevText) {
+    store.generated_at = prevGeneratedAt;
+  }
+  const nextText = `${JSON.stringify(store, null, 2)}\n`;
 
   fs.mkdirSync(rel('artifacts/validation'), { recursive: true });
   fs.writeFileSync(rel(EVIDENCE), `${JSON.stringify({

@@ -133,8 +133,21 @@ function main() {
     refused,
     routes
   };
-  const next = `${JSON.stringify(doc, null, 2)}\n`;
   const prev = fs.existsSync(rel(OUT)) ? fs.readFileSync(rel(OUT), 'utf8') : '';
+
+  // Same defect as recover_accepted_page_artifacts.js: `generated_at` is a
+  // wall-clock stamp inside the payload --check byte-compares, so this Tier 1
+  // HARD_FAIL expired at UTC midnight even though the recovered set had not
+  // changed. Re-serializing under the previous stamp is an exact byte test for
+  // "only the date moved"; anything substantive still differs under any stamp and
+  // still fails --check.
+  const prevDoc = readJson(OUT, null);
+  const prevGeneratedAt = prevDoc && typeof prevDoc.generated_at === 'string' ? prevDoc.generated_at : '';
+  if (prevGeneratedAt && prev
+    && `${JSON.stringify({ ...doc, generated_at: prevGeneratedAt }, null, 2)}\n` === prev) {
+    doc.generated_at = prevGeneratedAt;
+  }
+  const next = `${JSON.stringify(doc, null, 2)}\n`;
 
   fs.mkdirSync(rel('artifacts/validation'), { recursive: true });
   fs.writeFileSync(rel(EVIDENCE), `${JSON.stringify({ ...doc, routes: undefined, status: 'PASS', mode: CHECK_ONLY ? 'CHECK' : 'WRITE', candidates: candidates.length, examined, file_changed: prev !== next }, null, 2)}\n`);
