@@ -202,9 +202,9 @@
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "enforce_no_source_mutation": true,
-      "timeout_seconds": 600,
+      "timeout_seconds": 900,
       "depends_on": [],
-      "estimated_runtime_seconds": 15,
+      "estimated_runtime_seconds": 90,
       "id": "store-clock-independence",
       "title": "A generated store contract does not expire at midnight",
       "path": "scripts/validators/validate_store_clock_independence.js",
@@ -376,7 +376,8 @@
         "html-fix-acceptance-compiler"
       ],
       "requires_files": [
-        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json",
+        "artifacts/validation/agent-exact-implementation-plan.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -423,7 +424,9 @@
         "agent-exact-implementation-trace"
       ],
       "requires_files": [
-        "data/report_fixes/agent_exact_implementation_policy.json"
+        "data/report_fixes/agent_exact_implementation_policy.json",
+        "artifacts/validation/agent-exact-implementation-plan.json",
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -594,7 +597,8 @@
         "data/report_fixes/agent_exact_implementation_ledger.json",
         "data/report_fixes/agent_run_absorption_baseline.json",
         "content/_live/pages.json",
-        "_redirects"
+        "_redirects",
+        "data/report_fixes/agent_exact_implementation_plan.json"
       ],
       "produces_files": [
         "artifacts/validation/agent-run-absorption-completeness.json"
@@ -892,7 +896,8 @@
       "risk_prevented": "Prevents winnability from silently reverting to a fabricated constant (weak_incumbent_score used to default to a hardcoded 0.5 on 64 of 68 rows and therefore decided nothing), and prevents a page candidate from being admitted on an unmeasured or untraceable citation-occupancy figure. Also fails a join run that produced no candidates without naming a stop reason, and fails an occupancy signal that records a discarded probe as a measurement.",
       "requires_files": [
         "data/authority_scale/query_atlas.json",
-        "data/queries/atlas_release_join_contract.json"
+        "data/queries/atlas_release_join_contract.json",
+        "data/queries/measured_demand_candidates.json"
       ],
       "produces_files": [
         "artifacts/validation/atlas-release-join.json"
@@ -1086,7 +1091,9 @@
       "evidence_file": "artifacts/validation/backlink-search-contract.json",
       "failure_action": "record warning, obtain exports or credentials, and rerun",
       "depends_on": [],
-      "requires_files": [],
+      "requires_files": [
+        "artifacts/release/SEARCH_SUBMISSION_MANIFEST.json"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
@@ -1631,7 +1638,8 @@
       ],
       "requires_files": [
         "artifacts/validation/fixture-signal-trace.json",
-        "artifacts/validation/daily-proof-packet.json"
+        "artifacts/validation/daily-proof-packet.json",
+        "data/queries/citation_fanout_opportunities_100k/index.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -1725,7 +1733,9 @@
       "depends_on": [
         "monitor-ledger"
       ],
-      "requires_files": [],
+      "requires_files": [
+        "content/_live/published_urls.json"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
@@ -1962,7 +1972,11 @@
         "_content_release_contract.json",
         "artifacts/validation/fixture-signal-trace.json",
         "artifacts/validation/daily-proof-packet.json",
-        ".github/workflows/daily-citation-intelligence.yml"
+        ".github/workflows/daily-citation-intelligence.yml",
+        "artifacts/validation/daily-citation-release-plan.json",
+        "artifacts/validation/daily-citation-release-application.json",
+        "artifacts/validation/browserless-mock-audit.json",
+        "artifacts/validation/mock-browser-backup.json"
       ],
       "produces_files": [
         "artifacts/validation/controlled-release-readiness.json",
@@ -2101,7 +2115,9 @@
       "requires_files": [
         "data/demand/measured_demand.json",
         "data/demand/pre_gate_admission_baseline.json",
-        "data/content/page_admission_registry.json"
+        "data/content/page_admission_registry.json",
+        "content/_live/published_urls.json",
+        "data/strategy/page_opportunity_backlog.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -2656,7 +2672,9 @@
         "publish-inventory",
         "canonical-routing-law"
       ],
-      "requires_files": [],
+      "requires_files": [
+        "content/_live/published_urls.json"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
@@ -3042,7 +3060,8 @@
         "agent-run-artifact-intake"
       ],
       "requires_files": [
-        "data/report_fixes/agent_runs"
+        "data/report_fixes/agent_runs",
+        "artifacts/validation/html-report-contract.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -3180,7 +3199,10 @@
         "zero_reddit_warning"
       ],
       "depends_on": [],
-      "requires_files": [],
+      "requires_files": [
+        "data/community/collection_status.json",
+        "data/community/ingestion_report.json"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
@@ -3775,7 +3797,8 @@
         "scripts/lib/model_name_guard.js",
         "content/_live/published_urls.json",
         "data/content/page_admission_registry.json",
-        "_redirects"
+        "_redirects",
+        "data/release/page_release_queue.json"
       ],
       "produces_files": [],
       "mutates_files": []
@@ -3992,7 +4015,8 @@
       "requires_files": [
         "dist/index.html",
         "insights",
-        "atlas"
+        "atlas",
+        "content/_live/published_urls.json"
       ],
       "prepare_commands": [
         "npm run build"
@@ -4398,7 +4422,9 @@
         "docs/PAGE_RELEASE_LAW.md",
         "data/release/page_release_contract.json",
         "data/content/page_admission_registry.json",
-        "sitemap.xml"
+        "sitemap.xml",
+        "data/release/frozen_page_registry.json",
+        "data/release/page_release_queue.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -5020,7 +5046,8 @@
       "risk_prevented": "Prevents the acceptance compiler turning a quoted DELETION order into page copy. The 2026-09-01 dentistry run asked for \"Use the same questions with every lawyer on your shortlist\" to be replaced; the compiler made it a required_string and an artifact title, so two dentistry pages published it as a visible <h2> under a Cost table badge.",
       "requires_files": [
         "data/release/withheld_page_phrases.json",
-        "data/report_fixes/agent_exact_implementation_ledger.json"
+        "data/report_fixes/agent_exact_implementation_ledger.json",
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
       ],
       "produces_files": [
         "artifacts/validation/removal-directive-not-published.json"
@@ -5357,7 +5384,8 @@
         "scripts/lib/rich_new_page_classifier.js",
         "scripts/lib/rich_new_page_blocks.js",
         "content/_live/pages.json",
-        "content/_staged/pages.json"
+        "content/_staged/pages.json",
+        "artifacts/validation/html-report-contract.json"
       ],
       "produces_files": [
         "artifacts/validation/rich-new-page-contract.json"
@@ -5483,7 +5511,10 @@
         "data/search_intelligence/search_intelligence_contract.json",
         "data/search_intelligence/target_query_set.json",
         "data/search_intelligence/search_diagnosis.json",
-        "data/search_intelligence/operator_scorecard.json"
+        "data/search_intelligence/operator_scorecard.json",
+        "data/search_intelligence/agent_signal_bridge.json",
+        "data/search_intelligence/repair_candidates.json",
+        "data/search_intelligence/authority_feedback.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -5715,7 +5746,8 @@
       "requires_files": [
         "_validation_registry.json",
         ".github/workflows/query-evidence-refresh.yml",
-        "scripts/selfheal/run_lane_selfheal.mjs"
+        "scripts/selfheal/run_lane_selfheal.mjs",
+        "artifacts/validation/workflow-yaml-inventory.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -6091,7 +6123,10 @@
         "data/strategy/citation_strategy_profile.json",
         "_citation_intelligence_contract.json",
         "_content_release_contract.json",
-        "artifacts/validation/citation-strategy-gate.json"
+        "artifacts/validation/citation-strategy-gate.json",
+        "data/strategy/citation_growth_strategy.json",
+        "data/measurement/citation_honesty_scoreboard.json",
+        "data/queries/citation_fanout_opportunities_100k/index.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -6556,7 +6591,8 @@
         "agent-exact-acceptance-manifest"
       ],
       "requires_files": [
-        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json",
+        "artifacts/validation/agent-exact-implementation-plan.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -6604,7 +6640,12 @@
       ],
       "requires_files": [
         "data/report_fixes/agent_runs",
-        "data/report_fixes/source_record_ledgers"
+        "data/report_fixes/source_record_ledgers",
+        "data/report_fixes/agent_exact_implementation_plan.json",
+        "artifacts/validation/agent-exact-implementation-plan.json",
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json",
+        "data/report_fixes/html_report_contract.generated.json",
+        "artifacts/validation/html-report-contract.json"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -6825,7 +6866,9 @@
       "evidence_file": "artifacts/validation/vertical-keys.json",
       "failure_action": "stop release and repair",
       "depends_on": [],
-      "requires_files": [],
+      "requires_files": [
+        "content/_staged/compiled_query_pages.json"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
