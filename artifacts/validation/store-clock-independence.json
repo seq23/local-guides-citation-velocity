@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "validator": "store-clock-independence",
+  "status": "PASS",
+  "fixed_probe_dates": [
+    "2020-01-02",
+    "2038-11-23"
+  ],
+  "enrolment_rule": "ACTIVE validator declaring a repair_writes target whose JSON carries a top-level generated_at stamp",
+  "stores_examined": 2,
+  "checked": [
+    {
+      "id": "accepted-artifact-recovery",
+      "stores": [
+        {
+          "store": "data/release/accepted_page_artifacts.json",
+          "generated_at": "2026-09-01"
+        }
+      ],
+      "probe_dates": [
+        "2026-09-01",
+        "2020-01-02",
+        "2038-11-23"
+      ],
+      "verdicts": [
+        {
+          "date": "2026-09-01",
+          "exit_code": 0
+        },
+        {
+          "date": "2020-01-02",
+          "exit_code": 0
+        },
+        {
+          "date": "2038-11-23",
+          "exit_code": 0
+        }
+      ],
+      "clock_independent": true
+    },
+    {
+      "id": "historic-artifact-recovery",
+      "stores": [
+        {
+          "store": "data/release/historic_recovered_artifacts.json",
+          "generated_at": "2026-09-01"
+        }
+      ],
+      "probe_dates": [
+        "2026-09-01",
+        "2020-01-02",
+        "2038-11-23"
+      ],
+      "verdicts": [
+        {
+          "date": "2026-09-01",
+          "exit_code": 0
+        },
+        {
+          "date": "2020-01-02",
+          "exit_code": 0
+        },
+        {
+          "date": "2038-11-23",
+          "exit_code": 0
+        }
+      ],
+      "clock_independent": true
+    }
+  ],
+  "errors": []
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "49184866ec0f3cc404e8da7e9f01b8de30938fbd224090368c41838f46ce1f09",
+  "registry_sha256": "7350112dd5f222e11fc614283baf20ae3759bac4bfc94ac5f54ee92bdb0d2642",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 166,
-    "active": 139,
+    "total": 167,
+    "active": 140,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 137,
+    "hard_fail": 138,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -70,6 +70,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "accepted-artifact-recovery",
+        "store-clock-independence",
         "admission-reachability",
         "agent-run-absorption-completeness",
         "archive-schema",
@@ -175,6 +176,7 @@
         "rendered-output-shrink-guard",
         "rich-block-contract-link",
         "route-topic-quality",
+        "store-clock-independence",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "validation-policy",
@@ -242,6 +244,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "accepted-artifact-recovery",
+        "store-clock-independence",
         "admission-reachability",
         "agent-artifact-continuity",
         "agent-artifact-priority",
@@ -422,6 +425,7 @@
         "daily-proof-packet",
         "citation-surface-ledger",
         "social-fallback-backlog-visibility",
+        "store-clock-independence",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
@@ -527,6 +531,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "accepted-artifact-recovery",
+        "store-clock-independence",
         "admission-reachability",
         "agent-artifact-continuity",
         "agent-artifact-priority",
@@ -706,6 +711,7 @@
         "daily-proof-packet",
         "citation-surface-ledger",
         "social-fallback-backlog-visibility",
+        "store-clock-independence",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
@@ -843,6 +849,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "accepted-artifact-recovery",
+        "store-clock-independence",
         "admission-reachability",
         "agent-artifact-continuity",
         "agent-artifact-priority",
@@ -1020,6 +1027,7 @@
         "daily-proof-packet",
         "citation-surface-ledger",
         "social-fallback-backlog-visibility",
+        "store-clock-independence",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
@@ -1121,6 +1129,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "accepted-artifact-recovery",
+        "store-clock-independence",
         "admission-reachability",
         "agent-artifact-continuity",
         "agent-artifact-priority",
@@ -1308,6 +1317,7 @@
         "daily-proof-packet",
         "citation-surface-ledger",
         "social-fallback-backlog-visibility",
+        "store-clock-independence",
         "strategy-gate",
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
@@ -1676,6 +1686,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "accepted-artifact-recovery",
+        "store-clock-independence",
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-improvement-capability",
@@ -1756,6 +1767,7 @@
         "rich-new-page-contract",
         "seo-execution-contract",
         "social-fallback-backlog-visibility",
+        "store-clock-independence",
         "validator-authority-contract",
         "velocity-commercial-pages",
         "provider-evidence",
@@ -1867,6 +1879,7 @@
       "promote_strong_warnings": false,
       "validator_ids": [
         "accepted-artifact-recovery",
+        "store-clock-independence",
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
@@ -1966,6 +1979,7 @@
         "release-plan-integrity",
         "daily-proof-packet",
         "social-fallback-backlog-visibility",
+        "store-clock-independence",
         "strategy-gate",
         "validator-authority-contract",
         "validator-materiality",
@@ -2478,6 +2492,46 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents the frozen store becoming the only copy of delivered content. The semantic acceptance manifest was a per-run snapshot until 2026-09-01, so 249 accepted routes rebuilt 1,145,001 bytes lighter and the frozen restore hid it; the loss only became visible when a page was legitimately thawed. This proves data/release/accepted_page_artifacts.json still matches the accepted output, so every delivered artifact block is reproducible by a build.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "store-clock-independence",
+        "title": "A generated store contract does not expire at midnight",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_store_clock_independence.js",
+        "command": "node scripts/validators/validate_store_clock_independence.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/release/frozen_page_registry.json",
+          "data/release/accepted_page_artifacts.json",
+          "data/release/withheld_page_phrases.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/accepted-artifact-recovery.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/store-clock-independence.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a generated store that carries a wall-clock generated_at inside the payload its own --check byte-compares. accepted-artifact-recovery and historic-artifact-recovery were both built that way: the stores were committed 2026-09-01 and from 00:00 UTC on 2026-09-02 the recomputed payload differed by exactly the date field, so a Tier 1 HARD_FAIL took down validate:release in the content-release lane, the query-evidence self-heal loop, and left Validate Repo red on an unabsorbed agent run - every day, because regenerating and committing the store buys exactly one day. Enrolment is derived from the registry itself so a future store of the same shape is covered when registered.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -8694,6 +8748,46 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents the frozen store becoming the only copy of delivered content. The semantic acceptance manifest was a per-run snapshot until 2026-09-01, so 249 accepted routes rebuilt 1,145,001 bytes lighter and the frozen restore hid it; the loss only became visible when a page was legitimately thawed. This proves data/release/accepted_page_artifacts.json still matches the accepted output, so every delivered artifact block is reproducible by a build.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "store-clock-independence",
+        "title": "A generated store contract does not expire at midnight",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_store_clock_independence.js",
+        "command": "node scripts/validators/validate_store_clock_independence.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/release/frozen_page_registry.json",
+          "data/release/accepted_page_artifacts.json",
+          "data/release/withheld_page_phrases.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/accepted-artifact-recovery.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/store-clock-independence.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a generated store that carries a wall-clock generated_at inside the payload its own --check byte-compares. accepted-artifact-recovery and historic-artifact-recovery were both built that way: the stores were committed 2026-09-01 and from 00:00 UTC on 2026-09-02 the recomputed payload differed by exactly the date field, so a Tier 1 HARD_FAIL took down validate:release in the content-release lane, the query-evidence self-heal loop, and left Validate Repo red on an unabsorbed agent run - every day, because regenerating and committing the store buys exactly one day. Enrolment is derived from the registry itself so a future store of the same shape is covered when registered.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

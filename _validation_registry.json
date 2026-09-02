@@ -178,7 +178,50 @@
       "mutates_files": [
         "artifacts/validation/accepted-artifact-recovery.json"
       ],
-      "why_existing_checks_do_not_cover": "frozen-output-integrity proves the accepted bytes are intact; frozen-content-recoverability screens for routes that render more than their sections. Neither proves the artifact blocks on an accepted page can still be produced by a build, which is the condition that turned a routine thaw into silent content loss."
+      "why_existing_checks_do_not_cover": "frozen-output-integrity proves the accepted bytes are intact; frozen-content-recoverability screens for routes that render more than their sections. Neither proves the artifact blocks on an accepted page can still be produced by a build, which is the condition that turned a routine thaw into silent content loss.",
+      "repair_command": "npm run recover:accepted-artifacts",
+      "repair_writes": [
+        "data/release/accepted_page_artifacts.json"
+      ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 15,
+      "id": "store-clock-independence",
+      "title": "A generated store contract does not expire at midnight",
+      "path": "scripts/validators/validate_store_clock_independence.js",
+      "command": "node scripts/validators/validate_store_clock_independence.js",
+      "risk_prevented": "Prevents a generated store that carries a wall-clock generated_at inside the payload its own --check byte-compares. accepted-artifact-recovery and historic-artifact-recovery were both built that way: the stores were committed 2026-09-01 and from 00:00 UTC on 2026-09-02 the recomputed payload differed by exactly the date field, so a Tier 1 HARD_FAIL took down validate:release in the content-release lane, the query-evidence self-heal loop, and left Validate Repo red on an unabsorbed agent run - every day, because regenerating and committing the store buys exactly one day. Enrolment is derived from the registry itself so a future store of the same shape is covered when registered.",
+      "requires_files": [
+        "data/release/frozen_page_registry.json",
+        "data/release/accepted_page_artifacts.json",
+        "data/release/withheld_page_phrases.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/accepted-artifact-recovery.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/store-clock-independence.json"
+      ],
+      "why_existing_checks_do_not_cover": "accepted-artifact-recovery and historic-artifact-recovery each prove their own store is current, but both evaluate under a single SOURCE_DATE, so neither can tell a content change from a date rollover. self-heal-repair-contract proves a declared repair touches a file its validator reads, not that the validator returns a clock-independent verdict."
     },
     {
       "status": "ACTIVE",
@@ -2843,7 +2886,11 @@
       "mutates_files": [
         "artifacts/validation/historic-artifact-recovery.json"
       ],
-      "why_existing_checks_do_not_cover": "accepted-artifact-recovery reads the CURRENT accepted output, so it can only preserve what a page still has. Nothing checked what a page used to have and lost."
+      "why_existing_checks_do_not_cover": "accepted-artifact-recovery reads the CURRENT accepted output, so it can only preserve what a page still has. Nothing checked what a page used to have and lost.",
+      "repair_command": "npm run recover:historic-artifacts",
+      "repair_writes": [
+        "data/release/historic_recovered_artifacts.json"
+      ]
     },
     {
       "id": "homepage-request-assistance",
