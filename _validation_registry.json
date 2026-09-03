@@ -2205,6 +2205,47 @@
       "enforce_no_source_mutation": false
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "depends_on": [],
+      "estimated_runtime_seconds": 60,
+      "timeout_seconds": 900,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 8",
+      "profiles": [
+        "audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "id": "repair-command-efficacy",
+      "title": "A registered repair actually changes something when its validator is failing",
+      "path": "scripts/validators/validate_repair_command_efficacy.js",
+      "command": "node scripts/validators/validate_repair_command_efficacy.js",
+      "tags": [
+        "self-heal",
+        "repair",
+        "integrity"
+      ],
+      "risk_prevented": "Prevents a registered repair_command from being a no-op against the exact condition its validator is failing on. agent-fix-ledger-truthfulness can fail on newly-untruthful rows OR on stale ratchet-baseline entries; its repair only ever handled the first, so on 2026-09-03 (run 33789831891) self-heal correctly refused to loop on a repair that ran, exited 0, and changed nothing, leaving Velocity Content Release red with a registered repair that could never have cleared it.",
+      "why_existing_checks_do_not_cover": "self-heal-repair-contract proves a declared repair rewrites a file its validator reads; it does not prove the repair addresses every FAILURE MODE that validator can report - a repair can legitimately touch one of its validator's required_files and still leave a different failure condition on that same validator untouched. self-heal-commit-coverage proves a lane can commit what a repair writes; it says nothing about whether the repair writes anything at all when its validator is actually failing.",
+      "requires_files": [
+        "_validation_registry.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/repair-command-efficacy.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/repair-command-efficacy.json"
+      ]
+    },
+    {
       "id": "distribution-contract",
       "title": "Distribution script contract",
       "path": "scripts/validate_distribution_contract.js",
@@ -7436,7 +7477,8 @@
       "repair_command": "npm run recover:fix-ledger-truthfulness",
       "repair_writes": [
         "data/report_fixes/agent_fix_ledger.json",
-        "data/report_fixes/agent_artifact_disposition_ledger.json"
+        "data/report_fixes/agent_artifact_disposition_ledger.json",
+        "data/report_fixes/agent_fix_ledger_truthfulness_baseline.json"
       ]
     },
     {

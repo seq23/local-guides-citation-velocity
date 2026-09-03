@@ -22,7 +22,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { auditFix, RELEASED_STATES } = require('../validators/validate_agent_fix_ledger_truthfulness');
+const { auditFix, collectUntruthful, RELEASED_STATES, BASELINE_REL } = require('../validators/validate_agent_fix_ledger_truthfulness');
 
 const ROOT = path.resolve(__dirname, '../..');
 const LEDGER_REL = 'data/report_fixes/agent_fix_ledger.json';
@@ -78,36 +78,77 @@ function main() {
     delete fix.completed_at;
   }
 
+  // The baseline is the OTHER half of what this validator checks, and the
+  // demotion loop above never touched it. A row leaves `collectUntruthful()`
+  // the moment its status stops claiming RELEASED_STATES - which demotion
+  // above just did for every row this pass covered - but a row that became
+  // truthful because a LATER, unrelated content change filled in its markers
+  // (still claiming RELEASED_STATES, now honestly) also has to come off the
+  // baseline, and demotion cannot do that: there is nothing about it to
+  // demote. Recomputing the untruthful set fresh, after demotion, and setting
+  // the baseline to exactly that set is what actually satisfies the
+  // validator: it fails on `staleBaseline` (accepted ids no longer
+  // untruthful) exactly as readily as it fails on `newRows` (untruthful ids
+  // not yet accepted), and a repair that only ever cleared the second was a
+  // no-op against the first every time - confirmed 2026-09-03, run
+  // 33789831891: self-heal attempt 1 demoted the newly-untruthful rows this
+  // pass covered, attempt 2 still failed on stale baseline entries alone, and
+  // the repair changed nothing because it had never once written
+  // ${BASELINE_REL}.
+  const remainingUntruthful = collectUntruthful(ledger);
+  const remainingIds = [...new Set(remainingUntruthful.map((row) => row.id))].sort();
+  const baseline = readJson(BASELINE_REL, { accepted_untruthful_ids: [] });
+  const currentIds = Array.isArray(baseline.accepted_untruthful_ids) ? [...baseline.accepted_untruthful_ids].sort() : [];
+  const baselineIsCurrent = currentIds.length === remainingIds.length && currentIds.every((id, i) => id === remainingIds[i]);
+
   if (check) {
-    if (demoted.length) {
-      console.error(`FIX LEDGER TRUTHFULNESS RECOVERY (--check): ${demoted.length} released claim(s) are not shown by their pages. Run without --check and commit the result.`);
+    if (demoted.length || !baselineIsCurrent) {
+      const staleCount = currentIds.filter((id) => !remainingIds.includes(id)).length;
+      console.error(`FIX LEDGER TRUTHFULNESS RECOVERY (--check): ${demoted.length} released claim(s) are not shown by their pages, ${staleCount} baseline id(s) are stale. Run without --check and commit the result.`);
       process.exit(1);
     }
-    console.log(`FIX LEDGER TRUTHFULNESS RECOVERY (--check): ${claimed.length} released claim(s) all shown by their pages.`);
+    console.log(`FIX LEDGER TRUTHFULNESS RECOVERY (--check): ${claimed.length} released claim(s) all shown by their pages; baseline matches the current untruthful set.`);
     return;
   }
 
-  if (!demoted.length) {
-    console.log(`FIX LEDGER TRUTHFULNESS RECOVERY: nothing to reconcile; ${claimed.length} released claim(s) are all shown by their pages.`);
-    return;
-  }
+  let changed = false;
+  if (demoted.length) {
+    ledger.updated_at = DATE;
+    writeJson(LEDGER_REL, ledger);
+    changed = true;
 
-  ledger.updated_at = DATE;
-  writeJson(LEDGER_REL, ledger);
-
-  const demotedIds = new Set(demoted.map((row) => row.id));
-  const dispositions = readJson(DISPOSITION_REL, null);
-  if (dispositions && Array.isArray(dispositions.entries)) {
-    for (const entry of dispositions.entries) {
-      if (!demotedIds.has(entry.id)) continue;
-      if (entry.disposition === 'RELEASED_VERIFIED') entry.disposition = 'ACCEPTED_ROUTE_MARKERS_ABSENT';
-      entry.completed_at = null;
+    const demotedIds = new Set(demoted.map((row) => row.id));
+    const dispositions = readJson(DISPOSITION_REL, null);
+    if (dispositions && Array.isArray(dispositions.entries)) {
+      for (const entry of dispositions.entries) {
+        if (!demotedIds.has(entry.id)) continue;
+        if (entry.disposition === 'RELEASED_VERIFIED') entry.disposition = 'ACCEPTED_ROUTE_MARKERS_ABSENT';
+        entry.completed_at = null;
+      }
+      dispositions.updated_at = DATE;
+      writeJson(DISPOSITION_REL, dispositions);
     }
-    dispositions.updated_at = DATE;
-    writeJson(DISPOSITION_REL, dispositions);
   }
 
-  console.log(`FIX LEDGER TRUTHFULNESS RECOVERY${runDateArg ? ` (run_date=${runDateArg})` : ''}: demoted ${demoted.length} of ${claimed.length} released claim(s) to ACCEPTED_ROUTE_MARKERS_ABSENT; they are selectable again. First: ${demoted[0].id} (${demoted[0].rendered_path}: ${demoted[0].reason}).`);
+  let staleRemoved = 0;
+  if (!baselineIsCurrent) {
+    staleRemoved = currentIds.filter((id) => !remainingIds.includes(id)).length;
+    baseline.accepted_untruthful_ids = remainingIds;
+    baseline.accepted_untruthful_count = remainingIds.length;
+    baseline.generated_at = DATE;
+    writeJson(BASELINE_REL, baseline);
+    changed = true;
+  }
+
+  if (!changed) {
+    console.log(`FIX LEDGER TRUTHFULNESS RECOVERY: nothing to reconcile; ${claimed.length} released claim(s) are all shown by their pages, and the baseline already matches the current untruthful set.`);
+    return;
+  }
+
+  const parts = [];
+  if (demoted.length) parts.push(`demoted ${demoted.length} of ${claimed.length} released claim(s) to ACCEPTED_ROUTE_MARKERS_ABSENT`);
+  if (staleRemoved) parts.push(`removed ${staleRemoved} stale id(s) from ${BASELINE_REL}`);
+  console.log(`FIX LEDGER TRUTHFULNESS RECOVERY${runDateArg ? ` (run_date=${runDateArg})` : ''}: ${parts.join('; ')}.${demoted.length ? ` First demoted: ${demoted[0].id} (${demoted[0].rendered_path}: ${demoted[0].reason}).` : ''}`);
 }
 
 main();
