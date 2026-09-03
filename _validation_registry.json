@@ -5214,7 +5214,12 @@
       "mutates_files": [
         "artifacts/validation/rendered-output-shrink-guard.json"
       ],
-      "why_existing_checks_do_not_cover": "published-inventory-stability counts pages and frozen-output-integrity hashes accepted bytes. Neither notices a page that is still present, still frozen and still hashing correctly after being re-accepted several kilobytes smaller."
+      "why_existing_checks_do_not_cover": "published-inventory-stability counts pages and frozen-output-integrity hashes accepted bytes. Neither notices a page that is still present, still frozen and still hashing correctly after being re-accepted several kilobytes smaller.",
+      "repair_command": "npm run measure:historic-page-maximum",
+      "repair_writes": [
+        "data/release/historic_page_maximum.json"
+      ],
+      "repair_scope": "This validator has three independent failure modes and the repair only closes one of them. unjustified_shrinks and stale_justifications are about data/release/rendered_size_baseline.json - a page below its accepted floor with no named reason, or a named reason that no longer reproduces - and there is no safe automated fix for either: recovering lost content or naming why it is gone is a human judgment call, so those keep failing after this repair runs and correctly stay unrepaired. recovered_above_historic_max is different: it is the shrink-only ratchet in data/release/historic_page_maximum.json refusing to shrink back down after a route legitimately grew past its recorded historic maximum (observed live in run 33797069252 on 2026-09-03 - a governed release recovered five routes, e.g. insights/neuro-021-how-to-use-results-for-accommodations.html from 21,168 to 41,639 bytes, and the guard failed because nothing had pruned them off the below-historic-max list). scripts/release/measure_historic_page_maximum.js is the existing, already-trusted tool that seeded that list in the first place; running it re-measures every accepted route against sampled history and can only tighten the ratchet - a route leaves the list solely because its current on-disk bytes are now at or above its historic peak, never because a threshold moved. It never touches rendered_size_baseline.json, so it cannot mask a real unjustified shrink."
     },
     {
       "id": "rendered-programmatic-substance",
