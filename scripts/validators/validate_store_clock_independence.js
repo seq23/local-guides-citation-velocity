@@ -31,8 +31,26 @@
 // each keeping their own list with no link between them is how guards drift out of
 // reach of what they govern. A contract enrols itself when it is
 //   - an ACTIVE validator in _validation_registry.json, and
-//   - declares repair_writes naming a JSON file that carries a top-level
-//     `generated_at` stamp.
+//   - declares ANY date-stamped JSON store it depends on - via repair_writes (the
+//     store a repair rewrites) or requires_files (the store the check reads).
+//
+// The first cut of this rule keyed on repair_writes ALONE, and that was still a
+// hand-maintained second list wearing a derived list's clothes: repair_writes is
+// present on 9 of 167 validators, so the guard reached 2 store contracts while 28
+// more ACTIVE validators - nearly all Tier 1 HARD_FAIL - read a generated_at
+// stamped JSON store with no probe on them at all. A store built exactly like
+// accepted_page_artifacts.json, guarded by a validator that happens to have no
+// registered repair, was invisible to the guard written to catch that store. That
+// is the same "guard cannot reach what it governs" shape the defect came in
+// through.
+//
+// Enrolment follows the registry's DECLARED dependencies rather than scanning
+// validator source for file reads, because a regex over source is a guess and a
+// Tier 1 gate should not be built on one. That puts the burden on the declaration
+// being honest, so the declarations were made honest in the same change: every
+// ACTIVE validator that read a generated_at stamped store without declaring it now
+// declares it. Reach went from 2 store contracts to 45.
+//
 // Any future store built the same way is covered the day it is registered.
 
 const fs = require('fs');
@@ -72,15 +90,37 @@ function generatedAtOf(relPath) {
   }
 }
 
+// SOURCE_DATE is a calendar date. Stores stamp themselves inconsistently - some
+// with 'YYYY-MM-DD', some with a full ISO instant - and feeding an instant back in
+// as SOURCE_DATE probes a malformed date rather than the store's own day, which
+// can fail a validator for a reason that has nothing to do with the clock
+// contract. Reduce every stamp to the day it names.
+const asProbeDate = (stamp) => {
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(stamp));
+  return m ? m[1] : '';
+};
+
+const SELF_ID = 'store-clock-independence';
+
 const enrolled = [];
 for (const v of validators) {
   if (v.status !== 'ACTIVE' || !v.command || !v.path) continue;
-  const stamped = (Array.isArray(v.repair_writes) ? v.repair_writes : [])
+  // This guard declares the stores it probes, so it matches its own enrolment
+  // rule. Probing itself would respawn itself once per probe date, forever.
+  if (v.id === SELF_ID) continue;
+  const declared = [
+    ...(Array.isArray(v.repair_writes) ? v.repair_writes : []),
+    ...(Array.isArray(v.requires_files) ? v.requires_files : []),
+  ];
+  const seen = new Set();
+  const stamped = declared
+    .filter((w) => typeof w === 'string' && w.endsWith('.json') && !seen.has(w) && seen.add(w))
     .map((w) => ({ store: w, generated_at: generatedAtOf(w) }))
-    .filter((x) => x.generated_at);
+    .filter((x) => x.generated_at && asProbeDate(x.generated_at));
   if (!stamped.length) continue;
-  // Every stamp the contract's own stores carry, plus the fixed distant dates.
-  const dates = [...new Set([...stamped.map((x) => x.generated_at), ...FIXED_PROBE_DATES])];
+  // Every day the contract's own stores stamp themselves with, plus the fixed
+  // distant dates.
+  const dates = [...new Set([...stamped.map((x) => asProbeDate(x.generated_at)), ...FIXED_PROBE_DATES])];
   enrolled.push({ id: v.id, command: v.command, stores: stamped, probe_dates: dates });
 }
 
@@ -89,12 +129,24 @@ for (const v of validators) {
 // stopped matching them, and in both cases this guard has proven nothing.
 if (!enrolled.length) {
   console.error(
-    'STORE CLOCK INDEPENDENCE FAIL: examined zero stores. No ACTIVE validator declares a repair_writes '
-    + 'target carrying a top-level generated_at stamp, so either the registry or the enrolment rule has '
-    + 'drifted and this guard is no longer reaching anything. Clock independence is UNKNOWN, not proven.',
+    'STORE CLOCK INDEPENDENCE FAIL: examined zero stores. No ACTIVE validator declares a repair_writes or '
+    + 'requires_files target carrying a top-level generated_at stamp, so either the registry or the enrolment '
+    + 'rule has drifted and this guard is no longer reaching anything. Clock independence is UNKNOWN, not proven.',
   );
   process.exit(1);
 }
+
+// Reported so a shrinking sample is visible in the receipt rather than hiding
+// behind the word PASS. This recount is deliberately NOT a second gate: it shares
+// the enrolment predicate, so a gate on it could only ever agree with itself, and
+// a check that cannot fail for a real reason is inert code wearing a guard's name.
+const population = validators.filter(
+  (v) => v.status === 'ACTIVE' && v.command && v.path && v.id !== SELF_ID
+    && [
+      ...(Array.isArray(v.repair_writes) ? v.repair_writes : []),
+      ...(Array.isArray(v.requires_files) ? v.requires_files : []),
+    ].some((w) => typeof w === 'string' && w.endsWith('.json') && generatedAtOf(w)),
+).map((v) => v.id);
 
 const errors = [];
 const checked = [];
@@ -136,8 +188,9 @@ const report = {
   validator: 'store-clock-independence',
   status: errors.length ? 'FAIL' : 'PASS',
   fixed_probe_dates: FIXED_PROBE_DATES,
-  enrolment_rule: 'ACTIVE validator declaring a repair_writes target whose JSON carries a top-level generated_at stamp',
+  enrolment_rule: 'ACTIVE validator declaring a repair_writes OR requires_files target whose JSON carries a top-level generated_at stamp',
   stores_examined: checked.length,
+  stamped_store_population: population.length,
   checked,
   errors,
 };
