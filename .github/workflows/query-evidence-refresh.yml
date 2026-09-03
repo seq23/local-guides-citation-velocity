@@ -146,14 +146,61 @@ jobs:
         # one tree and commit another.
         run: node scripts/selfheal/run_lane_selfheal.mjs
       - name: Validate before publishing anything
-        run: npm run validate
+        # release, not core: workflow-data-trace requires npm run validate:release
+        # to appear before any git push in a repo-mutating workflow - release is a
+        # strict superset of core (145 validators vs 87), so this is strictly more
+        # coverage, not a narrowed check. It was `npm run validate` (core) while
+        # the push after it lived inside a third-party action the guard could not
+        # see; making the push visible (see the next step) is what surfaced that
+        # this lane had never actually been held to the same bar as every other
+        # push-capable lane.
+        run: npm run validate:release
 
       - name: Commit refreshed evidence, atlas and candidates
         id: commit
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "query evidence refresh: measured GSC demand -> atlas -> release candidates"
+        # This step used to be stefanzweifel/git-auto-commit-action@v5, which
+        # commits on top of whatever local `main` the job's initial checkout
+        # holds and pushes once, with no fetch/rebase/retry. This job runs GSC
+        # ingestion, the occupancy probe, and the bounded self-heal loop before
+        # ever reaching this step - minutes during which another lane sharing
+        # the local-guides-main-writer concurrency group (most often
+        # velocity-content-release.yml's own absorption push) can land a commit
+        # on main. On 2026-09-03 16:04 (run 33774426877) that produced exactly
+        # this: "Your branch and 'origin/main' have diverged" from the action's
+        # own fetch, an unrebased commit on the stale base, and
+        # `! [rejected] main -> main (non-fast-forward)` - failing the whole
+        # lane on a healthy run that had just repaired and validated the tree.
+        #
+        # Every OTHER lane in this repo that pushes to main already carries a
+        # fetch + rebase + retry loop for exactly this race
+        # (velocity-content-release.yml, velocity-full-rebuild.yml); this was
+        # the one push surface still relying on a plain action with none. The
+        # file_pattern line stays literal so self-heal-commit-coverage - which
+        # greps this file for it - still proves the commit surface matches
+        # every ACTIVE repair's declared writes.
+        env:
           file_pattern: ${{ steps.selfheal.outputs.file_pattern }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- $file_pattern
+          if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          git commit -m "query evidence refresh: measured GSC demand -> atlas -> release candidates"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              sleep $((attempt * 15))
+              continue
+            fi
+            npm run validate:release
+            git add -- $file_pattern
+            git commit --amend --no-edit
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 15))
+          done
+          exit 1
 
       - name: Hand measured candidates to Velocity Content Release
         # Only when the join actually produced candidates. A run that named a
