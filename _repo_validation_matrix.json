@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "11cdc9af308a87c5037cfa468b837c001ea122c0994084af54dbf2ed9b5f72b4",
+  "registry_sha256": "a7ca584da21daaeb4e25f1c0f961cf832d73c4c984957889c54b44a5a47a254e",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 174,
-    "active": 147,
+    "total": 175,
+    "active": 148,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 145,
+    "hard_fail": 146,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -294,6 +294,7 @@
         "deep-workflow-data-trace",
         "demand-backed-pages",
         "deterministic-build",
+        "repair-command-efficacy",
         "dynamic-page-contract-cross-vertical",
         "evidence-registry",
         "executable-bits",
@@ -551,6 +552,7 @@
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
+        "repair-command-efficacy",
         "repo-hygiene"
       ]
     },
@@ -595,6 +597,7 @@
         "deep-workflow-data-trace",
         "demand-backed-pages",
         "deterministic-build",
+        "repair-command-efficacy",
         "dynamic-page-contract-cross-vertical",
         "evidence-registry",
         "executable-bits",
@@ -848,6 +851,7 @@
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
+        "repair-command-efficacy",
         "repo-hygiene"
       ]
     },
@@ -927,6 +931,7 @@
         "deep-workflow-data-trace",
         "demand-backed-pages",
         "deterministic-build",
+        "repair-command-efficacy",
         "dynamic-page-contract-cross-vertical",
         "evidence-registry",
         "executable-bits",
@@ -1177,6 +1182,7 @@
         "velocity-intake-workflow",
         "deterministic-build",
         "public-click-audit",
+        "repair-command-efficacy",
         "repo-hygiene"
       ]
     },
@@ -1224,6 +1230,7 @@
         "deep-workflow-data-trace",
         "demand-backed-pages",
         "deterministic-build",
+        "repair-command-efficacy",
         "dynamic-page-contract-cross-vertical",
         "entity-graph",
         "evidence-registry",
@@ -1490,6 +1497,7 @@
         "velocity-intake-workflow",
         "deterministic-build",
         "public-click-audit",
+        "repair-command-efficacy",
         "repo-hygiene"
       ]
     },
@@ -3996,6 +4004,41 @@
         ],
         "enforce_no_source_mutation": false,
         "risk_prevented": "Identical source could generate different public output or freshness churn.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "repair-command-efficacy",
+        "title": "A registered repair actually changes something when its validator is failing",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_repair_command_efficacy.js",
+        "command": "node scripts/validators/validate_repair_command_efficacy.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/repair-command-efficacy.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/repair-command-efficacy.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents a registered repair_command from being a no-op against the exact condition its validator is failing on. agent-fix-ledger-truthfulness can fail on newly-untruthful rows OR on stale ratchet-baseline entries; its repair only ever handled the first, so on 2026-09-03 (run 33789831891) self-heal correctly refused to loop on a repair that ran, exited 0, and changed nothing, leaving Velocity Content Release red with a registered repair that could never have cleared it.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -15624,6 +15667,41 @@
         ],
         "enforce_no_source_mutation": false,
         "risk_prevented": "Identical source could generate different public output or freshness churn.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "repair-command-efficacy",
+        "title": "A registered repair actually changes something when its validator is failing",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_repair_command_efficacy.js",
+        "command": "node scripts/validators/validate_repair_command_efficacy.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/repair-command-efficacy.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/repair-command-efficacy.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents a registered repair_command from being a no-op against the exact condition its validator is failing on. agent-fix-ledger-truthfulness can fail on newly-untruthful rows OR on stale ratchet-baseline entries; its repair only ever handled the first, so on 2026-09-03 (run 33789831891) self-heal correctly refused to loop on a repair that ran, exited 0, and changed nothing, leaving Velocity Content Release red with a registered repair that could never have cleared it.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
