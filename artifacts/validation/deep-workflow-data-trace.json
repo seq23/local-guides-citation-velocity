@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-03T16:09:19.993Z",
+  "generated_at": "2026-09-03T16:38:20.161Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -314,7 +314,7 @@
     },
     {
       "workflow": "query-evidence-refresh.yml",
-      "command_count": 9,
+      "command_count": 10,
       "status": "PASS",
       "commands": [
         {
@@ -430,12 +430,12 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "npm run validate",
+          "command": "npm run validate:release",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "validate",
+              "name": "validate:release",
               "ok": true
             },
             {
@@ -445,10 +445,32 @@
             }
           ],
           "direct_npm_scripts": [
-            "validate"
+            "validate:release"
           ],
           "transitive_npm_scripts": [
-            "validate"
+            "validate:release"
+          ]
+        },
+        {
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -- $file_pattern\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"query evidence refresh: measured GSC demand -> atlas -> release candidates\"\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run validate:release\ngit add -- $file_pattern\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate:release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "validate:release"
+          ],
+          "transitive_npm_scripts": [
+            "validate:release"
           ]
         },
         {
@@ -1105,7 +1127,7 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\n# The cadence ledger records what the sitemap held the last time the gate\n# ran. cadence_gate.js writes it, but the only other job that runs the gate\n# is Validate Repo, which is read-only - so its copy dies with the runner.\n# Nothing ever committed the ledger, so it stayed frozen at whatever a human\n# last pushed (2026-08-27). Every page published after that read as \"new\",\n# and the moment more than new_pages_per_week accumulated, the gate blocked\n# Validate Repo permanently: the comparison it depends on could never\n# advance on its own. Running it here - inside the loop that already\n# rebuilds and amends - is what makes the ledger persist. It also enforces\n# the weekly cap at the point of publication, where refusing is still\n# possible, rather than after the pages are already on main.\nnpm run cadence:gate\nnpm run validate:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\n# This step follows release:velocity-intake, which can publish new\n# pages via release:velocity-content. `npm run build` restores\n# data/release/frozen_page_registry.json for every newly-accepted\n# route but does not touch data/release/accepted_page_artifacts.json -\n# only recover:accepted-artifacts derives that store. Left out, the\n# very next line's validate:release HARD_FAILs accepted-artifact-recovery\n# on a tree that just did exactly what this lane exists to do: that\n# took the lane red on 2026-09-03 06:55 (run 33725560369), on a\n# healthy publish. lane-accepted-artifact-regen-reach fails if this\n# is ever removed while release:velocity-content stays reachable\n# above it.\nnpm run recover:accepted-artifacts\n# The cadence ledger records what the sitemap held the last time the gate\n# ran. cadence_gate.js writes it, but the only other job that runs the gate\n# is Validate Repo, which is read-only - so its copy dies with the runner.\n# Nothing ever committed the ledger, so it stayed frozen at whatever a human\n# last pushed (2026-08-27). Every page published after that read as \"new\",\n# and the moment more than new_pages_per_week accumulated, the gate blocked\n# Validate Repo permanently: the comparison it depends on could never\n# advance on its own. Running it here - inside the loop that already\n# rebuilds and amends - is what makes the ledger persist. It also enforces\n# the weekly cap at the point of publication, where refusing is still\n# possible, rather than after the pages are already on main.\nnpm run cadence:gate\nnpm run validate:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
@@ -1116,6 +1138,11 @@
             {
               "type": "npm_script",
               "name": "cadence:gate",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "recover:accepted-artifacts",
               "ok": true
             },
             {
@@ -1175,6 +1202,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/citation_velocity/recover_accepted_page_artifacts.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/validators/trace_agent_exact_implementation.js",
               "ok": true
             },
@@ -1202,6 +1234,7 @@
           "direct_npm_scripts": [
             "build",
             "cadence:gate",
+            "recover:accepted-artifacts",
             "trace:agent-exact",
             "trace:citation-agent-fixes",
             "validate:agent-exact",
@@ -1211,6 +1244,7 @@
           "transitive_npm_scripts": [
             "build",
             "cadence:gate",
+            "recover:accepted-artifacts",
             "trace:agent-exact",
             "trace:citation-agent-fixes",
             "validate:agent-exact",
