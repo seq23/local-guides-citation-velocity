@@ -51,8 +51,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Full history. This lane runs `npm run validate`, which is the whole
-          # `core` profile, and core includes historic-artifact-recovery - whose
+          # Full history. This lane runs `npm run validate:release`, which is
+          # the whole `release` profile (a strict superset of `core`), and
+          # release includes historic-artifact-recovery - whose
           # validator and whose repair both resolve old page bytes with
           # `git show <historic_max_commit>:<file>`.
           #
@@ -98,9 +99,66 @@ jobs:
         run: |
           npm run validate:occupancy-probe
           npm run validate:occupancy-controls
-          npm run validate
+          npm run validate:release
       - name: Commit the measurement
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "citation occupancy probe: measured winnability -> atlas"
+        # This step used to be stefanzweifel/git-auto-commit-action@v5: no
+        # fetch, no rebase, no retry, one push. That is the identical shape
+        # that broke query-evidence-refresh.yml on 2026-09-03 (run
+        # 33774426877, "Your branch and 'origin/main' have diverged" ->
+        # non-fast-forward reject) - this lane shares the same
+        # local-guides-main-writer concurrency group and the same race window
+        # against velocity-content-release.yml's own push, it had simply never
+        # been dispatched while main was moving, so the defect was armed but
+        # unfired. push-after-rebase-revalidates could not have caught it
+        # either: that guard only examines steps whose script contains a
+        # literal `git push origin HEAD:main`, and a third-party action's push
+        # is invisible to it - a guard that cannot reach what it governs.
+        # CONFIRMED by negative proof: before this fix, push-after-rebase-
+        # revalidates examines 4 push-to-main steps across this repo; after
+        # it, 5 - this lane's push was simply never in its field of view.
+        #
+        # This now matches every other push-to-main lane in this repo
+        # (query-evidence-refresh.yml, velocity-content-release.yml,
+        # velocity-full-rebuild.yml): fetch + rebase + retry, and a CONFLICT
+        # is answered by resetting to the new origin/main and re-deriving this
+        # run's own outputs against it before pushing - never by replaying the
+        # stale commit. The occupancy probe result itself is not re-fetched:
+        # data/signals/query_class_occupancy.json is this run's own measured
+        # data and does not depend on what main advanced to, so only the
+        # downstream, actually base-dependent steps (atlas build, release
+        # join, validation) are re-run.
+        env:
           file_pattern: "data/signals/query_class_occupancy.json data/authority_scale/query_atlas.json data/queries/measured_demand_candidates.json artifacts/validation/*.json"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- $file_pattern
+          if git diff --cached --quiet; then echo "no changes to commit"; exit 0; fi
+          git commit -m "citation occupancy probe: measured winnability -> atlas"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              git reset --hard origin/main
+              npm run atlas:build
+              npm run queries:join-release
+              npm run validate:occupancy-probe
+              npm run validate:occupancy-controls
+              npm run validate:release
+              git add -- $file_pattern
+              if git diff --cached --quiet; then
+                echo "no changes to commit after re-deriving onto origin/main"
+                exit 0
+              fi
+              git commit -m "citation occupancy probe: measured winnability -> atlas"
+            else
+              npm run validate:occupancy-probe
+              npm run validate:occupancy-controls
+              npm run validate:release
+              git add -- $file_pattern
+              git commit --amend --no-edit
+            fi
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 15))
+          done
+          exit 1
