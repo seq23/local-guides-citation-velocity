@@ -51,8 +51,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Full history. This lane runs `npm run validate`, which is the whole
-          # `core` profile, and core includes historic-artifact-recovery - whose
+          # Full history. This lane runs `npm run validate:release`, which is
+          # the whole `release` profile (a strict superset of `core`), and
+          # release includes historic-artifact-recovery - whose
           # validator and whose repair both resolve old page bytes with
           # `git show <historic_max_commit>:<file>`.
           #
@@ -98,7 +99,7 @@ jobs:
         run: |
           npm run validate:occupancy-probe
           npm run validate:occupancy-controls
-          npm run validate
+          npm run validate:release
       - name: Commit the measurement
         # This step used to be stefanzweifel/git-auto-commit-action@v5: no
         # fetch, no rebase, no retry, one push. That is the identical shape
@@ -143,7 +144,7 @@ jobs:
               npm run queries:join-release
               npm run validate:occupancy-probe
               npm run validate:occupancy-controls
-              npm run validate
+              npm run validate:release
               git add -- $file_pattern
               if git diff --cached --quiet; then
                 echo "no changes to commit after re-deriving onto origin/main"
@@ -153,7 +154,7 @@ jobs:
             else
               npm run validate:occupancy-probe
               npm run validate:occupancy-controls
-              npm run validate
+              npm run validate:release
               git add -- $file_pattern
               git commit --amend --no-edit
             fi
