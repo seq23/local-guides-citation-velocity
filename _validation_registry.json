@@ -591,7 +591,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -2616,7 +2616,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -7521,7 +7521,7 @@
         "workflow",
         "release"
       ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
       "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
       "requires_files": [
         ".github/workflows/query-evidence-refresh.yml",
@@ -7576,6 +7576,52 @@
       ],
       "mutates_files": [
         "artifacts/validation/lane-git-history-depth.json"
+      ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "audit",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "id": "lane-accepted-artifact-regen-reach",
+      "title": "A page-publish is followed by a repair before the next accepted-artifact-recovery check",
+      "path": "scripts/validators/validate_lane_accepted_artifact_regen_reach.js",
+      "command": "node scripts/validators/validate_lane_accepted_artifact_regen_reach.js",
+      "tags": [
+        "workflow",
+        "environment",
+        "self-heal",
+        "release"
+      ],
+      "risk_prevented": "Prevents a workflow step that publishes new pages (reaches release:velocity-content) from being followed by a raw accepted-artifact-recovery check with no repair in between. .github/workflows/velocity-content-release.yml runs release:velocity-intake (which can publish pages), then in a later step re-runs npm run build and immediately npm run validate:release with no self-heal wrapper and no call to recover:accepted-artifacts, the validator's own registered repair. npm run build restores data/release/frozen_page_registry.json for a newly-accepted route but does not touch data/release/accepted_page_artifacts.json - only recover:accepted-artifacts derives that store. The lane went red on 2026-09-03 06:55 (run 33725560369) on a completely healthy publish because of exactly this gap.",
+      "why_existing_checks_do_not_cover": "accepted-artifact-recovery proves its own store is current against whatever the working tree holds when it runs; it cannot see whether an earlier step in the same job published pages without regenerating it. self-heal-repair-contract proves a declared repair touches a file its validator reads, not that every lane invoking that validator actually runs the repair. lane-git-history-depth proves checkout depth reaches history-reading scripts; it says nothing about accepted-artifact-recovery, which needs no git history at all.",
+      "requires_files": [
+        "package.json",
+        "_validation_registry.json",
+        ".github/workflows"
+      ],
+      "produces_files": [
+        "artifacts/validation/lane-accepted-artifact-regen-reach.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/lane-accepted-artifact-regen-reach.json"
       ]
     },
     {

@@ -244,6 +244,18 @@ jobs:
               continue
             fi
             npm run build
+            # This step follows release:velocity-intake, which can publish new
+            # pages via release:velocity-content. `npm run build` restores
+            # data/release/frozen_page_registry.json for every newly-accepted
+            # route but does not touch data/release/accepted_page_artifacts.json -
+            # only recover:accepted-artifacts derives that store. Left out, the
+            # very next line's validate:release HARD_FAILs accepted-artifact-recovery
+            # on a tree that just did exactly what this lane exists to do: that
+            # took the lane red on 2026-09-03 06:55 (run 33725560369), on a
+            # healthy publish. lane-accepted-artifact-regen-reach fails if this
+            # is ever removed while release:velocity-content stays reachable
+            # above it.
+            npm run recover:accepted-artifacts
             # The cadence ledger records what the sitemap held the last time the gate
             # ran. cadence_gate.js writes it, but the only other job that runs the gate
             # is Validate Repo, which is read-only - so its copy dies with the runner.

@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0",
+  "validator": "lane-accepted-artifact-regen-reach",
+  "status": "PASS",
+  "publish_scripts": [
+    "agent:intake",
+    "ingest:public",
+    "release:apply",
+    "release:batch-f-agent-continuity",
+    "release:velocity-content",
+    "release:velocity-intake",
+    "social:all",
+    "social:loop",
+    "social:offline"
+  ],
+  "repair_scripts": [
+    "recover:accepted-artifacts",
+    "selfheal",
+    "selfheal:dry"
+  ],
+  "check_scripts": [
+    "audit:all",
+    "deep:phase-0-16",
+    "overhaul:apply",
+    "preflight:integrity",
+    "release:full-rebuild",
+    "repair:all",
+    "validate",
+    "validate:all",
+    "validate:content-release",
+    "validate:core",
+    "validate:full-audit",
+    "validate:local",
+    "validate:release",
+    "validate:site",
+    "validate:strict",
+    "validation:dry-run"
+  ],
+  "workflows_examined": [
+    {
+      "workflow": "ci-health-recovery.yml",
+      "steps": 1,
+      "ends_stale": false
+    },
+    {
+      "workflow": "daily-citation-intelligence.yml",
+      "steps": 1,
+      "ends_stale": false
+    },
+    {
+      "workflow": "deploy-distribution.yml",
+      "steps": 5,
+      "ends_stale": false
+    },
+    {
+      "workflow": "query-class-occupancy-probe.yml",
+      "steps": 4,
+      "ends_stale": false
+    },
+    {
+      "workflow": "query-evidence-refresh.yml",
+      "steps": 10,
+      "ends_stale": false
+    },
+    {
+      "workflow": "search-intelligence-loop.yml",
+      "steps": 2,
+      "ends_stale": false
+    },
+    {
+      "workflow": "validate-repo.yml",
+      "steps": 4,
+      "ends_stale": false
+    },
+    {
+      "workflow": "velocity-content-release.yml",
+      "steps": 14,
+      "ends_stale": false
+    },
+    {
+      "workflow": "velocity-full-rebuild.yml",
+      "steps": 6,
+      "ends_stale": false
+    }
+  ],
+  "command_tokens_examined": 43,
+  "notes": [],
+  "errors": []
+}
