@@ -591,7 +591,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -2616,7 +2616,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -7448,6 +7448,55 @@
       "prepare_mutates_files": [],
       "enforce_no_source_mutation": true,
       "depends_on": [],
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 600,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "agent-run-delivery-coverage",
+      "title": "Per-run recommendation delivery coverage may only improve",
+      "path": "scripts/validators/validate_agent_run_delivery_coverage.js",
+      "command": "node scripts/validators/validate_agent_run_delivery_coverage.js",
+      "tags": [
+        "agent-artifact",
+        "ledger",
+        "delivery",
+        "coverage",
+        "ratchet"
+      ],
+      "risk_prevented": "agent-fix-ledger-truthfulness is scoped to rows that CLAIM a released status, and its registered repair demotes an untruthful row to ACCEPTED_ROUTE_MARKERS_ABSENT - which removes it from that guard's field of view. Draining the untruthful backlog therefore silences the truthfulness guard without one requested marker reaching one page. This guard counts what demotion cannot move: per landed run, how many declared recommendations are still not shown by the page they named, whatever status the ledger has since given them. Measured 2026-09-03 across 49 runs: 2,278 of 2,882 actionable recommendations shown (79.0%), 711 gaps, with per-run coverage as low as 15% (2026-07-15). This fails if any run exceeds its shrink-only gap allowance, or if a run has improved and its allowance has not been tightened to match.",
+      "why_existing_checks_do_not_cover": "agent-fix-ledger-truthfulness only examines RELEASED_VERIFIED/APPLIED_VERIFIED rows, so a demoted row stops being checked at all. agent-run-absorption-completeness joins on PATH with no date or record linkage. Neither measures a run's delivery as a whole, and nothing at all stops the untruthful backlog being drained into invisibility.",
+      "requires_files": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/report_fixes/agent_run_delivery_coverage_baseline.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-run-delivery-coverage.json"
+      ],
+      "mutates_files": [],
+      "repair_command": "node scripts/validators/validate_agent_run_delivery_coverage.js --rebaseline",
+      "repair_writes": [
+        "data/report_fixes/agent_run_delivery_coverage_baseline.json"
+      ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
       "estimated_runtime_seconds": 5,
       "timeout_seconds": 300,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
@@ -7472,7 +7521,7 @@
         "workflow",
         "release"
       ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
       "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
       "requires_files": [
         ".github/workflows/query-evidence-refresh.yml",
