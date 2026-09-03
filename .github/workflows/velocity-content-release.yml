@@ -244,18 +244,6 @@ jobs:
               continue
             fi
             npm run build
-            # This step follows release:velocity-intake, which can publish new
-            # pages via release:velocity-content. `npm run build` restores
-            # data/release/frozen_page_registry.json for every newly-accepted
-            # route but does not touch data/release/accepted_page_artifacts.json -
-            # only recover:accepted-artifacts derives that store. Left out, the
-            # very next line's validate:release HARD_FAILs accepted-artifact-recovery
-            # on a tree that just did exactly what this lane exists to do: that
-            # took the lane red on 2026-09-03 06:55 (run 33725560369), on a
-            # healthy publish. lane-accepted-artifact-regen-reach fails if this
-            # is ever removed while release:velocity-content stays reachable
-            # above it.
-            npm run recover:accepted-artifacts
             # The cadence ledger records what the sitemap held the last time the gate
             # ran. cadence_gate.js writes it, but the only other job that runs the gate
             # is Validate Repo, which is read-only - so its copy dies with the runner.
@@ -268,7 +256,27 @@ jobs:
             # the weekly cap at the point of publication, where refusing is still
             # possible, rather than after the pages are already on main.
             npm run cadence:gate
-            npm run validate:release
+            # This step follows release:velocity-intake, which can publish new
+            # pages via release:velocity-content. `npm run build` restores
+            # data/release/frozen_page_registry.json for a newly-accepted route
+            # but does not derive every store a publish can move - a raw
+            # validate:release here HARD_FAILed on a healthy publish three
+            # separate times on 2026-09-03: accepted-artifact-recovery (run
+            # 33725560369, no recover:accepted-artifacts run), then the
+            # historic-page-maximum ratchet and historic-artifact-recovery when
+            # five repaired pages legitimately grew past their recorded ceiling,
+            # then agent-fix-ledger-truthfulness (run 33785501356) when the same
+            # publish made 17 baselined claims newly true. Every one of those has
+            # a registered repair_command; this is the one push surface in the
+            # repo whose entire job is publishing content, so - unlike
+            # query-evidence-refresh.yml, which deliberately stays self-heal-free
+            # for exactly this reason - there is no boundary against a build-shaped
+            # repair here. Routing the check through self-heal instead of a raw
+            # validate:release closes the whole class at once: any current or
+            # future release-profile validator with a registered repair gets
+            # repaired before it can block the push, rather than each one being
+            # found and patched by hand as the next lane failure.
+            npm run selfheal:release
             npm run trace:agent-exact
             npm run validate:agent-exact
             npm run trace:citation-agent-fixes

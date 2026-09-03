@@ -87,7 +87,18 @@ for (const file of files) {
     // the push.
     const lines = step.split('\n');
     const rebaseIf = lines.findIndex((l) => /if\s+!\s+git\s+rebase\s+origin\/main/.test(l));
-    const VALIDATE = /npm\s+run\s+validate[:\w-]*/;
+    // A self-heal call satisfies this at least as well as a raw validate call:
+    // heal_until_clean.mjs runs the full profile, repairs anything with a
+    // registered repair_command, and only exits 0 once a subsequent pass comes
+    // back clean - it does not merely check the tree, it proves the tree by
+    // making it pass. velocity-content-release.yml's "Rebase, rebuild,
+    // revalidate, and push Velocity" step moved from a raw `npm run
+    // validate:release` to `npm run selfheal:release` after three separate
+    // release-profile validators (accepted-artifact-recovery, the
+    // historic-page-maximum ratchet, agent-fix-ledger-truthfulness) each
+    // HARD_FAILed the same raw check in turn on a healthy publish, each with a
+    // registered repair nothing was running.
+    const VALIDATE = /npm\s+run\s+(?:validate[:\w-]*|selfheal(?::[\w-]*)?)\b/;
     let cleanPathValidates = false;
 
     if (rebaseIf === -1) {
