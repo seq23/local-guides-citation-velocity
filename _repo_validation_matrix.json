@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "d9546977f7d7b20255b385be6acd54809fa386cde57ab95a42f903fd93f7f3f0",
+  "registry_sha256": "11cdc9af308a87c5037cfa468b837c001ea122c0994084af54dbf2ed9b5f72b4",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 173,
-    "active": 146,
+    "total": 174,
+    "active": 147,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 144,
+    "hard_fail": 145,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -154,6 +154,7 @@
         "agent-run-delivery-coverage",
         "agent-artifact-stranding",
         "lane-git-history-depth",
+        "lane-accepted-artifact-regen-reach",
         "unbuilt-backlog-admission"
       ],
       "execution_order": [
@@ -168,6 +169,7 @@
         "generator-instruction-refusal",
         "historic-artifact-recovery",
         "internal-link-inbound-coverage",
+        "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
@@ -399,6 +401,7 @@
         "agent-run-delivery-coverage",
         "agent-artifact-stranding",
         "lane-git-history-depth",
+        "lane-accepted-artifact-regen-reach",
         "unbuilt-backlog-admission"
       ],
       "execution_order": [
@@ -419,6 +422,7 @@
         "generator-instruction-refusal",
         "historic-artifact-recovery",
         "internal-link-inbound-coverage",
+        "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
@@ -697,6 +701,7 @@
         "agent-run-delivery-coverage",
         "agent-artifact-stranding",
         "lane-git-history-depth",
+        "lane-accepted-artifact-regen-reach",
         "unbuilt-backlog-admission"
       ],
       "execution_order": [
@@ -717,6 +722,7 @@
         "generator-instruction-refusal",
         "historic-artifact-recovery",
         "internal-link-inbound-coverage",
+        "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
@@ -1025,6 +1031,7 @@
         "agent-run-delivery-coverage",
         "agent-artifact-stranding",
         "lane-git-history-depth",
+        "lane-accepted-artifact-regen-reach",
         "unbuilt-backlog-admission"
       ],
       "execution_order": [
@@ -1045,6 +1052,7 @@
         "generator-instruction-refusal",
         "historic-artifact-recovery",
         "internal-link-inbound-coverage",
+        "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
@@ -1327,6 +1335,7 @@
         "agent-run-delivery-coverage",
         "agent-artifact-stranding",
         "lane-git-history-depth",
+        "lane-accepted-artifact-regen-reach",
         "unbuilt-backlog-admission"
       ],
       "execution_order": [
@@ -1347,6 +1356,7 @@
         "generator-instruction-refusal",
         "historic-artifact-recovery",
         "internal-link-inbound-coverage",
+        "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
@@ -2020,6 +2030,7 @@
         "agent-named-target-parseability",
         "carried-reason-truthfulness",
         "lane-git-history-depth",
+        "lane-accepted-artifact-regen-reach",
         "unbuilt-backlog-admission"
       ],
       "execution_order": [
@@ -2033,6 +2044,7 @@
         "firehose-source-contract",
         "generated-content-finalization-contract",
         "historic-artifact-recovery",
+        "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
         "llm-citation-observation-integrity",
@@ -8096,6 +8108,45 @@
         "retirement_reason": null
       },
       {
+        "id": "lane-accepted-artifact-regen-reach",
+        "title": "A page-publish is followed by a repair before the next accepted-artifact-recovery check",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_lane_accepted_artifact_regen_reach.js",
+        "command": "node scripts/validators/validate_lane_accepted_artifact_regen_reach.js",
+        "depends_on": [],
+        "requires_files": [
+          "package.json",
+          "_validation_registry.json",
+          ".github/workflows"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/lane-accepted-artifact-regen-reach.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/lane-accepted-artifact-regen-reach.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a workflow step that publishes new pages (reaches release:velocity-content) from being followed by a raw accepted-artifact-recovery check with no repair in between. .github/workflows/velocity-content-release.yml runs release:velocity-intake (which can publish pages), then in a later step re-runs npm run build and immediately npm run validate:release with no self-heal wrapper and no call to recover:accepted-artifacts, the validator's own registered repair. npm run build restores data/release/frozen_page_registry.json for a newly-accepted route but does not touch data/release/accepted_page_artifacts.json - only recover:accepted-artifacts derives that store. The lane went red on 2026-09-03 06:55 (run 33725560369) on a completely healthy publish because of exactly this gap.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "unbuilt-backlog-admission",
         "title": "The unbuilt backlog is maintained by a working admission half, not by hand",
         "status": "ACTIVE",
@@ -11809,6 +11860,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents a workflow that can execute a script reading the repo's own history from checking out shallow. scripts/citation_velocity/recover_historic_artifact_loss.js resolves old page bytes with `git show <historic_max_commit>:<file>` and is the registered repair for historic-artifact-recovery, a Tier 1 HARD_FAIL in seven profiles. query-evidence-refresh.yml ran the self-heal loop - the whole core profile - behind actions/checkout with no with: block, so the default fetch-depth: 1 made all 104 historic commits invalid object names; the validator AND its repair both exited 1 and the lane failed daily on a completely healthy tree, while Validate Repo passed on the identical sha because it uses fetch-depth: 0. The failure presented as artifact loss, which is the misdiagnosis that gets a validator weakened instead of an environment fixed. This also caught query-class-occupancy-probe.yml, which runs `npm run validate` (core) shallow and had simply not run since the stores landed.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "lane-accepted-artifact-regen-reach",
+        "title": "A page-publish is followed by a repair before the next accepted-artifact-recovery check",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_lane_accepted_artifact_regen_reach.js",
+        "command": "node scripts/validators/validate_lane_accepted_artifact_regen_reach.js",
+        "depends_on": [],
+        "requires_files": [
+          "package.json",
+          "_validation_registry.json",
+          ".github/workflows"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/lane-accepted-artifact-regen-reach.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/lane-accepted-artifact-regen-reach.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a workflow step that publishes new pages (reaches release:velocity-content) from being followed by a raw accepted-artifact-recovery check with no repair in between. .github/workflows/velocity-content-release.yml runs release:velocity-intake (which can publish pages), then in a later step re-runs npm run build and immediately npm run validate:release with no self-heal wrapper and no call to recover:accepted-artifacts, the validator's own registered repair. npm run build restores data/release/frozen_page_registry.json for a newly-accepted route but does not touch data/release/accepted_page_artifacts.json - only recover:accepted-artifacts derives that store. The lane went red on 2026-09-03 06:55 (run 33725560369) on a completely healthy publish because of exactly this gap.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
