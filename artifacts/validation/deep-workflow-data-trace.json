@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-03T18:05:10.870Z",
+  "generated_at": "2026-09-03T18:24:29.908Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -1161,7 +1161,7 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\n# This step follows release:velocity-intake, which can publish new\n# pages via release:velocity-content. `npm run build` restores\n# data/release/frozen_page_registry.json for every newly-accepted\n# route but does not touch data/release/accepted_page_artifacts.json -\n# only recover:accepted-artifacts derives that store. Left out, the\n# very next line's validate:release HARD_FAILs accepted-artifact-recovery\n# on a tree that just did exactly what this lane exists to do: that\n# took the lane red on 2026-09-03 06:55 (run 33725560369), on a\n# healthy publish. lane-accepted-artifact-regen-reach fails if this\n# is ever removed while release:velocity-content stays reachable\n# above it.\nnpm run recover:accepted-artifacts\n# The cadence ledger records what the sitemap held the last time the gate\n# ran. cadence_gate.js writes it, but the only other job that runs the gate\n# is Validate Repo, which is read-only - so its copy dies with the runner.\n# Nothing ever committed the ledger, so it stayed frozen at whatever a human\n# last pushed (2026-08-27). Every page published after that read as \"new\",\n# and the moment more than new_pages_per_week accumulated, the gate blocked\n# Validate Repo permanently: the comparison it depends on could never\n# advance on its own. Running it here - inside the loop that already\n# rebuilds and amends - is what makes the ledger persist. It also enforces\n# the weekly cap at the point of publication, where refusing is still\n# possible, rather than after the pages are already on main.\nnpm run cadence:gate\nnpm run validate:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\n# The cadence ledger records what the sitemap held the last time the gate\n# ran. cadence_gate.js writes it, but the only other job that runs the gate\n# is Validate Repo, which is read-only - so its copy dies with the runner.\n# Nothing ever committed the ledger, so it stayed frozen at whatever a human\n# last pushed (2026-08-27). Every page published after that read as \"new\",\n# and the moment more than new_pages_per_week accumulated, the gate blocked\n# Validate Repo permanently: the comparison it depends on could never\n# advance on its own. Running it here - inside the loop that already\n# rebuilds and amends - is what makes the ledger persist. It also enforces\n# the weekly cap at the point of publication, where refusing is still\n# possible, rather than after the pages are already on main.\nnpm run cadence:gate\n# This step follows release:velocity-intake, which can publish new\n# pages via release:velocity-content. `npm run build` restores\n# data/release/frozen_page_registry.json for a newly-accepted route\n# but does not derive every store a publish can move - a raw\n# validate:release here HARD_FAILed on a healthy publish three\n# separate times on 2026-09-03: accepted-artifact-recovery (run\n# 33725560369, no recover:accepted-artifacts run), then the\n# historic-page-maximum ratchet and historic-artifact-recovery when\n# five repaired pages legitimately grew past their recorded ceiling,\n# then agent-fix-ledger-truthfulness (run 33785501356) when the same\n# publish made 17 baselined claims newly true. Every one of those has\n# a registered repair_command; this is the one push surface in the\n# repo whose entire job is publishing content, so - unlike\n# query-evidence-refresh.yml, which deliberately stays self-heal-free\n# for exactly this reason - there is no boundary against a build-shaped\n# repair here. Routing the check through self-heal instead of a raw\n# validate:release closes the whole class at once: any current or\n# future release-profile validator with a registered repair gets\n# repaired before it can block the push, rather than each one being\n# found and patched by hand as the next lane failure.\nnpm run selfheal:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
@@ -1176,7 +1176,7 @@
             },
             {
               "type": "npm_script",
-              "name": "recover:accepted-artifacts",
+              "name": "selfheal:release",
               "ok": true
             },
             {
@@ -1197,11 +1197,6 @@
             {
               "type": "npm_script",
               "name": "validate:citation-agent-fixes",
-              "ok": true
-            },
-            {
-              "type": "npm_script",
-              "name": "validate:release",
               "ok": true
             },
             {
@@ -1236,7 +1231,7 @@
             },
             {
               "type": "file",
-              "path": "scripts/citation_velocity/recover_accepted_page_artifacts.js",
+              "path": "scripts/selfheal/heal_until_clean.mjs",
               "ok": true
             },
             {
@@ -1258,32 +1253,25 @@
               "type": "file",
               "path": "scripts/validation/run_validation_registry.js",
               "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/validation/run_validation_registry.js",
-              "ok": true
             }
           ],
           "direct_npm_scripts": [
             "build",
             "cadence:gate",
-            "recover:accepted-artifacts",
+            "selfheal:release",
             "trace:agent-exact",
             "trace:citation-agent-fixes",
             "validate:agent-exact",
-            "validate:citation-agent-fixes",
-            "validate:release"
+            "validate:citation-agent-fixes"
           ],
           "transitive_npm_scripts": [
             "build",
             "cadence:gate",
-            "recover:accepted-artifacts",
+            "selfheal:release",
             "trace:agent-exact",
             "trace:citation-agent-fixes",
             "validate:agent-exact",
-            "validate:citation-agent-fixes",
-            "validate:release"
+            "validate:citation-agent-fixes"
           ]
         },
         {
