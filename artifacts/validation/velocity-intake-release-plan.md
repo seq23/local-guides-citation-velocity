@@ -14,8 +14,8 @@ New page units: 0
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-027-how-to-ask-for-a-price-estimate.html | how to ask a neuropsych provider for a price estimate before committing |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-009-how-much-does-a-neuropsych-eval-cost.html | how much does a neuropsychological evaluation cost out of pocket |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-013-how-to-compare-providers-fast.html | how to quickly compare neuropsych evaluation providers in my area |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-008-what-to-verify-before-booking-concussion-testing.html | what to confirm before booking concussion testing with a neuropsychologist |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-007-what-to-verify-before-booking-child-neuropsych-testing.html | what should I verify before booking a neuropsych evaluation for my child |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-021-how-to-use-results-for-accommodations.html | how to use neuropsych evaluation results to get school accommodations |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-001-decision-tree-adhd-vs-autism-vs-broader-neuro-evaluation.html | how to decide between ADHD testing autism evaluation or full neuropsych eval |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-012-neuro-eval-red-flags.html | red flags to watch out for when choosing a neuropsych evaluator |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-023-neuropsych-evaluation-for-adults-vs-kids.html | neuropsychological evaluation for adults vs children what is different |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-005-how-to-compare-local-options-using-a-real-decision-checklist.html | how to compare neuropsych evaluation providers near me using a checklist |
