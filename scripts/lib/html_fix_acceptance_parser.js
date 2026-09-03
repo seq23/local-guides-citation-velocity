@@ -31,6 +31,30 @@ function quotedPhrases(value) {
   while ((m = re.exec(String(value || '')))) out.push(normalizeSpace(m[1]));
   return unique(out).filter((phrase) => !isInternalInstructionText(phrase));
 }
+// A third kind an agent quotes, missed by the copy-it-wants / copy-it-found split
+// above: an EXISTING PAGE ELEMENT named only to say WHERE something goes - "add a
+// checklist immediately after 'Direct answer'". That quote is not new copy to author
+// and not banned prose to strip; it is a location, and titleFromFix picking it up as
+// the new artifact's title (because it is the first quoted 2+-word span in the edit
+// text) authors a page section literally titled after a placement instruction.
+//
+// On 2026-09-03 this collided with a SEPARATE, unrelated fix for the same route
+// ("replace the current keyword-repetition 'Direct answer' with a real checklist")
+// whose removal directive forbids authoring "Direct answer" anywhere on the page -
+// so the positional quote in the second fix made removal-directive-not-published
+// fail on a route where "Direct answer" is also the page's own required section
+// name, publishing neither fix's actual content. Filtered at the source: a title
+// candidate immediately preceded by a placement preposition is never usable as a
+// title, independent of whether it also happens to be forbidden.
+const POSITIONAL_QUOTE_PREFIX = /(?:after|before|following|beneath|above|under|below|near|inside|within|beside)\s*[:,]?\s*['“"]$/i;
+function isPositionalQuoteReference(edit, phrase) {
+  const text = String(edit || '');
+  const escaped = String(phrase || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`['“"]${escaped}['”"]`, 'i');
+  const m = re.exec(text);
+  if (!m) return false;
+  return POSITIONAL_QUOTE_PREFIX.test(text.slice(0, m.index + 1));
+}
 function isWorkflowInstruction(value) {
   const v = normalizeSpace(value).toLowerCase();
   if (!v) return true;
@@ -68,7 +92,10 @@ function readerIntroForArtifact(title, query, type) {
 function extractInstructionRequirements(edit) {
   const raw = String(edit || '');
   return unique([
-    ...quotedPhrases(raw),
+    // A quote naming WHERE to add something ("after 'Direct answer', add...") is a
+    // location, not new copy - see isPositionalQuoteReference. Extracting it as a
+    // requirement makes the trace enforce a placement instruction as page content.
+    ...quotedPhrases(raw).filter((q) => !isPositionalQuoteReference(raw, q)),
     ...(raw.match(/add\s+[^.;]+/gi) || []),
     ...(raw.match(/include\s+[^.;]+/gi) || []),
     ...(raw.match(/compare\s+[^.;]+/gi) || []),
@@ -188,7 +215,8 @@ function titleFromFix(edit, query, index = 0, type = 'agent_directive', fallback
   const allowed = (value) => Boolean(value) && !forbidden.has(normalizeForbidden(value));
   const titled = String(edit || '').match(/(?:h2|h3|section|block|callout|table|checklist|part [ab])[^.;]{0,80}?titled\s+['"“]([^'"”]{4,100})['"”]/i) || String(edit || '').match(/titled\s+['"“]([^'"”]{4,100})['"”]/i);
   if (titled && usableAsCopy(titled[1]) && allowed(titled[1])) return { title: asHeadingCopy(titled[1]), source: 'named' };
-  const quoted = quotedPhrases(edit).filter(usableAsCopy).filter(allowed);
+  const quoted = quotedPhrases(edit).filter(usableAsCopy).filter(allowed)
+    .filter((q) => !isPositionalQuoteReference(edit, q));
   const hTitle = quoted.find((q) => /[A-Za-z]/.test(q) && q.split(/\s+/).length >= 2 && q.length <= 90);
   if (hTitle) return { title: asHeadingCopy(hTitle), source: 'derived' };
   const h2On = String(edit || '').match(/\badd\s+(?:a\s+|an\s+)?h[23]\s+section\s+on\s+([^.;]{8,90})/i);
@@ -261,7 +289,9 @@ function headersFromFix(edit, type) {
 function requirementsFromFix(edit, query, count) {
   const text = normalizeSpace(edit);
   const out = [];
-  const quoted = quotedPhrases(text).filter((q) => q.length <= 90 && !q.includes('|') && !isWorkflowInstruction(q));
+  const quoted = quotedPhrases(text)
+    .filter((q) => q.length <= 90 && !q.includes('|') && !isWorkflowInstruction(q))
+    .filter((q) => !isPositionalQuoteReference(text, q));
   out.push(...quoted);
   const colonList = text.match(/covering\s*:\s*([^.;]+)/i) || text.match(/covering\s+([^.;]+)/i);
   if (colonList) out.push(...colonList[1].split(/,|;|\band\b/i).map(sentenceCase));
