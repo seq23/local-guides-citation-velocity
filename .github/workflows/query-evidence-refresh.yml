@@ -55,6 +55,30 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history, not the default shallow fetch-depth: 1.
+          #
+          # This lane runs the self-heal loop, which runs the whole `core`
+          # validation profile. Two scripts in that profile read the repo's own
+          # history: scripts/citation_velocity/recover_historic_artifact_loss.js
+          # and scripts/release/measure_historic_page_maximum.js both resolve old
+          # page bytes with `git show <historic_max_commit>:<file>`.
+          #
+          # Under a shallow checkout every one of those 104 commits is an
+          # "invalid object name", so every route is unreadable, the script's
+          # Rule 0 guard fires with "none was readable at its historic commit",
+          # and BOTH the validator and its registered repair exit 1. The
+          # self-heal loop then reports REPAIRS_CHANGED_NOTHING and fails the
+          # lane - on a tree that is perfectly healthy. That is exactly what
+          # happened on 2026-09-03 in run 33724660093, while Validate Repo passed
+          # on the identical sha 18 minutes later because it checks out with
+          # fetch-depth: 0.
+          #
+          # The failure was a missing ENVIRONMENT, not a defect in the tree or in
+          # the validator, so the environment is what is fixed here. Do not remove
+          # this without moving those scripts off git history first;
+          # scripts/validators/validate_lane_git_history_depth.js will fail if you do.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "24"

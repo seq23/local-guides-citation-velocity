@@ -4,6 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 const { classifyRichNewPage, requiresRichAuthorityPage } = require('../lib/rich_new_page_classifier');
+// The admitted-route derivation is shared with scripts/content/reconcile_unbuilt_backlog.js.
+// This validator hard-fails the reconciler's output, so the two must not be able to
+// disagree about what "admitted" means; see scripts/lib/rich_admitted_routes.js.
+const {
+  runDateOf,
+  needsRichPage,
+  builtPredicate,
+  admittedRichRoutes,
+} = require('../lib/rich_admitted_routes');
 const out = (rel, data) => { const p = path.join(ROOT, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, JSON.stringify(data, null, 2) + '\n'); };
 const read = (rel, fallback = null) => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch { return fallback; } };
 const live = read('content/_live/pages.json', { pages: [] });
@@ -97,12 +106,7 @@ if (!backlogDoc || !Array.isArray(backlogDoc.routes)) {
 // "Built" means the same thing here as it does in the registry: a page object in
 // live or staged, or rendered HTML on disk. Checking only pages.json would let a
 // route that exists purely as rendered output read as unbuilt forever.
-const builtOnDisk = (route) => {
-  const rel = String(route || '').replace(/^\/+|\/+$/g, '');
-  if (!rel) return false;
-  return fs.existsSync(path.join(ROOT, rel, 'index.html')) || fs.existsSync(path.join(ROOT, `${rel}.html`));
-};
-const isBuilt = (route) => byRoute.has(route) || builtOnDisk(route);
+const isBuilt = builtPredicate(ROOT);
 const errors = [];
 const checked = [];
 const targetRows = [];
@@ -128,16 +132,10 @@ const targetRows = [];
 // SOURCE_DATE (the repo convention) when it is set and actually present in the
 // sources, otherwise the LATEST run date the sources carry. It can no longer
 // silently address a date that no longer exists.
-const DATE_RE = /(\d{4}-\d{2}-\d{2})/;
-const runDateOf = (row) => {
-  for (const candidate of [row && row.run_date, row && row.source_run_id, row && row.source_artifacts && row.source_artifacts.manifest, row && row.manifest_path]) {
-    const m = DATE_RE.exec(String(candidate || ''));
-    if (m) return m[1];
-  }
-  return '';
-};
-const approvalRows = (Array.isArray(approval) ? approval : []).filter((row) => String(row.admission_basis || '').includes('HTML_REPORT_CONTRACT_PAGE_TO_BUILD') && row.target_route);
-const htmlRows = (Array.isArray(html.page_specs) ? html.page_specs : []).filter((row) => row && row.target_route);
+// runDateOf() and the two candidate-row filters now come from
+// scripts/lib/rich_admitted_routes.js, which is also what the reconciler reads.
+const admitted = admittedRichRoutes(ROOT);
+const { approvalRows, htmlRows } = admitted;
 const datedRows = [...approvalRows, ...htmlRows].map((row) => ({ row, date: runDateOf(row) })).filter((x) => x.date);
 const datesSeen = [...new Set(datedRows.map((x) => x.date))].sort();
 const ENV_DATE = String(process.env.SOURCE_DATE || '').trim();
@@ -161,10 +159,7 @@ for (const row of htmlRows) {
 }
 // A route needs a rich authority page if the classifier says so, or if its shape
 // is /guides/ or /clusters/ - those sections are rich by definition here.
-const needsRichPage = (row, route) => {
-  const rich = row.rich_page_type || classifyRichNewPage(row).rich_page_type;
-  return requiresRichAuthorityPage(rich) || /\/(guides|clusters)\//.test(String(route || ''));
-};
+
 const dedupedRows = [...new Map(targetRows.map((row) => [row.route, row])).values()]
   .filter((row) => needsRichPage(row, row.route));
 
@@ -174,9 +169,8 @@ const dedupedRows = [...new Map(targetRows.map((row) => [row.route, row])).value
 // what was admitted and never built is not. Scoping the accounting to one date
 // is how 136 routes accumulated unseen in the first place, so this pass reads
 // every rich-authority row in the contract on every date.
-const allRichRows = [...approvalRows.map((r) => ({ row: r, route: r.target_route })), ...htmlRows.map((r) => ({ row: r, route: r.target_route }))]
-  .filter(({ row, route }) => needsRichPage(row, route));
-const allRichRoutes = [...new Set(allRichRows.map((x) => x.route))];
+const allRichRows = admitted.rows;
+const allRichRoutes = admitted.routes;
 const unbuiltRoutes = allRichRoutes.filter((route) => !isBuilt(route));
 const undeclaredUnbuilt = unbuiltRoutes.filter((route) => !declaredBacklog.has(route));
 const staleDeclarations = [...declaredBacklog.keys()].filter((route) => isBuilt(route));

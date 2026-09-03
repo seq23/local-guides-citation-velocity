@@ -4,7 +4,7 @@
   "baseline_date": "2026-08-29",
   "what_happened": "scripts/validators/validate_rich_new_page_contract.js scoped its candidate rows to a HARDCODED run date of 2026-07-03, read them through field names (source_run_id, source_artifacts.manifest) that html-report-contract page_specs do not carry, and treated a missing release artifact as an empty created list. All three defects pointed the same way: it matched zero rows and printed \"PASS (0 created page(s))\" on every run since it was written. Rescoping it to the latest run date actually present in the sources exposed what the stale date had been covering. Of the 191 rich-authority-required page_specs in artifacts/validation/html-report-contract.json, 171 rows - 136 distinct target_routes, the rest being the same route re-admitted on a later run - name a target_route that exists in neither content/_live/pages.json nor content/_staged/pages.json nor on disk. They were discovered, classified, marked READY_TO_RELEASE and admitted for build, and then never built. The 171 admitted rows span 27 run dates from 2026-06-23 to 2026-08-27; the 136 distinct routes were first admitted on 25 of those dates. The oldest has been waiting since 2026-06-23.",
   "why_it_is_not_cleared_here": "The backlog is drained by the release lane, not by this file. scripts/content/build_page_release_queue.js now reads every AWAITING_RELEASE_LANE entry here as a third intake lane, oldest-first by first_admitted_on, and puts it through the unchanged page release law; scripts/velocity_content_release.js then builds whatever survives, up to the governed ceiling of 2 new URLs/day in data/authority_scale/velocity_decision.json. That ceiling was NOT raised: spiking new URLs harms discovery on these properties, so the drain runs at the rate policy already allows and no faster. scripts/content/reconcile_unbuilt_backlog.js deletes an entry once its route is built, so the depth here falls as the lane runs, and scripts/validators/validate_unbuilt_backlog_drain.js hard-fails if the backlog ever again has no consumer.",
-  "declared_count": 125,
+  "declared_count": 136,
   "admitted_row_count": 171,
   "by_run_date_first_admitted": {
     "2026-06-23": 1,
@@ -16,29 +16,30 @@
     "2026-07-13": 5,
     "2026-07-16": 4,
     "2026-07-21": 1,
-    "2026-07-28": 8,
+    "2026-07-28": 7,
     "2026-07-29": 3,
     "2026-07-30": 3,
-    "2026-07-31": 9,
+    "2026-07-31": 7,
     "2026-08-03": 2,
     "2026-08-04": 4,
-    "2026-08-06": 9,
+    "2026-08-06": 7,
     "2026-08-07": 10,
-    "2026-08-12": 13,
-    "2026-08-13": 8,
-    "2026-08-14": 14,
+    "2026-08-12": 10,
+    "2026-08-13": 7,
+    "2026-08-14": 12,
     "2026-08-20": 5,
     "2026-08-21": 1,
     "2026-08-24": 9,
     "2026-08-26": 4,
-    "2026-08-27": 1
+    "2026-08-27": 1,
+    "2026-09-03": 11
   },
   "by_vertical": {
-    "uscis-medical": 37,
-    "trt": 34,
-    "neuro": 33,
-    "dentistry": 16,
-    "personal-injury": 16
+    "neuro": 41,
+    "uscis-medical": 33,
+    "trt": 31,
+    "personal-injury": 16,
+    "dentistry": 15
   },
   "by_section": {
     "guides": 103,
@@ -2223,11 +2224,230 @@
       "retirement_reason_code": "RETIRED_SUPERSEDED_BY_ADMITTED_PAGE",
       "retirement_reason": "A page answering this exact question is already built and published at /neuro/community-questions/how-do-new-2026-migraine-neuromodulation-devices-work/. Building a second URL for one question splits the signal rather than adding coverage.",
       "retired_on": "2026-08-29"
+    },
+    {
+      "route": "/neuro/guides/child-specialist-for-anxiety-vs-adhd-evaluation-near-me-who-should-i-see/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "route_family": "CREATE_GUIDE",
+      "query": "child specialist for anxiety vs ADHD evaluation near me who should I see",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/clusters/how-much-does-a-neuropsychological-evaluation-cost-out-of-pocket/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "route_family": "CREATE_CLUSTER",
+      "query": "how much does a neuropsychological evaluation cost out of pocket",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "RETIRED",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03",
+      "retirement_reason_code": "RETIRED_UNSUPPORTED_ROUTE_FAMILY",
+      "retirement_reason": "The contract admitted this route with route family CREATE_CLUSTER, which data/strategy/page_strategy_registry.json does not list in allowed_route_families, so scripts/content/build_page_release_queue.js marks it SKIP_UNSUPPORTED and the release lane can never build it. It is retired rather than left AWAITING_RELEASE_LANE because declaring it as waiting would be a promise the lane cannot keep. Supporting this family is a product decision, not a defect in this reconciler; adding it to allowed_route_families is what would un-retire it.",
+      "retired_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/clusters/how-to-ask-a-neuropsych-provider-for-a-price-estimate-before-committing/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "route_family": "CREATE_CLUSTER",
+      "query": "how to ask a neuropsych provider for a price estimate before committing",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "RETIRED",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03",
+      "retirement_reason_code": "RETIRED_UNSUPPORTED_ROUTE_FAMILY",
+      "retirement_reason": "The contract admitted this route with route family CREATE_CLUSTER, which data/strategy/page_strategy_registry.json does not list in allowed_route_families, so scripts/content/build_page_release_queue.js marks it SKIP_UNSUPPORTED and the release lane can never build it. It is retired rather than left AWAITING_RELEASE_LANE because declaring it as waiting would be a promise the lane cannot keep. Supporting this family is a product decision, not a defect in this reconciler; adding it to allowed_route_families is what would un-retire it.",
+      "retired_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/clusters/how-to-choose-the-right-neuropsychological-evaluation-for-my-child/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "route_family": "CREATE_CLUSTER",
+      "query": "how to choose the right neuropsychological evaluation for my child",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "RETIRED",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03",
+      "retirement_reason_code": "RETIRED_UNSUPPORTED_ROUTE_FAMILY",
+      "retirement_reason": "The contract admitted this route with route family CREATE_CLUSTER, which data/strategy/page_strategy_registry.json does not list in allowed_route_families, so scripts/content/build_page_release_queue.js marks it SKIP_UNSUPPORTED and the release lane can never build it. It is retired rather than left AWAITING_RELEASE_LANE because declaring it as waiting would be a promise the lane cannot keep. Supporting this family is a product decision, not a defect in this reconciler; adding it to allowed_route_families is what would un-retire it.",
+      "retired_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/clusters/how-to-decide-between-adhd-testing-autism-evaluation-or-full-neuropsych-eval/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "route_family": "CREATE_CLUSTER",
+      "query": "how to decide between ADHD testing autism evaluation or full neuropsych eval",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "RETIRED",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03",
+      "retirement_reason_code": "RETIRED_UNSUPPORTED_ROUTE_FAMILY",
+      "retirement_reason": "The contract admitted this route with route family CREATE_CLUSTER, which data/strategy/page_strategy_registry.json does not list in allowed_route_families, so scripts/content/build_page_release_queue.js marks it SKIP_UNSUPPORTED and the release lane can never build it. It is retired rather than left AWAITING_RELEASE_LANE because declaring it as waiting would be a promise the lane cannot keep. Supporting this family is a product decision, not a defect in this reconciler; adding it to allowed_route_families is what would un-retire it.",
+      "retired_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/guides/how-to-quickly-compare-neuropsych-evaluation-providers-in-my-area/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "route_family": "CREATE_GUIDE",
+      "query": "how to quickly compare neuropsych evaluation providers in my area",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/guides/neuropsychological-evaluation-for-adults-vs-children-what-is-different/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "comparison_guide",
+      "route_family": "CREATE_GUIDE",
+      "query": "neuropsychological evaluation for adults vs children what is different",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/guides/red-flags-to-watch-out-for-when-choosing-a-neuropsych-evaluator/",
+      "vertical": "neuro",
+      "section": "guides",
+      "rich_page_type": "checklist_guide",
+      "route_family": "CREATE_GUIDE",
+      "query": "red flags to watch out for when choosing a neuropsych evaluator",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "AWAITING_RELEASE_LANE",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/clusters/what-happens-during-each-session-of-a-neuropsychological-evaluation/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "route_family": "CREATE_CLUSTER",
+      "query": "what happens during each session of a neuropsychological evaluation",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "RETIRED",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03",
+      "retirement_reason_code": "RETIRED_UNSUPPORTED_ROUTE_FAMILY",
+      "retirement_reason": "The contract admitted this route with route family CREATE_CLUSTER, which data/strategy/page_strategy_registry.json does not list in allowed_route_families, so scripts/content/build_page_release_queue.js marks it SKIP_UNSUPPORTED and the release lane can never build it. It is retired rather than left AWAITING_RELEASE_LANE because declaring it as waiting would be a promise the lane cannot keep. Supporting this family is a product decision, not a defect in this reconciler; adding it to allowed_route_families is what would un-retire it.",
+      "retired_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/clusters/what-should-i-verify-before-booking-a-neuropsych-evaluation-for-my-child/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "route_family": "CREATE_CLUSTER",
+      "query": "what should I verify before booking a neuropsych evaluation for my child",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "RETIRED",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03",
+      "retirement_reason_code": "RETIRED_UNSUPPORTED_ROUTE_FAMILY",
+      "retirement_reason": "The contract admitted this route with route family CREATE_CLUSTER, which data/strategy/page_strategy_registry.json does not list in allowed_route_families, so scripts/content/build_page_release_queue.js marks it SKIP_UNSUPPORTED and the release lane can never build it. It is retired rather than left AWAITING_RELEASE_LANE because declaring it as waiting would be a promise the lane cannot keep. Supporting this family is a product decision, not a defect in this reconciler; adding it to allowed_route_families is what would un-retire it.",
+      "retired_on": "2026-09-03"
+    },
+    {
+      "route": "/neuro/clusters/what-to-confirm-before-booking-concussion-testing-with-a-neuropsychologist/",
+      "vertical": "neuro",
+      "section": "clusters",
+      "rich_page_type": "cluster_page",
+      "route_family": "CREATE_CLUSTER",
+      "query": "what to confirm before booking concussion testing with a neuropsychologist",
+      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
+      "first_admitted_on": "2026-09-03",
+      "last_admitted_on": "2026-09-03",
+      "admitted_on_run_dates": [
+        "2026-09-03"
+      ],
+      "admitted_row_count": 1,
+      "disposition": "RETIRED",
+      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
+      "declared_on": "2026-09-03",
+      "retirement_reason_code": "RETIRED_UNSUPPORTED_ROUTE_FAMILY",
+      "retirement_reason": "The contract admitted this route with route family CREATE_CLUSTER, which data/strategy/page_strategy_registry.json does not list in allowed_route_families, so scripts/content/build_page_release_queue.js marks it SKIP_UNSUPPORTED and the release lane can never build it. It is retired rather than left AWAITING_RELEASE_LANE because declaring it as waiting would be a promise the lane cannot keep. Supporting this family is a product decision, not a defect in this reconciler; adding it to allowed_route_families is what would un-retire it.",
+      "retired_on": "2026-09-03"
     }
   ],
   "dispositioned_on": "2026-08-29",
-  "drainable_count": 35,
-  "retired_count": 90,
+  "drainable_count": 39,
+  "retired_count": 97,
   "disposition_summary": {
     "RETIRED_SUPERSEDED_BY_ADMITTED_PAGE": 75,
     "RETIRED_OFF_TOPIC_FOR_VERTICAL": 2,
@@ -2237,5 +2457,6 @@
     "RETIRED_MODEL_NAME_IN_ROUTE": 1
   },
   "retirement_policy": "A RETIRED entry stays declared with its reason so the decision is auditable and the route cannot be silently re-admitted. It is not a build candidate and is never offered to the release lane.",
-  "last_drained_on": "2026-09-03"
+  "last_drained_on": "2026-09-03",
+  "last_admitted_on": "2026-09-03"
 }
