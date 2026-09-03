@@ -50,6 +50,21 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history. This lane runs `npm run validate`, which is the whole
+          # `core` profile, and core includes historic-artifact-recovery - whose
+          # validator and whose repair both resolve old page bytes with
+          # `git show <historic_max_commit>:<file>`.
+          #
+          # This lane last ran on 2026-08-28, before those stores landed on
+          # 2026-09-01, so it has not failed yet. It would have on its next run,
+          # for exactly the reason Query Evidence Refresh failed on 2026-09-03:
+          # under the default shallow fetch-depth: 1 every historic commit is an
+          # "invalid object name" and the recovery hard-fails on a healthy tree.
+          # scripts/validators/validate_lane_git_history_depth.js found this
+          # before it paged anyone; do not remove the depth without removing that
+          # reachability.
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: "24"

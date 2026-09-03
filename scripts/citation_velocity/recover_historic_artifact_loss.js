@@ -57,6 +57,13 @@ const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const CHECK_ONLY = process.argv.includes('--check');
 
 function rel(p) { return path.join(ROOT, p); }
+/** True when this working copy was cloned with a truncated history. */
+function isShallowRepo() {
+  if (fs.existsSync(path.join(ROOT, '.git', 'shallow'))) return true;
+  try {
+    return cp.execFileSync('git', ['rev-parse', '--is-shallow-repository'], { cwd: ROOT }).toString().trim() === 'true';
+  } catch { return false; }
+}
 function readJson(p, fallback) { try { return JSON.parse(fs.readFileSync(rel(p), 'utf8')); } catch { return fallback; } }
 
 function main() {
@@ -119,6 +126,25 @@ function main() {
 
   if (examined === 0) {
     console.error(`HISTORIC ARTIFACT RECOVERY FAIL: ${candidates.length} candidate route(s) and none was readable at its historic commit. Recovery is UNKNOWN, not complete.`);
+    // Naming the cause, because for months this read as data loss when it was a
+    // missing environment. This script resolves old page bytes with
+    // `git show <historic_max_commit>:<file>`. Under a shallow checkout
+    // (actions/checkout's default fetch-depth: 1) every historic commit is an
+    // "invalid object name", so EVERY route fails to read and this branch fires
+    // on a completely healthy tree. On 2026-09-03 that failed the Query Evidence
+    // Refresh self-heal loop while Validate Repo passed on the identical sha,
+    // because only Validate Repo checked out with fetch-depth: 0.
+    //
+    // This still exits 1 - a lane that cannot verify recovery has not verified
+    // it, and must not go green - but it now says which of the two causes it is.
+    if (isShallowRepo()) {
+      console.error('  CAUSE: this checkout is SHALLOW (.git/shallow exists), so the repository history this script reads is not present.');
+      console.error('  This is an environment problem, not artifact loss and not a defect in the store. Nothing in data/release/ is wrong.');
+      console.error('  Fix the environment: check out with `fetch-depth: 0` in the workflow that runs this. Do not restructure this script around the missing history.');
+    } else {
+      console.error('  CAUSE: history IS present in this checkout, so the recorded historic commits are genuinely unresolvable - the measurement in data/release/historic_page_maximum.json is stale or points at commits that no longer exist.');
+      console.error('  Re-run scripts/release/measure_historic_page_maximum.js to re-derive it.');
+    }
     process.exit(1);
   }
 
