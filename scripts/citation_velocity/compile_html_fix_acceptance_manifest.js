@@ -146,9 +146,25 @@ function main() {
     carried += 1;
     byPath.set(key, cleanCarried(byPath.get(key)));
   }
+  // cleanCarried's forbidden set is computed across every row_requirement's
+  // source_fix - i.e. across every recommendation this ENTRY carries, not just the
+  // one that authored a given artifact. A freshly compiled entry needs exactly the
+  // same pass: compileEntryFromSpec filters each artifact's required_strings only
+  // against the ONE recommendation that produced that artifact
+  // (requiredStringsForArtifact(artifact, recommendationForArtifact.get(...))), so
+  // a DIFFERENT recommendation for the same page that asks to remove a phrase -
+  // "replace the current keyword-repetition 'Direct answer' with a real checklist" -
+  // never stops a THIRD recommendation from authoring "Direct answer" as its own
+  // artifact title or required_string. On 2026-09-03 that published a route
+  // (insights/neuro-008-*) where one landed fix's removal directive and another
+  // landed fix's authored copy were the same phrase, and removal-directive-not-
+  // published correctly refused to let both ship. cleanCarried already solves this
+  // for carried entries; running it here closes the gap for a fresh compile too,
+  // rather than leaving freshly compiled entries trusted on a narrower question
+  // than carried ones are.
   for (const entry of compiled) {
     const key = String(entry && entry.implementation_path || '');
-    if (key) byPath.set(key, entry);
+    if (key) byPath.set(key, cleanCarried(entry));
   }
   // A CARRIED entry's promises are re-tested against what will actually render.
   //

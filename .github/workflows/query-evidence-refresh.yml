@@ -178,8 +178,27 @@ jobs:
         # file_pattern line stays literal so self-heal-commit-coverage - which
         # greps this file for it - still proves the commit surface matches
         # every ACTIVE repair's declared writes.
+        #
+        # A CLEAN rebase still isn't enough here, the way it wasn't for the
+        # absorption step in velocity-content-release.yml: origin/main moved,
+        # so a clean rebase produces a tree nobody validated. This loop
+        # therefore always re-validates on the clean path (below). A
+        # CONFLICTING rebase is the harder case this step's first version did
+        # not survive: on 2026-09-03 17:04 (run 33779357309) this step raced
+        # velocity-content-release.yml's own push - both landed in the same
+        # ~15 minutes - and lost every retry to the identical conflict in
+        # artifacts/validation/*.json and data/queries/evidence/evidence_queries.json,
+        # because a bare retry replays the same stale commit against a base
+        # that never changes underneath it. Every file that conflicts here is
+        # this run's OWN regenerable output - the ingest, atlas, join and
+        # self-heal steps above wrote all of it - so a conflict is resolved by
+        # taking the newest main and RE-RUNNING those steps against it, the
+        # same move the absorption step already makes for its own conflicts.
         env:
           file_pattern: ${{ steps.selfheal.outputs.file_pattern }}
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+          GSC_LOOKBACK_DAYS: ${{ inputs.lookback_days || '90' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -191,12 +210,23 @@ jobs:
             git fetch origin main
             if ! git rebase origin/main; then
               git rebase --abort || true
-              sleep $((attempt * 15))
-              continue
+              git reset --hard origin/main
+              test -z "${GSC_SERVICE_ACCOUNT_JSON:-}" || python3 scripts/queries/ingest_gsc_evidence.py
+              npm run atlas:build
+              npm run queries:join-release
+              node scripts/selfheal/run_lane_selfheal.mjs
+              npm run validate:release
+              git add -- $file_pattern
+              if git diff --cached --quiet; then
+                echo "changed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              git commit -m "query evidence refresh: measured GSC demand -> atlas -> release candidates"
+            else
+              npm run validate:release
+              git add -- $file_pattern
+              git commit --amend --no-edit
             fi
-            npm run validate:release
-            git add -- $file_pattern
-            git commit --amend --no-edit
             if git push origin HEAD:main; then exit 0; fi
             sleep $((attempt * 15))
           done

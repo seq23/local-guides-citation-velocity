@@ -124,6 +124,49 @@ for (const file of files) {
         'Re-run the build and validation and amend the commit before pushing, the way the Velocity release step and velocity-full-rebuild.yml already do.'
       );
     }
+
+    // The mirror question, for the branch the clean-path check above deliberately
+    // skips: a CONFLICTING rebase this step chose to answer by re-deriving
+    // (`git reset --hard origin/main` then rebuilding) is a second unvalidated
+    // tree, exactly like a clean rebase is - the reset discards this run's
+    // conflicting commit and rebuilds fresh against a base that moved, and
+    // nothing proves the rebuild is correct until something validates it.
+    // query-evidence-refresh.yml's push loop went red on 2026-09-03 17:04
+    // (run 33779357309) retrying an unwinnable conflict with no re-derivation at
+    // all; the fix added one, mirroring the absorption step's - but a
+    // `git reset --hard origin/main` with no validation after it before the push
+    // is exactly as unproven as a clean rebase with none. This does not require
+    // every conflict branch to re-derive - `git rebase --abort` and retrying is
+    // fine, and is what this validator's own bare-retry example commits stay
+    // silent on - only that IF a branch resets and rebuilds, that rebuild is
+    // proven before it can reach a push.
+    if (rebaseIf !== -1) {
+      const baseIndent = (lines[rebaseIf].match(/^\s*/) || [''])[0].length;
+      let depth = 0;
+      let sawReset = false;
+      let resetValidates = false;
+      let inThen = true;
+      for (let i = rebaseIf + 1; i < lines.length; i += 1) {
+        const line = lines[i];
+        const indent = (line.match(/^\s*/) || [''])[0].length;
+        const trimmed = line.trim();
+        if (/^if\b/.test(trimmed)) depth += 1;
+        if (indent === baseIndent && /^(elif|else)\b/.test(trimmed) && depth === 0) break; // then-branch ended
+        if (indent === baseIndent && /^fi\b/.test(trimmed) && depth === 0) break;
+        if (/^fi\b/.test(trimmed) && depth > 0) { depth -= 1; continue; }
+        if (!inThen) continue;
+        if (/git\s+reset\s+--hard\s+origin\/main/.test(trimmed)) sawReset = true;
+        if (sawReset && VALIDATE.test(trimmed)) { resetValidates = true; break; }
+        if (sawReset && /git\s+push\s+origin\s+HEAD:main/.test(trimmed)) break; // pushed before validating
+      }
+      if (sawReset && !resetValidates) {
+        errors.push(
+          `${where}: its CONFLICT branch runs \`git reset --hard origin/main\` and rebuilds, but nothing validates that rebuild before a push can be reached. ` +
+          'A reset-and-rebuild is exactly as unproven as an unvalidated clean rebase - main moved, this run discarded its own conflicting commit, and the rebuild has to be checked before it is pushed. ' +
+          'Add a validate call after the reset and before the push, the way the absorption step in velocity-content-release.yml already does.'
+        );
+      }
+    }
   }
 }
 

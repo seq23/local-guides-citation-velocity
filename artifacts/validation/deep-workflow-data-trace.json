@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-03T17:04:15.534Z",
+  "generated_at": "2026-09-03T17:27:49.760Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -452,12 +452,42 @@
           ]
         },
         {
-          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -- $file_pattern\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"query evidence refresh: measured GSC demand -> atlas -> release candidates\"\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run validate:release\ngit add -- $file_pattern\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -- $file_pattern\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"query evidence refresh: measured GSC demand -> atlas -> release candidates\"\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\ntest -z \"${GSC_SERVICE_ACCOUNT_JSON:-}\" || python3 scripts/queries/ingest_gsc_evidence.py\nnpm run atlas:build\nnpm run queries:join-release\nnode scripts/selfheal/run_lane_selfheal.mjs\nnpm run validate:release\ngit add -- $file_pattern\nif git diff --cached --quiet; then\necho \"changed=false\" >> \"$GITHUB_OUTPUT\"\nexit 0\nfi\ngit commit -m \"query evidence refresh: measured GSC demand -> atlas -> release candidates\"\nelse\nnpm run validate:release\ngit add -- $file_pattern\ngit commit --amend --no-edit\nfi\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
+              "name": "atlas:build",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "queries:join-release",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
               "name": "validate:release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/queries/ingest_gsc_evidence.py",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/selfheal/run_lane_selfheal.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/atlas/build_query_atlas.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/queries/join_atlas_to_release_queue.mjs",
               "ok": true
             },
             {
@@ -467,9 +497,13 @@
             }
           ],
           "direct_npm_scripts": [
+            "atlas:build",
+            "queries:join-release",
             "validate:release"
           ],
           "transitive_npm_scripts": [
+            "atlas:build",
+            "queries:join-release",
             "validate:release"
           ]
         },
