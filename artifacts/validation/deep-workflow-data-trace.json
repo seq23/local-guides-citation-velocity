@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-03T19:05:01.140Z",
+  "generated_at": "2026-09-03T19:37:18.547Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -207,7 +207,7 @@
     },
     {
       "workflow": "query-class-occupancy-probe.yml",
-      "command_count": 4,
+      "command_count": 5,
       "status": "PASS",
       "commands": [
         {
@@ -265,14 +265,9 @@
           ]
         },
         {
-          "command": "npm run validate:occupancy-probe\nnpm run validate:occupancy-controls\nnpm run validate",
+          "command": "npm run validate:occupancy-probe\nnpm run validate:occupancy-controls\nnpm run validate:release",
           "status": "PASS",
           "checks": [
-            {
-              "type": "npm_script",
-              "name": "validate",
-              "ok": true
-            },
             {
               "type": "npm_script",
               "name": "validate:occupancy-controls",
@@ -281,6 +276,11 @@
             {
               "type": "npm_script",
               "name": "validate:occupancy-probe",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:release",
               "ok": true
             },
             {
@@ -300,14 +300,84 @@
             }
           ],
           "direct_npm_scripts": [
-            "validate",
             "validate:occupancy-controls",
-            "validate:occupancy-probe"
+            "validate:occupancy-probe",
+            "validate:release"
           ],
           "transitive_npm_scripts": [
-            "validate",
             "validate:occupancy-controls",
-            "validate:occupancy-probe"
+            "validate:occupancy-probe",
+            "validate:release"
+          ]
+        },
+        {
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -- $file_pattern\nif git diff --cached --quiet; then echo \"no changes to commit\"; exit 0; fi\ngit commit -m \"citation occupancy probe: measured winnability -> atlas\"\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\nnpm run atlas:build\nnpm run queries:join-release\nnpm run validate:occupancy-probe\nnpm run validate:occupancy-controls\nnpm run validate:release\ngit add -- $file_pattern\nif git diff --cached --quiet; then\necho \"no changes to commit after re-deriving onto origin/main\"\nexit 0\nfi\ngit commit -m \"citation occupancy probe: measured winnability -> atlas\"\nelse\nnpm run validate:occupancy-probe\nnpm run validate:occupancy-controls\nnpm run validate:release\ngit add -- $file_pattern\ngit commit --amend --no-edit\nfi\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "atlas:build",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "queries:join-release",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:occupancy-controls",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:occupancy-probe",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "validate:release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/atlas/build_query_atlas.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/queries/join_atlas_to_release_queue.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "atlas:build",
+            "queries:join-release",
+            "validate:occupancy-controls",
+            "validate:occupancy-probe",
+            "validate:release"
+          ],
+          "transitive_npm_scripts": [
+            "atlas:build",
+            "queries:join-release",
+            "validate:occupancy-controls",
+            "validate:occupancy-probe",
+            "validate:release"
           ]
         }
       ]
