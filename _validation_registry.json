@@ -7757,6 +7757,44 @@
       "mutates_files": [
         "artifacts/validation/unbuilt-backlog-admission.json"
       ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "intake-plan-regeneration",
+      "title": "A step that rewrites the disposition ledger re-derives the exact plan from it",
+      "path": "scripts/validators/validate_intake_plan_regeneration.js",
+      "command": "node scripts/validators/validate_intake_plan_regeneration.js",
+      "risk_prevented": "Prevents the intake and the exact implementation plan from keeping two independent lists of the same rows. citation:prepare-velocity-intake rewrites data/report_fixes/agent_artifact_disposition_ledger.json; only citation:plan-agent-exact writes the carried reasons in data/report_fixes/agent_exact_implementation_plan.json. The absorption step of velocity-content-release.yml ran the intake and never the planner, so the ledger moved daily and the plan did not: on 2026-09-03, 185 carried rows blamed UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET for a budget that had not bound (85 selected of 125), and carried-reason-truthfulness held main red across roughly twelve runs in one day.",
+      "requires_files": [
+        ".github/workflows/velocity-content-release.yml"
+      ],
+      "produces_files": [
+        "artifacts/validation/intake-plan-regeneration.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/intake-plan-regeneration.json"
+      ],
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "carried-reason-truthfulness catches the symptom only after a full build has already run, inside the failing job. Nothing checked the workflow wiring that CAUSES the drift, so every fix to the data was undone by the next scheduled run. This asserts the link statically and hard-fails when it examines zero steps.",
+      "estimated_runtime_seconds": 2
     }
   ],
   "legacy_policy": {
