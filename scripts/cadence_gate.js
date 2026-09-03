@@ -66,7 +66,7 @@ function sitemapUrls() {
     if (depth > 4) return;
     let ents; try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of ents) {
-      if (/^(node_modules|\.git|\.pages-output|coverage)$/.test(e.name)) continue;
+      if (/^(node_modules|\.git|\.pages-output|coverage|\.build-cache)$/.test(e.name)) continue;
       const full = path.join(dir, e.name);
       if (e.isDirectory()) walk(full, depth + 1);
       else if (/^sitemap.*\.xml$/i.test(e.name)) {

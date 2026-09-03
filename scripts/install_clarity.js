@@ -32,7 +32,7 @@ const projects = cfg.projects || {};
 const outDir = path.resolve(ROOT, cfg.public_root || '.');
 const skipDirs = new Set([
   ...(cfg.skip_dirs || []),
-  '.git', 'node_modules', '.pages-output', 'dist', 'scripts', 'data', 'reports',
+  '.git', 'node_modules', '.pages-output', 'dist', '.build-cache', 'scripts', 'data', 'reports',
   'artifacts', 'docs', 'tests', 'fixtures', 'config', 'content', 'templates',
 ]);
 const skipFiles = new Set(cfg.skip_files || []);

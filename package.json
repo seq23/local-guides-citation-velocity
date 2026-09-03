@@ -4,6 +4,9 @@
   "type": "commonjs",
   "scripts": {
     "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/apply_medicaid_dental_fee_data.js && ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/feeds/build_promotion_candidates_feed.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js",
+    "build:cached": "node scripts/build_cache_wrapper.js",
+    "build:cached:prune": "node scripts/build_cache_wrapper.js --prune",
+    "validate:build-cache": "node scripts/validation/run_validation_registry.js --id build-result-cache-integrity",
     "validate": "node scripts/validation/run_validation_registry.js --profile core",
     "release:batch": "node scripts/release_batch.js 10",
     "release:batch20": "node scripts/release_batch.js 20",

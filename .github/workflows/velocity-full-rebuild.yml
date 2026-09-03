@@ -40,6 +40,18 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci --ignore-scripts
+      # See velocity-content-release.yml for the full rationale: build:cached
+      # (scripts/lib/build_cache.js) skips `npm run build` entirely when its
+      # input hash matches a prior run, which is exactly the rebase-retry
+      # case in the loop below. restore-keys falls back to the most recent
+      # entry when this run has no cache of its own yet.
+      - name: Restore build-result cache
+        uses: actions/cache@v4
+        with:
+          path: .build-cache
+          key: build-result-cache-${{ github.run_id }}
+          restore-keys: |
+            build-result-cache-
       - name: Synchronize source before mutation
         run: |
           git fetch origin main
@@ -82,7 +94,7 @@ jobs:
               sleep $((attempt * 15))
               continue
             fi
-            npm run build
+            npm run build:cached:prune
             npm run validate:release
             git add -A
             git commit --amend --no-edit

@@ -77,6 +77,25 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      # This lane calls `npm run build` up to four times per run (absorption,
+      # its two rebase-retry branches, and the release rebase-rebuild loop),
+      # regenerating all ~2,070 pages from scratch every time even when a
+      # rebase-retry changed nothing this lane's own inputs. scripts/lib/build_cache.js
+      # skips the rebuild entirely when its input hash (scripts/, templates/,
+      # content/, data/, package.json, package-lock.json, _redirects, plus the
+      # env vars that affect generation) matches a prior run - the coarse key
+      # here just gives it something durable to restore from; the real
+      # correctness check is the hash comparison inside build:cached itself, so
+      # a restored-but-stale entry from an unrelated older run is a safe MISS,
+      # never a false HIT. restore-keys falls back to the most recent entry
+      # under the same prefix when this exact run has no cache yet.
+      - name: Restore build-result cache
+        uses: actions/cache@v4
+        with:
+          path: .build-cache
+          key: build-result-cache-${{ github.run_id }}
+          restore-keys: |
+            build-result-cache-
       - name: Synchronize source before mutation
         run: |
           git fetch origin main
@@ -144,7 +163,7 @@ jobs:
         # no longer un-absorb a run that is already on disk.
         run: |
           npm run citation:prepare-velocity-intake
-          npm run build
+          npm run build:cached
           npm run validate:release
       - name: Commit and push the validated absorption
         id: absorption
@@ -177,7 +196,7 @@ jobs:
               git rebase --abort || true
               git reset --hard origin/main
               npm run citation:prepare-velocity-intake
-              npm run build
+              npm run build:cached
               npm run validate:release
               git add -A
               if git diff --cached --quiet; then
@@ -204,8 +223,10 @@ jobs:
               #
               # Only re-derive when the base actually moved. A rebase onto the
               # same base is a no-op and re-validating it would double the
-              # runtime of every clean run for nothing.
-              npm run build
+              # runtime of every clean run for nothing. build:cached makes
+              # this specific case - re-deriving after nothing this lane
+              # changed - a near-instant restore instead of a full rebuild.
+              npm run build:cached
               npm run validate:release
               git add -A
               git commit --amend --no-edit
@@ -243,7 +264,7 @@ jobs:
               sleep $((attempt * 15))
               continue
             fi
-            npm run build
+            npm run build:cached:prune
             # The cadence ledger records what the sitemap held the last time the gate
             # ran. cadence_gate.js writes it, but the only other job that runs the gate
             # is Validate Repo, which is read-only - so its copy dies with the runner.
