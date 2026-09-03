@@ -38,6 +38,10 @@ const repairFor = new Map(
     .filter((v) => v.repair_command)
     .map((v) => [v.id, v.repair_command]),
 );
+// The validator's own check command, so a tree-diff no-op can be confirmed
+// against ground truth instead of assumed to mean "still broken" - see the
+// noOp block below.
+const commandFor = new Map((registry.validators || []).map((v) => [v.id, v.command]));
 
 const run = (cmd) => {
   const started = Date.now();
@@ -105,10 +109,31 @@ for (let attempt = 1; attempt <= MAX; attempt += 1) {
     const before = treeState();
     const r = run(cmd);
     const after = treeState();
-    // A repair that exits 0 without touching a single file has done nothing.
-    // Left unnamed it reads as success, and the loop burns every remaining
-    // attempt re-running it to reach the same failure. Say so instead.
-    const noOp = r.code === 0 && before !== null && after !== null && before === after;
+    // A repair that exits 0 without touching a single file has done nothing -
+    // UNLESS the validator it targets already passes. Tier 8's
+    // repair-command-efficacy validator (added by PR #73) proves every ACTIVE
+    // repair_command by actually EXECUTING it against a live failure, in the
+    // SAME `run_validation_registry.js` pass this loop reads its failure list
+    // from, but LATER (Tier 8 runs after Tier 1). On 2026-09-03 (run
+    // 33793861821) that mid-pass execution genuinely fixed
+    // data/release/accepted_page_artifacts.json, data/release/historic_recovered_artifacts.json
+    // and data/report_fixes/agent_run_delivery_coverage_baseline.json
+    // (repair-command-efficacy.json recorded REPAIR_EFFECTIVE / any_path_changed:
+    // true for all three) - but the Tier 1 FAIL for each had already been
+    // written to the summary before Tier 8 ran, so this loop re-ran the exact
+    // same repair_command a second time against a tree that had nothing left to
+    // change, and a genuine "already fixed" read as a false "cannot ever fix
+    // this". A tree-diff no-op is only the Rule 0 condition this loop must stop
+    // on when the validator ALSO still fails; check that before naming it.
+    let noOp = r.code === 0 && before !== null && after !== null && before === after;
+    if (noOp) {
+      const targetCommand = commandFor.get(id);
+      const recheck = targetCommand ? run(targetCommand) : null;
+      if (recheck && recheck.code === 0) {
+        noOp = false;
+        console.log(`  repair for ${id} changed nothing on this invocation, but ${id} now passes (already fixed earlier in this same validate pass) - not a no-op`);
+      }
+    }
     if (r.code !== 0) console.log(`  repair FAILED for ${id} (exit ${r.code})`);
     else if (noOp) console.log(`  repair NO-OP for ${id}: "${cmd}" exited 0 but changed no file, so ${id} cannot clear on a retry`);
     repaired.push({ id, cmd, code: r.code, no_op: noOp });
