@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "77586442efa7ce18a29adaa649ee36ac3df9aab41af8afc0ebe67745ad02761e",
+  "registry_sha256": "032df81d0fa638908dee99c44a12026612c9274cd8caf79eb26e58d150367e42",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 170,
-    "active": 143,
+    "total": 171,
+    "active": 144,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 141,
+    "hard_fail": 142,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -151,6 +151,7 @@
         "carried-reason-truthfulness",
         "internal-link-inbound-coverage",
         "agent-fix-ledger-truthfulness",
+        "agent-run-delivery-coverage",
         "agent-artifact-stranding"
       ],
       "execution_order": [
@@ -160,6 +161,7 @@
         "agent-fix-ledger-truthfulness",
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
+        "agent-run-delivery-coverage",
         "authority-contracts",
         "generator-instruction-refusal",
         "historic-artifact-recovery",
@@ -389,6 +391,7 @@
         "carried-reason-truthfulness",
         "internal-link-inbound-coverage",
         "agent-fix-ledger-truthfulness",
+        "agent-run-delivery-coverage",
         "agent-artifact-stranding"
       ],
       "execution_order": [
@@ -400,6 +403,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
+        "agent-run-delivery-coverage",
         "atom-contract",
         "authority-contracts",
         "dynamic-page-contract-cross-vertical",
@@ -681,6 +685,7 @@
         "carried-reason-truthfulness",
         "internal-link-inbound-coverage",
         "agent-fix-ledger-truthfulness",
+        "agent-run-delivery-coverage",
         "agent-artifact-stranding"
       ],
       "execution_order": [
@@ -692,6 +697,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
+        "agent-run-delivery-coverage",
         "atom-contract",
         "authority-contracts",
         "dynamic-page-contract-cross-vertical",
@@ -1003,6 +1009,7 @@
         "carried-reason-truthfulness",
         "internal-link-inbound-coverage",
         "agent-fix-ledger-truthfulness",
+        "agent-run-delivery-coverage",
         "agent-artifact-stranding"
       ],
       "execution_order": [
@@ -1014,6 +1021,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
+        "agent-run-delivery-coverage",
         "atom-contract",
         "authority-contracts",
         "dynamic-page-contract-cross-vertical",
@@ -1299,6 +1307,7 @@
         "carried-reason-truthfulness",
         "internal-link-inbound-coverage",
         "agent-fix-ledger-truthfulness",
+        "agent-run-delivery-coverage",
         "agent-artifact-stranding"
       ],
       "execution_order": [
@@ -1310,6 +1319,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
+        "agent-run-delivery-coverage",
         "atom-contract",
         "authority-contracts",
         "dynamic-page-contract-cross-vertical",
@@ -1644,11 +1654,13 @@
         "workflow-yaml-syntax",
         "internal-link-inbound-coverage",
         "agent-fix-ledger-truthfulness",
+        "agent-run-delivery-coverage",
         "agent-artifact-stranding"
       ],
       "execution_order": [
         "agent-artifact-stranding",
         "agent-fix-ledger-truthfulness",
+        "agent-run-delivery-coverage",
         "authority-contracts",
         "generator-instruction-refusal",
         "internal-link-inbound-coverage",
@@ -1874,6 +1886,7 @@
         "agent-named-target-parseability",
         "carried-reason-truthfulness",
         "agent-fix-ledger-truthfulness",
+        "agent-run-delivery-coverage",
         "agent-artifact-stranding"
       ],
       "execution_order": [
@@ -1884,6 +1897,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
+        "agent-run-delivery-coverage",
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "main-writer-ordering",
@@ -7938,6 +7952,43 @@
         "retirement_reason": null
       },
       {
+        "id": "agent-run-delivery-coverage",
+        "title": "Per-run recommendation delivery coverage may only improve",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_agent_run_delivery_coverage.js",
+        "command": "node scripts/validators/validate_agent_run_delivery_coverage.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/report_fixes/agent_run_delivery_coverage_baseline.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-run-delivery-coverage.json"
+        ],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "agent-fix-ledger-truthfulness is scoped to rows that CLAIM a released status, and its registered repair demotes an untruthful row to ACCEPTED_ROUTE_MARKERS_ABSENT - which removes it from that guard's field of view. Draining the untruthful backlog therefore silences the truthfulness guard without one requested marker reaching one page. This guard counts what demotion cannot move: per landed run, how many declared recommendations are still not shown by the page they named, whatever status the ledger has since given them. Measured 2026-09-03 across 49 runs: 2,278 of 2,882 actionable recommendations shown (79.0%), 711 gaps, with per-run coverage as low as 15% (2026-07-15). This fails if any run exceeds its shrink-only gap allowance, or if a run has improved and its allowance has not been tightened to match.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "agent-artifact-stranding",
         "title": "No landed agent artifact sits pending longer than one release cadence",
         "status": "ACTIVE",
@@ -11532,6 +11583,43 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "finalize_content_release.js marked a recommendation RELEASED_VERIFIED whenever its ROUTE completed a freeze transaction, which says nothing about whether the requested edit reached the page. On 2026-09-02 all 51 rows of a TRT run were marked released because trt/index.html was thawed for an unrelated spec; 12 of their required_markers were absent and stayed absent. That mark is terminal - prepare_velocity_intake_release.js excludes released ids from selection forever - so the work was recorded as delivered and retired unworked. Across the whole ledger 668 of 2,558 released claims were not shown by their pages. This fails if any fix claiming a released status is missing a required_marker from its rendered file.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-run-delivery-coverage",
+        "title": "Per-run recommendation delivery coverage may only improve",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_agent_run_delivery_coverage.js",
+        "command": "node scripts/validators/validate_agent_run_delivery_coverage.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/report_fixes/agent_run_delivery_coverage_baseline.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-run-delivery-coverage.json"
+        ],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "agent-fix-ledger-truthfulness is scoped to rows that CLAIM a released status, and its registered repair demotes an untruthful row to ACCEPTED_ROUTE_MARKERS_ABSENT - which removes it from that guard's field of view. Draining the untruthful backlog therefore silences the truthfulness guard without one requested marker reaching one page. This guard counts what demotion cannot move: per landed run, how many declared recommendations are still not shown by the page they named, whatever status the ledger has since given them. Measured 2026-09-03 across 49 runs: 2,278 of 2,882 actionable recommendations shown (79.0%), 711 gaps, with per-run coverage as low as 15% (2026-07-15). This fails if any run exceeds its shrink-only gap allowance, or if a run has improved and its allowance has not been tightened to match.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
