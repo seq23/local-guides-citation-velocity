@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "a8dd00c6c3c2a0fd8f19f2cf60f4961322d16d69f0e425a7f91d121324908770",
+  "registry_sha256": "2a9a37b6e21717363841f612ee72960499c66ff25aec72e81b683f082d464c84",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 175,
-    "active": 148,
+    "total": 176,
+    "active": 149,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 146,
+    "hard_fail": 147,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -1230,6 +1230,7 @@
         "deep-workflow-data-trace",
         "demand-backed-pages",
         "deterministic-build",
+        "build-result-cache-integrity",
         "repair-command-efficacy",
         "dynamic-page-contract-cross-vertical",
         "entity-graph",
@@ -1495,6 +1496,7 @@
         "self-heal-commit-coverage",
         "workflow-contract",
         "velocity-intake-workflow",
+        "build-result-cache-integrity",
         "deterministic-build",
         "public-click-audit",
         "repair-command-efficacy",
@@ -4004,6 +4006,36 @@
         ],
         "enforce_no_source_mutation": false,
         "risk_prevented": "Identical source could generate different public output or freshness churn.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "build-result-cache-integrity",
+        "title": "Build-result cache is byte-identical to a real build",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit"
+        ],
+        "path": "scripts/validators/validate_build_result_cache.js",
+        "command": "node scripts/validators/validate_build_result_cache.js",
+        "depends_on": [],
+        "requires_files": [],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/build-result-cache-integrity.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/build-result-cache-integrity.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "A stale or corrupted cache entry restoring the wrong bytes onto a `npm run build:cached` no-op run - the entire 2,070-page site regenerated from scratch on every CI invocation was this repo's actual cost before this cache existed, and a cache that is fast but wrong is worse than no cache at all. This validator requires a cache entry for the CURRENT input hash, rejects one that never came from a completed build (readEntryMeta refuses a missing/false build_completed stamp or a mismatched input_hash before any file is touched), and then hashes every git-tracked file plus the cache-managed build dirs on both the current tree and an isolated, cache-disabled ground-truth rebuild - not a sample - and fails naming the exact files that differ.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -15667,6 +15699,36 @@
         ],
         "enforce_no_source_mutation": false,
         "risk_prevented": "Identical source could generate different public output or freshness churn.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "build-result-cache-integrity",
+        "title": "Build-result cache is byte-identical to a real build",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit"
+        ],
+        "path": "scripts/validators/validate_build_result_cache.js",
+        "command": "node scripts/validators/validate_build_result_cache.js",
+        "depends_on": [],
+        "requires_files": [],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/build-result-cache-integrity.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/build-result-cache-integrity.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "A stale or corrupted cache entry restoring the wrong bytes onto a `npm run build:cached` no-op run - the entire 2,070-page site regenerated from scratch on every CI invocation was this repo's actual cost before this cache existed, and a cache that is fast but wrong is worse than no cache at all. This validator requires a cache entry for the CURRENT input hash, rejects one that never came from a completed build (readEntryMeta refuses a missing/false build_completed stamp or a mismatched input_hash before any file is touched), and then hashes every git-tracked file plus the cache-managed build dirs on both the current tree and an isolated, cache-disabled ground-truth rebuild - not a sample - and fails naming the exact files that differ.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

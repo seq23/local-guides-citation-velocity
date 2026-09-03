@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-03T20:42:18.176Z",
+  "generated_at": "2026-09-03T21:26:48.810Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -906,12 +906,12 @@
           ]
         },
         {
-          "command": "npm run citation:prepare-velocity-intake\nnpm run build\nnpm run validate:release",
+          "command": "npm run citation:prepare-velocity-intake\nnpm run build:cached\nnpm run validate:release",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "build",
+              "name": "build:cached",
               "ok": true
             },
             {
@@ -926,27 +926,7 @@
             },
             {
               "type": "file",
-              "path": "scripts/apply_medicaid_dental_fee_data.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/build_site.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/feeds/build_promotion_candidates_feed.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/build_pages_dist.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/install_clarity.js",
+              "path": "scripts/build_cache_wrapper.js",
               "ok": true
             },
             {
@@ -961,23 +941,23 @@
             }
           ],
           "direct_npm_scripts": [
-            "build",
+            "build:cached",
             "citation:prepare-velocity-intake",
             "validate:release"
           ],
           "transitive_npm_scripts": [
-            "build",
+            "build:cached",
             "citation:prepare-velocity-intake",
             "validate:release"
           ]
         },
         {
-          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"absorb agent runs $(date -u +%F)\"\n# The base this absorption was built and validated against. If a rebase\n# moves it, the rebased tree has to be re-derived and re-validated\n# before it may be pushed to main.\nBASE_BEFORE_REBASE=\"$(git rev-parse HEAD~1)\"\n# The retry loop used to be unreachable. `git rebase` is a bare command\n# under `bash -e`, so a conflicting rebase killed the step on attempt 1\n# and attempts 2 and 3 never ran - 2026-08-27 died on\n# \"could not apply ... absorb agent runs\" with no retry and no sleep.\n#\n# Every file that conflicts here is derived: artifacts/validation/*.json\n# and content/_shared/content_state.json are outputs of the intake and\n# build below, not hand-authored state. Merging two generated versions of\n# a generated file is meaningless, so a conflict is resolved by taking\n# the newest main and re-deriving the absorption on top of it. That keeps\n# whatever the concurrent push added, which `reset --hard` before the\n# re-derive guarantees and a plain \"ours\" resolution would have dropped.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\nnpm run citation:prepare-velocity-intake\nnpm run build\nnpm run validate:release\ngit add -A\nif git diff --cached --quiet; then\necho \"changed=false\" >> \"$GITHUB_OUTPUT\"\nexit 0\nfi\ngit commit -m \"absorb agent runs $(date -u +%F)\"\nelif [ \"$(git rev-parse HEAD~1)\" != \"$BASE_BEFORE_REBASE\" ]; then\n# A CLEAN rebase still produces a tree nobody validated.\n#\n# This step validated the absorption against the main it started\n# from, then rebased onto whatever main had become, then pushed.\n# A rebase that applies without conflict is not a rebase that\n# changes nothing: origin/main moved - that is why we are rebasing -\n# so the tree being pushed is a combination of two validated trees,\n# which is not itself a validated tree. The push surface here is\n# main.\n#\n# Both sibling push loops in this repo already close this: the\n# Velocity step below, and velocity-full-rebuild.yml, each re-run\n# build + validate:release after a successful rebase and amend the\n# result. This step was the only one that did not, and it is the\n# step that runs first and most often.\n#\n# Only re-derive when the base actually moved. A rebase onto the\n# same base is a no-op and re-validating it would double the\n# runtime of every clean run for nothing.\nnpm run build\nnpm run validate:release\ngit add -A\ngit commit --amend --no-edit\nfi\nif git push origin HEAD:main; then exit 0; fi\nBASE_BEFORE_REBASE=\"$(git rev-parse origin/main)\"\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -A\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"absorb agent runs $(date -u +%F)\"\n# The base this absorption was built and validated against. If a rebase\n# moves it, the rebased tree has to be re-derived and re-validated\n# before it may be pushed to main.\nBASE_BEFORE_REBASE=\"$(git rev-parse HEAD~1)\"\n# The retry loop used to be unreachable. `git rebase` is a bare command\n# under `bash -e`, so a conflicting rebase killed the step on attempt 1\n# and attempts 2 and 3 never ran - 2026-08-27 died on\n# \"could not apply ... absorb agent runs\" with no retry and no sleep.\n#\n# Every file that conflicts here is derived: artifacts/validation/*.json\n# and content/_shared/content_state.json are outputs of the intake and\n# build below, not hand-authored state. Merging two generated versions of\n# a generated file is meaningless, so a conflict is resolved by taking\n# the newest main and re-deriving the absorption on top of it. That keeps\n# whatever the concurrent push added, which `reset --hard` before the\n# re-derive guarantees and a plain \"ours\" resolution would have dropped.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\nnpm run citation:prepare-velocity-intake\nnpm run build:cached\nnpm run validate:release\ngit add -A\nif git diff --cached --quiet; then\necho \"changed=false\" >> \"$GITHUB_OUTPUT\"\nexit 0\nfi\ngit commit -m \"absorb agent runs $(date -u +%F)\"\nelif [ \"$(git rev-parse HEAD~1)\" != \"$BASE_BEFORE_REBASE\" ]; then\n# A CLEAN rebase still produces a tree nobody validated.\n#\n# This step validated the absorption against the main it started\n# from, then rebased onto whatever main had become, then pushed.\n# A rebase that applies without conflict is not a rebase that\n# changes nothing: origin/main moved - that is why we are rebasing -\n# so the tree being pushed is a combination of two validated trees,\n# which is not itself a validated tree. The push surface here is\n# main.\n#\n# Both sibling push loops in this repo already close this: the\n# Velocity step below, and velocity-full-rebuild.yml, each re-run\n# build + validate:release after a successful rebase and amend the\n# result. This step was the only one that did not, and it is the\n# step that runs first and most often.\n#\n# Only re-derive when the base actually moved. A rebase onto the\n# same base is a no-op and re-validating it would double the\n# runtime of every clean run for nothing. build:cached makes\n# this specific case - re-deriving after nothing this lane\n# changed - a near-instant restore instead of a full rebuild.\nnpm run build:cached\nnpm run validate:release\ngit add -A\ngit commit --amend --no-edit\nfi\nif git push origin HEAD:main; then exit 0; fi\nBASE_BEFORE_REBASE=\"$(git rev-parse origin/main)\"\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "build",
+              "name": "build:cached",
               "ok": true
             },
             {
@@ -992,27 +972,7 @@
             },
             {
               "type": "file",
-              "path": "scripts/apply_medicaid_dental_fee_data.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/build_site.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/feeds/build_promotion_candidates_feed.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/build_pages_dist.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/install_clarity.js",
+              "path": "scripts/build_cache_wrapper.js",
               "ok": true
             },
             {
@@ -1027,12 +987,12 @@
             }
           ],
           "direct_npm_scripts": [
-            "build",
+            "build:cached",
             "citation:prepare-velocity-intake",
             "validate:release"
           ],
           "transitive_npm_scripts": [
-            "build",
+            "build:cached",
             "citation:prepare-velocity-intake",
             "validate:release"
           ]
@@ -1231,12 +1191,17 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\n# The cadence ledger records what the sitemap held the last time the gate\n# ran. cadence_gate.js writes it, but the only other job that runs the gate\n# is Validate Repo, which is read-only - so its copy dies with the runner.\n# Nothing ever committed the ledger, so it stayed frozen at whatever a human\n# last pushed (2026-08-27). Every page published after that read as \"new\",\n# and the moment more than new_pages_per_week accumulated, the gate blocked\n# Validate Repo permanently: the comparison it depends on could never\n# advance on its own. Running it here - inside the loop that already\n# rebuilds and amends - is what makes the ledger persist. It also enforces\n# the weekly cap at the point of publication, where refusing is still\n# possible, rather than after the pages are already on main.\nnpm run cadence:gate\n# This step follows release:velocity-intake, which can publish new\n# pages via release:velocity-content. `npm run build` restores\n# data/release/frozen_page_registry.json for a newly-accepted route\n# but does not derive every store a publish can move - a raw\n# validate:release here HARD_FAILed on a healthy publish three\n# separate times on 2026-09-03: accepted-artifact-recovery (run\n# 33725560369, no recover:accepted-artifacts run), then the\n# historic-page-maximum ratchet and historic-artifact-recovery when\n# five repaired pages legitimately grew past their recorded ceiling,\n# then agent-fix-ledger-truthfulness (run 33785501356) when the same\n# publish made 17 baselined claims newly true. Every one of those has\n# a registered repair_command; this is the one push surface in the\n# repo whose entire job is publishing content, so - unlike\n# query-evidence-refresh.yml, which deliberately stays self-heal-free\n# for exactly this reason - there is no boundary against a build-shaped\n# repair here. Routing the check through self-heal instead of a raw\n# validate:release closes the whole class at once: any current or\n# future release-profile validator with a registered repair gets\n# repaired before it can block the push, rather than each one being\n# found and patched by hand as the next lane failure.\nnpm run selfheal:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "# Same unreachable-retry defect as the absorption step: a bare `git rebase`\n# under `bash -e` ended the step on the first conflict. Aborting a failed\n# rebase leaves a clean tree so the remaining attempts can actually run.\n# This loop does not re-derive on conflict the way the absorption step\n# does, because the commit it is replaying carries published pages from\n# release:velocity-intake that a reset would discard and this step cannot\n# regenerate on its own.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build:cached:prune\n# The cadence ledger records what the sitemap held the last time the gate\n# ran. cadence_gate.js writes it, but the only other job that runs the gate\n# is Validate Repo, which is read-only - so its copy dies with the runner.\n# Nothing ever committed the ledger, so it stayed frozen at whatever a human\n# last pushed (2026-08-27). Every page published after that read as \"new\",\n# and the moment more than new_pages_per_week accumulated, the gate blocked\n# Validate Repo permanently: the comparison it depends on could never\n# advance on its own. Running it here - inside the loop that already\n# rebuilds and amends - is what makes the ledger persist. It also enforces\n# the weekly cap at the point of publication, where refusing is still\n# possible, rather than after the pages are already on main.\nnpm run cadence:gate\n# This step follows release:velocity-intake, which can publish new\n# pages via release:velocity-content. `npm run build` restores\n# data/release/frozen_page_registry.json for a newly-accepted route\n# but does not derive every store a publish can move - a raw\n# validate:release here HARD_FAILed on a healthy publish three\n# separate times on 2026-09-03: accepted-artifact-recovery (run\n# 33725560369, no recover:accepted-artifacts run), then the\n# historic-page-maximum ratchet and historic-artifact-recovery when\n# five repaired pages legitimately grew past their recorded ceiling,\n# then agent-fix-ledger-truthfulness (run 33785501356) when the same\n# publish made 17 baselined claims newly true. Every one of those has\n# a registered repair_command; this is the one push surface in the\n# repo whose entire job is publishing content, so - unlike\n# query-evidence-refresh.yml, which deliberately stays self-heal-free\n# for exactly this reason - there is no boundary against a build-shaped\n# repair here. Routing the check through self-heal instead of a raw\n# validate:release closes the whole class at once: any current or\n# future release-profile validator with a registered repair gets\n# repaired before it can block the push, rather than each one being\n# found and patched by hand as the next lane failure.\nnpm run selfheal:release\nnpm run trace:agent-exact\nnpm run validate:agent-exact\nnpm run trace:citation-agent-fixes\nnpm run validate:citation-agent-fixes\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "build",
+              "ok": true
+            },
+            {
+              "type": "npm_script",
+              "name": "build:cached:prune",
               "ok": true
             },
             {
@@ -1296,6 +1261,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/build_cache_wrapper.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/cadence_gate.js",
               "ok": true
             },
@@ -1327,6 +1297,7 @@
           ],
           "direct_npm_scripts": [
             "build",
+            "build:cached:prune",
             "cadence:gate",
             "selfheal:release",
             "trace:agent-exact",
@@ -1336,6 +1307,7 @@
           ],
           "transitive_npm_scripts": [
             "build",
+            "build:cached:prune",
             "cadence:gate",
             "selfheal:release",
             "trace:agent-exact",
@@ -1455,12 +1427,12 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "# The retry loop was unreachable. `git rebase` is a bare command under\n# `bash -e`, so the first conflicting rebase ended the step and attempts\n# 2 and 3 never ran - the same defect fixed in velocity-content-release.yml\n# on 2026-08-28, still present here because this workflow has never run\n# once and so nothing ever exercised it. It is the recovery workflow, which\n# makes an unreachable retry the worst place for this to sit.\n#\n# Aborting a failed rebase leaves a clean tree so the remaining attempts\n# can actually run. It deliberately does not re-derive the way the\n# absorption step does: the commit being replayed is a full deterministic\n# rebuild, and this workflow's declared failure boundary forbids broad\n# self-healing here.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build\nnpm run validate:release\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "command": "# The retry loop was unreachable. `git rebase` is a bare command under\n# `bash -e`, so the first conflicting rebase ended the step and attempts\n# 2 and 3 never ran - the same defect fixed in velocity-content-release.yml\n# on 2026-08-28, still present here because this workflow has never run\n# once and so nothing ever exercised it. It is the recovery workflow, which\n# makes an unreachable retry the worst place for this to sit.\n#\n# Aborting a failed rebase leaves a clean tree so the remaining attempts\n# can actually run. It deliberately does not re-derive the way the\n# absorption step does: the commit being replayed is a full deterministic\n# rebuild, and this workflow's declared failure boundary forbids broad\n# self-healing here.\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\nsleep $((attempt * 15))\ncontinue\nfi\nnpm run build:cached:prune\nnpm run validate:release\ngit add -A\ngit commit --amend --no-edit\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
-              "name": "build",
+              "name": "build:cached:prune",
               "ok": true
             },
             {
@@ -1470,27 +1442,7 @@
             },
             {
               "type": "file",
-              "path": "scripts/apply_medicaid_dental_fee_data.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/build_site.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/feeds/build_promotion_candidates_feed.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/build_pages_dist.js",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/install_clarity.js",
+              "path": "scripts/build_cache_wrapper.js",
               "ok": true
             },
             {
@@ -1500,11 +1452,11 @@
             }
           ],
           "direct_npm_scripts": [
-            "build",
+            "build:cached:prune",
             "validate:release"
           ],
           "transitive_npm_scripts": [
-            "build",
+            "build:cached:prune",
             "validate:release"
           ]
         }

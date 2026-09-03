@@ -2205,6 +2205,43 @@
       "enforce_no_source_mutation": false
     },
     {
+      "id": "build-result-cache-integrity",
+      "title": "Build-result cache is byte-identical to a real build",
+      "path": "scripts/validators/validate_build_result_cache.js",
+      "command": "node scripts/validators/validate_build_result_cache.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 8",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit"
+      ],
+      "tags": [
+        "build",
+        "cache",
+        "determinism",
+        "expensive"
+      ],
+      "risk_prevented": "A stale or corrupted cache entry restoring the wrong bytes onto a `npm run build:cached` no-op run - the entire 2,070-page site regenerated from scratch on every CI invocation was this repo's actual cost before this cache existed, and a cache that is fast but wrong is worse than no cache at all. This validator requires a cache entry for the CURRENT input hash, rejects one that never came from a completed build (readEntryMeta refuses a missing/false build_completed stamp or a mismatched input_hash before any file is touched), and then hashes every git-tracked file plus the cache-managed build dirs on both the current tree and an isolated, cache-disabled ground-truth rebuild - not a sample - and fails naming the exact files that differ.",
+      "why_existing_checks_do_not_cover": "deterministic-build proves two independent builds of the same source agree with each other. It says nothing about the cache: a cache entry could be stale, partially written, or restored against the wrong input hash and deterministic-build would never see it, because it never runs `npm run build:cached` or inspects .build-cache/ at all.",
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 600,
+      "evidence_file": "artifacts/validation/build-result-cache-integrity.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/build-result-cache-integrity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/build-result-cache-integrity.json"
+      ],
+      "enforce_no_source_mutation": false
+    },
+    {
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "scope": "CONTAINER",

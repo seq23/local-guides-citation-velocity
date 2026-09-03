@@ -12,9 +12,9 @@ const admissionPayload = JSON.parse(fs.readFileSync(ADMISSION_REGISTRY, 'utf8'))
 const ADMITTED_ROUTES = new Set((admissionPayload.pages || []).filter((p) => p.publication_status === 'ADMITTED').map((p) => p.path));
 
 const INTERNAL_DIRS = new Set([
-  '.build', '.cache', '.git', '.github', '.wrangler', 'artifacts', 'content', 'data',
-  'distribution_scripts', 'docs', 'logs', 'node_modules', 'reports', 'scripts', 'staging',
-  'templates', 'tmp'
+  '.build', '.build-cache', '.cache', '.git', '.github', '.wrangler', 'artifacts', 'content',
+  'data', 'distribution_scripts', 'docs', 'logs', 'node_modules', 'reports', 'scripts',
+  'staging', 'templates', 'tmp'
 ]);
 
 const PUBLIC_ROOT_FILES = new Set([

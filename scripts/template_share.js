@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
-const SKIP = /(^|\/)(node_modules|\.git|dist|\.pages-output|artifacts|coverage|_site|\.build|\.validation-cache)(\/|$)/;
+const SKIP = /(^|\/)(node_modules|\.git|dist|\.pages-output|artifacts|coverage|_site|\.build|\.validation-cache|\.build-cache)(\/|$)/;
 const SAMPLE = Number(process.env.TEMPLATE_SHARE_SAMPLE || 140);
 const CEILING = Number(process.env.TEMPLATE_SHARE_CEILING || 0.40);
 const EVIDENCE = 'reports/cadence/template-share.json';

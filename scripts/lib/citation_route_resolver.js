@@ -54,7 +54,11 @@ function walkHtml(dir, prefix='', out=[]) {
 }
 function titleOf(file) { try { const text=fs.readFileSync(rel(file),'utf8'); return (text.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)||text.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)||[])[1]?.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim() || ''; } catch { return ''; } }
 let ROUTE_REGISTRY_CACHE = null;
-const BUILD_OUTPUT_PREFIX = /^(?:dist|\.pages-output|node_modules|artifacts|coverage)\//;
+// .build-cache/ (scripts/lib/build_cache.js) snapshots full copies of every
+// rendered .html page under its own directory to restore on a cache hit -
+// the exact same "the page again under another prefix" duplication dist/
+// caused above, just from a gitignored cache store instead of a deploy dir.
+const BUILD_OUTPUT_PREFIX = /^(?:dist|\.pages-output|node_modules|artifacts|coverage|\.build-cache)\//;
 function buildRouteRegistry() {
   if (ROUTE_REGISTRY_CACHE) return ROUTE_REGISTRY_CACHE;
   const files = [...walkHtml('insights'), ...walkHtml('guides'), ...walkHtml('compare'), ...walkHtml('near-me'), ...walkHtml('')]
