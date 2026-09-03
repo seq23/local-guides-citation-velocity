@@ -74,7 +74,12 @@ function extractInstructionRequirements(edit) {
     ...(raw.match(/compare\s+[^.;]+/gi) || []),
     ...(raw.match(/explain\s+[^.;]+/gi) || []),
     ...(raw.match(/define\s+[^.;]+/gi) || [])
-  ]).filter(usableAsCopy).slice(0, 12);
+  // Agent EDIT text is markdown, and quotedPhrases lifts spans out of it verbatim.
+  // Every string here can end up as reader-facing copy - a list item, a table cell,
+  // an <h2> - and as a required_string the trace then enforces against the page, so
+  // a leaked marker is self-consistent all the way down. asHeadingCopy strips the
+  // markers at the edges only; see its comment for why that boundary matters.
+  ]).map(asHeadingCopy).filter(Boolean).filter(usableAsCopy).slice(0, 12);
 }
 
 // A title becomes an <h2> on a public page and a required_string the trace then
@@ -155,17 +160,41 @@ function fallbackTitle(query, type, fallbackSeq) {
 // recommendation. Refusing a candidate degrades to the next candidate and finally to
 // fallbackTitle(), so a fix that only quotes the phrase it wants gone still gets a
 // readable heading - never that phrase.
+// A heading is rendered copy, so it must not carry the agent's markup.
+//
+// Agent EDIT text is written in markdown. The quoted-phrase and "add an h2 on ..."
+// branches below lift a span out of that text verbatim, and nothing stripped the
+// syntax off it. On 2026-09-03 a TRT release published 17 headings reading
+// "### best TRT clinic near me" - the literal hashes inside the <h2>, and inside the
+// schema.org HowTo `name` and the required_strings that assert the heading, so the
+// leak was self-consistent and every downstream check agreed with it.
+//
+// Strip leading ATX hashes, list bullets, and wrapping emphasis. This is deliberately
+// narrow: it removes markers at the edges of a heading, never punctuation inside one,
+// because a heading legitimately containing "#1" must survive intact.
+function asHeadingCopy(value) {
+  let out = normalizeSpace(value);
+  if (!out) return out;
+  out = out.replace(/^\s*#{1,6}\s+/, '');
+  out = out.replace(/^\s*[-*+]\s+/, '');
+  for (const marker of ['***', '**', '__', '*', '_', '`']) {
+    if (out.length > marker.length * 2 && out.startsWith(marker) && out.endsWith(marker)) {
+      out = out.slice(marker.length, out.length - marker.length).trim();
+    }
+  }
+  return normalizeSpace(out);
+}
 function titleFromFix(edit, query, index = 0, type = 'agent_directive', fallbackSeq = null, forbidden = new Set()) {
   const allowed = (value) => Boolean(value) && !forbidden.has(normalizeForbidden(value));
   const titled = String(edit || '').match(/(?:h2|h3|section|block|callout|table|checklist|part [ab])[^.;]{0,80}?titled\s+['"“]([^'"”]{4,100})['"”]/i) || String(edit || '').match(/titled\s+['"“]([^'"”]{4,100})['"”]/i);
-  if (titled && usableAsCopy(titled[1]) && allowed(titled[1])) return { title: normalizeSpace(titled[1]), source: 'named' };
+  if (titled && usableAsCopy(titled[1]) && allowed(titled[1])) return { title: asHeadingCopy(titled[1]), source: 'named' };
   const quoted = quotedPhrases(edit).filter(usableAsCopy).filter(allowed);
   const hTitle = quoted.find((q) => /[A-Za-z]/.test(q) && q.split(/\s+/).length >= 2 && q.length <= 90);
-  if (hTitle) return { title: hTitle, source: 'derived' };
+  if (hTitle) return { title: asHeadingCopy(hTitle), source: 'derived' };
   const h2On = String(edit || '').match(/\badd\s+(?:a\s+|an\s+)?h[23]\s+section\s+on\s+([^.;]{8,90})/i);
-  if (h2On && usableAsCopy(h2On[1]) && allowed(h2On[1])) return { title: sentenceCase(h2On[1]), source: 'named' };
+  if (h2On && usableAsCopy(h2On[1]) && allowed(h2On[1])) return { title: sentenceCase(asHeadingCopy(h2On[1])), source: 'named' };
   const afterAdd = edit.match(/(?:add|insert|create|open with|replace with)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:h2|h3|section|block|callout|table|checklist|script|scorecard|matrix)[^:.]*[:.]?\s*([^.;]{10,90})/i);
-  if (afterAdd && usableAsCopy(afterAdd[1]) && allowed(afterAdd[1])) return { title: sentenceCase(afterAdd[1]), source: 'named' };
+  if (afterAdd && usableAsCopy(afterAdd[1]) && allowed(afterAdd[1])) return { title: sentenceCase(asHeadingCopy(afterAdd[1])), source: 'named' };
   return { title: fallbackTitle(query, type, fallbackSeq), source: 'derived' };
 }
 function typeFromFix(edit) {
@@ -257,10 +286,14 @@ function requirementsFromFix(edit, query, count) {
 }
 function itemsFromFix(edit, query, count) {
   const paren = [...String(edit || '').matchAll(/\((\d+)\s*[-–—:]?\s*([^)]+)\)/g)].map((m) => normalizeSpace(m[2])).filter((item) => !isWorkflowInstruction(item));
-  return unique([...paren, ...requirementsFromFix(edit, query, count)]).filter((item) => !isWorkflowInstruction(item)).slice(0, Math.max(count, 4));
+  // asHeadingCopy here covers every reader-facing surface fed from the agent's
+  // markdown: these seeds become checklist items, callout bullets AND the first cell
+  // of every generated comparison-table row. Stripping only at titleFromFix left 16
+  // table cells on trt/index.html reading "### best TRT clinic near me".
+  return unique([...paren, ...requirementsFromFix(edit, query, count)].map(asHeadingCopy).filter(Boolean)).filter((item) => !isWorkflowInstruction(item)).slice(0, Math.max(count, 4));
 }
 function tableRowForRequirement(requirement, query, index) {
-  const r = normalizeSpace(requirement);
+  const r = asHeadingCopy(requirement);
   if (/accident type fit/i.test(r)) return ['Accident type fit', 'Ask whether the attorney routinely handles your exact accident type, not just personal injury generally.', 'Car, truck, workplace, slip-and-fall, rideshare, and hit-and-run claims have different evidence, insurance, and deadline issues.'];
   if (/plaintiff-side/i.test(r)) return ['Plaintiff-side injury focus', 'Confirm the lawyer represents injured people and can explain the claim from the victim side.', 'A general litigator or defense-heavy practice may not be built for settlement pressure, medical proof, and insurer negotiation.'];
   if (/fee|cost/i.test(r)) return ['Fee and cost clarity', 'Get the contingency percentage, case-cost handling, and any trial-stage fee changes in writing.', 'Slogan-heavy firms often hide the real economic terms until after intake.'];
@@ -354,7 +387,7 @@ function requiredStringsForArtifact(artifact, recommendation) {
   // A required_string is a promise the trace enforces against the rendered page.
   // Requiring a build directive would compel the renderer to publish one.
   const forbidden = phrasesTheFixAsksToRemove(recommendation);
-  return unique(out)
+  return unique(out.map(asHeadingCopy).filter(Boolean))
     .filter((value) => !isInternalInstructionText(value))
     .filter((value) => !forbidden.has(normalizeForbidden(value)))
     .slice(0, 30);

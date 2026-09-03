@@ -171,12 +171,32 @@ jobs:
           # the governed 2 new URLs a day, and a run with nothing to do exits on
           # its own named stop.
           BACKLOG=$(node -e 'try{console.log((require("./data/content/unbuilt_rich_page_backlog.json").routes||[]).filter(r=>String(r.disposition||"").toUpperCase()==="AWAITING_RELEASE_LANE").length)}catch{console.log(0)}')
-          if [ "$COUNT" -gt 0 ] || [ "$BACKLOG" -gt 0 ]; then
-            echo "measured demand produced $COUNT candidate(s); $BACKLOG route(s) await the release lane in the unbuilt backlog; dispatching Velocity Content Release"
+          # The third reason, and the one that makes a landed artifact safe: an
+          # agent run that is still waiting to be absorbed.
+          #
+          # Velocity Content Release triggers on the push that ADDS a manifest.
+          # That is one attempt. On 2026-09-02 the TRT run landed at 13:51, the
+          # lane ran at 13:52 on that exact sha and died at validate:release on
+          # the recovery-store midnight defect; absorption and publish never ran,
+          # the manifest stayed READY_FOR_ABSORPTION and trt/index.html was
+          # untouched. Nothing retried, because a retry needs a NEW manifest and
+          # that manifest had already landed. The defect was fixed and merged
+          # three hours later and the artifact was still stranded: the fix had
+          # nothing to run on.
+          #
+          # A schedule on the release lane itself is not available - this repo
+          # permits exactly one scheduled committer and workflow-runtime-mutations
+          # enforces it - so the catch-up belongs here, in the lane that already
+          # holds that permission and already dispatches for two other reasons.
+          # The release lane's absorption step re-walks every manifest on disk, so
+          # a dispatch IS the retry; nothing else has to change.
+          PENDING=$(node scripts/citation_velocity/count_unabsorbed_agent_runs.mjs)
+          if [ "$COUNT" -gt 0 ] || [ "$BACKLOG" -gt 0 ] || [ "$PENDING" -gt 0 ]; then
+            echo "measured demand produced $COUNT candidate(s); $BACKLOG route(s) await the release lane in the unbuilt backlog; $PENDING landed agent run(s) are still unabsorbed; dispatching Velocity Content Release"
             gh workflow run velocity-content-release.yml --ref main
           else
             REASON=$(node -e 'try{console.log(require("./data/queries/measured_demand_candidates.json").stop_reason||"unstated")}catch{console.log("candidates file unreadable")}')
-            echo "no candidates this run and the unbuilt backlog is empty; not dispatching. Named stop: $REASON"
+            echo "no candidates this run, the unbuilt backlog is empty, and every landed agent run is absorbed; not dispatching. Named stop: $REASON"
           fi
 
       - name: Upload evidence snapshot

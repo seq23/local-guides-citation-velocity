@@ -29,8 +29,41 @@ function inferVertical(spec) {
 function main() {
   const plan = readJson(PLAN_PATH, { specs: [] });
   const specs = (plan.specs || []).filter((spec) => spec && spec.status === 'PLANNED' && spec.operation === 'REPAIR_INTENDED_WINNER_PAGE');
-  const compile = (spec) => authorityGroundedEntryForSpec(spec) || compileEntryFromSpec(spec);
-  const compiled = specs.map(compile);
+  // FAIL BEFORE WRITE: NEVER EMIT A uscis-medical ENTRY THAT IS NOT AUTHORITY-GROUNDED.
+  //
+  // validate_html_fix_acceptance_compiler.js hard-fails any entry under uscis-medical/
+  // that lacks authority_grounded, authority_source_ids and authority_urls - immigration
+  // guidance has to be tied to primary sources, and the generic compiler cannot author
+  // that grounding. authority_grounded_repairs.js covers the routes that have been
+  // written and source-checked by hand; anything else fell through to the generic
+  // compiler, which produced a well-formed entry the very next validator was guaranteed
+  // to reject.
+  //
+  // That stayed latent only because no ungrounded uscis route had been planned since
+  // the check was written. On 2026-09-03 the fix-ledger reconciliation returned
+  // uscis-medical/timeline-validity/ to the selection queue, the compiler emitted an
+  // ungrounded entry for it, and the release lane went red one step later on a manifest
+  // it had just written itself.
+  //
+  // Refusing here is the repo's own "generate candidate -> validate -> write" law. The
+  // spec is not silently dropped: it is reported as a named refusal, so the route stays
+  // visible as work that needs a grounded entry authored rather than disappearing.
+  const ungroundedUscis = [];
+  const compile = (spec) => {
+    const grounded = authorityGroundedEntryForSpec(spec);
+    if (grounded) return grounded;
+    const implPath = String(spec.implementation_path || spec.intended_winner_path || '');
+    if (implPath.startsWith('uscis-medical/')) {
+      ungroundedUscis.push({ implementation_path: implPath, record_id: spec.record_id || '', run_date: spec.run_date || '' });
+      return null;
+    }
+    return compileEntryFromSpec(spec);
+  };
+  const compiled = specs.map(compile).filter(Boolean);
+  if (ungroundedUscis.length) {
+    console.warn(`HTML FIX ACCEPTANCE COMPILER: refused ${ungroundedUscis.length} uscis-medical spec(s) with no authority-grounded entry in scripts/lib/authority_grounded_repairs.js. They are NOT compiled, because an ungrounded uscis entry is one the acceptance validator is guaranteed to reject. Author a grounded entry for each route to release it:`);
+    for (const row of ungroundedUscis) console.warn(`  - ${row.implementation_path} (record ${row.record_id || 'unknown'}, run ${row.run_date || 'unknown'})`);
+  }
 
   // The manifest is DURABLE, not a per-run snapshot.
   //

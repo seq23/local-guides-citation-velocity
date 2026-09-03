@@ -326,6 +326,6 @@ module.exports = {
   normalizeRoute, implementationPathToRoute, routeToRenderedRel,
   loadRegistry, saveRegistry, seedAcceptedPages, freezeRoute, freezeNewAdmitted,
   restoreFrozenPages, verifyFrozenPages, pruneFrozenCache, beginMutationScope, acceptMutationScope,
-  rollbackMutationScope, queueMutationRoutes, consumePendingMutationRoutes,
+  rollbackMutationScope, queueMutationRoutes, consumePendingMutationRoutes, mutableRouteSet,
   applyFrozenMetadataToEntries, ensureFrozenInventoryEntries
 };

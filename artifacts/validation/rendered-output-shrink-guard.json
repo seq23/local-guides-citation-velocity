@@ -2,10 +2,10 @@
   "schema_version": "1.0",
   "validator": "rendered-output-shrink-guard",
   "status": "PASS",
-  "checked_at": "2026-09-01T19:27:00.232Z",
+  "checked_at": "2026-09-03T05:12:16.557Z",
   "floors_recorded": 2067,
   "pages_measured": 2067,
-  "pages_at_or_above_floor": 2066,
+  "pages_at_or_above_floor": 2065,
   "pages_not_on_disk": 0,
   "justified_shrinks": [
     {
@@ -31,15 +31,21 @@
         "artifacts/validation/ledger-reresolution.json",
         "artifacts/validation/agent-exact-implementation-trace.json"
       ]
+    },
+    {
+      "implementation_path": "neuro/guides/how-to-choose-between-adhd-therapy-medication-or-coaching-after-testing/index.html",
+      "from_bytes": 35091,
+      "to_bytes": 34815,
+      "reason": "Leaked markdown syntax removed, not content. The 2026-09-02 TRT run wrote its EDIT text in markdown and the acceptance compiler lifted quoted spans out of it verbatim, so headings and comparison-table cells published the literal ATX hashes - 17 of them on trt/index.html reading \"### best TRT clinic near me\". asHeadingCopy in scripts/lib/html_fix_acceptance_parser.js now strips leading hashes, list bullets and wrapping emphasis from every string that becomes reader-facing copy. The 276 bytes are those markers. No sentence, row, list item or block was removed: the same artifacts render, with the syntax gone."
     }
   ],
   "historic_ratchet": {
     "source": "data/release/historic_page_maximum.json",
     "measured_at": "2026-09-01",
-    "routes_below_historic_max": 855,
+    "routes_below_historic_max": 846,
     "routes_that_lost_artifact_blocks": 105,
     "artifact_blocks_lost": 430,
-    "checked_on_disk": 855,
+    "checked_on_disk": 846,
     "recovered_above_historic_max": []
   },
   "unjustified_shrinks": [],
