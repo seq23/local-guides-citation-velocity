@@ -7345,6 +7345,143 @@
       ],
       "why_existing_checks_do_not_cover": "agent-exact-implementation-plan validates that carried rows are RECORDED. Nothing compared the reason recorded against the disposition the intake actually took, so a uniformly-applied default reason passed every check while contradicting the ledger one directory away.",
       "estimated_runtime_seconds": 3
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 45,
+      "timeout_seconds": 600,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "internal-link-inbound-coverage",
+      "title": "Published pages have an inbound internal link from a served page",
+      "path": "scripts/validators/validate_internal_link_inbound_coverage.js",
+      "command": "node scripts/validators/validate_internal_link_inbound_coverage.js",
+      "tags": [
+        "internal-links",
+        "orphan",
+        "reachability",
+        "release"
+      ],
+      "risk_prevented": "theindustryguides.com is the velocity feeder: it earns the citation and routes to the generated packs, so a page nothing links to can never pass that authority on. Ahrefs found 18 such pages on 2026-09-03 while every in-repo mechanism reported success - buildLinkCoveragePlan counted 125 adoptions placed, and the anchors really were in the rendered HTML of the hosts. 15 of the 18 were linked exclusively from routes that answer 301, whose files still sit on disk and still render the anchor; the other 3 were placed on FROZEN routes and overwritten back to their accepted bytes by the same build. This fails if any published, indexable, non-redirected page has no inbound link from a page a crawler is actually served.",
+      "why_existing_checks_do_not_cover": "admission-reachability asks whether a released page is in the sitemap; all 18 orphans were. rendered-internal-hrefs asks whether the hrefs on a page resolve; every href on every host resolved. Neither asks whether any SERVED page carries a link to a given page, and neither discounts a link carried by a route that answers a redirect - which is the condition 15 of the 18 turned on.",
+      "requires_files": [
+        "_redirects",
+        "sitemaps/sitemap_all.xml",
+        "data/content/internal_link_inbound_baseline.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/internal-link-inbound-coverage.json"
+      ],
+      "mutates_files": []
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 600,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "agent-fix-ledger-truthfulness",
+      "title": "A fix recorded as released is shown by its page",
+      "path": "scripts/validators/validate_agent_fix_ledger_truthfulness.js",
+      "command": "node scripts/validators/validate_agent_fix_ledger_truthfulness.js",
+      "tags": [
+        "agent-artifact",
+        "ledger",
+        "delivery",
+        "release"
+      ],
+      "risk_prevented": "finalize_content_release.js marked a recommendation RELEASED_VERIFIED whenever its ROUTE completed a freeze transaction, which says nothing about whether the requested edit reached the page. On 2026-09-02 all 51 rows of a TRT run were marked released because trt/index.html was thawed for an unrelated spec; 12 of their required_markers were absent and stayed absent. That mark is terminal - prepare_velocity_intake_release.js excludes released ids from selection forever - so the work was recorded as delivered and retired unworked. Across the whole ledger 668 of 2,558 released claims were not shown by their pages. This fails if any fix claiming a released status is missing a required_marker from its rendered file.",
+      "why_existing_checks_do_not_cover": "agent-run-absorption-completeness joins a run's named FILEPATH against the exact-implementation ledger on PATH, with no date or record linkage, so a target absorbed by a July run makes today's run for the same file report absorbed. agent-artifact-continuity proves a run was normalized. Neither opens the rendered page and checks the text the recommendation said had to be there.",
+      "requires_files": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/report_fixes/agent_fix_ledger_truthfulness_baseline.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-fix-ledger-truthfulness.json"
+      ],
+      "mutates_files": [],
+      "repair_command": "npm run recover:fix-ledger-truthfulness",
+      "repair_writes": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/report_fixes/agent_artifact_disposition_ledger.json"
+      ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "agent-artifact-stranding",
+      "title": "No landed agent artifact sits pending longer than one release cadence",
+      "path": "scripts/validators/validate_agent_artifact_stranding.js",
+      "command": "node scripts/validators/validate_agent_artifact_stranding.js",
+      "tags": [
+        "agent-artifact",
+        "cadence",
+        "workflow",
+        "release"
+      ],
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
+      "requires_files": [
+        ".github/workflows/query-evidence-refresh.yml",
+        "data/report_fixes/agent_runs"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-artifact-stranding.json"
+      ],
+      "mutates_files": []
     }
   ],
   "legacy_policy": {

@@ -138,7 +138,7 @@
     "validate:page-release-law": "node scripts/validation/run_validation_registry.js --id page-release-law",
     "validate:agent-run-intake": "node scripts/validation/run_validation_registry.js --id agent-run-artifact-intake",
     "citation:prepare-velocity-intake": "node scripts/citation_velocity/prepare_velocity_intake_release.js",
-    "release:velocity-intake": "npm run validate:agent-run-intake && npm run citation:prepare-velocity-intake && npm run validate:seo-execution && npm run citation:apply-html-report-contract && npm run validate:html-report-contract && npm run validate:velocity-agent-source-coverage && npm run validate:velocity-agent-duplicate-resolution && npm run validate:page-family-contract && npm run validate:validator-authority && npm run validate:velocity-route-resolution-self-test && npm run citation:plan-agent-exact && npm run citation:compile-html-fix-acceptance && npm run release:velocity-content && npm run citation:apply-agent-exact && npm run citation:sync-alias-redirects && npm run release:content-finalize && npm run validate:velocity-agent-recommendation-driven-output && npm run trace:agent-exact && npm run validate:agent-exact && npm run trace:citation-agent-fixes && npm run validate:citation-agent-fixes && npm run validate:velocity-intake-workflow && npm run test:agent-artifact-accounting && npm run trace:agent-artifact-data-flow",
+    "release:velocity-intake": "npm run validate:agent-run-intake && npm run citation:prepare-velocity-intake && npm run validate:seo-execution && npm run citation:apply-html-report-contract && npm run validate:html-report-contract && npm run validate:velocity-agent-source-coverage && npm run validate:velocity-agent-duplicate-resolution && npm run validate:page-family-contract && npm run validate:validator-authority && npm run validate:velocity-route-resolution-self-test && npm run citation:plan-agent-exact && npm run citation:compile-html-fix-acceptance && npm run release:velocity-content && npm run citation:apply-agent-exact && npm run citation:sync-alias-redirects && npm run link:queue-orphan-hosts && npm run release:content-finalize && npm run validate:velocity-agent-recommendation-driven-output && npm run trace:agent-exact && npm run validate:agent-exact && npm run trace:citation-agent-fixes && npm run validate:citation-agent-fixes && npm run validate:velocity-intake-workflow && npm run test:agent-artifact-accounting && npm run trace:agent-artifact-data-flow",
     "validate:velocity-intake-workflow": "node scripts/validation/run_validation_registry.js --id velocity-intake-workflow",
     "release:batch50": "node scripts/release_batch.js 50",
     "release:batch100": "node scripts/release_batch.js 100",
@@ -296,7 +296,13 @@
     "baseline:rendered-size": "node scripts/release/update_rendered_size_baseline.js",
     "validate:shrink-guard": "node scripts/validation/run_validation_registry.js --id rendered-output-shrink-guard",
     "validate:removal-directives": "node scripts/validation/run_validation_registry.js --id removal-directive-not-published",
-    "validate:medical-schema": "node scripts/validation/run_validation_registry.js --id medical-schema-emission"
+    "validate:medical-schema": "node scripts/validation/run_validation_registry.js --id medical-schema-emission",
+    "link:queue-orphan-hosts": "node scripts/link_coverage/queue_orphan_adoption_hosts.js --apply",
+    "link:audit-orphan-hosts": "node scripts/link_coverage/queue_orphan_adoption_hosts.js",
+    "validate:internal-link-inbound": "node scripts/validation/run_validation_registry.js --id internal-link-inbound-coverage",
+    "recover:fix-ledger-truthfulness": "node scripts/citation_velocity/recover_fix_ledger_truthfulness.js",
+    "validate:fix-ledger-truthfulness": "node scripts/validation/run_validation_registry.js --id agent-fix-ledger-truthfulness",
+    "validate:agent-artifact-stranding": "node scripts/validation/run_validation_registry.js --id agent-artifact-stranding"
   },
   "engines": {
     "node": "24.x"

@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-01T19:27:27.477Z",
+  "generated_at": "2026-09-03T05:13:36.847Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -452,9 +452,15 @@
           ]
         },
         {
-          "command": "COUNT=$(node -e 'try{console.log((require(\"./data/queries/measured_demand_candidates.json\").candidates||[]).length)}catch{console.log(0)}')\n# The second reason to wake the release lane: routes that were admitted\n# for build and never built.\n#\n# This step used to dispatch only when the measured atlas produced a\n# candidate. That is the only lane it knew about, and the atlas has\n# produced nothing for weeks - so the release lane was not running, so\n# the 136-route unbuilt backlog could not have drained even after\n# build_page_release_queue.js was taught to offer it. Wiring a consumer\n# to a lane that never wakes is not a drain.\n#\n# The backlog is drainable when it holds AWAITING_RELEASE_LANE entries.\n# Nothing about the ceiling changes: the lane still publishes at most\n# the governed 2 new URLs a day, and a run with nothing to do exits on\n# its own named stop.\nBACKLOG=$(node -e 'try{console.log((require(\"./data/content/unbuilt_rich_page_backlog.json\").routes||[]).filter(r=>String(r.disposition||\"\").toUpperCase()===\"AWAITING_RELEASE_LANE\").length)}catch{console.log(0)}')\nif [ \"$COUNT\" -gt 0 ] || [ \"$BACKLOG\" -gt 0 ]; then\necho \"measured demand produced $COUNT candidate(s); $BACKLOG route(s) await the release lane in the unbuilt backlog; dispatching Velocity Content Release\"\ngh workflow run velocity-content-release.yml --ref main\nelse\nREASON=$(node -e 'try{console.log(require(\"./data/queries/measured_demand_candidates.json\").stop_reason||\"unstated\")}catch{console.log(\"candidates file unreadable\")}')\necho \"no candidates this run and the unbuilt backlog is empty; not dispatching. Named stop: $REASON\"\nfi",
+          "command": "COUNT=$(node -e 'try{console.log((require(\"./data/queries/measured_demand_candidates.json\").candidates||[]).length)}catch{console.log(0)}')\n# The second reason to wake the release lane: routes that were admitted\n# for build and never built.\n#\n# This step used to dispatch only when the measured atlas produced a\n# candidate. That is the only lane it knew about, and the atlas has\n# produced nothing for weeks - so the release lane was not running, so\n# the 136-route unbuilt backlog could not have drained even after\n# build_page_release_queue.js was taught to offer it. Wiring a consumer\n# to a lane that never wakes is not a drain.\n#\n# The backlog is drainable when it holds AWAITING_RELEASE_LANE entries.\n# Nothing about the ceiling changes: the lane still publishes at most\n# the governed 2 new URLs a day, and a run with nothing to do exits on\n# its own named stop.\nBACKLOG=$(node -e 'try{console.log((require(\"./data/content/unbuilt_rich_page_backlog.json\").routes||[]).filter(r=>String(r.disposition||\"\").toUpperCase()===\"AWAITING_RELEASE_LANE\").length)}catch{console.log(0)}')\n# The third reason, and the one that makes a landed artifact safe: an\n# agent run that is still waiting to be absorbed.\n#\n# Velocity Content Release triggers on the push that ADDS a manifest.\n# That is one attempt. On 2026-09-02 the TRT run landed at 13:51, the\n# lane ran at 13:52 on that exact sha and died at validate:release on\n# the recovery-store midnight defect; absorption and publish never ran,\n# the manifest stayed READY_FOR_ABSORPTION and trt/index.html was\n# untouched. Nothing retried, because a retry needs a NEW manifest and\n# that manifest had already landed. The defect was fixed and merged\n# three hours later and the artifact was still stranded: the fix had\n# nothing to run on.\n#\n# A schedule on the release lane itself is not available - this repo\n# permits exactly one scheduled committer and workflow-runtime-mutations\n# enforces it - so the catch-up belongs here, in the lane that already\n# holds that permission and already dispatches for two other reasons.\n# The release lane's absorption step re-walks every manifest on disk, so\n# a dispatch IS the retry; nothing else has to change.\nPENDING=$(node scripts/citation_velocity/count_unabsorbed_agent_runs.mjs)\nif [ \"$COUNT\" -gt 0 ] || [ \"$BACKLOG\" -gt 0 ] || [ \"$PENDING\" -gt 0 ]; then\necho \"measured demand produced $COUNT candidate(s); $BACKLOG route(s) await the release lane in the unbuilt backlog; $PENDING landed agent run(s) are still unabsorbed; dispatching Velocity Content Release\"\ngh workflow run velocity-content-release.yml --ref main\nelse\nREASON=$(node -e 'try{console.log(require(\"./data/queries/measured_demand_candidates.json\").stop_reason||\"unstated\")}catch{console.log(\"candidates file unreadable\")}')\necho \"no candidates this run, the unbuilt backlog is empty, and every landed agent run is absorbed; not dispatching. Named stop: $REASON\"\nfi",
           "status": "PASS",
-          "checks": [],
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/citation_velocity/count_unabsorbed_agent_runs.mjs",
+              "ok": true
+            }
+          ],
           "direct_npm_scripts": [],
           "transitive_npm_scripts": []
         }
@@ -986,6 +992,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/link_coverage/queue_orphan_adoption_hosts.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/release/finalize_content_release.js",
               "ok": true
             },
@@ -1061,6 +1072,7 @@
             "citation:plan-agent-exact",
             "citation:prepare-velocity-intake",
             "citation:sync-alias-redirects",
+            "link:queue-orphan-hosts",
             "release:content-finalize",
             "release:velocity-content",
             "release:velocity-content:raw",

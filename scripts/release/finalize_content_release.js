@@ -15,6 +15,43 @@ function currentRepairSpecs(){
  return (plan.specs||[]).filter((spec)=>spec.operation==='REPAIR_INTENDED_WINNER_PAGE'&&spec.status==='PLANNED');
 }
 function repairRoute(spec){return implementationPathToRoute(spec.target_route||spec.implementation_path||'');}
+// A ROUTE COMPLETING A FREEZE TRANSACTION IS NOT EVIDENCE THE RECOMMENDATION LANDED.
+//
+// This marked every record attached to an accepted route RELEASED_VERIFIED on route
+// acceptance alone. "Accepted" means the route was thawed, rebuilt and refrozen. It
+// says nothing about whether the edit the agent asked for is on the page.
+//
+// 2026-09-02: a TRT run landed 51 recommendations, all against trt/index.html. The
+// route was thawed for an unrelated repair spec and refrozen, so all 51 were recorded
+// RELEASED_VERIFIED. Twelve of their required_markers were not on the page and still
+// are not - among them the comparison matrix for "TRT injections vs gel". The mark is
+// not cosmetic: prepare_velocity_intake_release.js excludes RELEASED_VERIFIED ids from
+// selection permanently, so those twelve recommendations could never be worked again.
+// The fix ledger reported delivery, the disposition ledger reported
+// QUEUED_FOR_FUTURE_RELEASE, and nothing compared either to the page.
+//
+// Every fix already declares required_markers: the text that must be on the rendered
+// page for the recommendation to be satisfied. That declaration is the test. A fix
+// whose markers are absent is recorded ACCEPTED_ROUTE_MARKERS_ABSENT - honest, visible,
+// and still selectable, so a later release can actually work it.
+function markersPresent(fix){
+ const rendered=fix.renderedPath||'';
+ if(!rendered)return false;
+ const abs=path.join(ROOT,rendered);
+ if(!fs.existsSync(abs))return false;
+ const markers=Array.isArray(fix.required_markers)?fix.required_markers.filter(Boolean):[];
+ // No declared marker means there is nothing to verify against. That is unproven, not
+ // proven: a fix that cannot say what it would change is the "runs but inert" shape
+ // this check exists to stop, and defaulting it to true would reopen the whole hole.
+ if(!markers.length)return false;
+ const html=fs.readFileSync(abs,'utf8');
+ const decoded=html.replace(/&#8212;/g,'—').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&');
+ return markers.every((marker)=>{
+   const raw=String(marker);
+   const encoded=raw.replace(/—/g,'&#8212;');
+   return html.includes(raw)||decoded.includes(raw)||html.includes(encoded)||decoded.includes(encoded);
+ });
+}
 function markCompletedAgentRepairs(acceptedRoutes){
  const accepted=new Set((acceptedRoutes||[]).map(implementationPathToRoute));
  const ids=new Set();
@@ -24,13 +61,37 @@ function markCompletedAgentRepairs(acceptedRoutes){
    for(const id of [...(spec.record_ids||[spec.record_id])].filter(Boolean))ids.add(id);
  }
  const ledger=readJson('data/report_fixes/agent_fix_ledger.json',{fixes:[]});
- let changed=0;
- for(const fix of ledger.fixes||[]){if(!ids.has(fix.id))continue;fix.implementation_status='RELEASED_VERIFIED';fix.completed_at=DATE;fix.after_hash=fileHash(fix.renderedPath||'');changed++;}
+ let changed=0;let unproven=0;const unprovenIds=new Set();
+ for(const fix of ledger.fixes||[]){
+   if(!ids.has(fix.id))continue;
+   fix.after_hash=fileHash(fix.renderedPath||'');
+   fix.marker_checked_at=DATE;
+   if(!markersPresent(fix)){
+     fix.implementation_status='ACCEPTED_ROUTE_MARKERS_ABSENT';
+     fix.marker_verification='required_markers_not_found_on_rendered_page';
+     unprovenIds.add(fix.id);unproven++;
+     continue;
+   }
+   fix.implementation_status='RELEASED_VERIFIED';fix.completed_at=DATE;
+   fix.marker_verification='required_markers_present_on_rendered_page';
+   changed++;
+ }
+ if(unproven)console.warn(`AGENT REPAIR COMPLETION: ${unproven} record(s) on accepted routes were NOT marked released - their required_markers are absent from the rendered page. They stay selectable so a later release can work them.`);
  ledger.updated_at=DATE;writeJson('data/report_fixes/agent_fix_ledger.json',ledger);
  const dispositions=readJson('data/report_fixes/agent_artifact_disposition_ledger.json',{entries:[]});
- for(const entry of dispositions.entries||[]){if(ids.has(entry.id)){entry.disposition='RELEASED_VERIFIED';entry.selected_for_release=false;entry.completed_at=DATE;}}
+ for(const entry of dispositions.entries||[]){
+   if(!ids.has(entry.id))continue;
+   if(unprovenIds.has(entry.id)){
+     // Do not clear selected_for_release here. The recommendation was not delivered,
+     // so it has to remain visible to the next selection pass rather than being
+     // retired into the same silence the released rows go to.
+     entry.disposition='ACCEPTED_ROUTE_MARKERS_ABSENT';entry.completed_at=null;
+     continue;
+   }
+   entry.disposition='RELEASED_VERIFIED';entry.selected_for_release=false;entry.completed_at=DATE;
+ }
  dispositions.updated_at=DATE;writeJson('data/report_fixes/agent_artifact_disposition_ledger.json',dispositions);
- return {record_ids_marked:changed};
+ return {record_ids_marked:changed,record_ids_unproven:unproven};
 }
 
 function run(command){console.log(`\n$ ${command}`);const r=cp.spawnSync(command,{cwd:ROOT,shell:true,stdio:'inherit',env:{...process.env,SOURCE_DATE:DATE,NODE_OPTIONS:process.env.NODE_OPTIONS||'--max-old-space-size=3072'}});if(r.status!==0)throw new Error(`command_failed:${command}:${r.status}`);}

@@ -55,7 +55,7 @@ const { isMedicalHubRoute, medicalWebPageNode, costSpecificationTable, pageRoute
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
-const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute } = require('./lib/frozen_pages');
+const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute, mutableRouteSet } = require('./lib/frozen_pages');
 const { isPubliclyAdmitted, isEvidenceOnly, admittedRoutes, renderedButNotPublic } = require('./lib/page_admission');
 // Answer shape: the heading a searcher would have typed, decided for the whole
 // inventory at once so that re-shaping cannot collide two routes on one h1.
@@ -472,6 +472,65 @@ function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
     const registry = loadJson(path.join(ROOT, 'data/content/offtopic_route_quarantine.json'));
     for (const item of registry.items || []) if (item && item.route) quarantined.add(item.route);
   } catch { /* no quarantine registry: nothing is deliberately unreachable */ }
+  // A HOST HAS TO BE ABLE TO DELIVER THE LINK.
+  //
+  // Ahrefs, 2026-09-03: 18 orphan pages. This plan reported 125 adoptions placed and
+  // the anchors were present in the rendered HTML of every host. Both facts were
+  // true and neither meant a crawler could follow the link, because host choice was
+  // pure similarity ranking and two whole classes of route cannot deliver:
+  //
+  //   - A route that is a source line in _redirects answers 301. Its file is still
+  //     on disk and still renders the anchor, so every in-repo measure sees a link
+  //     that no crawler is ever served. 15 of the 18 orphans were "linked" only from
+  //     such a page.
+  //   - A route that is FROZEN and outside the active mutation scope is rendered
+  //     with the new anchor and then overwritten back to its accepted bytes by
+  //     restoreFrozenPages() at the end of this same build. All 2,067 published
+  //     routes are FROZEN, so outside a governed release EVERY placement onto a live
+  //     page was silently discarded; the only adoptions that survived were the ones
+  //     landing on redirected pages, which is precisely the wrong half. That is the
+  //     remaining 3.
+  //
+  // Refusing both here makes the plan's count mean links rather than intentions.
+  // scripts/link_coverage/queue_orphan_adoption_hosts.js is the other half: it names
+  // the hosts a release must thaw so this filter has somewhere to place the orphans.
+  const undeliverableHosts = new Set();
+  try {
+    for (const line of fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const from = trimmed.split(/\s+/)[0];
+      if (from) undeliverableHosts.add(normalizeRoute(from));
+    }
+  } catch { /* no redirect map: nothing is redirected away */ }
+  try {
+    const mutable = mutableRouteSet();
+    const registry = loadJson(path.join(ROOT, 'data/release/frozen_page_registry.json'));
+    for (const record of registry.pages || []) {
+      if (!record || record.state !== 'FROZEN') continue;
+      const route = normalizeRoute(record.route);
+      if (!mutable.has(route)) undeliverableHosts.add(route);
+    }
+  } catch { /* no frozen registry: nothing is locked */ }
+  // EXPLICIT PLACEMENTS WIN OVER THIS FUNCTION'S OWN RANKING.
+  //
+  // scripts/link_coverage/queue_orphan_adoption_hosts.js decides where an orphan goes
+  // and thaws exactly that host so the anchor can be written. It ranked hosts on route
+  // tokens; this function ranks them on slug + title + description tokens. On the
+  // first repair pass the two disagreed often enough that 5 of 18 orphans stayed
+  // orphaned - the queue thawed one host and the build wrote to another, which was
+  // still frozen and therefore discarded the anchor. Honouring the recorded decision
+  // is what makes the thaw and the write name the same page.
+  const assignedHosts = new Map();
+  try {
+    const record = loadJson(path.join(ROOT, 'data/release/orphan_adoption_assignments.json'));
+    for (const item of record.assignments || []) {
+      if (!item || !item.orphan || !item.host) continue;
+      if (undeliverableHosts.has(normalizeRoute(item.host))) continue;
+      if (!assignedHosts.has(item.orphan)) assignedHosts.set(item.orphan, normalizeRoute(item.host));
+    }
+  } catch { /* no recorded placements: fall through to ranking alone */ }
+
   const chosen = new Map();
   for (const page of pages) {
     const explicit = Array.isArray(page.related_links)
@@ -492,13 +551,43 @@ function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
   const label = (p) => p.short_label || p.nav_label || p.title;
   const plan = new Map();
   const load = new Map();
-  const orphans = pages.filter((p) => inbound.get(p.slug) === 0 && !quarantined.has(p.slug));
+  const bySlug = new Map(pages.map((p) => [normalizeRoute(p.slug), p]));
+
+  // RECORDED PLACEMENTS ARE APPLIED FIRST, AND WITHOUT CONSULTING THE SIMULATION.
+  //
+  // `inbound` above counts the links this function WOULD write. It cannot tell a link
+  // written onto a served page from one written onto a route that answers 301 or a
+  // frozen route whose bytes get restored moments later, so a page with a real
+  // inbound count of zero routinely has a simulated count above zero and never enters
+  // the orphan list at all. That is why the second repair pass moved 5 orphans to 4:
+  // four of the five were invisible here, no matter which host had been thawed.
+  //
+  // The queue script measures the SERVED graph - the same authority the validator
+  // uses - so a placement it recorded is evidence this function's own simulation is
+  // wrong about that page. Apply it unconditionally, then let the simulation handle
+  // whatever it can still see.
+  const placedBySlug = new Set();
+  for (const [orphanSlug, hostRoute] of assignedHosts) {
+    const orphanPage = bySlug.get(normalizeRoute(orphanSlug));
+    const hostPage = bySlug.get(hostRoute);
+    if (!orphanPage || !hostPage || hostPage.slug === orphanPage.slug) continue;
+    if (quarantined.has(orphanPage.slug)) continue;
+    // A recorded placement is not subject to maxAdoptionsPerHost: the cap exists so
+    // ranking does not turn one page into a link dump, and a placement that has
+    // already been thawed for this release has nowhere else to go.
+    if (!plan.has(hostPage.slug)) plan.set(hostPage.slug, []);
+    plan.get(hostPage.slug).push({ slug: orphanPage.slug, label: label(orphanPage) });
+    load.set(hostPage.slug, (load.get(hostPage.slug) || 0) + 1);
+    placedBySlug.add(orphanPage.slug);
+  }
+
+  const orphans = pages.filter((p) => inbound.get(p.slug) === 0 && !quarantined.has(p.slug) && !placedBySlug.has(p.slug));
   for (const orphan of orphans) {
     // Rank candidate hosts by how much they resemble the orphan, using the
     // orphan's own ranking of the corpus - the relationship is symmetric enough
     // for this and it costs one pass rather than N.
     const candidates = buildAutoRelatedLinks(orphan, pages, 40)
-      .filter((c) => c.slug !== orphan.slug && !unsafeHosts.has(c.slug));
+      .filter((c) => c.slug !== orphan.slug && !unsafeHosts.has(c.slug) && !undeliverableHosts.has(normalizeRoute(c.slug)));
     let host = candidates.find((c) => (load.get(c.slug) || 0) < maxAdoptionsPerHost);
     if (!host) host = candidates.sort((a, b) =>
       (load.get(a.slug) || 0) - (load.get(b.slug) || 0))[0];
