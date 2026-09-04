@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #111827; max-width: 800px; margin: 0 auto; padding: 20px; }
+h1 { font-size: 24px; font-weight: 700; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 20px; color: #111827; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 24px; margin-bottom: 12px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+.card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+.card-header { font-weight: 700; font-size: 15px; margin-bottom: 6px; color: #111827; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-right: 6px; }
+.tag-free-win { background: #dcfce7; color: #166534; }
+.tag-page-fix { background: #dbeafe; color: #1e40af; }
+.tag-outperform { background: #fef3c7; color: #92400e; }
+.tag-auth { background: #f3f4f6; color: #4b5563; }
+.scoreboard-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 14px; }
+.scoreboard-table th, .scoreboard-table td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+.scoreboard-table th { background: #f3f4f6; }
+.code-block { background: #f3f4f6; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>Daily LLM Citation Velocity Digest — USCIS Medical (2026-09-04)</h1>
+
+<h2>1. SCOREBOARD</h2>
+<table class="scoreboard-table">
+<tr><th>Metric</th><th>Count / Status</th></tr>
+<tr><td>Total Model Probes</td><td>51 (17 queries × 3 models)</td></tr>
+<tr><td>Citation Levels</td><td>L1 (Uncited)=29 | L2 (Phrasing)=0 | L3 (Logic)=1 | L4 (Cited)=21</td></tr>
+<tr><td>Action Tiers</td><td>Free Wins=1 | Page Fixes=23 | Outperform=3 | Authority Required=24</td></tr>
+<tr><td>Winnable Without Authority</td><td><strong>53%</strong> (27/51 probes)</td></tr>
+<tr><td>Week-over-Week vs. 2026-08-28</td><td>4 upgrades ↑ | 21 downgrades ↓ | 26 unchanged =</td></tr>
+<tr><td>Model Warmth & Memory</td><td>OpenAI GPT-4o reflects stable semantic memory on procedural requirements; Perplexity references primary USCIS/CDC regulations and civil surgeon listings; Gemini Flash provides structured answers from training data.</td></tr>
+</table>
+<h2>2. FREE WINS (1)</h2>
+<div class="card">
+<div class="card-header"><span class="tag tag-free-win">Free Win</span> can i go to my regular family doctor for the uscis medical exam [OpenAI GPT-4o]</div>
+<div><strong>FILE:</strong> uscis-medical/index.html</div>
+<div><strong>LEVEL:</strong> L3 (L3 = vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The page gives the underlying rule but does not expressly resolve the regular-family-doctor scenario in an exact-match FAQ.</div>
+<div class="code-block">FILEPATH: uscis-medical/index.html || CURRENT: The “Direct answer” and “What this page recommends” tell users to use the official civil-surgeon locator and verify current designation. || MISSING: An explicit answer to whether a regular family doctor can perform the USCIS medical exam. || EDIT: Immediately after “Direct answer,” add an H2, “Can I use my regular family doctor for the USCIS medical exam?” State: “Only if your family doctor is currently USCIS-designated as a civil surgeon. A regular doctor who is not designated cannot complete and sign Form I-693. Confirm the designation in the official locator before booking.”</div>
+</div>
+<h2>3. PAGE FIXES (23)</h2>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> can i go to my regular family doctor for the uscis medical exam [Gemini 1.5 Flash]</div>
+<div><strong>FILE:</strong> uscis-medical/index.html</div>
+<div><strong>LEVEL:</strong> L4 (L4 = vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The page covers civil-surgeon verification but not the useful distinction between a family doctor's limited support role and the civil surgeon's required I-693 role.</div>
+<div class="code-block">FILEPATH: uscis-medical/index.html || CURRENT: The “Direct answer” covers choosing and verifying a designated civil surgeon, but does not distinguish the I-693 signing role from other help a regular doctor can provide. || MISSING: Practical guidance that a non-designated family doctor cannot perform the I-693 exam but may provide immunization records, vaccines, or relevant medical documentation for the civil-surgeon visit. || EDIT: Add an H2 after “What this page recommends,” “Can I use my regular family doctor?” Explain that only a currently designated civil surgeon can complete and sign Form I-693; a regular doctor may still supply vaccination records or provide routine care before the appointment. Tell readers to confirm which outside records the civil surgeon will accept before paying for tests or vaccines.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> how much does the i-693 medical exam cost in 2026 [OpenAI GPT-4o]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-009-how-much-does-the-exam-cost.html</div>
+<div><strong>LEVEL:</strong> L1 (L3→L1 ↓ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The response gives a basic price range and correctly alerts users that tests and vaccines may be additional; the incumbent provides no range, cost components, or quote method.</div>
+<div class="code-block">insights/uscis-medical-009-how-much-does-the-exam-cost.html || CURRENT: “Direct answer” only repeats the cost query as a comparison factor, while “What this page recommends” says to use concrete checks but supplies none. || MISSING: A usable cost framework distinguishing the civil surgeon’s base fee from variable lab, vaccine, and follow-up charges, plus a quote-comparison checklist. || EDIT: Immediately after “Direct answer,” add an H2 “What you may pay for an I-693 exam” explaining that civil surgeons set their own prices and totals vary by location and needed services; follow with an H2 “Get comparable written quotes” containing questions on the base exam, I-693 completion and sealing, required labs, vaccines, repeat visits, and nonrefundable fees.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> how much does the i-693 medical exam cost in 2026 [Gemini 1.5 Flash]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-009-how-much-does-the-exam-cost.html</div>
+<div><strong>LEVEL:</strong> L1 (L4→L1 ↓ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The incumbent contains no actual cost explanation. The response has a stronger consumer-oriented breakdown, but it is uncited and incorrectly includes COVID-19 vaccination among required 2026 vaccinations.</div>
+<div class="code-block">insights/uscis-medical-009-how-much-does-the-exam-cost.html || CURRENT: “Direct answer” only lists the target query as a factor to compare, and “What this page recommends” provides no cost breakdown or savings guidance. || MISSING: A clear explanation that local civil surgeons set fees, a distinction between the base exam and add-ons, and specific quote questions before booking. || EDIT: Add an H2 “What an I-693 quote should include” after “Direct answer,” with a checklist for examination, form completion/sealing, required labs, vaccines, outside-lab charges, and repeat visits. Add a short “Avoid inaccurate assumptions” note stating that requirements must be checked against current USCIS and CDC guidance and do not list COVID-19 vaccination as a current routine I-693 requirement.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> how to avoid RFE delays after submitting I-693 medical exam [OpenAI GPT-4o]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html</div>
+<div><strong>LEVEL:</strong> L1 (L3→L1 ↓ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The response supplies a practical end-to-end prevention checklist, while the intended page has no substantive I-693 accuracy, sealing, submission, or RFE-response guidance.</div>
+<div class="code-block">FILEPATH: insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html || CURRENT: The H2 "What this page recommends" repeats generic language about comparing options and provides only a provider-routing next step. || MISSING: A concrete I-693 RFE-prevention workflow: authorized civil surgeon, current form, records/vaccines, signatures, sealed envelope, filing timing, retained copy, and RFE-response steps. || EDIT: Under the direct answer, add an H2 "I-693 checklist to prevent delays and RFEs" with numbered pre-appointment, before-sealing, filing, and after-RFE sections; include an explicit instruction to request a copy before sealing and to preserve the original sealed envelope.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> how to avoid RFE delays after submitting I-693 medical exam [Gemini 1.5 Flash]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html</div>
+<div><strong>LEVEL:</strong> L1 (L3→L1 ↓ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The response addresses concrete error points before sealing and transport risks afterward; the intended page provides neither a checklist nor handling instructions.</div>
+<div class="code-block">FILEPATH: insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html || CURRENT: The direct answer and H2 "What this page recommends" discuss only generic option comparison and provider routing. || MISSING: A detailed quality-control sequence before the envelope is sealed, including identity and date checks, signatures, applicable lab/vaccine documentation, current form edition, and intact-envelope handling. || EDIT: Add an H2 "Check these items before the civil surgeon seals the I-693" with a scan-friendly checklist, followed by an H2 "Protect the sealed packet after pickup"; state that testing and vaccination requirements can vary by applicant and should be confirmed against current official instructions.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> how to get the sealed I-693 medical exam envelope safely [OpenAI GPT-4o]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html</div>
+<div><strong>LEVEL:</strong> L1 (L3→L1 ↓ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The response provides an actionable process for receiving, checking, storing, and submitting the sealed packet; the intended page does not explain any of those envelope-specific actions.</div>
+<div class="code-block">FILEPATH: insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html || CURRENT: The direct answer says only to compare concrete factors, and H2 "What this page recommends" gives a provider-routing next step without envelope-specific instructions. || MISSING: A safe I-693 packet workflow covering requesting a copy before sealing, visually checking the envelope exterior, never opening it, protecting it from damage or moisture, secure storage, and following filing instructions. || EDIT: Replace the generic recommendation copy with an H2 "Before you leave the civil surgeon's office" and an H2 "How to store and submit the sealed I-693"; add a short "If the envelope is opened or damaged" callout directing users not to submit it unchanged and to contact the civil surgeon promptly.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> how to get the sealed I-693 medical exam envelope safely [Gemini 1.5 Flash]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html</div>
+<div><strong>LEVEL:</strong> L4 (L3→L4 ↑ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The model supplies an actionable envelope-handling workflow, while the intended page provides only generic comparison guidance and a provider CTA.</div>
+<div class="code-block">insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html || CURRENT: The page's "Direct answer" only tells readers to compare concrete, verifiable factors; "What this page recommends" only offers a Find a Provider next step. || MISSING: A direct, ordered handling protocol for receiving, protecting, copying, and submitting an I-693 sealed envelope, plus what to do if it is damaged or opened. || EDIT: Replace the Direct answer with a 5-step "Get and protect your sealed I-693 envelope" checklist. Add an H2 "Before you leave the clinic" covering requesting a copy before sealing and checking the outside for the applicant name/clinic information without opening it; add H2 "How to store and submit it" covering dry, flat, unopened storage and filing/RFE delivery; add H2 "If the envelope is opened, damaged, or lost" directing the reader to contact the civil surgeon for a replacement or correction path.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> how to verify a civil surgeon is authorized by USCIS [OpenAI GPT-4o]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized.html</div>
+<div><strong>LEVEL:</strong> L4 (L3→L4 ↑ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The response gives a concrete official-tool verification workflow; the page mentions verifiable factors but does not identify the checks or explain how to perform them.</div>
+<div class="code-block">insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized.html || CURRENT: The "Direct answer" says to compare concrete, verifiable factors and avoid vague authority claims; "What this page recommends" contains only a Find a Provider CTA. || MISSING: Specific steps to verify a named doctor and practice location through the official USCIS locator, document the result, and separate authorization from reviews. || EDIT: Add an H2 "Verify a civil surgeon in 4 steps" immediately after Direct answer: search the USCIS locator by ZIP code, match the doctor's name and appointment address, call the office to confirm the designation for that location, and save the listing/appointment confirmation. Add H2 "What does not prove authorization" explaining that directory listings, ads, ratings, and referrals are not substitutes for USCIS designation.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> how to verify a civil surgeon is authorized by USCIS [Gemini 1.5 Flash]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized.html</div>
+<div><strong>LEVEL:</strong> L4 (L4 = vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The model's exact-location verification and red-flag guidance are absent from an incumbent page that remains high-level and CTA-led.</div>
+<div class="code-block">insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized.html || CURRENT: The Direct answer calls for concrete verification but never gives the reader a verification sequence; the only actionable element is a Find a Provider CTA. || MISSING: Official locator instructions, doctor-to-clinic-address matching, a phone confirmation script, and warnings that reviews or clinic marketing do not establish USCIS designation. || EDIT: Insert an H2 "How to verify authorization before booking" after Direct answer with four numbered steps: search the USCIS locator, match physician name, match listed clinic address to the planned appointment address, and ask the office to confirm current designation. Add an H2 "Red flags" stating not to rely on ads, maps, ratings, or an unlisted second clinic location as proof of authorization.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-page-fix">Page Fix</span> list of items to bring to uscis medical exam appointment [OpenAI GPT-4o]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-exam-day-documents-001-what-should-i-bring-to-the-immigration-medical-exam.html</div>
+<div><strong>LEVEL:</strong> L1 (L1 = vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The model directly answers the packing-list intent with concrete items; the page currently offers no itemized guidance at all.</div>
+<div class="code-block">insights/uscis-medical-exam-day-documents-001-what-should-i-bring-to-the-immigration-medical-exam.html || CURRENT: The page title directly asks what to bring, but its "Direct answer" and "What this page recommends" only repeat generic comparison language and a Find a Provider CTA. || MISSING: A scannable appointment-day packing list and practical distinctions between core identity/I-693/vaccine documents and situation-dependent items such as medication lists, vision aids, translations, payment, and interpreter arrangements. || EDIT: Replace the Direct answer with an H2 "Bring these items to your USCIS medical exam" using a checkbox list: government photo ID, clinic-requested I-693 materials, vaccination records and translations, relevant medical records, medication list, payment/insurance information if accepted, glasses or contacts, and appointment confirmation. Follow it with H2 "Call the clinic before you go" listing photo, payment method, interpreter, lab, and document-format questions.</div>
+</div>
+<p><em>...and 13 additional page fixes recorded in CSV/JSON artifacts.</em></p>
+<h2>4. OUTPERFORM (3)</h2>
+<div class="card">
+<div class="card-header"><span class="tag tag-outperform">Outperform</span> how much does the i-693 medical exam cost in 2026 [Perplexity]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-009-how-much-does-the-exam-cost.html</div>
+<div><strong>LEVEL:</strong> L4 (L4 = vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The incumbent offers no concrete cost answer or itemized comparison framework. The response adds sources and useful fee categories, although its national median claim should not be adopted without transparent methodology.</div>
+<div><strong>COMPETITOR SIGNALS:</strong> Cites USCIS for no agency fee and doctor-finding, plus numerous clinic price pages and an academic medical-center source; claims a 312-practice survey and $295 median.</div>
+<div class="code-block">insights/uscis-medical-009-how-much-does-the-exam-cost.html || CURRENT: The page's “Direct answer” is only a query-variant prompt and its “What this page recommends” lacks actual pricing components or quote criteria. || MISSING: The response's useful distinction between no USCIS I-693 fee, civil-surgeon-set pricing, base-exam pricing, and separately billed labs, vaccines, TB testing, or follow-up work. || EDIT: Below “Direct answer,” add an H2 “There is no USCIS fee for Form I-693” and an H2 “Compare the total, not just the exam quote”; include a quote worksheet for base examination, form completion/sealing, IGRA and other required labs, vaccines, external lab charges, extra-visit fees, refund policy, and total due. Describe any dollar figures as local examples or ranges with date and scope, not as an unsupported national median.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-outperform">Outperform</span> what specific questions does the civil surgeon ask during the interview [Gemini 1.5 Flash]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-002-uscis-medical-exam-questions-answered-in-plain-english.html</div>
+<div><strong>LEVEL:</strong> L1 (L3→L1 ↓ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The page lacks the substantive categories and practical preparation guidance Gemini supplies. Gemini is more complete, but it is uncited and includes potentially outdated or overbroad assertions, including that COVID-19 vaccination is currently required and categorical marijuana-use consequences.</div>
+<div><strong>COMPETITOR SIGNALS:</strong> None</div>
+<div class="code-block">insights/uscis-medical-002-uscis-medical-exam-questions-answered-in-plain-english.html || CURRENT: The "Direct answer" and "What this page recommends" sections only list the query among topics to compare. || MISSING: Specific examples of what may be asked, clear distinction between general history and condition-triggered follow-up, and careful handling of TB, behavioral-health, substance-use, and vaccine questions. || EDIT: Add a concise H2 "What the doctor may ask" after the direct answer, organized into records/identity, medical history, TB and communicable-disease history, vaccines, and behavioral-health or substance-use follow-up; state that questions depend on the person’s records and screening findings. Add a "Be careful with outdated advice" callout that avoids asserting a current COVID-vaccine requirement and avoids categorical claims about the immigration consequence of any disclosed marijuana use.</div>
+</div>
+<div class="card">
+<div class="card-header"><span class="tag tag-outperform">Outperform</span> what to do if doctor forgot to sign uscis medical exam [Gemini 1.5 Flash]</div>
+<div><strong>FILE:</strong> insights/uscis-medical-delays-rfe-003-doctor-forgot-to-sign-what-now.html</div>
+<div><strong>LEVEL:</strong> L1 (L3→L1 ↓ vs. 2026-08-28 (7d ago))</div>
+<div><strong>GAP:</strong> The page does not answer the signature-error query; it contains generic comparison/CTA text instead of actionable paths for an unfiled sealed envelope, a filed case, or an RFE.</div>
+<div><strong>COMPETITOR SIGNALS:</strong> Links to the USCIS Find a Doctor tool; provides procedural claims about I-693 correction and RFE response.</div>
+<div class="code-block">insights/uscis-medical-delays-rfe-003-doctor-forgot-to-sign-what-now.html || CURRENT: The “Direct answer” and “What this page recommends” sections only repeat a generic instruction to compare verifiable factors, followed by an external local-guide CTA. || MISSING: A concrete answer for an unsigned I-693: do not open an applicant-held sealed envelope, return it to the civil surgeon for correction and resealing, and respond to any USCIS notice by its deadline with a corrected sealed form. || EDIT: Immediately below “Direct answer,” add an H2 “If the civil surgeon forgot to sign Form I-693” with two numbered paths: (1) before filing—keep the envelope unopened, contact the original civil surgeon, bring the packet back for signature/correction and resealing; (2) after filing or after an RFE—follow the notice, obtain a newly signed and sealed I-693 from the original clinic where possible, and submit it by the stated deadline. Add an H2 “Before you leave the clinic” directing readers to review their applicant copy for name, date of birth, signatures, dates, and form completion without opening the USCIS packet.</div>
+</div>
+<h2>5. AUTHORITY REQUIRED (24)</h2>
+<p><strong>Count:</strong> 24 queries require significant external domain authority to displace incumbent institutional government sources.</p>
+<p><strong>Top 5 Competitor Domains:</strong> uscis.gov, windermeremedical.com, reddit.com, travel.state.gov, boundless.com</p>
+<p><strong>Landscape:</strong> USCIS.gov, CDC.gov, and official state department resources maintain a dominant institutional monopoly on statutory requirements, but structured consumer comparison layers can win on procedural guidance.</p>
+<h2>6. HIGHEST-LEVERAGE SEO EXECUTION (TOP 5)</h2>
+<div class="card">
+<div class="card-header">can i go to my regular family doctor for the uscis medical exam [OpenAI GPT-4o]</div>
+<div><strong>TARGET PAGE:</strong> <a href="https://theindustryguides.com/uscis-medical">https://theindustryguides.com/uscis-medical</a> (uscis-medical/index.html)</div>
+<div><strong>INTENT & BUYER STAGE:</strong> INFORMATIONAL / CONSIDERATION | <strong>DECISION:</strong> repair_existing (faq)</div>
+<div><strong>WHY COMPETITOR WON:</strong> The USCIS locator enables users to verify whether a specific doctor is currently designated, while the page does not explicitly answer the family-doctor eligibility question.</div>
+<div><strong>ON-PAGE FAILURES:</strong>
+<ul><li>Missing H2 addressing whether a regular family doctor may perform the exam</li><li>Does not explicitly state that Form I-693 requires a currently designated civil surgeon</li><li>Missing FAQPage markup for this exact-match eligibility question</li></ul>
+</div>
+<div><strong>INTERNAL LINKS TO ADD:</strong>
+<ul><li>Link from <code>https://theindustryguides.com/uscis-medical</code> using anchor "<em>verify that a doctor is authorized</em>"</li><li>Link from <code>https://theindustryguides.com/uscis-medical</code> using anchor "<em>find and compare a civil surgeon near you</em>"</li></ul>
+</div>
+<div><strong>SCHEMA ACTION:</strong> Add FAQPage schema markup for the visible family-doctor eligibility question and answer.</div>
+<div><strong>EXACT EDIT:</strong><div class="code-block">FILEPATH: uscis-medical/index.html || CURRENT: The “Direct answer” and “What this page recommends” tell users to use the official civil-surgeon locator and verify current designation. || MISSING: An explicit exact-match answer explaining whether a regular family doctor can perform the USCIS medical exam. || EDIT: Immediately after “Direct answer,” add H2 “Can I use my regular family doctor for the USCIS medical exam?” followed by: “Only if your family doctor is currently USCIS-designated as a civil surgeon. A regular doctor who is not designated cannot complete and sign Form I-693. Verify the doctor’s current designation in the official locator before booking.” Add a short related-reading block linking to the civil-surgeon selection and authorization-verification guides.</div></div>
+<div><strong>ACCEPTANCE CHECKS:</strong>
+<ul><li>H2 'Can I use my regular family doctor for the USCIS medical exam?' is present immediately after the Direct answer section</li><li>Answer states that a regular doctor may complete Form I-693 only if currently USCIS-designated as a civil surgeon</li><li>Answer directs readers to verify designation before booking</li><li>FAQPage schema validates and matches the visible question and answer</li><li>At least 2 specified internal links resolve</li></ul>
+</div>
+</div>
+<div class="card">
+<div class="card-header">how much does the i-693 medical exam cost in 2026 [OpenAI GPT-4o]</div>
+<div><strong>TARGET PAGE:</strong> <a href="https://theindustryguides.com/insights/uscis-medical-009-how-much-does-the-exam-cost">https://theindustryguides.com/insights/uscis-medical-009-how-much-does-the-exam-cost</a> (insights/uscis-medical-009-how-much-does-the-exam-cost.html)</div>
+<div><strong>INTENT & BUYER STAGE:</strong> COMMERCIAL / DECISION | <strong>DECISION:</strong> repair_existing (guide)</div>
+<div><strong>WHY COMPETITOR WON:</strong> The competitor context makes clear that the civil surgeon is the authorized service provider, while this page does not show users how to separate the provider fee from possible required-service charges.</div>
+<div><strong>ON-PAGE FAILURES:</strong>
+<ul><li>No practical distinction between the civil surgeon fee and variable service charges</li><li>No written-quote checklist</li><li>No clear warning that labs, vaccines, repeat visits, and nonrefundable fees may change the total</li><li>No links to supporting cost subtopics</li></ul>
+</div>
+<div><strong>INTERNAL LINKS TO ADD:</strong>
+<ul><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-009-how-much-does-the-exam-cost</code> using anchor "<em>USCIS medical exam cost guide</em>"</li><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-009-how-much-does-the-exam-cost</code> using anchor "<em>get a written quote</em>"</li><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-009-how-much-does-the-exam-cost</code> using anchor "<em>check whether labs are included</em>"</li></ul>
+</div>
+<div><strong>SCHEMA ACTION:</strong> Add Article and BreadcrumbList schema; retain only FAQPage questions that are visibly answered on the page.</div>
+<div><strong>EXACT EDIT:</strong><div class="code-block">FILEPATH: insights/uscis-medical-009-how-much-does-the-exam-cost.html || CURRENT: “Direct answer” only repeats the cost query as a comparison factor, while “What this page recommends” says to use concrete checks but supplies none. || MISSING: A usable 2026 cost framework distinguishing the civil surgeon’s base fee from variable lab, vaccine, sealing, and follow-up charges, plus a quote-comparison checklist. || EDIT: Immediately after “Direct answer,” add H2 “What you may pay for an I-693 exam” explaining that there is no single national price because civil surgeons set their own fees and the total depends on location and services needed. Add H2 “Get comparable written quotes” with a checklist asking whether the quoted total includes the base exam, Form I-693 completion and sealing, required labs, vaccines, additional visits, and nonrefundable charges. Link readers to the fuller cost cluster for lab, vaccine, insurance, and quote-comparison details.</div></div>
+<div><strong>ACCEPTANCE CHECKS:</strong>
+<ul><li>H2 'What you may pay for an I-693 exam' is present after Direct answer</li><li>Page states that civil surgeons set their own prices and that total cost varies by location and needed services</li><li>Visible quote checklist asks separately about base exam, I-693 completion and sealing, labs, vaccines, repeat visits, and nonrefundable fees</li><li>Page does not present an unsupported nationwide 2026 price as a guaranteed rate</li><li>At least 2 specified internal links resolve</li></ul>
+</div>
+</div>
+<div class="card">
+<div class="card-header">how to avoid RFE delays after submitting I-693 medical exam [OpenAI GPT-4o]</div>
+<div><strong>TARGET PAGE:</strong> <a href="https://theindustryguides.com/insights/uscis-medical-011-how-to-avoid-delays-and-rfes">https://theindustryguides.com/insights/uscis-medical-011-how-to-avoid-delays-and-rfes</a> (insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html)</div>
+<div><strong>INTENT & BUYER STAGE:</strong> INFORMATIONAL / RETENTION | <strong>DECISION:</strong> repair_existing (guide)</div>
+<div><strong>WHY COMPETITOR WON:</strong> The competitor’s official designation tool supports the first preventive check, while this page lacks an end-to-end workflow for avoiding I-693 errors before filing and responding after an RFE.</div>
+<div><strong>ON-PAGE FAILURES:</strong>
+<ul><li>Generic provider-comparison language does not answer the RFE-prevention query</li><li>Missing pre-appointment and pre-sealing verification checklist</li><li>Missing filing and post-submission recordkeeping steps</li><li>Missing immediate RFE-response workflow</li></ul>
+</div>
+<div><strong>INTERNAL LINKS TO ADD:</strong>
+<ul><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-011-how-to-avoid-delays-and-rfes</code> using anchor "<em>I-693 delays and RFE guidance</em>"</li><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-011-how-to-avoid-delays-and-rfes</code> using anchor "<em>handle the sealed I-693 envelope safely</em>"</li><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-011-how-to-avoid-delays-and-rfes</code> using anchor "<em>what to do if you receive an RFE</em>"</li></ul>
+</div>
+<div><strong>SCHEMA ACTION:</strong> Add Article and BreadcrumbList schema; add FAQPage markup only for any visible RFE questions and answers added to the page.</div>
+<div><strong>EXACT EDIT:</strong><div class="code-block">FILEPATH: insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html || CURRENT: The H2 “What this page recommends” repeats generic language about comparing options and provides only a provider-routing next step. || MISSING: A concrete I-693 RFE-prevention workflow covering authorization, current paperwork, records, signatures, sealed-envelope handling, filing, recordkeeping, and RFE response. || EDIT: Under the Direct answer, replace generic recommendation copy with H2 “I-693 checklist to prevent delays and RFEs.” Use numbered subsections for “Before the appointment,” “Before the envelope is sealed,” “When filing,” and “If an RFE arrives.” Require readers to confirm the civil surgeon’s designation, bring vaccine and identity records, confirm the current Form I-693 is used, request a copy before sealing, retain the original sealed envelope unopened, keep filing proof, and follow every RFE instruction and deadline. Add related links for correction, sealed-envelope handling, and RFE-specific next steps.</div></div>
+<div><strong>ACCEPTANCE CHECKS:</strong>
+<ul><li>H2 'I-693 checklist to prevent delays and RFEs' is present under Direct answer</li><li>Checklist includes civil-surgeon authorization, current form edition, vaccine and record preparation, required signatures, sealed-envelope handling, filing timing, and record retention</li><li>Page explicitly tells users to request a copy before sealing and preserve the original sealed envelope</li><li>Page includes a distinct immediate-action section for an RFE</li><li>At least 3 specified internal links resolve</li></ul>
+</div>
+</div>
+<div class="card">
+<div class="card-header">how to get the sealed I-693 medical exam envelope safely [OpenAI GPT-4o]</div>
+<div><strong>TARGET PAGE:</strong> <a href="https://theindustryguides.com/insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely">https://theindustryguides.com/insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely</a> (insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html)</div>
+<div><strong>INTENT & BUYER STAGE:</strong> INFORMATIONAL / RETENTION | <strong>DECISION:</strong> repair_existing (guide)</div>
+<div><strong>WHY COMPETITOR WON:</strong> The competitor helps users identify an authorized civil surgeon, while the page does not explain the envelope pickup, protection, storage, and submission steps that follow the exam.</div>
+<div><strong>ON-PAGE FAILURES:</strong>
+<ul><li>No envelope-specific pickup checklist</li><li>Missing instruction to obtain a copy before sealing</li><li>Missing handling, storage, and safe-transport guidance</li><li>Missing opened-or-damaged-envelope recovery guidance</li></ul>
+</div>
+<div><strong>INTERNAL LINKS TO ADD:</strong>
+<ul><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely</code> using anchor "<em>can I open the sealed envelope</em>"</li><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely</code> using anchor "<em>what to do after the medical exam</em>"</li><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely</code> using anchor "<em>what to do if the envelope was opened</em>"</li></ul>
+</div>
+<div><strong>SCHEMA ACTION:</strong> Add Article and BreadcrumbList schema; add FAQPage markup for a visible opened-or-damaged-envelope question if included.</div>
+<div><strong>EXACT EDIT:</strong><div class="code-block">FILEPATH: insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html || CURRENT: The Direct answer says only to compare concrete factors, and H2 “What this page recommends” gives a provider-routing next step without envelope-specific instructions. || MISSING: A safe I-693 packet workflow for receiving, checking, storing, transporting, and filing the sealed envelope. || EDIT: Replace generic recommendation copy with H2 “Before you leave the civil surgeon’s office” and a checklist: ask for a personal copy before sealing; confirm the envelope is sealed; visually check the exterior for the correct name and any required office markings without opening it; and ask how the office handles corrections. Add H2 “How to store and submit the sealed I-693” instructing readers never to open the packet, protect it from moisture and damage, store it securely, and follow the filing instructions for their case. Add a callout, “If the envelope is opened or damaged,” instructing readers not to submit it unchanged and to contact the civil surgeon promptly for next steps.</div></div>
+<div><strong>ACCEPTANCE CHECKS:</strong>
+<ul><li>H2 'Before you leave the civil surgeon’s office' is present</li><li>H2 'How to store and submit the sealed I-693' is present</li><li>Page instructs users to request a copy before sealing, inspect only the envelope exterior, and never open the sealed packet</li><li>Page includes an opened-or-damaged-envelope callout directing users to contact the civil surgeon promptly</li><li>At least 3 specified internal links resolve</li></ul>
+</div>
+</div>
+<div class="card">
+<div class="card-header">how to verify a civil surgeon is authorized by USCIS [OpenAI GPT-4o]</div>
+<div><strong>TARGET PAGE:</strong> <a href="https://theindustryguides.com/insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized">https://theindustryguides.com/insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized</a> (insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized.html)</div>
+<div><strong>INTENT & BUYER STAGE:</strong> INFORMATIONAL / DECISION | <strong>DECISION:</strong> repair_existing (evaluation_framework)</div>
+<div><strong>WHY COMPETITOR WON:</strong> The USCIS locator gives users an official current-designation check, while the page does not explain how to match a named doctor and appointment location to that result.</div>
+<div><strong>ON-PAGE FAILURES:</strong>
+<ul><li>No step-by-step USCIS locator verification workflow</li><li>Does not require matching the doctor and appointment address</li><li>Does not tell users to document the verification result</li><li>Does not distinguish official designation from nonofficial reputation signals</li></ul>
+</div>
+<div><strong>INTERNAL LINKS TO ADD:</strong>
+<ul><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized</code> using anchor "<em>find a civil surgeon near you</em>"</li><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized</code> using anchor "<em>verify and compare civil surgeons before booking</em>"</li><li>Link from <code>https://theindustryguides.com/insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized</code> using anchor "<em>red flags in immigration medical clinics</em>"</li></ul>
+</div>
+<div><strong>SCHEMA ACTION:</strong> Add Article and BreadcrumbList schema; add FAQPage markup for a visible question explaining what does not prove civil-surgeon authorization.</div>
+<div><strong>EXACT EDIT:</strong><div class="code-block">FILEPATH: insights/uscis-medical-019-how-to-verify-a-doctor-is-authorized.html || CURRENT: The “Direct answer” says to compare concrete, verifiable factors and avoid vague authority claims; “What this page recommends” contains only a Find a Provider CTA. || MISSING: Specific instructions to verify a named doctor and appointment location through the official USCIS locator, document the result, and distinguish designation from reputation signals. || EDIT: Immediately after Direct answer, add H2 “Verify a civil surgeon in 4 steps” with these steps: search the USCIS locator by ZIP code; match the doctor’s name and the appointment address to the listing; call the office to confirm the designation for that location before booking; and save the listing or appointment confirmation. Add H2 “What does not prove authorization” explaining that directory entries, advertisements, ratings, and referrals do not replace current USCIS designation. Link to the civil-surgeon comparison guide and clinic red-flags guide.</div></div>
+<div><strong>ACCEPTANCE CHECKS:</strong>
+<ul><li>H2 'Verify a civil surgeon in 4 steps' is present immediately after Direct answer</li><li>Four visible steps include locator search, doctor-and-address matching, office confirmation, and saving verification evidence</li><li>H2 'What does not prove authorization' distinguishes USCIS designation from ads, directories, ratings, and referrals</li><li>Page tells readers to confirm the appointment location, not only the doctor name</li><li>At least 2 specified internal links resolve</li></ul>
+</div>
+</div>
+<h2>7. DATA & ARTIFACTS</h2>
+<p>CSV, HTML, and JSON artifacts generated successfully and committed to the repository at <code>data/report_fixes/agent_runs/2026-09-04/uscis-medical/</code>.</p>
+</body>
+</html>
