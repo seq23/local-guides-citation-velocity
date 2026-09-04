@@ -175,9 +175,32 @@ jobs:
         # scripts/validators/validate_carried_reason_truthfulness.js - and instead
         # runs inside release:velocity-intake immediately after citation:plan-agent-exact,
         # the one place both files are guaranteed to be mutually fresh together.
+        #
+        # This checkpoint used a RAW `npm run validate:release`, and that is what
+        # killed the lane every day it mattered. Normalizing a landed run writes its
+        # recommendations into agent_fix_ledger.json, and agent-run-delivery-coverage
+        # is a shrink-only ratchet in which a run with no baseline entry must have
+        # ZERO gaps. A run that lands 51 recommendations of which 3 are not yet shown
+        # by the page they named therefore hard-fails here - at a checkpoint that runs
+        # BEFORE release:velocity-intake, the step that would deliver them - so the
+        # lane could never reach the work that closes its own gate. Run 33879505879
+        # died exactly there: "run 2026-09-04 leaves 3 recommendation(s) unshown ...
+        # but is only allowed 0". Nothing retried, because this lane only triggers on
+        # a new manifest and that manifest had already landed.
+        #
+        # That validator declares a repair (recover:run-delivery-coverage-ratchet,
+        # which enrols a newly-seen run in the ratchet at its measured gaps and can
+        # only ever tighten it). The final push step below already routes through
+        # self-heal for precisely this class - "any current or future release-profile
+        # validator with a registered repair gets repaired before it can block the
+        # push" - and this step was left as the odd one out. Both absorption
+        # re-derives below had the same hole. Nothing is skipped or weakened: the same
+        # release profile runs, every validator still blocks, and self-heal exits
+        # non-zero when a failure has no repair or the repair does not clear it.
         run: |
           npm run citation:prepare-velocity-intake
           npm run build:cached
+          npm run selfheal:release
           npm run validate:release
       - name: Commit and push the validated absorption
         id: absorption
@@ -211,6 +234,7 @@ jobs:
               git reset --hard origin/main
               npm run citation:prepare-velocity-intake
               npm run build:cached
+              npm run selfheal:release
               npm run validate:release
               git add -A
               if git diff --cached --quiet; then
@@ -241,6 +265,7 @@ jobs:
               # this specific case - re-deriving after nothing this lane
               # changed - a near-instant restore instead of a full rebuild.
               npm run build:cached
+              npm run selfheal:release
               npm run validate:release
               git add -A
               git commit --amend --no-edit
@@ -312,6 +337,14 @@ jobs:
             # repaired before it can block the push, rather than each one being
             # found and patched by hand as the next lane failure.
             npm run selfheal:release
+            # Then prove it UNHEALED. self-heal exits 0 when its own re-validation is
+            # clean, but that re-validation is the one it just repaired into being
+            # clean; a raw release-profile pass on the healed tree is a separate,
+            # unassisted statement that the tree about to reach main is green. It also
+            # keeps workflow-data-trace's "a release revalidation precedes every push"
+            # satisfied by code rather than by the word validate:release appearing in
+            # a comment, which is how this step satisfied it before.
+            npm run validate:release
             npm run trace:agent-exact
             npm run validate:agent-exact
             npm run trace:citation-agent-fixes

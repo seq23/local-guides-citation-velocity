@@ -591,7 +591,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -2694,7 +2694,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -7604,7 +7604,7 @@
         "workflow",
         "release"
       ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
       "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
       "requires_files": [
         ".github/workflows/query-evidence-refresh.yml",
@@ -7796,6 +7796,100 @@
       "depends_on": [],
       "why_existing_checks_do_not_cover": "carried-reason-truthfulness and agent-exact-implementation-trace each catch their own symptom only after a full build has already run, inside a job that already spent the work. Nothing checked the workflow and package.json wiring that causes either failure, so a fix for one could silently reintroduce the other. This asserts both halves of the fix statically and hard-fails when it examines zero workflow steps.",
       "estimated_runtime_seconds": 2
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 120,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "id": "absorption-window-agreement",
+      "title": "Continuity and stranding hold ONE absorption window",
+      "path": "scripts/validators/validate_absorption_window_agreement.js",
+      "command": "node scripts/validators/validate_absorption_window_agreement.js",
+      "tags": [
+        "agent-artifact",
+        "absorption",
+        "window",
+        "ratchet",
+        "guard"
+      ],
+      "risk_prevented": "agent-artifact-continuity and agent-artifact-stranding ask the same question - a READY_FOR_ABSORPTION manifest with no normalized artifact - and held two different thresholds. Stranding derived its allowance from the cron of the lane that dispatches the absorption; continuity had zero tolerance, so the raw agent drop was a HARD FAILURE the instant it landed, before the workflow that normalizes it had run at all. Validate Repo went red on the drop commit on 2026-09-01, 09-02, 09-03 and 09-04, including days the release lane then succeeded minutes later - one red per day for a contract nothing had had a turn to satisfy. This fails if continuity stops importing the window from stranding, if the window becomes unreadable, or if any boundary case stops behaving: named-and-reported inside the window, HARD ERROR at one day past it, at an unreadable or future-dated run date, and for a run already marked ABSORBED, which gets no window at all.",
+      "why_existing_checks_do_not_cover": "agent-artifact-stranding enforces the window on itself but says nothing about what any other validator does with the same condition, which is exactly how the two drifted apart. agent-artifact-continuity reports only what is on disk today, so on a day with no pending run it would pass whatever its boundary behaviour had become. Nothing exercised the boundary itself.",
+      "requires_files": [
+        "scripts/validators/validate_agent_artifact_continuity.js",
+        "scripts/validators/validate_agent_artifact_stranding.js",
+        ".github/workflows/query-evidence-refresh.yml"
+      ],
+      "produces_files": [
+        "artifacts/validation/absorption-window-agreement.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/absorption-window-agreement.json"
+      ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 120,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "id": "release-lane-heals-before-push",
+      "title": "Every push surface in the release lane heals, then proves it unhealed",
+      "path": "scripts/validators/validate_release_lane_heals_before_push.js",
+      "command": "node scripts/validators/validate_release_lane_heals_before_push.js",
+      "tags": [
+        "workflow",
+        "release",
+        "selfheal",
+        "push",
+        "guard"
+      ],
+      "risk_prevented": "velocity-content-release.yml has four release-profile gates and only the last one was routed through self-heal, on 2026-09-03, after a raw gate HARD_FAILed on a healthy publish three times in one day - each time on a validator that declared a repair the lane never ran. The other three were left raw and the defect recurred on the first of them: on 2026-09-04 the absorption checkpoint died on agent-run-delivery-coverage, whose registered repair recover:run-delivery-coverage-ratchet was never reached, and whose gaps could only have been closed by release:velocity-intake - a step that runs AFTER the gate that refused to let the lane get there. Four consecutive red runs and no retry, because this lane triggers on a new manifest and that manifest had already landed. This fails if any git push in the lane is not preceded by npm run selfheal:release followed by an unassisted npm run validate:release, read from the workflow with comments stripped so prose about the fix cannot stand in for the fix.",
+      "why_existing_checks_do_not_cover": "workflow-data-trace looks for the literal text npm run validate:release anywhere before the first git push, comments included, so the final step satisfied it by describing the change in a comment while three sibling gates stayed raw. push-after-rebase-revalidates governs re-derivation after a rebase, not whether the gate can repair what it detects. Neither counts the lane's push surfaces or requires the same arrangement at every one of them.",
+      "requires_files": [
+        ".github/workflows/velocity-content-release.yml"
+      ],
+      "produces_files": [
+        "artifacts/validation/release-lane-heals-before-push.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/release-lane-heals-before-push.json"
+      ]
     }
   ],
   "legacy_policy": {

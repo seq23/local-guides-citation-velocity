@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "validator": "absorption-window-agreement",
+  "status": "PASS",
+  "window": {
+    "cadenceDays": 1,
+    "graceCycles": 1,
+    "allowedDays": 2,
+    "source": ".github/workflows/query-evidence-refresh.yml"
+  },
+  "cases_examined": 8,
+  "cases": [
+    {
+      "name": "fresh_drop_same_day",
+      "status": "READY_FOR_ABSORPTION",
+      "ageDays": 0,
+      "expect": "PENDING_NAMED",
+      "allowed_days": 2,
+      "actual": "PENDING_NAMED",
+      "ok": true
+    },
+    {
+      "name": "inside_window",
+      "status": "READY_FOR_ABSORPTION",
+      "ageDays": 1,
+      "expect": "PENDING_NAMED",
+      "allowed_days": 2,
+      "actual": "PENDING_NAMED",
+      "ok": true
+    },
+    {
+      "name": "at_the_boundary",
+      "status": "READY_FOR_ABSORPTION",
+      "ageDays": 2,
+      "expect": "PENDING_NAMED",
+      "allowed_days": 2,
+      "actual": "PENDING_NAMED",
+      "ok": true
+    },
+    {
+      "name": "one_day_past_the_boundary",
+      "status": "READY_FOR_ABSORPTION",
+      "ageDays": 3,
+      "expect": "HARD_ERROR",
+      "allowed_days": 2,
+      "actual": "HARD_ERROR",
+      "ok": true
+    },
+    {
+      "name": "long_stranded",
+      "status": "READY_FOR_ABSORPTION",
+      "ageDays": 32,
+      "expect": "HARD_ERROR",
+      "allowed_days": 2,
+      "actual": "HARD_ERROR",
+      "ok": true
+    },
+    {
+      "name": "unreadable_run_date",
+      "status": "READY_FOR_ABSORPTION",
+      "ageDays": null,
+      "expect": "HARD_ERROR",
+      "allowed_days": 2,
+      "actual": "HARD_ERROR",
+      "ok": true
+    },
+    {
+      "name": "negative_age_future_dated",
+      "status": "READY_FOR_ABSORPTION",
+      "ageDays": -1,
+      "expect": "HARD_ERROR",
+      "allowed_days": 2,
+      "actual": "HARD_ERROR",
+      "ok": true
+    },
+    {
+      "name": "already_absorbed_gets_no_window",
+      "status": "ABSORBED",
+      "ageDays": 0,
+      "expect": "HARD_ERROR",
+      "allowed_days": 2,
+      "actual": "HARD_ERROR",
+      "ok": true
+    }
+  ],
+  "errors": []
+}
