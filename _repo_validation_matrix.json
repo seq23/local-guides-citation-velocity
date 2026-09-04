@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "5836af7548222a2de270872f9404d1d78f4aa678befbe0effa88b49d9fd3f359",
+  "registry_sha256": "a27cb9de824bf9d20447bb1ede605de71870d22b1aed53075fd2aed933285843",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -398,7 +398,6 @@
         "workflow-yaml-inventory",
         "workflow-yaml-syntax",
         "agent-named-target-parseability",
-        "carried-reason-truthfulness",
         "internal-link-inbound-coverage",
         "agent-fix-ledger-truthfulness",
         "agent-run-delivery-coverage",
@@ -494,7 +493,6 @@
         "medium-articles",
         "agent-run-artifact-intake",
         "agent-exact-implementation-plan",
-        "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
         "agent-exact-implementation-trace",
         "agent-exact-acceptance-manifest",
@@ -7982,7 +7980,6 @@
           "core",
           "full-audit",
           "local",
-          "release",
           "strict"
         ],
         "path": "scripts/validators/validate_carried_reason_truthfulness.js",
@@ -8282,7 +8279,7 @@
       },
       {
         "id": "intake-plan-regeneration",
-        "title": "A step that rewrites the disposition ledger re-derives the exact plan from it",
+        "title": "The disposition ledger and the exact plan are re-derived together, at the one checkpoint where doing so is safe",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 1",
@@ -8301,7 +8298,9 @@
         "command": "node scripts/validators/validate_intake_plan_regeneration.js",
         "depends_on": [],
         "requires_files": [
-          ".github/workflows/velocity-content-release.yml"
+          ".github/workflows/velocity-content-release.yml",
+          "package.json",
+          "_validation_registry.json"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
@@ -8313,7 +8312,7 @@
           "artifacts/validation/intake-plan-regeneration.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Prevents the intake and the exact implementation plan from keeping two independent lists of the same rows. citation:prepare-velocity-intake rewrites data/report_fixes/agent_artifact_disposition_ledger.json; only citation:plan-agent-exact writes the carried reasons in data/report_fixes/agent_exact_implementation_plan.json. The absorption step of velocity-content-release.yml ran the intake and never the planner, so the ledger moved daily and the plan did not: on 2026-09-03, 185 carried rows blamed UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET for a budget that had not bound (85 selected of 125), and carried-reason-truthfulness held main red across roughly twelve runs in one day.",
+        "risk_prevented": "Prevents the intake and the exact implementation plan from keeping two independent lists of the same rows, AND prevents the fix for that from trading one red validator for another. citation:prepare-velocity-intake rewrites data/report_fixes/agent_artifact_disposition_ledger.json; only citation:plan-agent-exact writes the carried reasons in data/report_fixes/agent_exact_implementation_plan.json. The absorption step of velocity-content-release.yml ran the intake and never the planner, so the ledger moved daily and the plan did not: on 2026-09-03, 185 carried rows blamed UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET for a budget that had not bound (85 selected of 125), and carried-reason-truthfulness held main red across roughly twelve runs in one day. Adding citation:plan-agent-exact directly into the absorption step fixed that and broke agent-exact-implementation-trace in the same run - a freshly-regenerated plan carries PLANNED specs that release:velocity-intake has not applied yet, and trace correctly read them as repair_not_proven. This validator hard-fails if the absorption step re-derives the plan directly (the regression), if release:velocity-intake does not chain the planner before validate:carried-reason-truthfulness (the actual fix), or if carried-reason-truthfulness is still checked in the release profile at the absorption checkpoint (the premature comparison).",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -11779,7 +11778,6 @@
           "core",
           "full-audit",
           "local",
-          "release",
           "strict"
         ],
         "path": "scripts/validators/validate_carried_reason_truthfulness.js",
@@ -12079,7 +12077,7 @@
       },
       {
         "id": "intake-plan-regeneration",
-        "title": "A step that rewrites the disposition ledger re-derives the exact plan from it",
+        "title": "The disposition ledger and the exact plan are re-derived together, at the one checkpoint where doing so is safe",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 1",
@@ -12098,7 +12096,9 @@
         "command": "node scripts/validators/validate_intake_plan_regeneration.js",
         "depends_on": [],
         "requires_files": [
-          ".github/workflows/velocity-content-release.yml"
+          ".github/workflows/velocity-content-release.yml",
+          "package.json",
+          "_validation_registry.json"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
@@ -12110,7 +12110,7 @@
           "artifacts/validation/intake-plan-regeneration.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Prevents the intake and the exact implementation plan from keeping two independent lists of the same rows. citation:prepare-velocity-intake rewrites data/report_fixes/agent_artifact_disposition_ledger.json; only citation:plan-agent-exact writes the carried reasons in data/report_fixes/agent_exact_implementation_plan.json. The absorption step of velocity-content-release.yml ran the intake and never the planner, so the ledger moved daily and the plan did not: on 2026-09-03, 185 carried rows blamed UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET for a budget that had not bound (85 selected of 125), and carried-reason-truthfulness held main red across roughly twelve runs in one day.",
+        "risk_prevented": "Prevents the intake and the exact implementation plan from keeping two independent lists of the same rows, AND prevents the fix for that from trading one red validator for another. citation:prepare-velocity-intake rewrites data/report_fixes/agent_artifact_disposition_ledger.json; only citation:plan-agent-exact writes the carried reasons in data/report_fixes/agent_exact_implementation_plan.json. The absorption step of velocity-content-release.yml ran the intake and never the planner, so the ledger moved daily and the plan did not: on 2026-09-03, 185 carried rows blamed UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET for a budget that had not bound (85 selected of 125), and carried-reason-truthfulness held main red across roughly twelve runs in one day. Adding citation:plan-agent-exact directly into the absorption step fixed that and broke agent-exact-implementation-trace in the same run - a freshly-regenerated plan carries PLANNED specs that release:velocity-intake has not applied yet, and trace correctly read them as repair_not_proven. This validator hard-fails if the absorption step re-derives the plan directly (the regression), if release:velocity-intake does not chain the planner before validate:carried-reason-truthfulness (the actual fix), or if carried-reason-truthfulness is still checked in the release profile at the absorption checkpoint (the premature comparison).",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

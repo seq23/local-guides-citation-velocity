@@ -162,28 +162,21 @@ jobs:
         # its own validated commit first, and a later content-release failure can
         # no longer un-absorb a run that is already on disk.
         #
-        # The planner runs here for a reason. citation:prepare-velocity-intake
-        # REWRITES data/report_fixes/agent_artifact_disposition_ledger.json:
-        # rows it skips get SKIPPED_EXISTING_WITH_PROOF /
-        # exact_title_already_exists_in_pages, or
-        # SKIPPED_DUPLICATE_WITH_PROOF / canonical_route_already_selected. The
-        # carried reason for those same rows lives in a SECOND file,
-        # data/report_fixes/agent_exact_implementation_plan.json, and only
-        # citation:plan-agent-exact writes it. This step used to run the intake
-        # and never the planner, so the ledger moved every day and the plan did
-        # not: two components each keeping their own list of the same rows, with
-        # no link between them. validate:release then compared the fresh ledger
-        # against the stale plan and carried-reason-truthfulness failed - 185
-        # carried rows still blaming UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET
-        # for a budget that did not bind (85 of 125), when the intake had already
-        # recorded the real reason. The validator was right every time; the plan
-        # was simply never re-derived from the ledger it is supposed to follow.
-        #
-        # The planner runs BEFORE build:cached because the plan is part of the
-        # build's hashed input surface, exactly as in release:velocity-intake.
+        # citation:prepare-velocity-intake REWRITES the disposition ledger here,
+        # but citation:plan-agent-exact deliberately does NOT run in this step.
+        # Regenerating the plan this early was tried and reverted: the plan
+        # would then carry freshly-PLANNED repair specs that release:velocity-intake
+        # has not applied yet (apply-agent-exact runs later, in the next job step),
+        # and agent-exact-implementation-trace - also in the release profile -
+        # correctly reads those as repair_not_proven. The plan on disk here stays
+        # whatever the last full release cycle committed (already applied, already
+        # traced); only the ledger moves. carried-reason-truthfulness is therefore
+        # not checked at this checkpoint - see _validation_registry.json and
+        # scripts/validators/validate_carried_reason_truthfulness.js - and instead
+        # runs inside release:velocity-intake immediately after citation:plan-agent-exact,
+        # the one place both files are guaranteed to be mutually fresh together.
         run: |
           npm run citation:prepare-velocity-intake
-          npm run citation:plan-agent-exact
           npm run build:cached
           npm run validate:release
       - name: Commit and push the validated absorption
@@ -216,11 +209,7 @@ jobs:
             if ! git rebase origin/main; then
               git rebase --abort || true
               git reset --hard origin/main
-              # Same pairing as the first derivation above: the intake rewrites
-              # the disposition ledger, so the exact plan has to be rebuilt from
-              # it or the carried reasons go stale again on this retry path.
               npm run citation:prepare-velocity-intake
-              npm run citation:plan-agent-exact
               npm run build:cached
               npm run validate:release
               git add -A

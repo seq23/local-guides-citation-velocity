@@ -16,20 +16,38 @@
 // planner, then ran validate:release. So every day the ledger moved and the plan did
 // not, and carried-reason-truthfulness - correctly - failed on the gap: on 2026-09-03,
 // 185 carried rows still blamed UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET for a
-// budget that had not bound (85 selected of 125). The plan was simply never re-derived
-// from the ledger it is supposed to follow. That is the "two components each keeping
-// their own list with no link" defect, and it produced ~12 red runs on main in one day.
+// budget that had not bound (85 selected of 125). That is the "two components each
+// keeping their own list with no link" defect, and it produced ~12 red runs in one day.
 //
-// carried-reason-truthfulness catches the SYMPTOM after the fact, inside a run that has
-// already spent a full build. This catches the CAUSE, statically, at validation time:
+// The first fix tried here added `npm run citation:plan-agent-exact` straight into the
+// absorption step, right before build:cached. It made carried-reason-truthfulness pass
+// and broke agent-exact-implementation-trace in the same run: the freshly-regenerated
+// plan now carried PLANNED repair specs that release:velocity-intake had not applied
+// yet - apply-agent-exact only runs in the NEXT job step - so trace read them as
+// repair_not_proven. Reproduced directly: running citation:prepare-velocity-intake,
+// citation:plan-agent-exact, build:cached, validate:release in that order on a clean
+// tree, with nothing else applied, fails agent-exact-implementation-trace on exactly
+// the routes the fresh plan just (re)selected. Trading one red validator for another
+// is not a fix.
 //
-//   Any step that invokes citation:prepare-velocity-intake must also invoke
-//   citation:plan-agent-exact, after it, in that same step - unless it invokes
-//   release:velocity-intake, the full pipeline that already chains both.
+// The actual fix has two halves, and this validator asserts both statically:
 //
-// Rule 0: examining zero steps is a FAILURE, not a pass on an empty loop. If the intake
-// is renamed or the workflow is restructured so no step matches, this validator has
-// stopped guarding anything and must say so rather than exit 0.
+//   1. The absorption step (and its rebase-retry re-derivation) may rewrite the
+//      ledger via citation:prepare-velocity-intake, but must NOT also call
+//      citation:plan-agent-exact in that same step. The plan on disk there stays
+//      whatever the last full release cycle committed - already applied, already
+//      traced - and only the ledger moves.
+//   2. carried-reason-truthfulness must not be checked against that deliberately
+//      stale plan. It is removed from the "release" validation profile (the one the
+//      absorption step validates against) and instead required inside
+//      release:velocity-intake's own script chain, immediately after
+//      citation:plan-agent-exact - the one place both files are regenerated
+//      together, before apply-agent-exact ever runs, so a real mismatch still fails
+//      fast instead of being caught after a full build and publish.
+//
+// Rule 0: examining zero steps is a FAILURE, not a pass on an empty loop. If the
+// intake is renamed or the workflow is restructured so nothing matches, this
+// validator has stopped guarding anything and must say so rather than exit 0.
 
 const fs = require('fs');
 const path = require('path');
@@ -37,16 +55,20 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 const DIR = '.github/workflows';
 const OUT = 'artifacts/validation/intake-plan-regeneration.json';
+const REGISTRY_PATH = '_validation_registry.json';
+const PKG_PATH = 'package.json';
 
 const INTAKE = 'citation:prepare-velocity-intake';
 const PLANNER = 'citation:plan-agent-exact';
-const FULL_PIPELINE = 'release:velocity-intake';
+const TRUTHFULNESS_ID = 'carried-reason-truthfulness';
+const TRUTHFULNESS_SCRIPT = 'validate:carried-reason-truthfulness';
+const FULL_PIPELINE_SCRIPT = 'release:velocity-intake';
+const PREMATURE_CHECKPOINT_PROFILE = 'release';
 
 function rel(p) { return path.join(ROOT, p); }
+function readJson(p) { return JSON.parse(fs.readFileSync(rel(p), 'utf8')); }
 
-// A workflow file is split into steps on `- name:` at any indentation. Steps are the
-// unit that matters: the intake and the planner have to land in the SAME shell block,
-// because a later step runs after validate:release has already judged the tree.
+// A workflow file is split into steps on `- name:` at any indentation.
 function splitSteps(text, file) {
   const lines = text.split('\n');
   const starts = [];
@@ -67,8 +89,8 @@ function splitSteps(text, file) {
 }
 
 // Only real shell invocations count. A line that merely mentions the script inside a
-// `#` comment must not satisfy the requirement - otherwise this validator could be
-// silenced by writing prose about the command instead of running it.
+// `#` comment must not satisfy or violate the requirement - otherwise this validator
+// could be silenced (or falsely tripped) by prose about the command.
 function invokes(stepLines, token) {
   for (let i = 0; i < stepLines.length; i += 1) {
     const line = stepLines[i];
@@ -78,17 +100,13 @@ function invokes(stepLines, token) {
   return -1;
 }
 
-function main() {
+function checkWorkflowSteps(errors) {
   const dirAbs = rel(DIR);
   if (!fs.existsSync(dirAbs)) {
-    console.error(`INTAKE PLAN REGENERATION FAIL: ${DIR} does not exist; there are no workflows to guard.`);
-    process.exit(1);
+    return { examined: [], scanned: 0, halted: `${DIR} does not exist; there are no workflows to guard.` };
   }
   const files = fs.readdirSync(dirAbs).filter((n) => n.endsWith('.yml') || n.endsWith('.yaml')).sort();
-
   const examined = [];
-  const errors = [];
-
   for (const name of files) {
     const relPath = `${DIR}/${name}`;
     const text = fs.readFileSync(rel(relPath), 'utf8');
@@ -96,56 +114,89 @@ function main() {
     for (const step of splitSteps(text, relPath)) {
       const intakeAt = invokes(step.lines, INTAKE);
       if (intakeAt === -1) continue;
-      const fullAt = invokes(step.lines, FULL_PIPELINE);
+      const fullAt = invokes(step.lines, FULL_PIPELINE_SCRIPT);
       const plannerAt = invokes(step.lines, PLANNER);
-      const record = {
-        file: relPath,
-        step: step.name,
-        line: step.line,
-        intake_line: step.line + intakeAt,
-        planner_line: plannerAt === -1 ? null : step.line + plannerAt,
-        satisfied_by: null
-      };
-      if (fullAt !== -1) {
-        record.satisfied_by = FULL_PIPELINE;
-      } else if (plannerAt === -1) {
-        errors.push(`${relPath}:${step.line + intakeAt}:"${step.name}":runs_${INTAKE}_without_${PLANNER}`);
-      } else if (plannerAt < intakeAt) {
-        errors.push(`${relPath}:${step.line + intakeAt}:"${step.name}":${PLANNER}_runs_before_${INTAKE}_so_it_reads_the_stale_ledger`);
-      } else {
-        record.satisfied_by = PLANNER;
+      const record = { file: relPath, step: step.name, line: step.line, intake_line: step.line + intakeAt, planner_line: plannerAt === -1 ? null : step.line + plannerAt, full_pipeline: fullAt !== -1 };
+      // Calling the full pipeline is always fine - it chains planner, apply, and
+      // trace itself, in the right order, in one script.
+      if (fullAt === -1 && plannerAt !== -1) {
+        errors.push(`${relPath}:${step.line + plannerAt}:"${step.name}":runs_${PLANNER}_directly_after_${INTAKE}_without_apply_first:this_is_the_2026-09-03_regression_the_plan_carries_unapplied_specs_and_agent-exact-implementation-trace_fails`);
       }
       examined.push(record);
     }
   }
+  return { examined, scanned: files.length, halted: null };
+}
 
-  // Rule 0. Zero steps examined means the thing this guards no longer exists in the
-  // shape this validator understands - which is not evidence that it is safe.
+function checkFullPipelineOrdering(pkg, errors) {
+  const script = String((pkg.scripts || {})[FULL_PIPELINE_SCRIPT] || '');
+  if (!script) {
+    errors.push(`package_missing_script:${FULL_PIPELINE_SCRIPT}`);
+    return;
+  }
+  const plannerAt = script.indexOf(`npm run ${PLANNER}`);
+  const truthAt = script.indexOf(`npm run ${TRUTHFULNESS_SCRIPT}`);
+  if (plannerAt === -1) errors.push(`${FULL_PIPELINE_SCRIPT}:missing:${PLANNER}`);
+  if (truthAt === -1) errors.push(`${FULL_PIPELINE_SCRIPT}:missing:${TRUTHFULNESS_SCRIPT}`);
+  if (plannerAt !== -1 && truthAt !== -1 && truthAt < plannerAt) {
+    errors.push(`${FULL_PIPELINE_SCRIPT}:${TRUTHFULNESS_SCRIPT}_runs_before_${PLANNER}_so_it_would_check_a_stale_plan`);
+  }
+  if (!pkg.scripts || !pkg.scripts[TRUTHFULNESS_SCRIPT]) errors.push(`package_missing_script:${TRUTHFULNESS_SCRIPT}`);
+}
+
+function checkProfileMembership(errors) {
+  const reg = readJson(REGISTRY_PATH);
+  const validator = (reg.validators || []).find((v) => v.id === TRUTHFULNESS_ID);
+  if (!validator) {
+    errors.push(`registry_missing_validator:${TRUTHFULNESS_ID}`);
+    return;
+  }
+  if ((validator.profiles || []).includes(PREMATURE_CHECKPOINT_PROFILE)) {
+    errors.push(`${TRUTHFULNESS_ID}:still_in_profile:${PREMATURE_CHECKPOINT_PROFILE}:this_profile_is_validated_at_the_absorption_checkpoint_before_the_plan_is_regenerated`);
+  }
+}
+
+function main() {
+  const errors = [];
+  const { examined, scanned, halted } = checkWorkflowSteps(errors);
+  if (halted) {
+    console.error(`INTAKE PLAN REGENERATION FAIL: ${halted}`);
+    process.exit(1);
+  }
+
+  const pkg = readJson(PKG_PATH);
+  checkFullPipelineOrdering(pkg, errors);
+  checkProfileMembership(errors);
+
+  // Rule 0. Zero workflow steps examined means the thing this guards no longer
+  // exists in the shape this validator understands - which is not evidence that
+  // it is safe. The package.json and registry checks above still ran regardless.
   if (!examined.length) {
-    console.error(`INTAKE PLAN REGENERATION FAIL: no step in ${DIR} invokes ${INTAKE}. This validator examined zero items, which is not the same as finding nothing wrong - the command was probably renamed, and the guard is now inert.`);
+    console.error(`INTAKE PLAN REGENERATION FAIL: no step in ${DIR} invokes ${INTAKE}. This validator examined zero workflow steps, which is not the same as finding nothing wrong - the command was probably renamed, and the workflow-side guard is now inert.`);
     process.exit(1);
   }
 
   const report = {
-    schema_version: '1.0',
+    schema_version: '2.0',
     validator: 'intake-plan-regeneration',
     status: errors.length ? 'FAIL' : 'PASS',
     checked_at: new Date().toISOString(),
-    workflow_files_scanned: files.length,
-    steps_examined: examined.length,
+    workflow_files_scanned: scanned,
+    workflow_steps_examined: examined.length,
     steps: examined,
+    full_pipeline_script: FULL_PIPELINE_SCRIPT,
+    truthfulness_deferred_to: TRUTHFULNESS_SCRIPT,
     errors
   };
   fs.mkdirSync(rel('artifacts/validation'), { recursive: true });
   fs.writeFileSync(rel(OUT), `${JSON.stringify(report, null, 2)}\n`);
 
   if (errors.length) {
-    console.error(`INTAKE PLAN REGENERATION FAIL: ${errors.length} step(s) rewrite the disposition ledger without re-deriving the exact plan from it.`);
+    console.error(`INTAKE PLAN REGENERATION FAIL: ${errors.length} issue(s).`);
     for (const e of errors) console.error(`- ${e}`);
-    console.error(`Fix: add \`npm run ${PLANNER}\` immediately after \`npm run ${INTAKE}\` in that step, before the build and validate:release.`);
     process.exit(1);
   }
-  console.log(`INTAKE PLAN REGENERATION PASS: ${examined.length} step(s) across ${files.length} workflow file(s) run ${INTAKE}; every one re-derives the exact plan before validating.`);
+  console.log(`INTAKE PLAN REGENERATION PASS: ${examined.length} workflow step(s) across ${scanned} file(s) invoke ${INTAKE}; none also invoke ${PLANNER} directly; ${FULL_PIPELINE_SCRIPT} chains ${PLANNER} before ${TRUTHFULNESS_SCRIPT}; ${TRUTHFULNESS_ID} is not in the "${PREMATURE_CHECKPOINT_PROFILE}" profile.`);
 }
 
 main();
