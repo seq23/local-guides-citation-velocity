@@ -9,13 +9,13 @@ Social fallback units: 0
 Social fallback allowed: false
 Social fallback suppressed: 0
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 5
-New page units: 0
+Repair units: 4
+New page units: 1
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-003-session-by-session-walkthrough-what-to-expect.html | what happens during each session of a neuropsychological evaluation |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-026-how-to-choose-if-you-have-a-deadline.html | how to choose a neuropsych evaluator fast when I have a school deadline |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /neuro/community-questions/we-actually-only-uncovered-the-asd-in-a-recent-neuropsych-evaluation-because-he-is-highly-/index.html | we only discovered ASD through neuropsych evaluation because my child is highly functioning |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-002-what-to-do-when-adhd-and-autism-symptoms-overlap.html | my child shows both ADHD and autism symptoms what kind of eval do I need |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-006-how-to-compare-adhd-testing-options-before-booking.html | how to compare ADHD testing options before booking an appointment |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-032-child-specialist-anxiety-vs-adhd-eval-near-me.html | child specialist for anxiety vs ADHD evaluation near me who should I see |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-004-how-to-choose-the-right-neuropsych-evaluation-path.html | how to choose the right neuropsychological evaluation for my child |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | truck accident lawyer near me how to choose |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/index.html | can i go to my regular family doctor for the uscis medical exam |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/early-signs-of-ms-in-women-under-40/ | early signs of ms in women under 40 |
