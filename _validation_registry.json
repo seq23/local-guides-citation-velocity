@@ -7399,7 +7399,6 @@
         "core",
         "full-audit",
         "local",
-        "release",
         "strict"
       ],
       "prepare_commands": [],
@@ -7757,6 +7756,46 @@
       "mutates_files": [
         "artifacts/validation/unbuilt-backlog-admission.json"
       ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "id": "intake-plan-regeneration",
+      "title": "The disposition ledger and the exact plan are re-derived together, at the one checkpoint where doing so is safe",
+      "path": "scripts/validators/validate_intake_plan_regeneration.js",
+      "command": "node scripts/validators/validate_intake_plan_regeneration.js",
+      "risk_prevented": "Prevents the intake and the exact implementation plan from keeping two independent lists of the same rows, AND prevents the fix for that from trading one red validator for another. citation:prepare-velocity-intake rewrites data/report_fixes/agent_artifact_disposition_ledger.json; only citation:plan-agent-exact writes the carried reasons in data/report_fixes/agent_exact_implementation_plan.json. The absorption step of velocity-content-release.yml ran the intake and never the planner, so the ledger moved daily and the plan did not: on 2026-09-03, 185 carried rows blamed UNSELECTED_READY_ROW_OUTSIDE_PROCESSING_BUDGET for a budget that had not bound (85 selected of 125), and carried-reason-truthfulness held main red across roughly twelve runs in one day. Adding citation:plan-agent-exact directly into the absorption step fixed that and broke agent-exact-implementation-trace in the same run - a freshly-regenerated plan carries PLANNED specs that release:velocity-intake has not applied yet, and trace correctly read them as repair_not_proven. This validator hard-fails if the absorption step re-derives the plan directly (the regression), if release:velocity-intake does not chain the planner before validate:carried-reason-truthfulness (the actual fix), or if carried-reason-truthfulness is still checked in the release profile at the absorption checkpoint (the premature comparison).",
+      "requires_files": [
+        ".github/workflows/velocity-content-release.yml",
+        "package.json",
+        "_validation_registry.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/intake-plan-regeneration.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/intake-plan-regeneration.json"
+      ],
+      "timeout_seconds": 60,
+      "depends_on": [],
+      "why_existing_checks_do_not_cover": "carried-reason-truthfulness and agent-exact-implementation-trace each catch their own symptom only after a full build has already run, inside a job that already spent the work. Nothing checked the workflow and package.json wiring that causes either failure, so a fix for one could silently reintroduce the other. This asserts both halves of the fix statically and hard-fails when it examines zero workflow steps.",
+      "estimated_runtime_seconds": 2
     }
   ],
   "legacy_policy": {

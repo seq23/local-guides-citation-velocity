@@ -161,6 +161,20 @@ jobs:
         # is independently provable against the same release gate. So it lands on
         # its own validated commit first, and a later content-release failure can
         # no longer un-absorb a run that is already on disk.
+        #
+        # citation:prepare-velocity-intake REWRITES the disposition ledger here,
+        # but citation:plan-agent-exact deliberately does NOT run in this step.
+        # Regenerating the plan this early was tried and reverted: the plan
+        # would then carry freshly-PLANNED repair specs that release:velocity-intake
+        # has not applied yet (apply-agent-exact runs later, in the next job step),
+        # and agent-exact-implementation-trace - also in the release profile -
+        # correctly reads those as repair_not_proven. The plan on disk here stays
+        # whatever the last full release cycle committed (already applied, already
+        # traced); only the ledger moves. carried-reason-truthfulness is therefore
+        # not checked at this checkpoint - see _validation_registry.json and
+        # scripts/validators/validate_carried_reason_truthfulness.js - and instead
+        # runs inside release:velocity-intake immediately after citation:plan-agent-exact,
+        # the one place both files are guaranteed to be mutually fresh together.
         run: |
           npm run citation:prepare-velocity-intake
           npm run build:cached
