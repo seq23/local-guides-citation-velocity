@@ -170,4 +170,28 @@ function main() {
   console.log(`AGENT ARTIFACT STRANDING PASS: ${examined} manifest(s) examined; ${pending.length} pending, none beyond the ${allowedDays}-day allowance derived from ${WORKFLOW_REL}.`);
 }
 
-main();
+/**
+ * The single source of truth for how long a landed run may sit unabsorbed.
+ *
+ * agent-artifact-continuity asks the SAME question this validator does - a
+ * READY_FOR_ABSORPTION manifest with no normalized artifact next to it - and used
+ * to answer it with zero tolerance. That made every raw agent drop a hard failure
+ * the instant it landed, because the absorption commit that satisfies it is
+ * written minutes later by a different workflow. Validate Repo went red on the
+ * drop commit on 2026-09-01, 09-02, 09-03 and 09-04, including on days the
+ * release lane then succeeded. Two guards asking one question must not hold two
+ * different thresholds, so continuity imports this one instead of restating it.
+ */
+function absorptionWindow() {
+  const workflowAbs = path.join(ROOT, WORKFLOW_REL);
+  if (!fs.existsSync(workflowAbs) || !fs.readFileSync(workflowAbs, 'utf8').includes(DISPATCH_SIGNAL)) {
+    return { error: `${WORKFLOW_REL} no longer dispatches the release lane on a pending manifest (looked for ${DISPATCH_SIGNAL}).` };
+  }
+  const cadence = cadenceDaysFromWorkflow();
+  if (cadence.error) return { error: cadence.error };
+  return { cadenceDays: cadence.days, graceCycles: GRACE_CYCLES, allowedDays: cadence.days * (1 + GRACE_CYCLES), source: WORKFLOW_REL };
+}
+
+if (require.main === module) main();
+
+module.exports = { absorptionWindow, cadenceDaysFromWorkflow, daysBetween, GRACE_CYCLES, WORKFLOW_REL, DISPATCH_SIGNAL };
