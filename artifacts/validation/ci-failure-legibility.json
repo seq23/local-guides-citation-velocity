@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "validator": "ci-failure-legibility",
+  "status": "PASS",
+  "cases_examined": 14,
+  "cases": [
+    {
+      "case": "runner_readable",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "case": "runner_requires_emitter",
+      "ok": true,
+      "detail": "run_validation_registry.js must require ./failure_legibility"
+    },
+    {
+      "case": "runner_calls_emitter",
+      "ok": true,
+      "detail": "run_validation_registry.js must call emitFailureLegibility()"
+    },
+    {
+      "case": "emitter_precedes_failing_exit",
+      "ok": true,
+      "detail": "emitFailureLegibility() must run on the blocking path before process.exit(1)"
+    },
+    {
+      "case": "emitter_loadable",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "case": "emits_annotation",
+      "ok": true,
+      "detail": "a blocking failure must emit a ::error:: annotation carrying the cause"
+    },
+    {
+      "case": "emits_step_summary",
+      "ok": true,
+      "detail": "a blocking failure must append the cause to $GITHUB_STEP_SUMMARY"
+    },
+    {
+      "case": "cause_is_in_the_log_tail",
+      "ok": true,
+      "detail": "the cause must appear within the last 25 lines of runner output"
+    },
+    {
+      "case": "names_the_blocking_validator",
+      "ok": true,
+      "detail": "the tail block must be labelled so it is findable"
+    },
+    {
+      "case": "log_fallback_strips_runner_scaffolding",
+      "ok": true,
+      "detail": "the first detail line from a log fallback must be the cause, saw: agent-artifact-continuity FAIL: examined zero run groups."
+    },
+    {
+      "case": "never_silent_on_an_empty_blocking_set",
+      "ok": true,
+      "detail": "a FAIL report with zero blocking validators must still say so loudly"
+    },
+    {
+      "case": "degrades_without_evidence",
+      "ok": true,
+      "detail": "an unreadable evidence file must still produce a named annotation"
+    },
+    {
+      "case": "annotation_is_single_line",
+      "ok": true,
+      "detail": "one blocking validator must produce exactly one single-line annotation, saw 1"
+    },
+    {
+      "case": "encodes_newlines",
+      "ok": true,
+      "detail": "newlines in annotation bodies must be percent-encoded"
+    }
+  ],
+  "errors": []
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "cc8d9b17e1ee7c97601abf6def94a998bacac294e2caf1625c1cfd5c51dce17c",
+  "registry_sha256": "a08a7c2ca737b1a1472e3780b4ee49b7c23d022ab74cbff49b27769adcdbee0d",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 179,
-    "active": 152,
+    "total": 180,
+    "active": 153,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 150,
+    "hard_fail": 151,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -158,7 +158,8 @@
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
         "absorption-window-agreement",
-        "release-lane-heals-before-push"
+        "release-lane-heals-before-push",
+        "ci-failure-legibility"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -170,6 +171,7 @@
         "agent-run-absorption-completeness",
         "agent-run-delivery-coverage",
         "authority-contracts",
+        "ci-failure-legibility",
         "generator-instruction-refusal",
         "historic-artifact-recovery",
         "intake-plan-regeneration",
@@ -411,7 +413,8 @@
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
         "absorption-window-agreement",
-        "release-lane-heals-before-push"
+        "release-lane-heals-before-push",
+        "ci-failure-legibility"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -426,6 +429,7 @@
         "agent-run-delivery-coverage",
         "atom-contract",
         "authority-contracts",
+        "ci-failure-legibility",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -718,7 +722,8 @@
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
         "absorption-window-agreement",
-        "release-lane-heals-before-push"
+        "release-lane-heals-before-push",
+        "ci-failure-legibility"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -733,6 +738,7 @@
         "agent-run-delivery-coverage",
         "atom-contract",
         "authority-contracts",
+        "ci-failure-legibility",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -1056,7 +1062,8 @@
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
         "absorption-window-agreement",
-        "release-lane-heals-before-push"
+        "release-lane-heals-before-push",
+        "ci-failure-legibility"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1071,6 +1078,7 @@
         "agent-run-delivery-coverage",
         "atom-contract",
         "authority-contracts",
+        "ci-failure-legibility",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -1369,7 +1377,8 @@
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
         "absorption-window-agreement",
-        "release-lane-heals-before-push"
+        "release-lane-heals-before-push",
+        "ci-failure-legibility"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1384,6 +1393,7 @@
         "agent-run-delivery-coverage",
         "atom-contract",
         "authority-contracts",
+        "ci-failure-legibility",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -1963,7 +1973,8 @@
         "agent-artifact-stranding",
         "intake-plan-regeneration",
         "absorption-window-agreement",
-        "release-lane-heals-before-push"
+        "release-lane-heals-before-push",
+        "ci-failure-legibility"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1975,6 +1986,7 @@
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
         "agent-run-delivery-coverage",
+        "ci-failure-legibility",
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "intake-plan-regeneration",
@@ -2080,7 +2092,8 @@
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
         "absorption-window-agreement",
-        "release-lane-heals-before-push"
+        "release-lane-heals-before-push",
+        "ci-failure-legibility"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -2090,6 +2103,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
+        "ci-failure-legibility",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -8423,6 +8437,45 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "ci-failure-legibility",
+        "title": "A blocking validation run states its cause on the run page, not only in an artifact",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_ci_failure_legibility.js",
+        "command": "node scripts/validators/validate_ci_failure_legibility.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/validation/run_validation_registry.js",
+          "scripts/validation/failure_legibility.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/ci-failure-legibility.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/ci-failure-legibility.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Velocity Content Release and Validate Repo failed on 2026-09-01, 09-02, 09-03 and 09-04 for the same reason, and each failure was diagnosed from scratch because the run page did not say what broke. In run 33879505846 the whole log rendered as UNKNOWN STEP, the last line was a bare '##[error]Process completed with exit code 1.', and the actual cause - normalized_output_missing for 2026-09-04/uscis-medical - sat on line 1188 of 1265 under roughly 750 lines of pretty-printed JSON that the validator dumped as evidence. The only comfortable route to the diagnosis was downloading velocity-validation-diagnostics-33879505846. An unreadable failure is a failure that recurs, because nobody pays the cost of reading it. This fails if the validation runner does not, on the blocking path before its non-zero exit, emit each blocking validator's cause as a single-line ::error:: annotation, append it to $GITHUB_STEP_SUMMARY, and print it in a labelled block LAST so the log tail is the diagnosis. The emitter is EXECUTED against a constructed failing report modelled on the real 2026-09-04 failure, not read for reassuring words, and a FAIL report carrying zero blocking validators must still say so loudly rather than print nothing.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -12295,6 +12348,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "velocity-content-release.yml has four release-profile gates and only the last one was routed through self-heal, on 2026-09-03, after a raw gate HARD_FAILed on a healthy publish three times in one day - each time on a validator that declared a repair the lane never ran. The other three were left raw and the defect recurred on the first of them: on 2026-09-04 the absorption checkpoint died on agent-run-delivery-coverage, whose registered repair recover:run-delivery-coverage-ratchet was never reached, and whose gaps could only have been closed by release:velocity-intake - a step that runs AFTER the gate that refused to let the lane get there. Four consecutive red runs and no retry, because this lane triggers on a new manifest and that manifest had already landed. This fails if any git push in the lane is not preceded by npm run selfheal:release followed by an unassisted npm run validate:release, read from the workflow with comments stripped so prose about the fix cannot stand in for the fix.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "ci-failure-legibility",
+        "title": "A blocking validation run states its cause on the run page, not only in an artifact",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_ci_failure_legibility.js",
+        "command": "node scripts/validators/validate_ci_failure_legibility.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/validation/run_validation_registry.js",
+          "scripts/validation/failure_legibility.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/ci-failure-legibility.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/ci-failure-legibility.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Velocity Content Release and Validate Repo failed on 2026-09-01, 09-02, 09-03 and 09-04 for the same reason, and each failure was diagnosed from scratch because the run page did not say what broke. In run 33879505846 the whole log rendered as UNKNOWN STEP, the last line was a bare '##[error]Process completed with exit code 1.', and the actual cause - normalized_output_missing for 2026-09-04/uscis-medical - sat on line 1188 of 1265 under roughly 750 lines of pretty-printed JSON that the validator dumped as evidence. The only comfortable route to the diagnosis was downloading velocity-validation-diagnostics-33879505846. An unreadable failure is a failure that recurs, because nobody pays the cost of reading it. This fails if the validation runner does not, on the blocking path before its non-zero exit, emit each blocking validator's cause as a single-line ::error:: annotation, append it to $GITHUB_STEP_SUMMARY, and print it in a labelled block LAST so the log tail is the diagnosis. The emitter is EXECUTED against a constructed failing report modelled on the real 2026-09-04 failure, not read for reassuring words, and a FAIL report carrying zero blocking validators must still say so loudly rather than print nothing.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
