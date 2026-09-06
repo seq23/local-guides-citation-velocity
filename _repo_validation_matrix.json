@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "e3174e9da9dd08663a84701d9694a864d3a93a389cc32af7d638606c798c8e81",
+  "registry_sha256": "e0bfa930c5af89ee0fa755a97356a9b5bae4631c509b38ce93c6ee7be420b9a5",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 181,
-    "active": 154,
+    "total": 182,
+    "active": 155,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 152,
+    "hard_fail": 153,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -160,7 +160,8 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
-        "mutation-scope-acceptance"
+        "mutation-scope-acceptance",
+        "ci-health-lane-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -173,6 +174,7 @@
         "agent-run-delivery-coverage",
         "authority-contracts",
         "ci-failure-legibility",
+        "ci-health-lane-coverage",
         "generator-instruction-refusal",
         "historic-artifact-recovery",
         "intake-plan-regeneration",
@@ -417,7 +419,8 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
-        "mutation-scope-acceptance"
+        "mutation-scope-acceptance",
+        "ci-health-lane-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -433,6 +436,7 @@
         "atom-contract",
         "authority-contracts",
         "ci-failure-legibility",
+        "ci-health-lane-coverage",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -728,7 +732,8 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
-        "mutation-scope-acceptance"
+        "mutation-scope-acceptance",
+        "ci-health-lane-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -744,6 +749,7 @@
         "atom-contract",
         "authority-contracts",
         "ci-failure-legibility",
+        "ci-health-lane-coverage",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -1070,7 +1076,8 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
-        "mutation-scope-acceptance"
+        "mutation-scope-acceptance",
+        "ci-health-lane-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1086,6 +1093,7 @@
         "atom-contract",
         "authority-contracts",
         "ci-failure-legibility",
+        "ci-health-lane-coverage",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -1387,7 +1395,8 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
-        "mutation-scope-acceptance"
+        "mutation-scope-acceptance",
+        "ci-health-lane-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1403,6 +1412,7 @@
         "atom-contract",
         "authority-contracts",
         "ci-failure-legibility",
+        "ci-health-lane-coverage",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -1876,7 +1886,8 @@
         "carried-reason-truthfulness",
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
-        "mutation-scope-acceptance"
+        "mutation-scope-acceptance",
+        "ci-health-lane-coverage"
       ],
       "execution_order": [
         "accepted-artifact-recovery",
@@ -1885,6 +1896,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
+        "ci-health-lane-coverage",
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "generator-instruction-refusal",
@@ -2106,7 +2118,8 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
-        "mutation-scope-acceptance"
+        "mutation-scope-acceptance",
+        "ci-health-lane-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -2117,6 +2130,7 @@
         "agent-named-target-parseability",
         "agent-run-absorption-completeness",
         "ci-failure-legibility",
+        "ci-health-lane-coverage",
         "dynamic-page-contract-cross-vertical",
         "firehose-source-contract",
         "generated-content-finalization-contract",
@@ -8529,6 +8543,44 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "ci-health-lane-coverage",
+        "title": "Every workflow that pushes to main is watched by the CI health lane",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_ci_health_lane_coverage.js",
+        "command": "node scripts/validators/validate_ci_health_lane_coverage.js",
+        "depends_on": [],
+        "requires_files": [
+          ".github/workflows/ci-health-recovery.yml"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/ci-health-lane-coverage.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/ci-health-lane-coverage.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "ci-health-recovery.yml subscribed to workflow_run for \"Validate Repo\" alone. Velocity Content Release - the surface that publishes - ran red on 2026-09-04, 2026-09-05 and twice on 2026-09-06, and the health lane reported SUCCESS at every one of those times, honestly, because Validate Repo really was green and the publishing lane was never in frame. A three-day outage raised no alert. Four workflows push to main and none was observed. This is not a defect in the alerting code, so no test of the alerting code would find it: it is a gap between two lists that nothing compared. This validator compares them - every workflow whose body runs `git push` must appear in the health lane's subscription by its exact name, \"Validate Repo\" must be watched, every watched name must resolve to a real workflow (a typo watches nothing and reports nothing), and the recorded per-lane health must agree with the rollup that summarises it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -12479,6 +12531,44 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "beginMutationScope() records transaction.prior_html_sha256 for every route it thaws and acceptMutationScope() never read it, so a repair rebuild that came back missing content was accepted and frozen as the new accepted copy. On 2026-09-04 a merged uscis-medical repair thawed /uscis-medical/, the rebuild lost 414 bytes carrying two ledgered required_markers, and nine landed recommendations across the 2026-07-24, 2026-07-31 and 2026-08-07 runs stopped being shown by the page delivering them - taking Velocity Content Release red for three days on rendered-output-shrink-guard and agent-run-delivery-coverage, neither of which has a repair that can restore content. acceptMutationScope() now refuses such a route, restores its accepted bytes and reports it; this guard proves the refusal still fires, positively and negatively, on routes that currently show ledgered markers, and checks that every rejected route in an acceptance report is back at its accepted bytes.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "ci-health-lane-coverage",
+        "title": "Every workflow that pushes to main is watched by the CI health lane",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_ci_health_lane_coverage.js",
+        "command": "node scripts/validators/validate_ci_health_lane_coverage.js",
+        "depends_on": [],
+        "requires_files": [
+          ".github/workflows/ci-health-recovery.yml"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/ci-health-lane-coverage.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/ci-health-lane-coverage.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "ci-health-recovery.yml subscribed to workflow_run for \"Validate Repo\" alone. Velocity Content Release - the surface that publishes - ran red on 2026-09-04, 2026-09-05 and twice on 2026-09-06, and the health lane reported SUCCESS at every one of those times, honestly, because Validate Repo really was green and the publishing lane was never in frame. A three-day outage raised no alert. Four workflows push to main and none was observed. This is not a defect in the alerting code, so no test of the alerting code would find it: it is a gap between two lists that nothing compared. This validator compares them - every workflow whose body runs `git push` must appear in the health lane's subscription by its exact name, \"Validate Repo\" must be watched, every watched name must resolve to a real workflow (a typo watches nothing and reports nothing), and the recorded per-lane health must agree with the rollup that summarises it.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

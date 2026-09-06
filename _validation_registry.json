@@ -7977,6 +7977,46 @@
       "repair_command": "",
       "repair_writes": [],
       "repair_scope": "No repair. A failure here means the refusal mechanism itself regressed, or a rejected route was not restored to its accepted bytes; both are code defects, and a command that papered over either would reinstate the hole this closes."
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 300,
+      "depends_on": [],
+      "estimated_runtime_seconds": 5,
+      "id": "ci-health-lane-coverage",
+      "title": "Every workflow that pushes to main is watched by the CI health lane",
+      "path": "scripts/validators/validate_ci_health_lane_coverage.js",
+      "command": "node scripts/validators/validate_ci_health_lane_coverage.js",
+      "risk_prevented": "ci-health-recovery.yml subscribed to workflow_run for \"Validate Repo\" alone. Velocity Content Release - the surface that publishes - ran red on 2026-09-04, 2026-09-05 and twice on 2026-09-06, and the health lane reported SUCCESS at every one of those times, honestly, because Validate Repo really was green and the publishing lane was never in frame. A three-day outage raised no alert. Four workflows push to main and none was observed. This is not a defect in the alerting code, so no test of the alerting code would find it: it is a gap between two lists that nothing compared. This validator compares them - every workflow whose body runs `git push` must appear in the health lane's subscription by its exact name, \"Validate Repo\" must be watched, every watched name must resolve to a real workflow (a typo watches nothing and reports nothing), and the recorded per-lane health must agree with the rollup that summarises it.",
+      "requires_files": [
+        ".github/workflows/ci-health-recovery.yml"
+      ],
+      "produces_files": [
+        "artifacts/validation/ci-health-lane-coverage.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/ci-health-lane-coverage.json"
+      ],
+      "why_existing_checks_do_not_cover": "workflow-yaml-inventory and workflow-topology describe what each workflow is and what it mutates; neither asks which workflows anything is WATCHING. search-intelligence-truth checks the health record's internal consistency, but a record that was never written for an unwatched lane is consistent and empty. ci-failure-legibility governs how a failure reads once observed, not whether it is observed at all.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair. Adding a workflow to the health lane's subscription is a deliberate decision about what the repo watches, and a command that silently subscribed to whatever it found would make the list describe the code rather than govern it."
     }
   ],
   "legacy_policy": {

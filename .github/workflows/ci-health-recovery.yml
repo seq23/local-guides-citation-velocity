@@ -2,7 +2,20 @@ name: CI Health Red Recovery
 
 on:
   workflow_run:
-    workflows: ["Validate Repo"]
+    # Every workflow that pushes to main, plus the validator that governs them.
+    #
+    # This list was ["Validate Repo"] alone. Velocity Content Release ran red on
+    # 2026-09-04, 09-05 and twice on 09-06 while this lane reported SUCCESS at every
+    # one of those times - honestly, because Validate Repo really was green and the
+    # publishing lane was never in frame. A three-day outage on the surface that
+    # publishes raised no alert. ci-health-lane-coverage now fails if a workflow that
+    # pushes to main is missing from this list.
+    workflows:
+      - "Validate Repo"
+      - "Velocity Content Release"
+      - "Velocity Full Rebuild"
+      - "Query Evidence Refresh"
+      - "Query Class Occupancy Probe"
     types: [completed]
   workflow_dispatch:
 
@@ -36,6 +49,9 @@ jobs:
           # validated. A dispatch is now 'unknown', and the script refuses to
           # close an alert on anything but an observed workflow_run success.
           WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion || 'unknown' }}
+          # Which lane the observation belongs to. Health is recorded per workflow, so
+          # one lane's green can no longer overwrite another lane's red.
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
           WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url || format('{0}/{1}/actions', github.server_url, github.repository) }}
         run: node scripts/search_intelligence/ci_health_alert.js

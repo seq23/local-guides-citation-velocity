@@ -23,6 +23,26 @@
  *
  * On state naming: this writes 'RECOVERED' or 'RED', never 'GREEN'. Consumers
  * must match those two.
+ *
+ * 2026-09-06: it watched one workflow.
+ *
+ * Velocity Content Release - the repo's publishing surface - ran red on 2026-09-04,
+ * 09-05 and twice on 09-06 and this lane reported SUCCESS straight through, because
+ * `workflow_run.workflows` named only "Validate Repo" and Validate Repo was genuinely
+ * green the whole time. Nothing was inert and no loop passed on empty: the lane
+ * answered honestly about the one thing it could see, and a three-day outage on the
+ * lane that publishes ran with no alert because it was never in frame. Four workflows
+ * push to main and none of them was observed.
+ *
+ * Health is therefore per lane. `lanes` carries one record per observed workflow, each
+ * with the state, SHA and run URL that workflow last proved for itself, and one lane's
+ * red can no longer be overwritten by another lane's green. The top-level fields stay
+ * and become the ROLLUP - RED if any watched lane is red, RECOVERED only when every
+ * observed lane is - so existing consumers keep reading a true summary rather than the
+ * last writer's opinion.
+ *
+ * Alerts are per lane too, titled by workflow. "[Automation Health] Validate Repo CI
+ * RED" is unchanged, so a standing alert stays findable and closable.
  */
 const L = require('./lib');
 const https = require('https');
@@ -32,49 +52,98 @@ const sha = process.env.WORKFLOW_HEAD_SHA || '';
 const runUrl = process.env.WORKFLOW_RUN_URL || '';
 const repo = process.env.GITHUB_REPOSITORY || '';
 const token = process.env.GITHUB_TOKEN || '';
+// Which lane this observation is about. A dispatch observes no workflow_run at all,
+// so it names no lane and may not move any lane's verdict.
+const lane = (process.env.WORKFLOW_NAME || '').trim();
 
 // Only an observed success is a recovery. 'unknown' (a manual dispatch that
 // observed nothing) is neither a recovery nor a failure: it must not clear an
 // alert, and it must not raise one either.
 const OBSERVED_SUCCESS = conclusion === 'success';
 const OBSERVED_FAILURE = conclusion !== 'success' && conclusion !== 'unknown';
+const OBSERVED = OBSERVED_SUCCESS || OBSERVED_FAILURE;
 
-const health = L.readJson('data/search_intelligence/automation_health.json', { schema_version: '1.0', state: 'UNPROVEN' });
+const health = L.readJson('data/search_intelligence/automation_health.json', { schema_version: '1.1', state: 'UNPROVEN' });
+if (!health.lanes || typeof health.lanes !== 'object') health.lanes = {};
+health.schema_version = '1.1';
 health.observed_at = new Date().toISOString();
 health.observed_conclusion = conclusion;
+health.observed_workflow = lane;
 
-if (OBSERVED_SUCCESS) {
-  health.state = 'RECOVERED';
-  health.last_validated_sha = sha;
-  health.last_recovery_sha = sha;
-  // A recovery supersedes the failure it recovered from; leaving the old run
-  // URL in place described a green state pointing at a red run.
-  health.failure_run_url = null;
-  health.recovery_run_url = runUrl;
-} else if (OBSERVED_FAILURE) {
-  health.state = 'RED';
-  health.last_failure_sha = sha;
-  health.failure_run_url = runUrl;
-} else {
-  // Nothing was observed. Say so and change no verdict.
-  health.state = health.state || 'UNPROVEN';
+if (OBSERVED && lane) {
+  const record = health.lanes[lane] || { state: 'UNPROVEN' };
+  record.workflow = lane;
+  record.observed_at = health.observed_at;
+  record.observed_conclusion = conclusion;
+  if (OBSERVED_SUCCESS) {
+    record.state = 'RECOVERED';
+    record.last_validated_sha = sha;
+    record.last_recovery_sha = sha;
+    // A recovery supersedes the failure it recovered from; leaving the old run
+    // URL in place described a green state pointing at a red run.
+    record.failure_run_url = null;
+    record.recovery_run_url = runUrl;
+  } else {
+    record.state = 'RED';
+    record.last_failure_sha = sha;
+    record.failure_run_url = runUrl;
+  }
+  health.lanes[lane] = record;
+} else if (!OBSERVED) {
   health.last_unobserved_at = health.observed_at;
 }
+
+/**
+ * The rollup, recomputed from the lanes every time.
+ *
+ * Any lane red makes the summary red - a green publishing lane cannot be used to
+ * describe a repo whose validator is failing, and a green validator cannot be used to
+ * describe a repo whose publishing lane has been red for three days, which is exactly
+ * what happened. RECOVERED requires every observed lane to be recovered; anything else
+ * is UNPROVEN, which is what "we have not seen enough to say" should look like.
+ */
+const laneRecords = Object.values(health.lanes);
+const red = laneRecords.filter((r) => r.state === 'RED');
+const recovered = laneRecords.filter((r) => r.state === 'RECOVERED');
+if (red.length) {
+  const worst = red.reduce((a, b) => (String(a.observed_at || '') >= String(b.observed_at || '') ? a : b));
+  health.state = 'RED';
+  health.last_failure_sha = worst.last_failure_sha || null;
+  health.failure_run_url = worst.failure_run_url || null;
+  health.red_lanes = red.map((r) => r.workflow).sort();
+} else if (laneRecords.length && recovered.length === laneRecords.length) {
+  const newest = recovered.reduce((a, b) => (String(a.observed_at || '') >= String(b.observed_at || '') ? a : b));
+  health.state = 'RECOVERED';
+  health.last_validated_sha = newest.last_validated_sha || null;
+  health.last_recovery_sha = newest.last_recovery_sha || null;
+  health.recovery_run_url = newest.recovery_run_url || null;
+  health.failure_run_url = null;
+  health.red_lanes = [];
+} else {
+  health.state = 'UNPROVEN';
+  health.red_lanes = [];
+}
+health.lanes_observed = laneRecords.length;
+health.truth_rule = 'CI health changes only from observed exact-SHA workflow results, recorded per lane. The top-level state is a rollup: RED if any lane is red, RECOVERED only when every observed lane is.';
 L.writeJson('data/search_intelligence/automation_health.json', health);
 
-if (!OBSERVED_SUCCESS && !OBSERVED_FAILURE) {
-  console.log(`CI HEALTH NAMED STOP: conclusion "${conclusion}" observed no Validate Repo run (this is what a manual dispatch looks like). State left at ${health.state}; no alert opened, and no standing alert closed.`);
+if (!OBSERVED) {
+  console.log(`CI HEALTH NAMED STOP: conclusion "${conclusion}" observed no workflow_run (this is what a manual dispatch looks like). Rollup left at ${health.state} over ${laneRecords.length} lane(s); no alert opened, and no standing alert closed.`);
   process.exit(0);
+}
+if (!lane) {
+  console.error('CI HEALTH FAIL: a workflow_run was observed but WORKFLOW_NAME is empty, so the result cannot be attributed to a lane. Refusing to record an unattributed verdict.');
+  process.exit(1);
 }
 
 if (!token || !repo) {
-  console.log(`CI HEALTH ${health.state}: ${sha || 'NO_SHA'} (no GitHub mutation: token/repo unavailable)`);
+  console.log(`CI HEALTH ${health.lanes[lane].state} [${lane}]: ${sha || 'NO_SHA'} (no GitHub mutation: token/repo unavailable)`);
   process.exit(0);
 }
 
 const [owner, name] = repo.split('/');
-const title = '[Automation Health] Validate Repo CI RED';
-const body = `Exact SHA: ${sha}\nConclusion: ${conclusion}\nRun: ${runUrl}\n\nThis issue is managed by the CI health recovery loop. A later green exact-SHA run may close it.`;
+const title = `[Automation Health] ${lane} CI RED`;
+const body = `Workflow: ${lane}\nExact SHA: ${sha}\nConclusion: ${conclusion}\nRun: ${runUrl}\n\nThis issue is managed by the CI health recovery loop. A later green exact-SHA run of this same workflow may close it.`;
 
 function request(method, urlPath, payload) {
   return new Promise((resolve, reject) => {
@@ -120,10 +189,10 @@ async function findAlert() {
   const issue = await findAlert();
   if (OBSERVED_SUCCESS) {
     if (issue) await request('PATCH', `/repos/${owner}/${name}/issues/${issue.number}`, { state: 'closed', body: `Recovered on exact SHA ${sha}.\nRun: ${runUrl}` });
-    console.log(`CI HEALTH RECOVERED ${sha}${issue ? ` (closed alert #${issue.number})` : ' (no standing alert)'}`);
+    console.log(`CI HEALTH RECOVERED [${lane}] ${sha}${issue ? ` (closed alert #${issue.number})` : ' (no standing alert)'}`);
     return;
   }
   if (issue) await request('PATCH', `/repos/${owner}/${name}/issues/${issue.number}`, { body });
   else await request('POST', `/repos/${owner}/${name}/issues`, { title, body, labels: ['automation-health'] });
-  console.log(`CI HEALTH RED ${sha}`);
+  console.log(`CI HEALTH RED [${lane}] ${sha}`);
 })().catch((e) => { console.error(e.stack || e.message); process.exit(1); });
