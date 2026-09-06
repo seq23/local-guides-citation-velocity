@@ -253,13 +253,90 @@ function beginMutationScope(routes, releaseId = `release-${Date.now()}`) {
   writeJsonAtomic(ACTIVE_SCOPE_PATH, { schema_version: '1.0', release_id: releaseId, created_at: stableNow(), routes: normalized, thawed_routes: thawed });
   return { release_id: releaseId, routes: normalized, thawed_routes: thawed };
 }
+const ACCEPTANCE_REPORT_REL = 'artifacts/validation/mutation-scope-acceptance.json';
+
+/**
+ * Accept a thawed route only if it kept what it was already delivering.
+ *
+ * beginMutationScope() records transaction.prior_html_sha256 for exactly this
+ * comparison and nothing ever read it. A rebuild that comes back missing a marker
+ * some landed ledger row depends on is not a repair, it is a trade - and freezing it
+ * makes the thinner page the new accepted copy, which is how 2026-09-04 lost nine
+ * delivered recommendations from /uscis-medical/ to buy one H2. See
+ * scripts/lib/route_marker_preservation.js.
+ *
+ * A route that lost a marker is REJECTED, not accepted: its prior bytes go back on
+ * disk, its registry record returns to FROZEN untouched, and the route is reported.
+ * The rejection is per route - the rest of the release still lands, because refusing
+ * one bad mutation is not a reason to withhold every good one.
+ */
 function acceptMutationScope() {
   const scope = readJson(ACTIVE_SCOPE_PATH, null);
-  if (!scope) return { accepted: 0, routes: [] };
+  if (!scope) return { accepted: 0, routes: [], rejected: [], examined: 0 };
+  const { ledgerMarkersByRoute, lostMarkers } = require('./route_marker_preservation');
+  const markersByRoute = ledgerMarkersByRoute({ normalizeRoute, implementationPathToRoute });
+
+  const registry = loadRegistry();
+  const byRoute = new Map((registry.pages || []).map((p, i) => [normalizeRoute(p.route), i]));
+
   const accepted = [];
-  for (const route of scope.thawed_routes || []) { freezeRoute(route); accepted.push(route); }
+  const rejected = [];
+  let examined = 0;
+
+  for (const route of scope.thawed_routes || []) {
+    const idx = byRoute.get(route);
+    const record = idx === undefined ? null : registry.pages[idx];
+    const priorHash = record && record.transaction && record.transaction.prior_html_sha256;
+    const renderedRel = (record && record.rendered_file) || routeToRenderedRel(route);
+    const renderedAbs = path.join(ROOT, renderedRel);
+    const rows = markersByRoute.get(route) || [];
+
+    let lost = [];
+    let priorHtml = null;
+    if (priorHash && rows.length && fs.existsSync(renderedAbs)) {
+      const priorAbs = path.join(ROOT, cacheRelForHash(priorHash));
+      if (fs.existsSync(priorAbs)) {
+        priorHtml = zlib.gunzipSync(fs.readFileSync(priorAbs));
+        examined += 1;
+        lost = lostMarkers(priorHtml.toString('utf8'), fs.readFileSync(renderedAbs, 'utf8'), rows);
+      }
+    }
+
+    if (!lost.length) { freezeRoute(route); accepted.push(route); continue; }
+
+    // Put the accepted bytes back and leave the record exactly as it was frozen.
+    fs.mkdirSync(path.dirname(renderedAbs), { recursive: true });
+    fs.writeFileSync(renderedAbs, priorHtml);
+    const current = loadRegistry();
+    const at = (current.pages || []).findIndex((p) => normalizeRoute(p.route) === route);
+    if (at >= 0) { current.pages[at] = { ...current.pages[at], state: 'FROZEN', transaction: null }; saveRegistry(current); }
+    rejected.push({
+      route,
+      rendered_file: renderedRel,
+      reason: 'ledgered_markers_lost',
+      lost_marker_count: lost.length,
+      depended_on_by_rows: lost.reduce((n, entry) => n + entry.depended_on_by.length, 0),
+      lost_markers: lost.slice(0, 10)
+    });
+  }
+
   fs.rmSync(ACTIVE_SCOPE_PATH, { force: true });
-  return { accepted: accepted.length, routes: accepted };
+
+  const report = {
+    schema_version: '1.0',
+    guard: 'mutation-scope-acceptance',
+    release_id: scope.release_id || '',
+    checked_at: stableNow(),
+    thawed_route_count: (scope.thawed_routes || []).length,
+    routes_examined_against_prior: examined,
+    accepted_count: accepted.length,
+    accepted_routes: accepted,
+    rejected_count: rejected.length,
+    rejected
+  };
+  writeJsonAtomic(path.join(ROOT, ACCEPTANCE_REPORT_REL), report);
+
+  return { accepted: accepted.length, routes: accepted, rejected, examined, report_rel: ACCEPTANCE_REPORT_REL };
 }
 function rollbackMutationScope() {
   const scope = readJson(ACTIVE_SCOPE_PATH, null);
@@ -327,5 +404,5 @@ module.exports = {
   loadRegistry, saveRegistry, seedAcceptedPages, freezeRoute, freezeNewAdmitted,
   restoreFrozenPages, verifyFrozenPages, pruneFrozenCache, beginMutationScope, acceptMutationScope,
   rollbackMutationScope, queueMutationRoutes, consumePendingMutationRoutes, mutableRouteSet,
-  applyFrozenMetadataToEntries, ensureFrozenInventoryEntries
+  applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, ACCEPTANCE_REPORT_REL
 };

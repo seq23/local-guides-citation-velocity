@@ -139,14 +139,23 @@ function main(){
    const frozenNew=freezeNewAdmitted();
    const accepted=acceptMutationScope();
    const acceptedSet=new Set(accepted.routes||[]);
-   const notAccepted=expectedExistingRepairRoutes.filter((route)=>!acceptedSet.has(route));
+   // A route acceptMutationScope REFUSED is a named, reported outcome, not a lost
+   // one: its accepted bytes are back on disk and its rejection is written to
+   // artifacts/validation/mutation-scope-acceptance.json. Failing the release over it
+   // would withhold every other repair in the batch to punish one that would have
+   // dropped delivered content. A route that is in neither set really did vanish.
+   const rejectedSet=new Set((accepted.rejected||[]).map((row)=>row.route));
+   const notAccepted=expectedExistingRepairRoutes.filter((route)=>!acceptedSet.has(route)&&!rejectedSet.has(route));
    if(notAccepted.length)throw new Error(`exact_repair_routes_not_refrozen:${notAccepted.join(',')}`);
+   for(const row of accepted.rejected||[]){
+     console.error(`MUTATION REJECTED ${row.route}: rebuild lost ${row.lost_marker_count} ledgered marker(s) that ${row.depended_on_by_rows} landed row(s) depend on; accepted bytes restored. See ${accepted.report_rel}.`);
+   }
    restoreFrozenPages();
    run('node scripts/validators/validate_page_release_law.js');
    run('node scripts/build_pages_dist.js');
    const completedAgentRepairs=markCompletedAgentRepairs(accepted.routes||[]);
    fs.rmSync(backupDir,{recursive:true,force:true});
-   console.log(JSON.stringify({status:'PASS',release_id:releaseId,refrozen_existing:accepted.accepted,frozen_new:frozenNew.added_count,completed_agent_repairs:completedAgentRepairs},null,2));
+   console.log(JSON.stringify({status:'PASS',release_id:releaseId,refrozen_existing:accepted.accepted,rejected_existing:(accepted.rejected||[]).length,rejected_routes:(accepted.rejected||[]).map((row)=>row.route),frozen_new:frozenNew.added_count,completed_agent_repairs:completedAgentRepairs},null,2));
  }catch(err){
    console.error(err.stack||err.message);
    rollbackSource();

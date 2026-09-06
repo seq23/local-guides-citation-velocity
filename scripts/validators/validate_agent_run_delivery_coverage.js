@@ -92,8 +92,18 @@ function main() {
   totals.coverage_of_declared_pct = Number(((totals.rendered / totals.declared) * 100).toFixed(1));
 
   if (rebaseline) {
-    // The ratchet only tightens: a run's new cap is the lower of what it was
-    // allowed and what it actually has. A rebaseline can never buy slack.
+    // The ratchet only tightens, so a rebaseline can never clear a regression: the
+    // new cap is min(cap, gaps), which for a regressed run is the cap it already had.
+    // Registered as this validator's repair, that made `--rebaseline` a stage that
+    // exits 0 having done nothing - and self-heal spent three attempts on it before
+    // reporting repair-command-efficacy as a fourth failure, turning one real defect
+    // into a four-line report. Refuse instead, and name the runs.
+    if (regressions.length) {
+      console.error(`AGENT RUN DELIVERY COVERAGE REBASELINE REFUSED: ${regressions.length} run(s) regressed, and this ratchet only tightens - rebaselining cannot raise a cap, so it would rewrite the same numbers and report success.`);
+      for (const row of regressions) console.error(`  ${row.run_date}: ${row.gaps} gap(s) against an allowed ${row.allowed} (over by ${row.over_by}).`);
+      console.error('  Coverage falls when a page stops showing a marker it was showing. Restore the content on the target page; the cap comes down on its own once it does.');
+      process.exit(1);
+    }
     const next = {};
     for (const row of table) {
       const cap = allowed.has(row.run_date) ? Number(allowed.get(row.run_date)) : row.gaps;
