@@ -108,6 +108,20 @@ function main() {
     }
   }
 
+  // ---- C. no spec may be excused as REFUSED without a rejection behind it ----
+  // REFUSED_TO_PROTECT_DELIVERED_CONTENT stops agent-exact-implementation-trace
+  // failing on a repair the release deliberately declined. An excuse with no
+  // acceptance report naming that route is just a way to stop proving delivery.
+  const trace = readJson('artifacts/validation/agent-exact-implementation-trace.json', null);
+  const rejectedPaths = new Set((report && report.rejected || []).map((row) => String(row.rendered_file || '').replace(/^\/+/, '')));
+  let excused = 0;
+  for (const row of (trace && trace.traces) || []) {
+    if (row.trace_status !== 'REFUSED_TO_PROTECT_DELIVERED_CONTENT') continue;
+    excused += 1;
+    const impl = String(row.implementation_path || row.intended_winner_path || '').replace(/^\/+/, '');
+    if (!rejectedPaths.has(impl)) errors.push(`${row.record_id || impl}: excused as REFUSED, but ${ACCEPTANCE_REPORT_REL} does not name ${impl || '(no path)'} as rejected.`);
+  }
+
   const out = {
     schema_version: '1.0',
     validator: 'mutation-scope-acceptance',
@@ -116,6 +130,7 @@ function main() {
     detector_cases_proved: cases.length,
     acceptance_report_present: Boolean(report),
     rejected_routes_checked: reportChecked,
+    specs_excused_as_refused: excused,
     errors,
     cases,
   };
@@ -127,7 +142,7 @@ function main() {
     for (const line of errors.slice(0, 25)) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log(`MUTATION SCOPE ACCEPTANCE GUARD PASS: refusal proved on ${cases.length} route(s) that currently show ledgered markers, positively and negatively; ${reportChecked} rejected route(s) verified back at their accepted bytes.`);
+  console.log(`MUTATION SCOPE ACCEPTANCE GUARD PASS: refusal proved on ${cases.length} route(s) that currently show ledgered markers, positively and negatively; ${reportChecked} rejected route(s) verified back at their accepted bytes; ${excused} spec(s) excused as REFUSED, each with a rejection behind it.`);
 }
 
 main();

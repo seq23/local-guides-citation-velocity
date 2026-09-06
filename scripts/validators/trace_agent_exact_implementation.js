@@ -107,6 +107,22 @@ for (const page of livePages.pages || []) {
   for (const key of routeKeysForPage(page)) livePageByPath.set(key, page);
 }
 
+// Routes the freeze transaction REFUSED this release, and why. acceptMutationScope()
+// rejects a thawed route whose rebuild lost a ledgered marker the page was already
+// showing, restores its accepted bytes and records it here. Such a repair genuinely
+// did not land - it must never read as proven - but it is a decision the release made
+// on purpose to protect delivered content, not an unexplained absence. Failing on it
+// would hold the whole lane red for as long as one mutation keeps costing more than
+// it delivers, which is the exact shape of the outage this refusal exists to end.
+//
+// Evidence-gated, deliberately: a spec is only excused if THIS release's acceptance
+// report names its route as rejected. Without that file, nothing is excused.
+const acceptance = readJson('artifacts/validation/mutation-scope-acceptance.json', null);
+const refusedByPath = new Map();
+for (const row of (acceptance && acceptance.rejected) || []) {
+  refusedByPath.set(normalizeImplementationPath(row.rendered_file || routeToImplementationPath(row.route)), row);
+}
+
 const traces = [];
 const errors = [];
 
@@ -148,7 +164,11 @@ for (const spec of plan.specs || []) {
       const hasQuery = Boolean((needle && (itemText.includes(needle) || renderedHtml.includes(needle))) || semanticNeedlesFound(implementationPath, renderedHtml));
       const pass = Boolean(hasLedger && hasApply && item && hasItemMarker && hasRenderedMarker && hasQuery);
       traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, item_exists: Boolean(item), applied_status: applied?.status || '', has_ledger: hasLedger, has_item_marker: hasItemMarker, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
-      if (!pass) errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
+      if (!pass) {
+        const refused = refusedByPath.get(implementationPath);
+        if (refused) traces[traces.length - 1].trace_status = 'REFUSED_TO_PROTECT_DELIVERED_CONTENT';
+        else errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
+      }
       continue;
     }
 
@@ -163,7 +183,11 @@ for (const spec of plan.specs || []) {
       const hasQuery = Boolean((needle && renderedHtml.includes(needle)) || semanticNeedlesFound(implementationPath, renderedHtml));
       const pass = Boolean(hasLedger && hasApply && page && hasRenderedMarker && hasQuery);
       traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, page_exists: Boolean(page), applied_status: applied?.status || '', has_ledger: hasLedger, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
-      if (!pass) errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
+      if (!pass) {
+        const refused = refusedByPath.get(implementationPath);
+        if (refused) traces[traces.length - 1].trace_status = 'REFUSED_TO_PROTECT_DELIVERED_CONTENT';
+        else errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
+      }
       continue;
     }
 
@@ -191,6 +215,7 @@ const blockedCount = countBy('BLOCKED');
 const deferredCount = countBy('DEFERRED_BY_DAILY_CEILING');
 const demandHeldCount = countBy('HELD_BY_MEASURED_DEMAND_GATE');
 const carriedCount = countBy('CARRIED');
+const refusedCount = countBy('REFUSED_TO_PROTECT_DELIVERED_CONTENT');
 const failedCount = countBy('FAIL');
 
 const report = {
@@ -207,8 +232,10 @@ const report = {
   deferred_count: deferredCount,
   demand_held_count: demandHeldCount,
   carried_count: carriedCount,
+  refused_count: refusedCount,
+  refused_routes: [...refusedByPath.keys()],
   failed_count: failedCount,
-  blocked_policy: 'BLOCKED and CARRIED specs do not fail the build, and are never counted as proven',
+  blocked_policy: 'BLOCKED, CARRIED and REFUSED_TO_PROTECT_DELIVERED_CONTENT specs do not fail the build, and are never counted as proven. A REFUSED spec is only excused while artifacts/validation/mutation-scope-acceptance.json names its route as rejected by this release; it stays eligible for selection and must be re-planned, never retired.',
   traces,
   errors
 };
