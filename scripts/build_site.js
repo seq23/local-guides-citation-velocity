@@ -961,10 +961,74 @@ function buildProgrammaticPageSchemas({ siteBase, page, absUrl, sections }) {
   return graph;
 }
 
+/**
+ * Markers this page is under a ledgered obligation to show, by implementation path.
+ *
+ * data/report_fixes/agent_fix_ledger.json states, per landed recommendation, the text
+ * that must appear on the page for it to count as delivered. Read once for the whole
+ * build; a missing or unreadable ledger yields an empty index and changes nothing.
+ */
+let ledgeredMarkerIndex = null;
+function ledgeredMarkersFor(implementationPath){
+  if (!ledgeredMarkerIndex) {
+    ledgeredMarkerIndex = new Map();
+    let ledger = null;
+    try { ledger = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/report_fixes/agent_fix_ledger.json'), 'utf8')); } catch { ledger = null; }
+    for (const fix of (ledger && ledger.fixes) || []) {
+      const key = String(fix.renderedPath || '').replace(/^\/+/, '');
+      if (!key) continue;
+      const markers = Array.isArray(fix.required_markers) ? fix.required_markers.filter(Boolean) : [];
+      if (!markers.length) continue;
+      if (!ledgeredMarkerIndex.has(key)) ledgeredMarkerIndex.set(key, new Set());
+      const set = ledgeredMarkerIndex.get(key);
+      for (const marker of markers) set.add(String(marker));
+    }
+  }
+  return ledgeredMarkerIndex.get(String(implementationPath || '').replace(/^\/+/, '')) || null;
+}
+
+function implementationPathForSlug(slug){
+  const value = String(slug || '').replace(/^\/+/, '').split('?')[0].split('#')[0];
+  if (!value) return '';
+  if (value.endsWith('.html')) return value;
+  return `${value.replace(/\/$/, '')}/index.html`;
+}
+
+/**
+ * Take the first `cap` items, but never drop one the page is under a ledgered
+ * obligation to show.
+ *
+ * The trim itself is what failed on 2026-09-04. A merged uscis-medical repair added
+ * candidates to the hub, and the <li> carrying "what are the requirements for the
+ * I-693 medical exam" - sitting in slot five - went past the cut. Nine landed
+ * recommendations across the 2026-07-24, 2026-07-31 and 2026-08-07 runs stopped being
+ * shown by the page that had been delivering them, and Velocity Content Release stayed
+ * red for three days.
+ *
+ * Sorting delivered links to the front is the fix that was already tried on this list
+ * and cost 140 host pages a link they had, because the trim then fell on the
+ * originals. So nothing is reordered: the first item covering each ledgered marker is
+ * pinned WHERE IT STANDS, and the list runs past `cap` only by however many pins would
+ * otherwise have been evicted. A page carrying no ledgered marker is unchanged, and so
+ * is a page whose candidates already fit.
+ */
+function trimRelatedKeepingLedgered(items, implementationPath, cap){
+  if (items.length <= cap) return items;
+  const markers = ledgeredMarkersFor(implementationPath);
+  const keep = new Set(items.slice(0, cap));
+  if (markers) {
+    for (const marker of markers) {
+      const covering = items.find((item)=> String(item.label).includes(marker));
+      if (covering) keep.add(covering);
+    }
+  }
+  return items.filter((item)=> keep.has(item));
+}
+
 function renderRelatedLinks(links){
   const items = Array.isArray(links) ? links.filter((item)=> item && item.slug && item.label) : [];
   if (!items.length) return '';
-  const body = items.slice(0,6).map((item)=>`<li><a href="${item.slug}">${htmlEscape(item.label)}</a></li>`).join('');
+  const body = items.map((item)=>`<li><a href="${item.slug}">${htmlEscape(item.label)}</a></li>`).join('');
   return `<section class="card related-links sibling-links" data-sibling-links="true"><div class="badge">Related questions</div><h2 class="h2" style="margin-top:8px">Compare the next closest questions</h2><p class="muted">Use these pages to pressure-test the decision from another angle before you click off-site.</p><ul>${body}</ul></section>`;
 }
 
@@ -2359,7 +2423,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
     // the cut. Filtering on the pool dropped it as a duplicate and the trim then
     // dropped the copy too, so the page stayed orphaned while the plan claimed
     // it had been placed.
-    const relatedCandidates = [...relatedMap.values()].slice(0, 6);
+    const relatedCandidates = trimRelatedKeepingLedgered([...relatedMap.values()], implementationPathForSlug(p.slug), 6);
     const primarySlugs = new Set(relatedCandidates.map((item) => item.slug));
     const adoptedCandidates = (linkCoverage.get(p.slug) || [])
       .filter((item) => item.slug !== p.slug && !primarySlugs.has(item.slug));
