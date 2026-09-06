@@ -15,7 +15,7 @@ New page units: 0
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/index.html | can i go to my regular family doctor for the uscis medical exam |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-015-what-if-i-need-tb-testing.html | what happens if I need a TB test for my USCIS medical exam |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-014-what-if-i-m-missing-vaccine-records.html | what if i am missing vaccine records for uscis medical exam |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-exam-day-documents-001-what-should-i-bring-to-the-immigration-medical-exam.html | list of items to bring to uscis medical exam appointment |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-vaccines-labs-004-what-bloodwork-is-usually-part-of-the-immigration-medical-exam.html | do i need to fast before the immigration blood test |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-cost-009-can-insurance-cover-any-part.html | does health insurance cover the immigration medical exam |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-001-what-is-the-uscis-medical-exam-who-performs-it-and-when-is-it-used.html | what is the USCIS medical exam and who performs it |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-016-how-to-get-the-sealed-envelope-safely.html | how to get the sealed I-693 medical exam envelope safely |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-011-how-to-avoid-delays-and-rfes.html | how to avoid RFE delays after submitting I-693 medical exam |
