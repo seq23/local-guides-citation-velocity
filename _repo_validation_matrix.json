@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "a08a7c2ca737b1a1472e3780b4ee49b7c23d022ab74cbff49b27769adcdbee0d",
+  "registry_sha256": "e3174e9da9dd08663a84701d9694a864d3a93a389cc32af7d638606c798c8e81",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 180,
-    "active": 153,
+    "total": 181,
+    "active": 154,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 151,
+    "hard_fail": 152,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -159,7 +159,8 @@
         "intake-plan-regeneration",
         "absorption-window-agreement",
         "release-lane-heals-before-push",
-        "ci-failure-legibility"
+        "ci-failure-legibility",
+        "mutation-scope-acceptance"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -182,6 +183,7 @@
         "llm-citation-observation-integrity",
         "main-writer-ordering",
         "medical-schema-emission",
+        "mutation-scope-acceptance",
         "occupancy-control-separation",
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
@@ -414,7 +416,8 @@
         "intake-plan-regeneration",
         "absorption-window-agreement",
         "release-lane-heals-before-push",
-        "ci-failure-legibility"
+        "ci-failure-legibility",
+        "mutation-scope-acceptance"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -445,6 +448,7 @@
         "local-pantry-trace",
         "main-writer-ordering",
         "medical-schema-emission",
+        "mutation-scope-acceptance",
         "nap-consistency",
         "occupancy-control-separation",
         "occupancy-probe-contract",
@@ -723,7 +727,8 @@
         "intake-plan-regeneration",
         "absorption-window-agreement",
         "release-lane-heals-before-push",
-        "ci-failure-legibility"
+        "ci-failure-legibility",
+        "mutation-scope-acceptance"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -754,6 +759,7 @@
         "local-pantry-trace",
         "main-writer-ordering",
         "medical-schema-emission",
+        "mutation-scope-acceptance",
         "nap-consistency",
         "occupancy-control-separation",
         "occupancy-probe-contract",
@@ -1063,7 +1069,8 @@
         "intake-plan-regeneration",
         "absorption-window-agreement",
         "release-lane-heals-before-push",
-        "ci-failure-legibility"
+        "ci-failure-legibility",
+        "mutation-scope-acceptance"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1094,6 +1101,7 @@
         "local-pantry-trace",
         "main-writer-ordering",
         "medical-schema-emission",
+        "mutation-scope-acceptance",
         "nap-consistency",
         "occupancy-control-separation",
         "occupancy-probe-contract",
@@ -1378,7 +1386,8 @@
         "intake-plan-regeneration",
         "absorption-window-agreement",
         "release-lane-heals-before-push",
-        "ci-failure-legibility"
+        "ci-failure-legibility",
+        "mutation-scope-acceptance"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1409,6 +1418,7 @@
         "local-pantry-trace",
         "main-writer-ordering",
         "medical-schema-emission",
+        "mutation-scope-acceptance",
         "nap-consistency",
         "occupancy-control-separation",
         "occupancy-probe-contract",
@@ -1865,7 +1875,8 @@
         "agent-named-target-parseability",
         "carried-reason-truthfulness",
         "unbuilt-backlog-admission",
-        "intake-plan-regeneration"
+        "intake-plan-regeneration",
+        "mutation-scope-acceptance"
       ],
       "execution_order": [
         "accepted-artifact-recovery",
@@ -1883,6 +1894,7 @@
         "llm-citation-observation-integrity",
         "main-writer-ordering",
         "medical-schema-emission",
+        "mutation-scope-acceptance",
         "occupancy-control-separation",
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
@@ -2093,7 +2105,8 @@
         "intake-plan-regeneration",
         "absorption-window-agreement",
         "release-lane-heals-before-push",
-        "ci-failure-legibility"
+        "ci-failure-legibility",
+        "mutation-scope-acceptance"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -2117,6 +2130,7 @@
         "local-pantry-trace",
         "main-writer-ordering",
         "medical-schema-emission",
+        "mutation-scope-acceptance",
         "nap-consistency",
         "occupancy-control-separation",
         "occupancy-probe-contract",
@@ -8476,6 +8490,45 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "mutation-scope-acceptance",
+        "title": "A thawed route may not be re-frozen having lost delivered content",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_mutation_scope_acceptance.js",
+        "command": "node scripts/validators/validate_mutation_scope_acceptance.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/release/frozen_page_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/mutation-scope-acceptance-guard.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/mutation-scope-acceptance-guard.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "beginMutationScope() records transaction.prior_html_sha256 for every route it thaws and acceptMutationScope() never read it, so a repair rebuild that came back missing content was accepted and frozen as the new accepted copy. On 2026-09-04 a merged uscis-medical repair thawed /uscis-medical/, the rebuild lost 414 bytes carrying two ledgered required_markers, and nine landed recommendations across the 2026-07-24, 2026-07-31 and 2026-08-07 runs stopped being shown by the page delivering them - taking Velocity Content Release red for three days on rendered-output-shrink-guard and agent-run-delivery-coverage, neither of which has a repair that can restore content. acceptMutationScope() now refuses such a route, restores its accepted bytes and reports it; this guard proves the refusal still fires, positively and negatively, on routes that currently show ledgered markers, and checks that every rejected route in an acceptance report is back at its accepted bytes.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -12387,6 +12440,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Velocity Content Release and Validate Repo failed on 2026-09-01, 09-02, 09-03 and 09-04 for the same reason, and each failure was diagnosed from scratch because the run page did not say what broke. In run 33879505846 the whole log rendered as UNKNOWN STEP, the last line was a bare '##[error]Process completed with exit code 1.', and the actual cause - normalized_output_missing for 2026-09-04/uscis-medical - sat on line 1188 of 1265 under roughly 750 lines of pretty-printed JSON that the validator dumped as evidence. The only comfortable route to the diagnosis was downloading velocity-validation-diagnostics-33879505846. An unreadable failure is a failure that recurs, because nobody pays the cost of reading it. This fails if the validation runner does not, on the blocking path before its non-zero exit, emit each blocking validator's cause as a single-line ::error:: annotation, append it to $GITHUB_STEP_SUMMARY, and print it in a labelled block LAST so the log tail is the diagnosis. The emitter is EXECUTED against a constructed failing report modelled on the real 2026-09-04 failure, not read for reassuring words, and a FAIL report carrying zero blocking validators must still say so loudly rather than print nothing.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "mutation-scope-acceptance",
+        "title": "A thawed route may not be re-frozen having lost delivered content",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_mutation_scope_acceptance.js",
+        "command": "node scripts/validators/validate_mutation_scope_acceptance.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/release/frozen_page_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/mutation-scope-acceptance-guard.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/mutation-scope-acceptance-guard.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "beginMutationScope() records transaction.prior_html_sha256 for every route it thaws and acceptMutationScope() never read it, so a repair rebuild that came back missing content was accepted and frozen as the new accepted copy. On 2026-09-04 a merged uscis-medical repair thawed /uscis-medical/, the rebuild lost 414 bytes carrying two ledgered required_markers, and nine landed recommendations across the 2026-07-24, 2026-07-31 and 2026-08-07 runs stopped being shown by the page delivering them - taking Velocity Content Release red for three days on rendered-output-shrink-guard and agent-run-delivery-coverage, neither of which has a repair that can restore content. acceptMutationScope() now refuses such a route, restores its accepted bytes and reports it; this guard proves the refusal still fires, positively and negatively, on routes that currently show ledgered markers, and checks that every rejected route in an acceptance report is back at its accepted bytes.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

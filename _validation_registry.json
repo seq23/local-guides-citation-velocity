@@ -7936,6 +7936,47 @@
       "mutates_files": [
         "artifacts/validation/ci-failure-legibility.json"
       ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 15,
+      "id": "mutation-scope-acceptance",
+      "title": "A thawed route may not be re-frozen having lost delivered content",
+      "path": "scripts/validators/validate_mutation_scope_acceptance.js",
+      "command": "node scripts/validators/validate_mutation_scope_acceptance.js",
+      "risk_prevented": "beginMutationScope() records transaction.prior_html_sha256 for every route it thaws and acceptMutationScope() never read it, so a repair rebuild that came back missing content was accepted and frozen as the new accepted copy. On 2026-09-04 a merged uscis-medical repair thawed /uscis-medical/, the rebuild lost 414 bytes carrying two ledgered required_markers, and nine landed recommendations across the 2026-07-24, 2026-07-31 and 2026-08-07 runs stopped being shown by the page delivering them - taking Velocity Content Release red for three days on rendered-output-shrink-guard and agent-run-delivery-coverage, neither of which has a repair that can restore content. acceptMutationScope() now refuses such a route, restores its accepted bytes and reports it; this guard proves the refusal still fires, positively and negatively, on routes that currently show ledgered markers, and checks that every rejected route in an acceptance report is back at its accepted bytes.",
+      "requires_files": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/release/frozen_page_registry.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/mutation-scope-acceptance-guard.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/mutation-scope-acceptance-guard.json"
+      ],
+      "why_existing_checks_do_not_cover": "rendered-output-shrink-guard and agent-run-delivery-coverage both detect this loss, but only AFTER the thinner page has been frozen as the accepted copy, and neither has a repair that can put the content back - which is why the release stayed red rather than self-healing. agent-fix-ledger-truthfulness is scoped to rows claiming a released status, and a row whose marker was dropped is demoted out of its field of view. This is the only check at the moment of acceptance, where the prior bytes are still on disk and refusing is free.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair. A failure here means the refusal mechanism itself regressed, or a rejected route was not restored to its accepted bytes; both are code defects, and a command that papered over either would reinstate the hole this closes."
     }
   ],
   "legacy_policy": {
