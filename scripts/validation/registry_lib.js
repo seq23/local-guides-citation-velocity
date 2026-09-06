@@ -57,4 +57,28 @@ function buildMatrix(reg){
  const bySeverity={};for(const s of Object.keys(reg.severity_definitions))bySeverity[s]=validators.filter(v=>v.severity===s);const byTier={};for(const v of validators)(byTier[v.tier]??=[]).push(v);const counts={total:validators.length,active:validators.filter(v=>v.status==='ACTIVE').length,on_demand:validators.filter(v=>v.status==='ON_DEMAND').length,retired:validators.filter(v=>v.status==='RETIRED').length,local_only:validators.filter(v=>v.scope==='LOCAL_ONLY').length};for(const s of Object.keys(bySeverity))counts[s.toLowerCase()]=bySeverity[s].length;
  return {schema_version:'3.0',generated_from:'_validation_registry.json',registry_sha256:registryHash(reg),authority:'Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.',lineage_policy:reg.lineage_policy,severity_definitions:reg.severity_definitions,scope_definitions:reg.scope_definitions,counts,profiles:Object.fromEntries(Object.entries(reg.profiles).map(([name,p])=>[name,{...p,validator_ids:validators.filter(v=>v.profiles.includes(name)&&v.status!=='RETIRED').map(v=>v.id),execution_order:topologicalValidators(reg,validators.filter(v=>v.profiles.includes(name)&&v.status!=='RETIRED').map(v=>v.id)).map(v=>v.id)}])),dependency_edges:validators.flatMap(v=>(v.depends_on||[]).map(dep=>({from:dep,to:v.id}))),by_severity:bySeverity,by_tier:byTier,not_applicable:[{lane:'authentication',reason:'public static site'},{lane:'roles',reason:'no authenticated roles'},{lane:'provider mutation',reason:'no provider mutation surface'},{lane:'cleanup',reason:'no runtime persistence cleanup'}]};
 }
-module.exports={ROOT,REGISTRY_PATH,readRegistry,buildMatrix,registryHash,stable,norm,exists,sourceSnapshot,mutationDiff,allowedPath,dependencyClosure,topologicalValidators};
+
+// The runtime log directory used to be named from the runner's stableTimestamp(),
+// which is deliberately frozen to data/citation_velocity/runs.json.current_through
+// so that the COMMITTED validation summary stays byte-identical across no-op
+// rebuilds. Naming the gitignored log directory from it too was a mistake with a
+// measured cost. On 2026-09-06 a failing run told its operator:
+//
+//   log: artifacts/validation/runtime/2026-06-23-10289/agent-exact-implementation-trace.log
+//
+// for a run that happened on 2026-09-06, and triage opened by asking whether a
+// validator was reading two-and-a-half-month-old state. It was not - nothing reads
+// this directory, it is write-only log output - but the path said otherwise and
+// was believed. A frozen date is also not unique: the `${date}-${pid}` key never
+// advances, so two runs on different days that draw the same pid write into the
+// same directory and the older logs are appended to rather than kept apart.
+//
+// The committed summary keeps its deterministic generated_at. The log directory is
+// named for the run that actually produced it, and in CI carries the run id and
+// attempt so a path pasted into an issue leads back to a specific run.
+function runtimeDirName(now=new Date(),env=process.env){
+ const day=now.toISOString().slice(0,10);
+ const id=env.GITHUB_RUN_ID?`gh${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT||'1'}`:`pid${process.pid}`;
+ return `${day}-${id}`;
+}
+module.exports={ROOT,REGISTRY_PATH,runtimeDirName,readRegistry,buildMatrix,registryHash,stable,norm,exists,sourceSnapshot,mutationDiff,allowedPath,dependencyClosure,topologicalValidators};

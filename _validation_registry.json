@@ -8017,6 +8017,48 @@
       "repair_command": "",
       "repair_writes": [],
       "repair_scope": "No repair. Adding a workflow to the health lane's subscription is a deliberate decision about what the repo watches, and a command that silently subscribed to whatever it found would make the list describe the code rather than govern it."
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 300,
+      "depends_on": [
+        "agent-exact-implementation-trace"
+      ],
+      "estimated_runtime_seconds": 5,
+      "id": "trace-outcome-legibility",
+      "title": "Every traced outcome is counted, printed and reconciled, and the log path names this run",
+      "path": "scripts/validators/validate_trace_outcome_legibility.js",
+      "command": "node scripts/validators/validate_trace_outcome_legibility.js",
+      "risk_prevented": "agent-exact-implementation-trace declared its outcome counts with a hand-written list of countBy() calls, so a trace_status missing from that list was missing from the evidence and from the printed line while the run still read PASS. Two buckets were silent on 2026-09-06: REFUSED_BY_RELEASE_QUEUE had no count anywhere, and REFUSED_TO_PROTECT_DELIVERED_CONTENT was counted in JSON but never printed - so the run that ended the five-failure /uscis-medical/ outage announced proven=19; carried=176 of 196 specs and never mentioned the one refusal that was the whole point. A spec that reached no branch at all left no trace and disappeared between plan_count and the summary with nothing noticing. The same run printed log: artifacts/validation/runtime/2026-06-23-10289/... because the runtime log directory was named from the runner frozen stableTimestamp() rather than the wall clock, and triage opened by chasing a state-staleness that did not exist. This guard reconciles every spec to an outcome, every outcome to a count, every count to the printed line, and requires the runtime log directory to name the run that wrote it.",
+      "requires_files": [
+        "artifacts/validation/agent-exact-implementation-trace.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/trace-outcome-legibility.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/trace-outcome-legibility.json"
+      ],
+      "why_existing_checks_do_not_cover": "agent-exact-implementation-trace is the subject, and it cannot be the witness that its own census is complete: the failure mode is precisely a status it forgot to count, which it therefore also forgets to check. mutation-scope-acceptance proves a REFUSED spec has a real rejection behind it but says nothing about whether the trace counted or printed it. No existing check reconciles plan_count against the number of specs that actually received an outcome, and none looks at the runtime log path an operator is told to read.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair. A failure here means an outcome is being produced that nothing counts or prints, a spec is being dropped without a verdict, or the log path is lying about which run wrote it. All three are code defects, and a command that reconciled the numbers after the fact would restore the silence this closes."
     }
   ],
   "legacy_policy": {
