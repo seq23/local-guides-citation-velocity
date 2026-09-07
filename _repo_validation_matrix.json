@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "e0bfa930c5af89ee0fa755a97356a9b5bae4631c509b38ce93c6ee7be420b9a5",
+  "registry_sha256": "c0c61e08cf7f0c5564163e2a68ad77854d317ccafecaaf37d1563ad7cb6213af",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 182,
-    "active": 155,
+    "total": 183,
+    "active": 156,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 153,
+    "hard_fail": 154,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -420,7 +420,8 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "mutation-scope-acceptance",
-        "ci-health-lane-coverage"
+        "ci-health-lane-coverage",
+        "ledgered-related-link-preservation"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -447,6 +448,7 @@
         "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
+        "ledgered-related-link-preservation",
         "llm-citation-observation-integrity",
         "local-pantry",
         "local-pantry-trace",
@@ -733,7 +735,8 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "mutation-scope-acceptance",
-        "ci-health-lane-coverage"
+        "ci-health-lane-coverage",
+        "ledgered-related-link-preservation"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -760,6 +763,7 @@
         "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
+        "ledgered-related-link-preservation",
         "llm-citation-observation-integrity",
         "local-pantry",
         "local-pantry-trace",
@@ -1077,7 +1081,8 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "mutation-scope-acceptance",
-        "ci-health-lane-coverage"
+        "ci-health-lane-coverage",
+        "ledgered-related-link-preservation"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1104,6 +1109,7 @@
         "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
+        "ledgered-related-link-preservation",
         "llm-citation-observation-integrity",
         "local-pantry",
         "local-pantry-trace",
@@ -1396,7 +1402,8 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "mutation-scope-acceptance",
-        "ci-health-lane-coverage"
+        "ci-health-lane-coverage",
+        "ledgered-related-link-preservation"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1423,6 +1430,7 @@
         "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
+        "ledgered-related-link-preservation",
         "llm-citation-observation-integrity",
         "local-pantry",
         "local-pantry-trace",
@@ -1887,7 +1895,8 @@
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
         "mutation-scope-acceptance",
-        "ci-health-lane-coverage"
+        "ci-health-lane-coverage",
+        "ledgered-related-link-preservation"
       ],
       "execution_order": [
         "accepted-artifact-recovery",
@@ -1903,6 +1912,7 @@
         "historic-artifact-recovery",
         "intake-plan-regeneration",
         "ledger-reresolution",
+        "ledgered-related-link-preservation",
         "llm-citation-observation-integrity",
         "main-writer-ordering",
         "medical-schema-emission",
@@ -1998,7 +2008,8 @@
         "intake-plan-regeneration",
         "absorption-window-agreement",
         "release-lane-heals-before-push",
-        "ci-failure-legibility"
+        "ci-failure-legibility",
+        "ledgered-related-link-preservation"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -2014,6 +2025,7 @@
         "dynamic-page-contract-cross-vertical",
         "generated-content-finalization-contract",
         "intake-plan-regeneration",
+        "ledgered-related-link-preservation",
         "main-writer-ordering",
         "release-lane-heals-before-push",
         "rich-block-contract-link",
@@ -2119,7 +2131,8 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "mutation-scope-acceptance",
-        "ci-health-lane-coverage"
+        "ci-health-lane-coverage",
+        "ledgered-related-link-preservation"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -2139,6 +2152,7 @@
         "lane-accepted-artifact-regen-reach",
         "lane-git-history-depth",
         "ledger-reresolution",
+        "ledgered-related-link-preservation",
         "llm-citation-observation-integrity",
         "local-pantry",
         "local-pantry-trace",
@@ -8581,6 +8595,45 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "ledgered-related-link-preservation",
+        "title": "Ledgered related-link preservation",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "content-release",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_ledgered_related_link_preservation.js",
+        "command": "node scripts/validators/validate_ledgered_related_link_preservation.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/release/frozen_page_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/ledgered-related-link-preservation-result.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/ledgered-related-link-preservation-result.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "A ranked, capped related-questions list can silently stop reproducing an internal link the accepted page is already delivering, dropping a ledgered required_marker that landed recommendations depend on. The freeze transaction then refuses the mutation on every release, so the repair can never be proven and the release lane fails on the same route indefinitely.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -12569,6 +12622,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "ci-health-recovery.yml subscribed to workflow_run for \"Validate Repo\" alone. Velocity Content Release - the surface that publishes - ran red on 2026-09-04, 2026-09-05 and twice on 2026-09-06, and the health lane reported SUCCESS at every one of those times, honestly, because Validate Repo really was green and the publishing lane was never in frame. A three-day outage raised no alert. Four workflows push to main and none was observed. This is not a defect in the alerting code, so no test of the alerting code would find it: it is a gap between two lists that nothing compared. This validator compares them - every workflow whose body runs `git push` must appear in the health lane's subscription by its exact name, \"Validate Repo\" must be watched, every watched name must resolve to a real workflow (a typo watches nothing and reports nothing), and the recorded per-lane health must agree with the rollup that summarises it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "ledgered-related-link-preservation",
+        "title": "Ledgered related-link preservation",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "content-release",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_ledgered_related_link_preservation.js",
+        "command": "node scripts/validators/validate_ledgered_related_link_preservation.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/release/frozen_page_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/ledgered-related-link-preservation-result.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/ledgered-related-link-preservation-result.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "A ranked, capped related-questions list can silently stop reproducing an internal link the accepted page is already delivering, dropping a ledgered required_marker that landed recommendations depend on. The freeze transaction then refuses the mutation on every release, so the repair can never be proven and the release lane fails on the same route indefinitely.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

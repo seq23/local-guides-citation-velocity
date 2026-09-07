@@ -256,6 +256,32 @@ function beginMutationScope(routes, releaseId = `release-${Date.now()}`) {
 const ACCEPTANCE_REPORT_REL = 'artifacts/validation/mutation-scope-acceptance.json';
 
 /**
+ * The ACCEPTED bytes for a route, read from the frozen HTML cache, or null.
+ *
+ * acceptMutationScope() below already gunzips this blob to decide whether a rebuild
+ * lost something the accepted page was delivering. The generator needs the same
+ * bytes for the opposite reason: to know, while it is still choosing what to render,
+ * what this page is currently delivering, so it does not have to lose it first and be
+ * refused. Exported rather than duplicated so both sides read one definition of
+ * "what this route currently ships".
+ *
+ * `registry` is optional and exists so a caller rendering thousands of pages parses
+ * the registry once instead of per page. A missing record, missing hash or missing
+ * cache blob yields null, which every caller must treat as "nothing is known to be
+ * delivered" - never as "nothing is delivered".
+ */
+function acceptedHtmlForRoute(route, registry = null) {
+  const r = normalizeRoute(route);
+  if (!r) return null;
+  const reg = registry || loadRegistry();
+  const record = (reg.pages || []).find((p) => normalizeRoute(p.route) === r);
+  const hash = record && record.accepted_html_sha256;
+  if (!hash) return null;
+  const abs = path.join(ROOT, record.cache_file || cacheRelForHash(hash));
+  try { return zlib.gunzipSync(fs.readFileSync(abs)).toString('utf8'); } catch { return null; }
+}
+
+/**
  * Accept a thawed route only if it kept what it was already delivering.
  *
  * beginMutationScope() records transaction.prior_html_sha256 for exactly this
@@ -404,5 +430,6 @@ module.exports = {
   loadRegistry, saveRegistry, seedAcceptedPages, freezeRoute, freezeNewAdmitted,
   restoreFrozenPages, verifyFrozenPages, pruneFrozenCache, beginMutationScope, acceptMutationScope,
   rollbackMutationScope, queueMutationRoutes, consumePendingMutationRoutes, mutableRouteSet,
-  applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, ACCEPTANCE_REPORT_REL
+  applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, ACCEPTANCE_REPORT_REL,
+  acceptedHtmlForRoute
 };

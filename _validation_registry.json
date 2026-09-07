@@ -8017,6 +8017,52 @@
       "repair_command": "",
       "repair_writes": [],
       "repair_scope": "No repair. Adding a workflow to the health lane's subscription is a deliberate decision about what the repo watches, and a command that silently subscribed to whatever it found would make the list describe the code rather than govern it."
+    },
+    {
+      "id": "ledgered-related-link-preservation",
+      "title": "Ledgered related-link preservation",
+      "path": "scripts/validators/validate_ledgered_related_link_preservation.js",
+      "command": "node scripts/validators/validate_ledgered_related_link_preservation.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content",
+        "citation-velocity",
+        "agent-runs",
+        "frozen-output"
+      ],
+      "risk_prevented": "A ranked, capped related-questions list can silently stop reproducing an internal link the accepted page is already delivering, dropping a ledgered required_marker that landed recommendations depend on. The freeze transaction then refuses the mutation on every release, so the repair can never be proven and the release lane fails on the same route indefinitely.",
+      "why_existing_checks_do_not_cover": "mutation-scope acceptance detects the loss only after a rebuild has already produced it and answers by refusing, which repeats forever; agent-fix-ledger-truthfulness reads the restored accepted bytes and therefore cannot tell a page the generator can still produce from one it can only restore.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/ledgered-related-link-preservation-result.json",
+      "failure_action": "stop release and restore the generator's ability to reproduce the delivered link before publishing",
+      "depends_on": [],
+      "requires_files": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/release/frozen_page_registry.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/ledgered-related-link-preservation-result.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/ledgered-related-link-preservation-result.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

@@ -55,7 +55,8 @@ const { isMedicalHubRoute, medicalWebPageNode, costSpecificationTable, pageRoute
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
-const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute, mutableRouteSet } = require('./lib/frozen_pages');
+const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute, mutableRouteSet, acceptedHtmlForRoute, loadRegistry: loadFrozenRegistry } = require('./lib/frozen_pages');
+const { shows: acceptedShowsMarker, decode: decodeMarkerHtml } = require('./lib/route_marker_preservation');
 const { isPubliclyAdmitted, isEvidenceOnly, admittedRoutes, renderedButNotPublic } = require('./lib/page_admission');
 // Answer shape: the heading a searcher would have typed, decided for the whole
 // inventory at once so that re-shaping cannot collide two routes on one h1.
@@ -599,7 +600,7 @@ function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
   return plan;
 }
 
-function buildAutoRelatedLinks(currentPage, allPages, limit = 6){
+function buildAutoRelatedLinks(currentPage, allPages, limit = 6, pinnedMarkers = null){
   if (!currentPage || !Array.isArray(allPages)) return [];
   const currentTokens = new Set([
     ...tokenizeForSimilarity(currentPage.slug),
@@ -607,7 +608,7 @@ function buildAutoRelatedLinks(currentPage, allPages, limit = 6){
     ...tokenizeForSimilarity(currentPage.description)
   ]);
 
-  return allPages
+  const ranked = allPages
     .filter((page)=> page && page.slug && page.slug !== currentPage.slug && page.vertical === currentPage.vertical)
     .map((page)=> {
       const tokens = [
@@ -619,9 +620,35 @@ function buildAutoRelatedLinks(currentPage, allPages, limit = 6){
       const label = page.short_label || page.nav_label || page.title;
       return { slug: page.slug, label, overlap };
     })
-    .sort((a, b)=> (b.overlap - a.overlap) || a.label.localeCompare(b.label))
-    .slice(0, limit)
-    .map(({ slug, label })=> ({ slug, label }));
+    .sort((a, b)=> (b.overlap - a.overlap) || a.label.localeCompare(b.label));
+
+  const head = ranked.slice(0, limit);
+  // Relevance ranking decides this pool, and relevance moves as pages are added.
+  // trimRelatedKeepingLedgered() below can only protect a delivered link that is
+  // still IN the pool; on 2026-09-06 the <li> carrying "what are the requirements for
+  // the I-693 medical exam" fell out of the /uscis-medical/ pool entirely as newer
+  // sibling pages outranked it, so there was nothing left to pin. The rebuild lost a
+  // marker nine landed rows depend on, acceptMutationScope() refused the mutation to
+  // protect the delivered bytes, and it refused again on every release after that
+  // because the generator produced the same thinner page every time.
+  //
+  // A candidate that carries a marker this page is ALREADY delivering is therefore
+  // rescued from below the cut - kept in rank order, appended after the head so no
+  // page loses a link it had. Nothing is invented: only markers the accepted copy is
+  // showing are pinned, and only if a real ranked sibling covers them.
+  const pins = [];
+  if (pinnedMarkers && pinnedMarkers.size) {
+    const covered = new Set();
+    for (const item of head) for (const marker of pinnedMarkers) if (String(item.label).includes(marker)) covered.add(marker);
+    for (const marker of pinnedMarkers) {
+      if (covered.has(marker)) continue;
+      const rescued = ranked.slice(limit).find((item)=> String(item.label).includes(marker));
+      if (!rescued || pins.includes(rescued)) continue;
+      pins.push(rescued);
+      for (const other of pinnedMarkers) if (String(rescued.label).includes(other)) covered.add(other);
+    }
+  }
+  return [...head, ...pins].map(({ slug, label })=> ({ slug, label }));
 }
 
 function sentenceLabel(value) {
@@ -985,6 +1012,56 @@ function ledgeredMarkersFor(implementationPath){
     }
   }
   return ledgeredMarkerIndex.get(String(implementationPath || '').replace(/^\/+/, '')) || null;
+}
+
+/**
+ * Of the markers this page is under a ledgered obligation to show, the ones the
+ * ACCEPTED copy is delivering FROM ITS RELATED-QUESTIONS LIST.
+ *
+ * That list is the one this file trims, so it is the only place this file can lose a
+ * marker. A marker the accepted page delivers from its prose, its cluster block or
+ * its adopted-links block is produced elsewhere and is deliberately NOT pinned here:
+ * pinning it would add a second, redundant link to pages that were never at risk.
+ *
+ * A marker the accepted page never showed at all is unlanded work, not a regression,
+ * and is likewise not pinned - inventing links for it would change pages that never
+ * had them. acceptMutationScope() remains the backstop for every other loss route.
+ *
+ * Read from the frozen HTML cache rather than from the file on disk, because by the
+ * time a page renders the build may already have overwritten its own prior output.
+ * The registry is parsed once for the whole build; a route with no accepted copy
+ * (a page being published for the first time) yields an empty set and is unchanged.
+ */
+const RELATED_LIST_RE = /<section[^>]*class="[^"]*related-links[^"]*"[^>]*>[\s\S]*?<\/section>/i;
+let frozenRegistryForDelivered = null;
+const deliveredMarkerIndex = new Map();
+/**
+ * Evidence, per route, that the related-questions list this build just rendered still
+ * carries every ledgered marker the accepted copy was delivering from that list.
+ *
+ * Written for scripts/validators/validate_ledgered_related_link_preservation.js. The
+ * validator recomputes the expected route set from the ledger and the frozen registry
+ * independently, so a build that silently stops examining these routes is a FAIL
+ * there rather than an empty artifact nobody reads.
+ */
+const ledgeredRelatedLinkAudit = [];
+function deliveredLedgeredMarkersFor(implementationPath){
+  const key = String(implementationPath || '').replace(/^\/+/, '');
+  if (!key) return null;
+  if (deliveredMarkerIndex.has(key)) return deliveredMarkerIndex.get(key);
+  const ledgered = ledgeredMarkersFor(key);
+  if (!ledgered || !ledgered.size) { deliveredMarkerIndex.set(key, null); return null; }
+  if (!frozenRegistryForDelivered) frozenRegistryForDelivered = loadFrozenRegistry();
+  const accepted = acceptedHtmlForRoute(`/${key}`, frozenRegistryForDelivered);
+  const block = accepted ? (accepted.match(RELATED_LIST_RE) || [''])[0] : '';
+  if (!block) { deliveredMarkerIndex.set(key, null); return null; }
+  const delivered = new Set();
+  for (const marker of ledgered) {
+    if (acceptedShowsMarker(block, block, marker)) delivered.add(marker);
+  }
+  const value = delivered.size ? delivered : null;
+  deliveredMarkerIndex.set(key, value);
+  return value;
 }
 
 function implementationPathForSlug(slug){
@@ -2403,7 +2480,9 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const qaHighlights = renderQaHighlights(shapedSections || []);
     const toolSpotlight = toolsPageForHub ? renderToolSpotlight(toolsPageForHub.sections || [], 'Fast scripts for comparing options before you click away') : ''; 
     const explicitRelated = Array.isArray(p.related_links) ? p.related_links.filter((item) => item && item.slug && item.label) : [];
-    const autoRelated = buildAutoRelatedLinks(p, atlasPages, 10);
+    const implementationPathForPage = implementationPathForSlug(p.slug);
+    const deliveredMarkers = deliveredLedgeredMarkersFor(implementationPathForPage);
+    const autoRelated = buildAutoRelatedLinks(p, atlasPages, 10, deliveredMarkers);
     const relatedMap = new Map();
     [...explicitRelated, ...autoRelated].forEach((item) => {
       if (item.slug !== p.slug && !relatedMap.has(item.slug)) relatedMap.set(item.slug, item);
@@ -2423,12 +2502,23 @@ for (const [vertical, meta] of Object.entries(registry)) {
     // the cut. Filtering on the pool dropped it as a duplicate and the trim then
     // dropped the copy too, so the page stayed orphaned while the plan claimed
     // it had been placed.
-    const relatedCandidates = trimRelatedKeepingLedgered([...relatedMap.values()], implementationPathForSlug(p.slug), 6);
+    const relatedCandidates = trimRelatedKeepingLedgered([...relatedMap.values()], implementationPathForPage, 6);
     const primarySlugs = new Set(relatedCandidates.map((item) => item.slug));
     const adoptedCandidates = (linkCoverage.get(p.slug) || [])
       .filter((item) => item.slug !== p.slug && !primarySlugs.has(item.slug));
     if (relatedCandidates.length < 5) throw new Error(`Programmatic internal-link gate found fewer than five sibling pages for ${p.slug}`);
     const relatedLinks = renderRelatedLinks(relatedCandidates);
+    if (deliveredMarkers && deliveredMarkers.size) {
+      const decodedList = decodeMarkerHtml(relatedLinks);
+      const missing = [...deliveredMarkers].filter((marker)=> !acceptedShowsMarker(relatedLinks, decodedList, marker)).sort();
+      ledgeredRelatedLinkAudit.push({
+        route: p.slug,
+        implementation_path: implementationPathForPage,
+        delivered_markers: [...deliveredMarkers].sort(),
+        rendered_list_item_count: relatedCandidates.length,
+        missing_from_rebuilt_list: missing
+      });
+    }
     const adoptedLinks = renderAdoptedLinks(adoptedCandidates);
     const isQueryCompilerPage = Boolean(p.query_compiler_generated);
     const midCanon = canonBlockMid(providerDestinationUrl, canon.label, p.title);
@@ -3063,6 +3153,20 @@ ${m}`;
 
   // APPLY_DENTISTRY_REPORT_FIX_CONTRACT_AFTER_BUILD
   require('./apply_dentistry_report_fix_contract').run();
+
+  // Recorded BEFORE the frozen restore below, deliberately: this is a statement about
+  // what the GENERATOR produced. Reading it after restoration would measure the
+  // accepted bytes being put back and would pass even when the generator can no
+  // longer reproduce them - which is the exact failure it exists to catch.
+  ledgeredRelatedLinkAudit.sort((a, b)=> a.route.localeCompare(b.route));
+  writeUtf8(path.join(ROOT, 'artifacts', 'validation', 'ledgered-related-link-preservation.json'), JSON.stringify({
+    schema_version: '1.0',
+    guard: 'ledgered-related-link-preservation',
+    generated_at: nowISODate(),
+    examined_route_count: ledgeredRelatedLinkAudit.length,
+    routes_missing_a_delivered_marker: ledgeredRelatedLinkAudit.filter((row)=> row.missing_from_rebuilt_list.length).length,
+    routes: ledgeredRelatedLinkAudit
+  }, null, 2) + '\n');
 
   // Final immutable-output guard: all non-authorized accepted routes are restored byte-for-byte from the frozen cache after every generator/postprocessor mutation.
   const frozenRestore = restoreFrozenPages();
