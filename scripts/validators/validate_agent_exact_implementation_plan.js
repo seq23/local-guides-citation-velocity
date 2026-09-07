@@ -23,9 +23,11 @@ function normalizePath(value) {
   return String(value || '').trim().replace(/^https?:\/\/[^/]+\//, '').replace(/^\/+/, '').replace(/\?.*$/, '').replace(/#.*$/, '');
 }
 
+const { zeroExaminationVerdict } = require('../lib/zero_item_examination');
 const errors = [];
 const warnings = [];
 const available = PLAN_PATHS.filter(exists);
+let planVerdict = null;
 
 if (!available.length) {
   errors.push('missing_existing_agent_exact_implementation_plan');
@@ -46,6 +48,19 @@ for (const rel of available) {
 }
 
 if (plan) {
+  // The plan states its own generated counts. A specs array that is empty while the
+  // planner reported it selected rows is a plan that lost its contents between being
+  // written and being read, and is a FAIL; a planner that genuinely selected nothing
+  // is a named green stop.
+  planVerdict = zeroExaminationVerdict({
+    validator: 'agent-exact-implementation-plan',
+    unit: 'plan spec(s)',
+    examined: (plan.specs || []).length,
+    available: Number(plan.selected_count || plan.spec_count || plan.planned_count || 0),
+    stopReason: 'the exact-implementation planner selected no rows this run, so there is no spec to validate',
+    inputs: [planPath || PLAN_PATHS[0]]
+  });
+  if (planVerdict.error) errors.push(planVerdict.error);
   if (plan.status && plan.status !== 'PASS') errors.push(`plan_status_not_pass:${plan.status}`);
   if (!Array.isArray(plan.specs)) errors.push('plan_specs_must_be_array');
   if (!plan.specs?.length) warnings.push('agent_exact_plan_has_no_specs');

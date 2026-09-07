@@ -17,7 +17,9 @@ function readJson(p) {
 }
 
 const errors = [];
+const { zeroExaminationVerdict } = require('../lib/zero_item_examination');
 const warnings = [];
+let compilerVerdict = null;
 
 if (!fs.existsSync(rel(MANIFEST_PATH))) {
   errors.push(`missing:${MANIFEST_PATH}`);
@@ -33,6 +35,18 @@ if (!fs.existsSync(rel(MANIFEST_PATH))) {
     if (manifest.generated_by !== 'compile_html_fix_acceptance_manifest.js') errors.push('semantic_manifest_wrong_origin');
     if (!Array.isArray(manifest.entries)) errors.push('semantic_manifest_entries_must_be_array');
     if (!manifest.entries?.length) warnings.push('semantic_manifest_empty');
+    // entry_count is written by the compiler, independently of the array this loop
+    // walks, so a count above zero with no entries is a manifest that lost its
+    // contents rather than a compiler with nothing to compile.
+    compilerVerdict = zeroExaminationVerdict({
+      validator: 'html-fix-acceptance-compiler',
+      unit: 'semantic acceptance entr(ies)',
+      examined: (manifest.entries || []).length,
+      available: Number(manifest.entry_count || 0),
+      stopReason: 'the acceptance compiler produced no entries this run, so there is no compiled acceptance to validate',
+      inputs: [MANIFEST_PATH]
+    });
+    if (compilerVerdict.error) errors.push(compilerVerdict.error);
     if (Number(manifest.entry_count || 0) !== (manifest.entries || []).length) errors.push('semantic_manifest_entry_count_mismatch');
 
     for (const [index, entry] of (manifest.entries || []).entries()) {

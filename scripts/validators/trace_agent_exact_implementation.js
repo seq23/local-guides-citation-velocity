@@ -209,6 +209,21 @@ for (const spec of plan.specs || []) {
   }
 }
 
+// A trace over zero specs used to print PASS. The plan states how many specs it
+// carries, which is a different source from the traces this loop produced, so a plan
+// with specs that yielded no trace at all is a tracer that stopped tracing - a FAIL -
+// while an empty plan is a named green stop.
+const { zeroExaminationVerdict } = require('../lib/zero_item_examination');
+const traceVerdict = zeroExaminationVerdict({
+  validator: 'agent-exact-implementation-trace',
+  unit: 'spec trace(s)',
+  examined: traces.length,
+  available: (plan.specs || []).length,
+  stopReason: 'the exact-implementation plan carries no specs, so there is no intended-winner repair to trace',
+  inputs: ['artifacts/validation/agent-exact-implementation-plan.json']
+});
+if (traceVerdict.error) errors.push(traceVerdict.error);
+
 const countBy = (status) => traces.filter((t) => t.trace_status === status).length;
 const provenCount = countBy('PASS');
 const blockedCount = countBy('BLOCKED');
@@ -225,6 +240,8 @@ const report = {
   ledger_path: LEDGER_PATH,
   ledger_count: (ledger.entries || []).length,
   plan_count: (plan.specs || []).length,
+  examined_count: traces.length,
+  named_stop: traceVerdict.named_stop,
   // Distinct outcomes. `proven_count` is the only figure that means work landed;
   // blocked and deferred specs are carried, not shipped.
   proven_count: provenCount,
