@@ -110,6 +110,29 @@ function mergeAcceptedArtifacts(route, current) {
   // two same-titled /neuro/ tables both survive. Only the CONTENT is refreshed, and
   // only upward: a current block shorter than the accepted one is the shrink this
   // store exists to prevent, so in that case the accepted copy stands.
+  //
+  // ONE EXCEPTION, and only one: a current block carrying an agent-exact marker
+  // that the accepted copy does not carry is a REPAIR, not the accidental shrink
+  // this store exists to catch. The marker is minted per repair as
+  // hash(record_ids | implementation_path) and stamped onto the FIRST semantic
+  // artifact (scripts/lib/agent_exact_repairs.js artifactsWithMarker), so which
+  // block carries it is decided by the semantic manifest, not by size - and on
+  // /personal-injury/ it landed on `cost_table|"Direct answer,"`, a key the
+  // accepted store holds three copies of. The freshly authored 939-byte block was
+  // paired with the 1066-byte accepted one, lost the weight comparison, and was
+  // then consumed - dropped entirely, not appended. The page kept the previous
+  // run's marker forever, and agent-exact-implementation-trace correctly reported
+  // agent_db794554f0377d3c:repair_not_proven:personal-injury/index.html, which is
+  // what took Velocity Content Release red on run 34197241611.
+  //
+  // Letting the repair land does not reopen the shrink hole. A thawed route's
+  // rebuild is still adjudicated by route_marker_preservation inside
+  // acceptMutationScope: if it loses any ledgered marker another row depends on,
+  // the accepted bytes are put back and the route is recorded in
+  // mutation-scope-acceptance.json `rejected`, which the trace then reads as a
+  // NAMED refusal instead of a failure. That guard, not a byte count, is what
+  // decides whether a repair may replace delivered content - and it accepted all
+  // 17 thawed routes with 0 rejected when this exception was introduced.
   const pending = new Map();
   for (const artifact of Array.isArray(current) ? current : []) {
     if (!artifact || !artifact.type || !artifact.title) continue;
@@ -127,7 +150,8 @@ function mergeAcceptedArtifacts(route, current) {
     const replacement = queue.shift();
     if (replacement) {
       consumed.add(replacement);
-      out.push(weight(replacement) >= weight(artifact) ? replacement : artifact);
+      const carriesFreshMarker = Boolean(replacement.marker) && replacement.marker !== artifact.marker;
+      out.push(carriesFreshMarker || weight(replacement) >= weight(artifact) ? replacement : artifact);
     } else out.push(artifact);
   }
   for (const artifact of Array.isArray(current) ? current : []) {
