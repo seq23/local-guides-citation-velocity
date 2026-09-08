@@ -591,7 +591,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -2283,6 +2283,49 @@
       ]
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "depends_on": [],
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 600,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 8",
+      "profiles": [
+        "audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "id": "repair-fixture-capability",
+      "title": "A registered repair clears a constructed failing state, proven while its validator is green",
+      "path": "scripts/validators/validate_repair_fixture_capability.js",
+      "command": "node scripts/validators/validate_repair_fixture_capability.js",
+      "tags": [
+        "self-heal",
+        "repair",
+        "integrity",
+        "fixture"
+      ],
+      "risk_prevented": "Prevents a registered repair from losing the capability it was registered for while its validator happens to be green. recover:run-delivery-coverage-ratchet existed so a newly-absorbed agent run could be ENROLLED in the shrink-only delivery ratchet at its measured gaps. A later hardening made --rebaseline refuse whenever any run 'regressed'; an unenrolled run defaults to a cap of 0 and so was indistinguishable from a regression, and the repair began refusing the exact case it existed for. Nothing caught it: it still declared the correct repair_writes so self-heal-repair-contract stayed green, and its validator was passing whenever anything looked so repair-command-efficacy never invoked it. On run 34233215688 absorption landed run 2026-09-08 with 9 gaps, self-heal ran the repair, the repair exited 1, no repair changed the tree, and Velocity Content Release refused to publish - with repair-command-efficacy reporting a second, unrepairable failure on top. This runs each registered repair against a synthetic failing state in a scratch directory and requires the validator to pass afterwards.",
+      "why_existing_checks_do_not_cover": "self-heal-repair-contract is static: it proves a repair is AIMED at a file its validator reads, not that invoking it changes the verdict. repair-command-efficacy is behavioural but opportunistic - it only exercises a repair whose validator is FAILING at that moment; on run 34233215688 it examined 10 candidates and ran 1 repair, recording the other 9 as ALREADY_PASSING/repair_run:false. Neither can observe a repair that has stopped working while its validator is green, which is the state every regression passes through before it reaches production. self-heal-commit-coverage governs whether the lane can commit a repair's output, not whether the repair produces any.",
+      "requires_files": [
+        "_validation_registry.json",
+        "scripts/validators/validate_repair_fixture_capability.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/repair-fixture-capability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/repair-fixture-capability.json"
+      ]
+    },
+    {
       "id": "distribution-contract",
       "title": "Distribution script contract",
       "path": "scripts/validate_distribution_contract.js",
@@ -2694,7 +2737,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -7604,7 +7647,7 @@
         "workflow",
         "release"
       ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
       "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
       "requires_files": [
         ".github/workflows/query-evidence-refresh.yml",

@@ -18,8 +18,17 @@
  * putting the requested content on the page can.
  *
  * The baseline is a RATCHET, per run. A run may never have more gaps than its
- * baseline; a run whose gaps have fallen must be re-baselined down, and a run not
- * in the baseline at all must have zero gaps. It only shrinks.
+ * baseline, and a run whose gaps have fallen must be re-baselined down. It only
+ * shrinks.
+ *
+ * A run the baseline has never seen is UNENROLLED, which is a third state and not
+ * a regression. It still FAILS - an unenrolled run has no cap, so its gaps are
+ * ungoverned - but it is repairable: `--rebaseline` enrols it at its measured
+ * gaps. Collapsing unenrolled into regressed (by defaulting an unseen run's cap
+ * to 0) is what deadlocked the release lane, because the repair correctly refuses
+ * to act on regressions and so could never clear the one thing it existed to
+ * clear. Enrolment buys no slack: the shrink-only rule drives the new cap down to
+ * 0 on the next cycle, once release:velocity-intake has rendered the pages.
  *
  * Rule 0: examining zero rows is a FAILURE. An empty ledger proves nothing.
  */
@@ -74,10 +83,26 @@ function main() {
   const baseline = readJson(BASELINE_REL, null);
   const allowed = new Map(Object.entries((baseline && baseline.max_gaps_by_run) || {}));
 
+  // A run this ratchet has never seen is NOT a regression. Treating it as one -
+  // by defaulting its cap to 0 - is what deadlocked the release lane: absorption
+  // writes a newly landed run's recommendations into the ledger BEFORE
+  // release:velocity-intake renders them, so the run arrives with gaps and no
+  // baseline entry, was classed a regression, and the registered repair refuses
+  // to act on regressions. The two states need different handling and so are
+  // measured apart: UNENROLLED is repairable (enrol at measured gaps, which the
+  // shrink-only rule then drives down once intake delivers the pages), REGRESSED
+  // is not (it would have to raise a cap this ratchet may never raise).
   const regressions = [];
+  const unenrolled = [];
   const improved = [];
   for (const row of table) {
-    const cap = allowed.has(row.run_date) ? Number(allowed.get(row.run_date)) : 0;
+    if (!allowed.has(row.run_date)) {
+      // Enrol every unseen run, gaps or not: a run left out of the baseline has
+      // no cap at all, so gaps could later appear in it unremarked.
+      unenrolled.push({ ...row, allowed: null, would_enrol_at: row.gaps });
+      continue;
+    }
+    const cap = Number(allowed.get(row.run_date));
     if (row.gaps > cap) regressions.push({ ...row, allowed: cap, over_by: row.gaps - cap });
     else if (row.gaps < cap) improved.push({ ...row, allowed: cap, under_by: cap - row.gaps });
   }
@@ -99,9 +124,16 @@ function main() {
     // reporting repair-command-efficacy as a fourth failure, turning one real defect
     // into a four-line report. Refuse instead, and name the runs.
     if (regressions.length) {
-      console.error(`AGENT RUN DELIVERY COVERAGE REBASELINE REFUSED: ${regressions.length} run(s) regressed, and this ratchet only tightens - rebaselining cannot raise a cap, so it would rewrite the same numbers and report success.`);
+      console.error(`AGENT RUN DELIVERY COVERAGE REBASELINE REFUSED: ${regressions.length} already-enrolled run(s) regressed, and this ratchet only tightens - rebaselining cannot raise a cap, so it would rewrite the same numbers and report success.`);
       for (const row of regressions) console.error(`  ${row.run_date}: ${row.gaps} gap(s) against an allowed ${row.allowed} (over by ${row.over_by}).`);
       console.error('  Coverage falls when a page stops showing a marker it was showing. Restore the content on the target page; the cap comes down on its own once it does.');
+      process.exit(1);
+    }
+    // Rule 0: a repair that exits 0 having changed nothing is a stage that did
+    // nothing. If there is neither a run to enrol nor a cap to tighten, say so
+    // and fail, rather than rewriting the identical file and reporting success.
+    if (!unenrolled.length && !improved.length) {
+      console.error('AGENT RUN DELIVERY COVERAGE REBASELINE REFUSED: no run is unenrolled and no cap can be tightened, so this would rewrite the identical baseline and report success. Nothing to repair.');
       process.exit(1);
     }
     const next = {};
@@ -117,18 +149,20 @@ function main() {
       max_gaps_by_run: next,
     };
     fs.writeFileSync(path.join(ROOT, BASELINE_REL), `${JSON.stringify(out, null, 2)}\n`, 'utf8');
-    console.log(`AGENT RUN DELIVERY COVERAGE REBASELINE: ${Object.keys(next).length} run(s), total allowed gaps ${out.total_max_gaps} (was ${baseline ? baseline.total_max_gaps : 'unset'}).`);
+    console.log(`AGENT RUN DELIVERY COVERAGE REBASELINE: ${Object.keys(next).length} run(s), total allowed gaps ${out.total_max_gaps} (was ${baseline ? baseline.total_max_gaps : 'unset'}); enrolled ${unenrolled.length} new run(s) ${JSON.stringify(unenrolled.map((r) => `${r.run_date}@${r.gaps}`))}, tightened ${improved.length}.`);
     return;
   }
 
   const report = {
     schema_version: '1.0',
     validator: 'agent-run-delivery-coverage',
-    status: regressions.length || improved.length ? 'FAIL' : 'PASS',
+    status: regressions.length || improved.length || unenrolled.length ? 'FAIL' : 'PASS',
     totals,
     baseline_total_max_gaps: baseline ? baseline.total_max_gaps : null,
     regressions,
     regression_count: regressions.length,
+    unenrolled,
+    unenrolled_count: unenrolled.length,
     ratchet_not_tightened: improved,
     ratchet_not_tightened_count: improved.length,
     per_run: table,
@@ -142,6 +176,9 @@ function main() {
   }
   for (const row of regressions.slice(0, 25)) {
     console.error(`AGENT RUN DELIVERY COVERAGE FAIL: run ${row.run_date} leaves ${row.gaps} recommendation(s) unshown by their pages but is only allowed ${row.allowed} (over by ${row.over_by}). Coverage ${row.rendered}/${row.actionable} = ${row.coverage_pct}%. A count is not a change: put the requested content on the page, do not restate the record.`);
+  }
+  for (const row of unenrolled.slice(0, 25)) {
+    console.error(`AGENT RUN DELIVERY COVERAGE FAIL: run ${row.run_date} is not enrolled in the ratchet, so its ${row.gaps} gap(s) are ungoverned - an unenrolled run has no cap and could grow unremarked. Coverage ${row.rendered}/${row.actionable} = ${row.coverage_pct}%. Enrol it at its measured gaps with: node scripts/validators/validate_agent_run_delivery_coverage.js --rebaseline. The cap comes down on its own once release:velocity-intake renders the pages.`);
   }
   for (const row of improved.slice(0, 25)) {
     console.error(`AGENT RUN DELIVERY COVERAGE FAIL: run ${row.run_date} is now down to ${row.gaps} gap(s) from an allowance of ${row.allowed}. The ratchet must be tightened to ${row.gaps} in ${BASELINE_REL}, or the same ${row.under_by} gap(s) can silently come back.`);
