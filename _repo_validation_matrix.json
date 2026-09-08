@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "f682bce5ab912b65245738b4b533cb777bba7efe6b71b6820ec87818f9eb9e09",
+  "registry_sha256": "375e979a7d2224a4c5a3d8ecb5814e75ca5f5d38f19d0143e492f618a6e9e962",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 186,
-    "active": 159,
+    "total": 187,
+    "active": 160,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 157,
+    "hard_fail": 158,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -425,6 +425,7 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "trace-outcome-legibility",
+        "selfheal-refusal-is-not-failure",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -480,6 +481,7 @@
         "rich-block-contract-link",
         "rich-new-page-contract",
         "route-topic-quality",
+        "selfheal-refusal-is-not-failure",
         "seo-execution-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -746,6 +748,7 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "trace-outcome-legibility",
+        "selfheal-refusal-is-not-failure",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -801,6 +804,7 @@
         "rich-block-contract-link",
         "rich-new-page-contract",
         "route-topic-quality",
+        "selfheal-refusal-is-not-failure",
         "seo-execution-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -1098,6 +1102,7 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "trace-outcome-legibility",
+        "selfheal-refusal-is-not-failure",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -1153,6 +1158,7 @@
         "rich-block-contract-link",
         "rich-new-page-contract",
         "route-topic-quality",
+        "selfheal-refusal-is-not-failure",
         "seo-execution-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -1425,6 +1431,7 @@
         "release-lane-heals-before-push",
         "ci-failure-legibility",
         "trace-outcome-legibility",
+        "selfheal-refusal-is-not-failure",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -1480,6 +1487,7 @@
         "rich-block-contract-link",
         "rich-new-page-contract",
         "route-topic-quality",
+        "selfheal-refusal-is-not-failure",
         "seo-execution-contract",
         "signal-normalization",
         "release-plan-integrity",
@@ -1923,6 +1931,7 @@
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
         "trace-outcome-legibility",
+        "selfheal-refusal-is-not-failure",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -1959,6 +1968,7 @@
         "repair-marker-survives-acceptance",
         "rich-block-contract-link",
         "rich-new-page-contract",
+        "selfheal-refusal-is-not-failure",
         "seo-execution-contract",
         "social-fallback-backlog-visibility",
         "store-clock-independence",
@@ -8670,6 +8680,39 @@
         "retirement_reason": null
       },
       {
+        "id": "selfheal-refusal-is-not-failure",
+        "title": "A repair refusing because nothing is left to repair is not a failed repair",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict",
+          "content-release"
+        ],
+        "path": "scripts/validators/validate_selfheal_refusal_is_not_failure.js",
+        "command": "node scripts/validators/validate_selfheal_refusal_is_not_failure.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/selfheal/repair_outcome.mjs",
+          "scripts/selfheal/heal_until_clean.mjs"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents the self-heal loop from reading a correct refusal as a broken repair. On run 34274346332 recover:run-delivery-coverage-ratchet exited 1 with 'REBASELINE REFUSED: no run is unenrolled and no cap can be tightened, so this would rewrite the identical baseline and report success. Nothing to repair.' while agent-run-delivery-coverage's own artifact recorded PASS in that same run; the loop logged 'repair FAILED', declared REPAIRS_CHANGED_NOTHING and took Velocity Content Release red. This is the third appearance of one mechanism - the loop inferring tree health from a repair's exit code rather than asking the validator. The 2026-09-03 fix added the recheck but gated it behind code === 0, leaving the non-zero half live. This pins the whole decision table, including the case that must STAY fatal: a refusal whose validator still fails.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "mutation-scope-acceptance",
         "title": "A thawed route may not be re-frozen having lost delivered content",
         "status": "ACTIVE",
@@ -12772,6 +12815,39 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "agent-exact-implementation-trace declared its outcome counts with a hand-written list of countBy() calls, so a trace_status missing from that list was missing from the evidence and from the printed line while the run still read PASS. Two buckets were silent on 2026-09-06: REFUSED_BY_RELEASE_QUEUE had no count anywhere, and REFUSED_TO_PROTECT_DELIVERED_CONTENT was counted in JSON but never printed - so the run that ended the five-failure /uscis-medical/ outage announced proven=19; carried=176 of 196 specs and never mentioned the one refusal that was the whole point. A spec that reached no branch at all left no trace and disappeared between plan_count and the summary with nothing noticing. The same run printed log: artifacts/validation/runtime/2026-06-23-10289/... because the runtime log directory was named from the runner frozen stableTimestamp() rather than the wall clock, and triage opened by chasing a state-staleness that did not exist. This guard reconciles every spec to an outcome, every outcome to a count, every count to the printed line, and requires the runtime log directory to name the run that wrote it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "selfheal-refusal-is-not-failure",
+        "title": "A repair refusing because nothing is left to repair is not a failed repair",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict",
+          "content-release"
+        ],
+        "path": "scripts/validators/validate_selfheal_refusal_is_not_failure.js",
+        "command": "node scripts/validators/validate_selfheal_refusal_is_not_failure.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/selfheal/repair_outcome.mjs",
+          "scripts/selfheal/heal_until_clean.mjs"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents the self-heal loop from reading a correct refusal as a broken repair. On run 34274346332 recover:run-delivery-coverage-ratchet exited 1 with 'REBASELINE REFUSED: no run is unenrolled and no cap can be tightened, so this would rewrite the identical baseline and report success. Nothing to repair.' while agent-run-delivery-coverage's own artifact recorded PASS in that same run; the loop logged 'repair FAILED', declared REPAIRS_CHANGED_NOTHING and took Velocity Content Release red. This is the third appearance of one mechanism - the loop inferring tree health from a repair's exit code rather than asking the validator. The 2026-09-03 fix added the recheck but gated it behind code === 0, leaving the non-zero half live. This pins the whole decision table, including the case that must STAY fatal: a refusal whose validator still fails.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

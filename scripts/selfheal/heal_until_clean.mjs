@@ -21,6 +21,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { classifyRepair, noRepairMadeProgress, renderRepairOutcome } from './repair_outcome.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const argv = process.argv.slice(2);
@@ -125,23 +126,40 @@ for (let attempt = 1; attempt <= MAX; attempt += 1) {
     // change, and a genuine "already fixed" read as a false "cannot ever fix
     // this". A tree-diff no-op is only the Rule 0 condition this loop must stop
     // on when the validator ALSO still fails; check that before naming it.
-    let noOp = r.code === 0 && before !== null && after !== null && before === after;
-    if (noOp) {
-      const targetCommand = commandFor.get(id);
-      const recheck = targetCommand ? run(targetCommand) : null;
-      if (recheck && recheck.code === 0) {
-        noOp = false;
-        console.log(`  repair for ${id} changed nothing on this invocation, but ${id} now passes (already fixed earlier in this same validate pass) - not a no-op`);
-      }
+    // Ask the validator whenever the repair claims no progress - by exiting 0
+    // without touching a file, OR by refusing with a non-zero code. Both can
+    // mean "already fixed earlier in this same validate pass"; only the
+    // validator can tell which. See scripts/selfheal/repair_outcome.mjs.
+    const targetCommand = commandFor.get(id);
+    const provisional = classifyRepair({ code: r.code, before, after });
+    let recheckPasses;
+    if (provisional.needsRecheck && targetCommand) {
+      const recheck = run(targetCommand);
+      recheckPasses = recheck.code === 0;
     }
-    if (r.code !== 0) console.log(`  repair FAILED for ${id} (exit ${r.code})`);
-    else if (noOp) console.log(`  repair NO-OP for ${id}: "${cmd}" exited 0 but changed no file, so ${id} cannot clear on a retry`);
-    repaired.push({ id, cmd, code: r.code, no_op: noOp });
+    const verdict = classifyRepair({ code: r.code, before, after, recheckPasses });
+    const noOp = verdict.noOp;
+
+    // Echo the repair's own words. A bare "exit 1" in the CI log is what made
+    // run 34274346332 expensive to triage: the repair had already printed a
+    // complete named stop and the loop discarded it. See renderRepairOutcome.
+    for (const line of renderRepairOutcome({ id, cmd, code: r.code, verdict, out: r.out })) console.log(line);
+
+    repaired.push({
+      id,
+      cmd,
+      code: r.code,
+      no_op: noOp,
+      resolved_by_recheck: verdict.resolvedByRecheck,
+      // Persist the refusal text alongside the verdict, so the artifact a human
+      // is pointed at carries the reason and not only the exit code.
+      said: String(r.out || '').trim().split('\n').slice(-40).join('\n'),
+    });
   }
 
   // Every repair this pass either failed or changed nothing, so the next pass
   // would validate an identical tree. Stop and name it rather than looping.
-  if (repaired.length && repaired.every((x) => x.code !== 0 || x.no_op)) {
+  if (noRepairMadeProgress(repaired)) {
     attempts.push({ attempt, failed, repaired, result: 'REPAIRS_CHANGED_NOTHING' });
     console.log('[self-heal] no repair changed the tree this pass; retrying would validate the identical tree');
     break;
