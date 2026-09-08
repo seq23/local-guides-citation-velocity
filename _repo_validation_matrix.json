@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "c0c61e08cf7f0c5564163e2a68ad77854d317ccafecaaf37d1563ad7cb6213af",
+  "registry_sha256": "bda5fc4676dde06158565804b48028ade6687d7325b6cf42c632ebe93bb778d4",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 183,
-    "active": 156,
+    "total": 184,
+    "active": 157,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 154,
+    "hard_fail": 155,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -307,6 +307,7 @@
         "demand-backed-pages",
         "deterministic-build",
         "repair-command-efficacy",
+        "repair-fixture-capability",
         "dynamic-page-contract-cross-vertical",
         "evidence-registry",
         "executable-bits",
@@ -577,6 +578,7 @@
         "velocity-intake-workflow",
         "deterministic-build",
         "repair-command-efficacy",
+        "repair-fixture-capability",
         "repo-hygiene"
       ]
     },
@@ -622,6 +624,7 @@
         "demand-backed-pages",
         "deterministic-build",
         "repair-command-efficacy",
+        "repair-fixture-capability",
         "dynamic-page-contract-cross-vertical",
         "evidence-registry",
         "executable-bits",
@@ -890,6 +893,7 @@
         "velocity-intake-workflow",
         "deterministic-build",
         "repair-command-efficacy",
+        "repair-fixture-capability",
         "repo-hygiene"
       ]
     },
@@ -970,6 +974,7 @@
         "demand-backed-pages",
         "deterministic-build",
         "repair-command-efficacy",
+        "repair-fixture-capability",
         "dynamic-page-contract-cross-vertical",
         "evidence-registry",
         "executable-bits",
@@ -1235,6 +1240,7 @@
         "deterministic-build",
         "public-click-audit",
         "repair-command-efficacy",
+        "repair-fixture-capability",
         "repo-hygiene"
       ]
     },
@@ -1284,6 +1290,7 @@
         "deterministic-build",
         "build-result-cache-integrity",
         "repair-command-efficacy",
+        "repair-fixture-capability",
         "dynamic-page-contract-cross-vertical",
         "entity-graph",
         "evidence-registry",
@@ -1566,6 +1573,7 @@
         "deterministic-build",
         "public-click-audit",
         "repair-command-efficacy",
+        "repair-fixture-capability",
         "repo-hygiene"
       ]
     },
@@ -4169,6 +4177,42 @@
         ],
         "enforce_no_source_mutation": false,
         "risk_prevented": "Prevents a registered repair_command from being a no-op against the exact condition its validator is failing on. agent-fix-ledger-truthfulness can fail on newly-untruthful rows OR on stale ratchet-baseline entries; its repair only ever handled the first, so on 2026-09-03 (run 33789831891) self-heal correctly refused to loop on a repair that ran, exited 0, and changed nothing, leaving Velocity Content Release red with a registered repair that could never have cleared it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "repair-fixture-capability",
+        "title": "A registered repair clears a constructed failing state, proven while its validator is green",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_repair_fixture_capability.js",
+        "command": "node scripts/validators/validate_repair_fixture_capability.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json",
+          "scripts/validators/validate_repair_fixture_capability.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/repair-fixture-capability.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/repair-fixture-capability.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents a registered repair from losing the capability it was registered for while its validator happens to be green. recover:run-delivery-coverage-ratchet existed so a newly-absorbed agent run could be ENROLLED in the shrink-only delivery ratchet at its measured gaps. A later hardening made --rebaseline refuse whenever any run 'regressed'; an unenrolled run defaults to a cap of 0 and so was indistinguishable from a regression, and the repair began refusing the exact case it existed for. Nothing caught it: it still declared the correct repair_writes so self-heal-repair-contract stayed green, and its validator was passing whenever anything looked so repair-command-efficacy never invoked it. On run 34233215688 absorption landed run 2026-09-08 with 9 gaps, self-heal ran the repair, the repair exited 1, no repair changed the tree, and Velocity Content Release refused to publish - with repair-command-efficacy reporting a second, unrepairable failure on top. This runs each registered repair against a synthetic failing state in a scratch directory and requires the validator to pass afterwards.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -16408,6 +16452,42 @@
         ],
         "enforce_no_source_mutation": false,
         "risk_prevented": "Prevents a registered repair_command from being a no-op against the exact condition its validator is failing on. agent-fix-ledger-truthfulness can fail on newly-untruthful rows OR on stale ratchet-baseline entries; its repair only ever handled the first, so on 2026-09-03 (run 33789831891) self-heal correctly refused to loop on a repair that ran, exited 0, and changed nothing, leaving Velocity Content Release red with a registered repair that could never have cleared it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "repair-fixture-capability",
+        "title": "A registered repair clears a constructed failing state, proven while its validator is green",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_repair_fixture_capability.js",
+        "command": "node scripts/validators/validate_repair_fixture_capability.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json",
+          "scripts/validators/validate_repair_fixture_capability.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/repair-fixture-capability.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/repair-fixture-capability.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents a registered repair from losing the capability it was registered for while its validator happens to be green. recover:run-delivery-coverage-ratchet existed so a newly-absorbed agent run could be ENROLLED in the shrink-only delivery ratchet at its measured gaps. A later hardening made --rebaseline refuse whenever any run 'regressed'; an unenrolled run defaults to a cap of 0 and so was indistinguishable from a regression, and the repair began refusing the exact case it existed for. Nothing caught it: it still declared the correct repair_writes so self-heal-repair-contract stayed green, and its validator was passing whenever anything looked so repair-command-efficacy never invoked it. On run 34233215688 absorption landed run 2026-09-08 with 9 gaps, self-heal ran the repair, the repair exited 1, no repair changed the tree, and Velocity Content Release refused to publish - with repair-command-efficacy reporting a second, unrepairable failure on top. This runs each registered repair against a synthetic failing state in a scratch directory and requires the validator to pass afterwards.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
