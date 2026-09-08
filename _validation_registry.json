@@ -8073,6 +8073,49 @@
       "scope": "CONTAINER",
       "profiles": [
         "audit",
+        "local",
+        "release",
+        "strict",
+        "content-release"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "timeout_seconds": 120,
+      "depends_on": [],
+      "estimated_runtime_seconds": 5,
+      "id": "selfheal-refusal-is-not-failure",
+      "title": "A repair refusing because nothing is left to repair is not a failed repair",
+      "path": "scripts/validators/validate_selfheal_refusal_is_not_failure.js",
+      "command": "node scripts/validators/validate_selfheal_refusal_is_not_failure.js",
+      "risk_prevented": "Prevents the self-heal loop from reading a correct refusal as a broken repair. On run 34274346332 recover:run-delivery-coverage-ratchet exited 1 with 'REBASELINE REFUSED: no run is unenrolled and no cap can be tightened, so this would rewrite the identical baseline and report success. Nothing to repair.' while agent-run-delivery-coverage's own artifact recorded PASS in that same run; the loop logged 'repair FAILED', declared REPAIRS_CHANGED_NOTHING and took Velocity Content Release red. This is the third appearance of one mechanism - the loop inferring tree health from a repair's exit code rather than asking the validator. The 2026-09-03 fix added the recheck but gated it behind code === 0, leaving the non-zero half live. This pins the whole decision table, including the case that must STAY fatal: a refusal whose validator still fails.",
+      "requires_files": [
+        "scripts/selfheal/repair_outcome.mjs",
+        "scripts/selfheal/heal_until_clean.mjs"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "why_existing_checks_do_not_cover": "repair-command-efficacy proves a repair CAN fix a live failure; it never exercises the loop's interpretation of the repair's exit code. repair-fixture-capability drives repairs against synthetic failing state but likewise stops at the repair boundary. Nothing else imports scripts/selfheal/heal_until_clean.mjs, and the loop's decision could previously only be observed by running a full release profile - roughly four minutes and a 2362-page build - which is why the same defect shipped twice.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair. A failure here means an outcome is being produced that nothing counts or prints, a spec is being dropped without a verdict, or the log path is lying about which run wrote it. All three are code defects, and a command that reconciled the numbers after the fact would restore the silence this closes.",
+      "tags": [
+        "selfheal",
+        "repair",
+        "release",
+        "integrity"
+      ],
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
         "content-release",
         "core",
         "full-audit",
