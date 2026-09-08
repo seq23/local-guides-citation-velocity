@@ -2283,6 +2283,93 @@
       ]
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "depends_on": [],
+      "estimated_runtime_seconds": 30,
+      "timeout_seconds": 600,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 8",
+      "profiles": [
+        "audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "id": "repair-fixture-capability",
+      "title": "A registered repair clears a constructed failing state, proven while its validator is green",
+      "path": "scripts/validators/validate_repair_fixture_capability.js",
+      "command": "node scripts/validators/validate_repair_fixture_capability.js",
+      "tags": [
+        "self-heal",
+        "repair",
+        "integrity",
+        "fixture"
+      ],
+      "risk_prevented": "Prevents a registered repair from losing the capability it was registered for while its validator happens to be green. recover:run-delivery-coverage-ratchet existed so a newly-absorbed agent run could be ENROLLED in the shrink-only delivery ratchet at its measured gaps. A later hardening made --rebaseline refuse whenever any run 'regressed'; an unenrolled run defaults to a cap of 0 and so was indistinguishable from a regression, and the repair began refusing the exact case it existed for. Nothing caught it: it still declared the correct repair_writes so self-heal-repair-contract stayed green, and its validator was passing whenever anything looked so repair-command-efficacy never invoked it. On run 34233215688 absorption landed run 2026-09-08 with 9 gaps, self-heal ran the repair, the repair exited 1, no repair changed the tree, and Velocity Content Release refused to publish - with repair-command-efficacy reporting a second, unrepairable failure on top. This runs each registered repair against a synthetic failing state in a scratch directory and requires the validator to pass afterwards.",
+      "why_existing_checks_do_not_cover": "self-heal-repair-contract is static: it proves a repair is AIMED at a file its validator reads, not that invoking it changes the verdict. repair-command-efficacy is behavioural but opportunistic - it only exercises a repair whose validator is FAILING at that moment; on run 34233215688 it examined 10 candidates and ran 1 repair, recording the other 9 as ALREADY_PASSING/repair_run:false. Neither can observe a repair that has stopped working while its validator is green, which is the state every regression passes through before it reaches production. self-heal-commit-coverage governs whether the lane can commit a repair's output, not whether the repair produces any.",
+      "requires_files": [
+        "_validation_registry.json",
+        "scripts/validators/validate_repair_fixture_capability.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/repair-fixture-capability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/repair-fixture-capability.json"
+      ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "depends_on": [],
+      "estimated_runtime_seconds": 15,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "audit",
+        "local",
+        "release",
+        "strict",
+        "content-release"
+      ],
+      "id": "repair-marker-survives-acceptance",
+      "title": "A ledgered repair marker survives the accepted-artifact store",
+      "path": "scripts/validators/validate_repair_marker_survives_acceptance.js",
+      "command": "node scripts/validators/validate_repair_marker_survives_acceptance.js",
+      "tags": [
+        "repair",
+        "accepted-artifacts",
+        "render",
+        "integrity"
+      ],
+      "risk_prevented": "Prevents the accepted-artifact store from silently swallowing an agent-exact repair. mergeAcceptedArtifacts refreshes an accepted page's blocks keyed on type|title and keeps the ACCEPTED copy whenever the current one is lighter. A repair marker is minted per repair and stamped onto the FIRST semantic artifact, so which block carries it is decided by the semantic manifest, not by size. On /personal-injury/ it landed on cost_table|\"Direct answer,\" - a key the accepted store holds three copies of - and the freshly authored 939-byte block was paired with the 1066-byte accepted one, lost the weight comparison and was consumed: dropped entirely rather than appended. The page kept the previous run's marker and agent-exact-implementation-trace correctly reported agent_db794554f0377d3c:repair_not_proven:personal-injury/index.html, taking Velocity Content Release red on run 34197241611 four minutes after the same validator had passed on the same tree. This pins the contract on the merge function: a fresh marker survives a heavier accepted block, an unmarked shrink still loses, an unchanged marker buys no shrink, and no block is silently dropped.",
+      "why_existing_checks_do_not_cover": "agent-exact-implementation-trace detects the symptom only AFTER a full 2362-page rebuild, mid-lane, and reports it as an unexplained repair_not_proven - it cannot say which layer swallowed the repair. mutation-scope-acceptance adjudicates whether a THAWED route's rebuild lost ledgered markers it was already delivering; it never sees a marker that was never delivered in the first place, so this suppression produces no rejected row and cannot be downgraded to a named refusal. rendered-output-shrink-guard and rendered-programmatic-substance measure page size and substance, not marker identity. Nothing else exercises mergeAcceptedArtifacts directly, and the store records nothing when it discards a block - the only external trace was a count (record_ids_unproven) that names no route.",
+      "requires_files": [
+        "scripts/lib/accepted_artifacts.js",
+        "data/release/accepted_page_artifacts.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/repair-marker-survives-acceptance.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/repair-marker-survives-acceptance.json"
+      ]
+    },
+    {
       "id": "distribution-contract",
       "title": "Distribution script contract",
       "path": "scripts/validate_distribution_contract.js",
@@ -7955,6 +8042,48 @@
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "enforce_no_source_mutation": true,
+      "timeout_seconds": 300,
+      "depends_on": [
+        "agent-exact-implementation-trace"
+      ],
+      "estimated_runtime_seconds": 5,
+      "id": "trace-outcome-legibility",
+      "title": "Every traced outcome is counted, printed and reconciled, and the log path names this run",
+      "path": "scripts/validators/validate_trace_outcome_legibility.js",
+      "command": "node scripts/validators/validate_trace_outcome_legibility.js",
+      "risk_prevented": "agent-exact-implementation-trace declared its outcome counts with a hand-written list of countBy() calls, so a trace_status missing from that list was missing from the evidence and from the printed line while the run still read PASS. Two buckets were silent on 2026-09-06: REFUSED_BY_RELEASE_QUEUE had no count anywhere, and REFUSED_TO_PROTECT_DELIVERED_CONTENT was counted in JSON but never printed - so the run that ended the five-failure /uscis-medical/ outage announced proven=19; carried=176 of 196 specs and never mentioned the one refusal that was the whole point. A spec that reached no branch at all left no trace and disappeared between plan_count and the summary with nothing noticing. The same run printed log: artifacts/validation/runtime/2026-06-23-10289/... because the runtime log directory was named from the runner frozen stableTimestamp() rather than the wall clock, and triage opened by chasing a state-staleness that did not exist. This guard reconciles every spec to an outcome, every outcome to a count, every count to the printed line, and requires the runtime log directory to name the run that wrote it.",
+      "requires_files": [
+        "artifacts/validation/agent-exact-implementation-trace.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/trace-outcome-legibility.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/trace-outcome-legibility.json"
+      ],
+      "why_existing_checks_do_not_cover": "agent-exact-implementation-trace is the subject, and it cannot be the witness that its own census is complete: the failure mode is precisely a status it forgot to count, which it therefore also forgets to check. mutation-scope-acceptance proves a REFUSED spec has a real rejection behind it but says nothing about whether the trace counted or printed it. No existing check reconciles plan_count against the number of specs that actually received an outcome, and none looks at the runtime log path an operator is told to read.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair. A failure here means an outcome is being produced that nothing counts or prints, a spec is being dropped without a verdict, or the log path is lying about which run wrote it. All three are code defects, and a command that reconciled the numbers after the fact would restore the silence this closes."
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
       "timeout_seconds": 600,
       "depends_on": [],
       "estimated_runtime_seconds": 15,
@@ -8019,46 +8148,50 @@
       "repair_scope": "No repair. Adding a workflow to the health lane's subscription is a deliberate decision about what the repo watches, and a command that silently subscribed to whatever it found would make the list describe the code rather than govern it."
     },
     {
+      "id": "ledgered-related-link-preservation",
+      "title": "Ledgered related-link preservation",
+      "path": "scripts/validators/validate_ledgered_related_link_preservation.js",
+      "command": "node scripts/validators/validate_ledgered_related_link_preservation.js",
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "tier": "Tier 1",
       "scope": "CONTAINER",
       "profiles": [
+        "agent-run",
         "audit",
         "content-release",
-        "core",
         "full-audit",
         "local",
         "release",
         "strict"
       ],
+      "tags": [
+        "content",
+        "citation-velocity",
+        "agent-runs",
+        "frozen-output"
+      ],
+      "risk_prevented": "A ranked, capped related-questions list can silently stop reproducing an internal link the accepted page is already delivering, dropping a ledgered required_marker that landed recommendations depend on. The freeze transaction then refuses the mutation on every release, so the repair can never be proven and the release lane fails on the same route indefinitely.",
+      "why_existing_checks_do_not_cover": "mutation-scope acceptance detects the loss only after a rebuild has already produced it and answers by refusing, which repeats forever; agent-fix-ledger-truthfulness reads the restored accepted bytes and therefore cannot tell a page the generator can still produce from one it can only restore.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/ledgered-related-link-preservation-result.json",
+      "failure_action": "stop release and restore the generator's ability to reproduce the delivered link before publishing",
+      "depends_on": [],
+      "requires_files": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/release/frozen_page_registry.json"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "timeout_seconds": 300,
-      "depends_on": [
-        "agent-exact-implementation-trace"
-      ],
-      "estimated_runtime_seconds": 5,
-      "id": "trace-outcome-legibility",
-      "title": "Every traced outcome is counted, printed and reconciled, and the log path names this run",
-      "path": "scripts/validators/validate_trace_outcome_legibility.js",
-      "command": "node scripts/validators/validate_trace_outcome_legibility.js",
-      "risk_prevented": "agent-exact-implementation-trace declared its outcome counts with a hand-written list of countBy() calls, so a trace_status missing from that list was missing from the evidence and from the printed line while the run still read PASS. Two buckets were silent on 2026-09-06: REFUSED_BY_RELEASE_QUEUE had no count anywhere, and REFUSED_TO_PROTECT_DELIVERED_CONTENT was counted in JSON but never printed - so the run that ended the five-failure /uscis-medical/ outage announced proven=19; carried=176 of 196 specs and never mentioned the one refusal that was the whole point. A spec that reached no branch at all left no trace and disappeared between plan_count and the summary with nothing noticing. The same run printed log: artifacts/validation/runtime/2026-06-23-10289/... because the runtime log directory was named from the runner frozen stableTimestamp() rather than the wall clock, and triage opened by chasing a state-staleness that did not exist. This guard reconciles every spec to an outcome, every outcome to a count, every count to the printed line, and requires the runtime log directory to name the run that wrote it.",
-      "requires_files": [
-        "artifacts/validation/agent-exact-implementation-trace.json"
-      ],
       "produces_files": [
-        "artifacts/validation/trace-outcome-legibility.json"
+        "artifacts/validation/ledgered-related-link-preservation-result.json"
       ],
       "mutates_files": [
-        "artifacts/validation/trace-outcome-legibility.json"
+        "artifacts/validation/ledgered-related-link-preservation-result.json"
       ],
-      "why_existing_checks_do_not_cover": "agent-exact-implementation-trace is the subject, and it cannot be the witness that its own census is complete: the failure mode is precisely a status it forgot to count, which it therefore also forgets to check. mutation-scope-acceptance proves a REFUSED spec has a real rejection behind it but says nothing about whether the trace counted or printed it. No existing check reconciles plan_count against the number of specs that actually received an outcome, and none looks at the runtime log path an operator is told to read.",
-      "repair_command": "",
-      "repair_writes": [],
-      "repair_scope": "No repair. A failure here means an outcome is being produced that nothing counts or prints, a spec is being dropped without a verdict, or the log path is lying about which run wrote it. All three are code defects, and a command that reconciled the numbers after the fact would restore the silence this closes."
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

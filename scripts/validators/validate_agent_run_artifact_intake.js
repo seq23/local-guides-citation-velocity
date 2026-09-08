@@ -7,6 +7,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const RUN_ROOT = path.join(ROOT, 'data/report_fixes/agent_runs');
 const allowedStatuses = new Set(['READY_FOR_ABSORPTION', 'IMPORTED', 'ABSORBED', 'QUARANTINED']);
 const allowedVerticals = new Set(['dentistry', 'personal-injury', 'personal_injury', 'pi', 'uscis', 'uscis-medical', 'neuro', 'trt', 'peptides', 'hair-loss']);
+const { zeroExaminationVerdict } = require('../lib/zero_item_examination');
 const errors = [];
 const warnings = [];
 const manifests = [];
@@ -35,6 +36,28 @@ for(const manifestAbs of manifests){const manifestRel=rel(manifestAbs);let m;try
  if(!isQuarantined&&m.csv_path&&fs.existsSync(path.join(ROOT,m.csv_path))){const headers=parseHeader(path.join(ROOT,m.csv_path));const requiredAny=[['Query','query','Target Query','Question'],['Patch Needed (Y/N)','Gap Found','Action Tier','Fix Recommendation']];for(const choices of requiredAny){if(!choices.some(h=>headers.includes(h)))errors.push(`${manifestRel}:csv_missing_any:${choices.join('|')}`);}}
 }
 if(!manifests.length)warnings.push('no_agent_run_manifests_present; social/backlog fallback may still release content');
-const report={schema_version:'1.1',validator:'agent-run-artifact-intake',status:errors.length?'FAIL':'PASS',manifest_count:manifests.length,active_manifest_count:activeManifestCount,quarantined_manifest_count:quarantinedCount,manifests:manifests.map(rel),errors,warnings,checked_at:process.env.SOURCE_DATE||new Date().toISOString().slice(0,10)};
+// A landed run is a directory under data/report_fixes/agent_runs. Counting those
+// independently of the manifests found is what separates "no run has landed" - a
+// legitimate green stop - from "runs landed and this validator saw none of them",
+// which is the intake being broken and must be red.
+function runDirectories(abs){
+  if(!fs.existsSync(abs)) return 0;
+  let count=0;
+  for(const vertical of fs.readdirSync(abs,{withFileTypes:true})){
+    if(!vertical.isDirectory()) continue;
+    for(const run of fs.readdirSync(path.join(abs,vertical.name),{withFileTypes:true})) if(run.isDirectory()) count+=1;
+  }
+  return count;
+}
+const intakeVerdict = zeroExaminationVerdict({
+  validator:'agent-run-artifact-intake',
+  unit:'agent run manifest(s)',
+  examined:manifests.length,
+  available:runDirectories(RUN_ROOT),
+  stopReason:'no agent run has landed under data/report_fixes/agent_runs, so there is no intake to prove',
+  inputs:['data/report_fixes/agent_runs']
+});
+if(intakeVerdict.error) errors.push(intakeVerdict.error);
+const report={schema_version:'1.2',validator:'agent-run-artifact-intake',status:errors.length?'FAIL':'PASS',examined_count:manifests.length,named_stop:intakeVerdict.named_stop,manifest_count:manifests.length,active_manifest_count:activeManifestCount,quarantined_manifest_count:quarantinedCount,manifests:manifests.map(rel),errors,warnings,checked_at:process.env.SOURCE_DATE||new Date().toISOString().slice(0,10)};
 fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts/validation/agent-run-artifact-intake.json'),JSON.stringify(report,null,2)+'\n');
 if(errors.length){console.error('AGENT RUN ARTIFACT INTAKE FAIL');errors.forEach(e=>console.error(`- ${e}`));process.exit(1);}console.log(`AGENT RUN ARTIFACT INTAKE PASS: ${manifests.length} manifest(s).`);

@@ -4,6 +4,7 @@ const fs=require('fs'); const path=require('path'); const { forbiddenScaffoldMat
 function rel(p){return path.join(ROOT,p)} function readJson(p,f=null){try{return JSON.parse(fs.readFileSync(rel(p),'utf8'))}catch{return f}} function writeJson(p,v){const out=rel(p);fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(v,null,2)+'\n')} function norm(v){return String(v||'').replace(/\s+/g,' ').trim().toLowerCase()}
 function evidenceTokens(text){ const raw=String(text||''); const quoted=[...raw.matchAll(/['"“]([^'"”]{4,100})['"”]/g)].map(m=>m[1]); const directives=[...(raw.match(/(?:add|include|compare|define|explain)\s+[^.;|]+/gi)||[])]; return [...new Set([...quoted,...directives,raw].map(x=>String(x).replace(/\s+/g,' ').trim()).filter(x=>x.length>=8).slice(0,8))]; }
 function targetTextFromPath(p){ if(!p) return ''; const candidates=[p, p.replace(/^\//,''), p.replace(/^\//,'').replace(/\/$/,'/index.html')]; for(const c of candidates){try{if(fs.existsSync(rel(c))) return fs.readFileSync(rel(c),'utf8')}catch{}} return ''; }
+const { zeroExaminationVerdict } = require('../lib/zero_item_examination');
 const semantic=readJson('data/report_fixes/agent_exact_semantic_acceptance_manifest.json',{entries:[]});
 const ledger=readJson('data/report_fixes/agent_exact_implementation_ledger.json',{entries:[]});
 const plan=readJson('artifacts/validation/agent-exact-implementation-plan.json',{specs:[]});
@@ -38,7 +39,20 @@ for(const entry of scopedLedgerEntries){
     if(!ok) missing.push({implementation_path:entry.implementation_path, marker:entry.marker, recommendation:rec, tokens});
   }
 }
-const report={schema_version:'1.1',validator:'velocity-agent-recommendation-driven-output',status:missing.length?'FAIL':'PASS',scope:activePlanPaths.size?'active_agent_exact_plan':'cumulative_ledger',plan_specs:(plan.specs||[]).length,ledger_entries_total:(ledger.entries||[]).length,ledger_entries_considered:scopedLedgerEntries.length,ledger_entries_skipped:skipped.length,recommendations_checked:checked.length,missing_recommendation_evidence:missing,skipped,checked};
+// Recommendations carried by the scoped ledger entries, counted from the ledger
+// rather than from the checked[] array this loop fills, so "the loop ran and found
+// nothing to do" is distinguishable from "there was nothing to do".
+const recommendationsAvailable=scopedLedgerEntries.filter(entry=>entry.status!=='BLOCKED').reduce((n,entry)=>n+((entry.fix_recommendations||[]).length),0);
+const outputVerdict=zeroExaminationVerdict({
+  validator:'velocity-agent-recommendation-driven-output',
+  unit:'recommendation(s)',
+  examined:checked.length,
+  available:recommendationsAvailable,
+  stopReason:'no ledger entry in scope carries a fix recommendation, so there is no recommendation-driven output to prove',
+  inputs:['data/report_fixes/agent_exact_implementation_ledger.json','artifacts/validation/agent-exact-implementation-plan.json']
+});
+if(outputVerdict.error) missing.push({implementation_path:'(suite)', marker:'', recommendation:outputVerdict.error, tokens:[]});
+const report={schema_version:'1.2',validator:'velocity-agent-recommendation-driven-output',status:missing.length?'FAIL':'PASS',examined_count:checked.length,named_stop:outputVerdict.named_stop,scope:activePlanPaths.size?'active_agent_exact_plan':'cumulative_ledger',plan_specs:(plan.specs||[]).length,ledger_entries_total:(ledger.entries||[]).length,ledger_entries_considered:scopedLedgerEntries.length,ledger_entries_skipped:skipped.length,recommendations_checked:checked.length,missing_recommendation_evidence:missing,skipped,checked};
 writeJson('artifacts/validation/velocity-agent-recommendation-driven-output.json',report);
 if(missing.length){console.error(`VELOCITY RECOMMENDATION OUTPUT FAIL: ${missing.length} missing`);process.exit(1)}
 console.log(`VELOCITY RECOMMENDATION OUTPUT PASS: ${checked.length} recommendations checked; scope=${report.scope}; considered=${scopedLedgerEntries.length}; skipped=${skipped.length}`);

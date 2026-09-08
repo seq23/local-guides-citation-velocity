@@ -42,6 +42,7 @@ function compiledArtifactErrors(entry) {
   }
   return errors;
 }
+const { zeroExaminationVerdict } = require('../lib/zero_item_examination');
 function main() {
   const errors = [];
   const traces = [];
@@ -92,12 +93,25 @@ function main() {
     errors.push(...renderErrors.map((err) => `${implementationPath}:${err}`));
   }
   for (const p of planned) if (!manifestPaths.has(p)) errors.push(`${p}:missing_generated_semantic_acceptance_entry`);
+  // planned comes from the run's plan, not from the manifest being walked, so it can
+  // say "there was work" even when this loop examined nothing.
+  const verdict = zeroExaminationVerdict({
+    validator: 'agent-exact-acceptance-manifest',
+    unit: 'manifest target(s)',
+    examined: traces.length,
+    available: planned.size,
+    stopReason: 'no semantic acceptance entry exists and this run planned no exact repair, so there is no acceptance to check',
+    inputs: [MANIFEST_PATH, PLAN_PATH]
+  });
+  if (verdict.error) errors.push(verdict.error);
   const report = {
     schema_version: '2.0',
     status: errors.length ? 'FAIL' : 'PASS',
     checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10),
     manifest_path: MANIFEST_PATH,
     plan_path: PLAN_PATH,
+    examined_count: traces.length,
+    named_stop: verdict.named_stop,
     entry_count: manifest?.entries?.length || 0,
     row_requirement_count: manifest?.row_requirement_count || traces.reduce((sum, t) => sum + t.row_requirement_count, 0),
     generated_by: manifest?.generated_by || '',
