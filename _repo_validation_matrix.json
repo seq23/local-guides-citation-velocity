@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "9060389cd29b7f4548772a14dd1ca02ad774012a79573285fbd01cbd61db32eb",
+  "registry_sha256": "f682bce5ab912b65245738b4b533cb777bba7efe6b71b6820ec87818f9eb9e09",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 185,
-    "active": 158,
+    "total": 186,
+    "active": 159,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 156,
+    "hard_fail": 157,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -160,6 +160,7 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
+        "trace-outcome-legibility",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage"
       ],
@@ -223,6 +224,8 @@
         "agent-run-artifact-intake",
         "agent-exact-implementation-plan",
         "carried-reason-truthfulness",
+        "agent-exact-implementation-trace",
+        "trace-outcome-legibility",
         "citation-velocity-master-plan",
         "frozen-content-recoverability",
         "homepage-request-assistance",
@@ -421,6 +424,7 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
+        "trace-outcome-legibility",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -520,6 +524,7 @@
         "agent-exact-implementation-plan",
         "html-fix-acceptance-compiler",
         "agent-exact-implementation-trace",
+        "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
         "citation-agent-fixes",
@@ -740,6 +745,7 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
+        "trace-outcome-legibility",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -840,6 +846,7 @@
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
         "agent-exact-implementation-trace",
+        "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
         "citation-agent-fixes",
@@ -1090,6 +1097,7 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
+        "trace-outcome-legibility",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -1190,6 +1198,7 @@
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
         "agent-exact-implementation-trace",
+        "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
         "citation-agent-fixes",
@@ -1415,6 +1424,7 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
+        "trace-outcome-legibility",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -1515,6 +1525,7 @@
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
         "agent-exact-implementation-trace",
+        "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
         "citation-agent-fixes",
@@ -1911,6 +1922,7 @@
         "carried-reason-truthfulness",
         "unbuilt-backlog-admission",
         "intake-plan-regeneration",
+        "trace-outcome-legibility",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -1960,6 +1972,7 @@
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
         "agent-exact-implementation-trace",
+        "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
         "frozen-content-recoverability",
         "html-report-contract",
@@ -2148,6 +2161,7 @@
         "absorption-window-agreement",
         "release-lane-heals-before-push",
         "ci-failure-legibility",
+        "trace-outcome-legibility",
         "mutation-scope-acceptance",
         "ci-health-lane-coverage",
         "ledgered-related-link-preservation"
@@ -2221,6 +2235,7 @@
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
         "agent-exact-implementation-trace",
+        "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
         "html-report-contract",
@@ -2676,6 +2691,10 @@
     {
       "from": "rich-new-page-contract",
       "to": "unbuilt-backlog-admission"
+    },
+    {
+      "from": "agent-exact-implementation-trace",
+      "to": "trace-outcome-legibility"
     }
   ],
   "by_severity": {
@@ -8611,6 +8630,46 @@
         "retirement_reason": null
       },
       {
+        "id": "trace-outcome-legibility",
+        "title": "Every traced outcome is counted, printed and reconciled, and the log path names this run",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_trace_outcome_legibility.js",
+        "command": "node scripts/validators/validate_trace_outcome_legibility.js",
+        "depends_on": [
+          "agent-exact-implementation-trace"
+        ],
+        "requires_files": [
+          "artifacts/validation/agent-exact-implementation-trace.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/trace-outcome-legibility.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/trace-outcome-legibility.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "agent-exact-implementation-trace declared its outcome counts with a hand-written list of countBy() calls, so a trace_status missing from that list was missing from the evidence and from the printed line while the run still read PASS. Two buckets were silent on 2026-09-06: REFUSED_BY_RELEASE_QUEUE had no count anywhere, and REFUSED_TO_PROTECT_DELIVERED_CONTENT was counted in JSON but never printed - so the run that ended the five-failure /uscis-medical/ outage announced proven=19; carried=176 of 196 specs and never mentioned the one refusal that was the whole point. A spec that reached no branch at all left no trace and disappeared between plan_count and the summary with nothing noticing. The same run printed log: artifacts/validation/runtime/2026-06-23-10289/... because the runtime log directory was named from the runner frozen stableTimestamp() rather than the wall clock, and triage opened by chasing a state-staleness that did not exist. This guard reconciles every spec to an outcome, every outcome to a count, every count to the printed line, and requires the runtime log directory to name the run that wrote it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "mutation-scope-acceptance",
         "title": "A thawed route may not be re-frozen having lost delivered content",
         "status": "ACTIVE",
@@ -12673,6 +12732,46 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Velocity Content Release and Validate Repo failed on 2026-09-01, 09-02, 09-03 and 09-04 for the same reason, and each failure was diagnosed from scratch because the run page did not say what broke. In run 33879505846 the whole log rendered as UNKNOWN STEP, the last line was a bare '##[error]Process completed with exit code 1.', and the actual cause - normalized_output_missing for 2026-09-04/uscis-medical - sat on line 1188 of 1265 under roughly 750 lines of pretty-printed JSON that the validator dumped as evidence. The only comfortable route to the diagnosis was downloading velocity-validation-diagnostics-33879505846. An unreadable failure is a failure that recurs, because nobody pays the cost of reading it. This fails if the validation runner does not, on the blocking path before its non-zero exit, emit each blocking validator's cause as a single-line ::error:: annotation, append it to $GITHUB_STEP_SUMMARY, and print it in a labelled block LAST so the log tail is the diagnosis. The emitter is EXECUTED against a constructed failing report modelled on the real 2026-09-04 failure, not read for reassuring words, and a FAIL report carrying zero blocking validators must still say so loudly rather than print nothing.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "trace-outcome-legibility",
+        "title": "Every traced outcome is counted, printed and reconciled, and the log path names this run",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_trace_outcome_legibility.js",
+        "command": "node scripts/validators/validate_trace_outcome_legibility.js",
+        "depends_on": [
+          "agent-exact-implementation-trace"
+        ],
+        "requires_files": [
+          "artifacts/validation/agent-exact-implementation-trace.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/trace-outcome-legibility.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/trace-outcome-legibility.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "agent-exact-implementation-trace declared its outcome counts with a hand-written list of countBy() calls, so a trace_status missing from that list was missing from the evidence and from the printed line while the run still read PASS. Two buckets were silent on 2026-09-06: REFUSED_BY_RELEASE_QUEUE had no count anywhere, and REFUSED_TO_PROTECT_DELIVERED_CONTENT was counted in JSON but never printed - so the run that ended the five-failure /uscis-medical/ outage announced proven=19; carried=176 of 196 specs and never mentioned the one refusal that was the whole point. A spec that reached no branch at all left no trace and disappeared between plan_count and the summary with nothing noticing. The same run printed log: artifacts/validation/runtime/2026-06-23-10289/... because the runtime log directory was named from the runner frozen stableTimestamp() rather than the wall clock, and triage opened by chasing a state-staleness that did not exist. This guard reconciles every spec to an outcome, every outcome to a count, every count to the printed line, and requires the runtime log directory to name the run that wrote it.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

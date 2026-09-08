@@ -12,7 +12,10 @@ const {
   routeToImplementationPath,
   slugFromInsightPath,
   targetTypeForImplementationPath,
-  semanticEntryForImplementationPath
+  semanticEntryForImplementationPath,
+  traceOutcomeCounts,
+  traceSummaryLine,
+  traceReconciliationErrors
 } = require('../lib/agent_exact_repairs');
 
 function rel(p) { return path.join(ROOT, p); }
@@ -224,13 +227,18 @@ const traceVerdict = zeroExaminationVerdict({
 });
 if (traceVerdict.error) errors.push(traceVerdict.error);
 
-const countBy = (status) => traces.filter((t) => t.trace_status === status).length;
+// Derived from the traces, never declared. A hand-maintained list of countBy()
+// calls is how REFUSED_BY_RELEASE_QUEUE ended up with no count anywhere and
+// REFUSED_TO_PROTECT_DELIVERED_CONTENT ended up counted but never printed.
+const outcomeCounts = traceOutcomeCounts(traces);
+const countBy = (status) => outcomeCounts[status] || 0;
 const provenCount = countBy('PASS');
 const blockedCount = countBy('BLOCKED');
 const deferredCount = countBy('DEFERRED_BY_DAILY_CEILING');
 const demandHeldCount = countBy('HELD_BY_MEASURED_DEMAND_GATE');
 const carriedCount = countBy('CARRIED');
 const refusedCount = countBy('REFUSED_TO_PROTECT_DELIVERED_CONTENT');
+const queueRefusedCount = countBy('REFUSED_BY_RELEASE_QUEUE');
 const failedCount = countBy('FAIL');
 
 const report = {
@@ -250,16 +258,34 @@ const report = {
   demand_held_count: demandHeldCount,
   carried_count: carriedCount,
   refused_count: refusedCount,
+  queue_refused_count: queueRefusedCount,
   refused_routes: [...refusedByPath.keys()],
   failed_count: failedCount,
+  // The complete outcome census. Every trace_status that occurred appears here and
+  // in the printed summary, whether or not anyone remembered to add a named field.
+  outcome_counts: outcomeCounts,
   blocked_policy: 'BLOCKED, CARRIED and REFUSED_TO_PROTECT_DELIVERED_CONTENT specs do not fail the build, and are never counted as proven. A REFUSED spec is only excused while artifacts/validation/mutation-scope-acceptance.json names its route as rejected by this release; it stays eligible for selection and must be re-planned, never retired.',
   traces,
   errors
 };
+// A spec that reached no branch at all leaves no trace and used to disappear
+// between plan_count and the printed line without anything noticing. It is a
+// silent drop, so it fails here rather than being quietly rounded off.
+for (const problem of traceReconciliationErrors(report)) errors.push(problem);
+report.errors = errors;
+report.status = errors.length ? 'FAIL' : 'PASS';
+report.failed_count = errors.length ? Math.max(failedCount, 1) : failedCount;
 writeJson('artifacts/validation/agent-exact-implementation-trace.json', report);
+if (!(plan.specs || []).length) {
+  console.error('AGENT EXACT IMPLEMENTATION TRACE FAIL');
+  console.error('- no_specs_to_trace: the plan is empty, so this proved nothing. An empty');
+  console.error('  input set is never a pass here: it is indistinguishable from a planner');
+  console.error('  that stopped producing work, which is exactly what a trace exists to catch.');
+  process.exit(1);
+}
 if (errors.length) {
   console.error('AGENT EXACT IMPLEMENTATION TRACE FAIL');
   errors.forEach((error) => console.error(`- ${error}`));
   process.exit(1);
 }
-console.log(`AGENT EXACT IMPLEMENTATION TRACE PASS: ${traces.length} spec(s); proven=${provenCount}; blocked=${blockedCount}; carried=${carriedCount}; deferred=${deferredCount}; demand_held=${demandHeldCount}`);
+console.log(traceSummaryLine(report));

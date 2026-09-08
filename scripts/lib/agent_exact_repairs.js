@@ -324,8 +324,87 @@ function applyAgentExactRepairsToPage(page, ledger) {
   return page;
 }
 
+
+// ---------------------------------------------------------------------------
+// Trace outcome legibility
+//
+// WHAT THIS USED TO DO, AND WHY IT WAS WRONG
+//
+// trace_agent_exact_implementation.js counted its outcomes with a hand-written
+// list of countBy() calls and printed a hand-written summary line. Both drifted,
+// and drift here is invisible by construction: a status nobody counted simply
+// does not appear, and the line still reads PASS.
+//
+// Two buckets were silent on 2026-09-06. REFUSED_BY_RELEASE_QUEUE had no count
+// field at all. REFUSED_TO_PROTECT_DELIVERED_CONTENT had a field in the JSON but
+// was never printed, so the run that ended the /uscis-medical/ outage announced
+//
+//   AGENT EXACT IMPLEMENTATION TRACE PASS: 196 spec(s); proven=19; blocked=0;
+//   carried=176; deferred=0; demand_held=0
+//
+// -- 19 + 176 = 195 of 196. The one spec missing from the arithmetic was the one
+// thing an operator needed to see: a repair the release deliberately refused, to
+// protect content the page was already delivering. A legitimate stop that is not
+// printed is not a named stop.
+//
+// Counting is now derived from the traces themselves rather than declared, so a
+// new trace_status cannot be added without appearing in both the report and the
+// printed line, and the buckets are reconciled against plan_count so a spec that
+// falls through every branch and is silently dropped fails instead of vanishing.
+function traceOutcomeCounts(traces) {
+  const counts = {};
+  for (const trace of traces || []) {
+    const status = String((trace && trace.trace_status) || 'UNRECORDED');
+    counts[status] = (counts[status] || 0) + 1;
+  }
+  return counts;
+}
+
+// PASS is the only outcome that means work landed. Everything else is named and
+// printed, and none of it is ever folded into proven_count.
+function traceSummaryLine(report) {
+  const counts = report && report.outcome_counts ? report.outcome_counts : traceOutcomeCounts(report && report.traces);
+  const named = Object.keys(counts).sort().map((status) => `${status}=${counts[status]}`).join('; ');
+  const planCount = Number((report && report.plan_count) || 0);
+  return `AGENT EXACT IMPLEMENTATION TRACE ${(report && report.status) || 'UNKNOWN'}: ${planCount} spec(s) planned; ${Object.values(counts).reduce((a, b) => a + b, 0)} traced; ${named || 'NO OUTCOMES RECORDED'}`;
+}
+
+// Returns [] when the report is self-consistent, otherwise the reasons it is not.
+// A spec that reaches no branch is a silent drop, which is the defect this exists
+// to make loud; an outcome present in the traces but absent from the printed line
+// is the same defect one layer up.
+function traceReconciliationErrors(report) {
+  const problems = [];
+  const traces = (report && report.traces) || [];
+  const planCount = Number((report && report.plan_count) || 0);
+  const derived = traceOutcomeCounts(traces);
+  const declared = (report && report.outcome_counts) || {};
+  const tracedTotal = traces.length;
+  if (tracedTotal !== planCount) {
+    problems.push(`specs_dropped_without_an_outcome:planned=${planCount}:traced=${tracedTotal}`);
+  }
+  for (const status of Object.keys(derived)) {
+    if (Number(declared[status] || 0) !== derived[status]) {
+      problems.push(`outcome_not_counted:${status}:declared=${Number(declared[status] || 0)}:actual=${derived[status]}`);
+    }
+  }
+  for (const status of Object.keys(declared)) {
+    if (!Object.prototype.hasOwnProperty.call(derived, status)) {
+      problems.push(`counted_outcome_has_no_traces:${status}`);
+    }
+  }
+  const line = traceSummaryLine(report);
+  for (const status of Object.keys(derived)) {
+    if (!line.includes(`${status}=${derived[status]}`)) problems.push(`outcome_missing_from_printed_summary:${status}`);
+  }
+  return problems;
+}
+
 module.exports = {
   LEDGER_PATH,
+  traceOutcomeCounts,
+  traceSummaryLine,
+  traceReconciliationErrors,
   unique,
   compactSentence,
   normalizeImplementationPath,
