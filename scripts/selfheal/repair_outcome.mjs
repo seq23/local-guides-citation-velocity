@@ -54,3 +54,48 @@ export function noRepairMadeProgress(repaired) {
   if (!repaired.length) return false;
   return repaired.every((x) => x.no_op || (x.code !== 0 && !x.resolved_by_recheck));
 }
+
+// A stop that is not printed is not a named stop.
+//
+// The second half of run 34274346332's defect: the loop captured every repair's
+// stdout+stderr into `r.out` and then threw it away. The CI log said only
+//
+//   repair FAILED for agent-run-delivery-coverage (exit 1)
+//
+// while the repair itself had printed a complete, actionable named stop -
+// "REBASELINE REFUSED: no run is unenrolled and no cap can be tightened ...
+// Nothing to repair." - which reached nobody. Triage had to download the run
+// artifacts and re-derive from JSON what the repair had already said in words.
+//
+// So: whenever a repair does not straightforwardly succeed, its own words are
+// echoed into the log under the verdict line. A repair that fails while saying
+// NOTHING is itself named as a defect, because an unexplained exit code is the
+// thing that made this outage expensive.
+export const NO_OUTPUT_NOTICE =
+  'the repair printed NOTHING - a bare non-zero exit is not a named stop; '
+  + 'give this repair an explanatory refusal message';
+
+export function renderRepairOutcome({ id, cmd, code, verdict, out }) {
+  const lines = [];
+  if (verdict.refusedButResolved) {
+    lines.push(`  repair for ${id} exited ${code} because it had nothing left to repair, and ${id} now passes (already fixed earlier in this same validate pass) - not a failure`);
+  } else if (verdict.failed) {
+    lines.push(`  repair FAILED for ${id} (exit ${code}), and ${id} still fails after it`);
+  } else if (verdict.noOp) {
+    lines.push(`  repair NO-OP for ${id}: "${cmd}" exited 0 but changed no file, so ${id} cannot clear on a retry`);
+  } else if (verdict.resolvedByRecheck) {
+    lines.push(`  repair for ${id} changed nothing on this invocation, but ${id} now passes (already fixed earlier in this same validate pass) - not a no-op`);
+  } else {
+    // Plain success: it changed the tree. Nothing to explain.
+    return lines;
+  }
+
+  const said = String(out || '').trim();
+  if (said) {
+    lines.push(`  ${id} repair said:`);
+    for (const line of said.split('\n')) lines.push(`    | ${line}`);
+  } else if (verdict.failed) {
+    lines.push(`  ${id}: ${NO_OUTPUT_NOTICE}`);
+  }
+  return lines;
+}

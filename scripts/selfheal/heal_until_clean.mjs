@@ -21,7 +21,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classifyRepair, noRepairMadeProgress } from './repair_outcome.mjs';
+import { classifyRepair, noRepairMadeProgress, renderRepairOutcome } from './repair_outcome.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const argv = process.argv.slice(2);
@@ -140,17 +140,21 @@ for (let attempt = 1; attempt <= MAX; attempt += 1) {
     const verdict = classifyRepair({ code: r.code, before, after, recheckPasses });
     const noOp = verdict.noOp;
 
-    if (verdict.refusedButResolved) {
-      console.log(`  repair for ${id} exited ${r.code} because it had nothing left to repair, and ${id} now passes (already fixed earlier in this same validate pass) - not a failure`);
-    } else if (verdict.failed) {
-      console.log(`  repair FAILED for ${id} (exit ${r.code})`);
-    } else if (noOp) {
-      console.log(`  repair NO-OP for ${id}: "${cmd}" exited 0 but changed no file, so ${id} cannot clear on a retry`);
-    } else if (verdict.resolvedByRecheck) {
-      console.log(`  repair for ${id} changed nothing on this invocation, but ${id} now passes (already fixed earlier in this same validate pass) - not a no-op`);
-    }
+    // Echo the repair's own words. A bare "exit 1" in the CI log is what made
+    // run 34274346332 expensive to triage: the repair had already printed a
+    // complete named stop and the loop discarded it. See renderRepairOutcome.
+    for (const line of renderRepairOutcome({ id, cmd, code: r.code, verdict, out: r.out })) console.log(line);
 
-    repaired.push({ id, cmd, code: r.code, no_op: noOp, resolved_by_recheck: verdict.resolvedByRecheck });
+    repaired.push({
+      id,
+      cmd,
+      code: r.code,
+      no_op: noOp,
+      resolved_by_recheck: verdict.resolvedByRecheck,
+      // Persist the refusal text alongside the verdict, so the artifact a human
+      // is pointed at carries the reason and not only the exit code.
+      said: String(r.out || '').trim().split('\n').slice(-40).join('\n'),
+    });
   }
 
   // Every repair this pass either failed or changed nothing, so the next pass

@@ -81,11 +81,82 @@ const PROGRESS_CASES = [
   }
 ];
 
+// The other half of the same outage: the loop captured the repair's stdout and
+// stderr and printed none of it, so the CI log read "repair FAILED ... (exit 1)"
+// while the repair had already printed a complete named stop. A stop that is not
+// printed is not a named stop.
+const RENDER_CASES = [
+  {
+    name: 'a_failed_repair_echoes_its_own_words',
+    why: 'run 34274346332: the refusal text existed and never reached the log',
+    input: {
+      id: 'agent-run-delivery-coverage',
+      cmd: 'npm run recover:run-delivery-coverage-ratchet',
+      code: 1,
+      verdict: { failed: true, refusedButResolved: false, noOp: false, resolvedByRecheck: false },
+      out: 'AGENT RUN DELIVERY COVERAGE REBASELINE REFUSED: nothing to repair.'
+    },
+    mustInclude: ['repair FAILED', 'REBASELINE REFUSED: nothing to repair.'],
+    mustNotInclude: ['printed NOTHING']
+  },
+  {
+    name: 'a_failed_repair_that_says_nothing_is_itself_named',
+    why: 'a bare non-zero exit must not pass through silently',
+    input: {
+      id: 'x',
+      cmd: 'npm run recover:x',
+      code: 1,
+      verdict: { failed: true, refusedButResolved: false, noOp: false, resolvedByRecheck: false },
+      out: '   \n  '
+    },
+    mustInclude: ['repair FAILED', 'printed NOTHING'],
+    mustNotInclude: []
+  },
+  {
+    name: 'a_resolved_refusal_still_shows_why_it_refused',
+    why: 'the benign case must remain legible, not merely quiet',
+    input: {
+      id: 'x',
+      cmd: 'npm run recover:x',
+      code: 1,
+      verdict: { failed: false, refusedButResolved: true, noOp: false, resolvedByRecheck: true },
+      out: 'REFUSED: no run is unenrolled'
+    },
+    mustInclude: ['nothing left to repair', 'REFUSED: no run is unenrolled'],
+    mustNotInclude: ['repair FAILED', 'printed NOTHING']
+  },
+  {
+    name: 'a_no_op_echoes_whatever_it_printed',
+    why: 'the exit-0 dead end is as much a triage problem as the exit-1 one',
+    input: {
+      id: 'x',
+      cmd: 'npm run recover:x',
+      code: 0,
+      verdict: { failed: false, refusedButResolved: false, noOp: true, resolvedByRecheck: false },
+      out: 'nothing to do'
+    },
+    mustInclude: ['repair NO-OP', 'nothing to do'],
+    mustNotInclude: ['repair FAILED']
+  },
+  {
+    name: 'plain_success_is_not_narrated',
+    why: 'the ordinary path stays quiet; only exceptions are explained',
+    input: {
+      id: 'x',
+      cmd: 'npm run recover:x',
+      code: 0,
+      verdict: { failed: false, refusedButResolved: false, noOp: false, resolvedByRecheck: false },
+      out: 'rewrote the baseline'
+    },
+    mustBeEmpty: true
+  }
+];
+
 (async () => {
   const mod = await import(
     path.join('file://', __dirname, '..', 'selfheal', 'repair_outcome.mjs')
   );
-  const { classifyRepair, noRepairMadeProgress } = mod;
+  const { classifyRepair, noRepairMadeProgress, renderRepairOutcome } = mod;
   const errors = [];
   let examined = 0;
 
@@ -107,8 +178,34 @@ const PROGRESS_CASES = [
     }
   }
 
+  for (const c of RENDER_CASES) {
+    examined += 1;
+    let lines;
+    try {
+      lines = renderRepairOutcome(c.input);
+    } catch (e) {
+      errors.push(`render:${c.name}:threw:${e && e.message}`);
+      continue;
+    }
+    if (!Array.isArray(lines)) {
+      errors.push(`render:${c.name}:did_not_return_lines`);
+      continue;
+    }
+    const text = lines.join('\n');
+    if (c.mustBeEmpty) {
+      if (lines.length) errors.push(`render:${c.name}:expected_no_output:actual=${JSON.stringify(text)}`);
+      continue;
+    }
+    for (const needle of c.mustInclude || []) {
+      if (!text.includes(needle)) errors.push(`render:${c.name}:missing=${JSON.stringify(needle)}:actual=${JSON.stringify(text)}`);
+    }
+    for (const needle of c.mustNotInclude || []) {
+      if (text.includes(needle)) errors.push(`render:${c.name}:must_not_contain=${JSON.stringify(needle)}:actual=${JSON.stringify(text)}`);
+    }
+  }
+
   // Rule 0. A decision table that examined nothing has proved nothing.
-  const expectedCases = CASES.length + PROGRESS_CASES.length;
+  const expectedCases = CASES.length + PROGRESS_CASES.length + RENDER_CASES.length;
   if (examined === 0 || examined !== expectedCases) {
     console.error('SELFHEAL REFUSAL IS NOT FAILURE FAIL');
     console.error(
@@ -125,7 +222,7 @@ const PROGRESS_CASES = [
 
   console.log(
     `SELFHEAL REFUSAL IS NOT FAILURE PASS: ${examined} decision case(s) examined; ` +
-    'a refusal with nothing left to repair is progress, a refusal whose validator still fails is fatal.'
+    'a refusal with nothing left to repair is progress, a refusal whose validator still fails is fatal, and every non-routine repair outcome echoes the repair\'s own words.'
   );
 })().catch((e) => {
   console.error('SELFHEAL REFUSAL IS NOT FAILURE FAIL');
