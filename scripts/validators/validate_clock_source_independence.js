@@ -36,9 +36,28 @@
  * read SOURCE_DATE at all".
  *
  * ENROLMENT is derived from the tree, not hand-maintained: every ACTIVE validator whose
- * own source mentions SOURCE_DATE. A new validator that reads it is covered the day it
- * is written. Reading source is a guess when it decides a VERDICT; here it decides only
- * which commands are worth EXECUTING, and the verdict is the two exit codes.
+ * own source CODE references SOURCE_DATE. A new validator that reads it is covered the
+ * day it is written. Reading source is a guess when it decides a VERDICT; here it decides
+ * only which commands are worth EXECUTING, and the verdict is the two exit codes.
+ *
+ * COMMENTS ARE NOT CODE, and enrolling on them made this guard fail the release lane on
+ * 2026-09-09 with a false accusation. `validate_build_result_cache.js` mentions
+ * SOURCE_DATE once, in a prose comment on line 44, and reads it nowhere. It was enrolled
+ * anyway, and its two probes genuinely disagreed - not because a verdict moved with the
+ * clock, but because the build cache is keyed on an input hash that legitimately includes
+ * the environment: the lane populates the cache under SOURCE_DATE=2026-09-09 (hash
+ * 9ee2dde43152c256), so the probe WITHOUT SOURCE_DATE asks for a different hash
+ * (42d73d81b6544377), finds no entry, and exits 1. The cache behaved correctly and the
+ * guard called it a clock dependency.
+ *
+ * Two of the other enrolments were prose too, and one of them is the outage this guard
+ * was written for: `agent-artifact-continuity` no longer reads SOURCE_DATE - PR #97
+ * removed that - and now only DESCRIBES it in its header. Enrolling a validator because
+ * its comment explains a bug it no longer has is enrolment measuring documentation.
+ *
+ * Stripping comments before the test is what makes enrolment mean "reads it". The guard
+ * keeps all of its teeth: any `process.env.SOURCE_DATE` in executable code still enrols,
+ * so a regression that reintroduces the comparison re-enrols itself automatically.
  *
  * THE PROBE is the two clocks that actually occur in production, not arbitrary dates:
  * the wall clock (SOURCE_DATE unset, how a validator runs standalone and in the self-heal
@@ -82,6 +101,16 @@ function durableReleaseDate() {
   return dates.sort().at(-1) || null;
 }
 
+// Executable source only. Block comments and line comments are stripped so enrolment
+// means "this validator READS SOURCE_DATE", not "this validator talks about it". The
+// line-comment pattern deliberately spares "://" so a URL in code is not treated as a
+// comment.
+function codeOf(src) {
+  return String(src || '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
 const registry = JSON.parse(fs.readFileSync(abs(REGISTRY_REL), 'utf8'));
 const validators = Array.isArray(registry.validators) ? registry.validators : [];
 if (!validators.length) {
@@ -105,7 +134,7 @@ for (const v of validators) {
   if (v.status !== 'ACTIVE' || !v.command || !v.path) continue;
   if (v.id === SELF_ID) continue;
   const src = fs.existsSync(abs(v.path)) ? fs.readFileSync(abs(v.path), 'utf8') : '';
-  if (!src.includes('SOURCE_DATE')) continue;
+  if (!codeOf(src).includes('SOURCE_DATE')) continue;
   const budget = Number(v.estimated_runtime_seconds || 0);
   if (budget > PROBE_BUDGET_SECONDS) {
     unprobed.push({ id: v.id, estimated_runtime_seconds: budget, reason: `declared runtime ${budget}s exceeds the ${PROBE_BUDGET_SECONDS}s probe budget` });

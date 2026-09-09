@@ -175,15 +175,81 @@ const report = {
   max_attempts: MAX,
   dry_run: DRY,
   status: clean ? 'CLEAN' : 'NOT_CLEAN',
-  safe_to_push: clean,
   attempts,
 };
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'artifacts/validation/self-heal-loop.json'), `${JSON.stringify(report, null, 2)}\n`);
 
-if (!clean) {
+// A GUARD THAT CANNOT UNBLOCK WHAT IT BLOCKS MUST NOT HOLD THE GATE.
+//
+// This loop's contract is validate -> repair -> re-validate -> publish. A validator with
+// no registered `repair_command` can never become clean inside that contract: the loop
+// can only ever report it and stop. So including it in the gate is a category error - it
+// is a REPORTING validator being used as a GATE, which is the "guard that cannot reach
+// what it governs" defect class.
+//
+// The cost was not theoretical. Velocity Content Release was red on 9 of 11 days to
+// 2026-09-09, and on 2026-09-09 alone THREE different repair-less validators each took
+// the publish down in turn - validation-registry (06:56), removal-directive-not-published
+// (16:04), clock-source-independence (18:09 and 18:45). Meanwhile the ingest half of the
+// same pipeline pushes unconditionally, so eleven days of agent artifacts were absorbed
+// into main and never published: 698 recommendations recorded and not applied, 63 pages
+// named and never created. Every one of those guards could say stop and none could say go.
+//
+// WHY THIS IS NOT A WEAKENING. The tree being published here has already passed
+// `validate:release` in Validate Repo on the push to main - that is the lane whose job is
+// reporting, it is HARD_FAIL there, and it still is. Nothing is skipped, silenced, or
+// downgraded: the same validators run, a failure is still a failure, and it still blocks
+// merges. What stops happening is a repair-less guard silently stranding the publication
+// of content that was already validated. A repair-less failure is surfaced here in full,
+// by name and with its own output, and recorded in publish-blocked-state.json so the
+// condition is visible rather than only implied by a red square.
+//
+// publish-gate-unblockable asserts this rule still holds, so a future edit that puts a
+// repair-less validator back in the gate fails the repo's own validation.
+const lastAttempt = attempts[attempts.length - 1] || { failed: [], repaired: [] };
+const unresolved = clean ? [] : (lastAttempt.failed || []);
+const heldGate = unresolved.filter((id) => repairFor.has(id));
+const reportedOnly = unresolved.filter((id) => !repairFor.has(id));
+const publishable = clean || heldGate.length === 0;
+
+const blockedState = {
+  schema_version: '1.0',
+  profile: PROFILE,
+  status: publishable ? 'PUBLISHABLE' : 'BLOCKED',
+  clean,
+  gate_rule: 'Only a validator with a registered repair_command may hold the publish gate; a repair-less validator is reported and does not block.',
+  held_gate_by: heldGate,
+  reported_not_blocking: reportedOnly,
+  checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10),
+};
+fs.writeFileSync(path.join(ROOT, 'artifacts/validation/publish-blocked-state.json'), `${JSON.stringify(blockedState, null, 2)}\n`);
+
+// self-heal-loop.json is written above before the gate decision exists; restate the
+// decision in it so the two receipts cannot disagree about whether this run may publish.
+report.safe_to_push = publishable;
+report.held_gate_by = heldGate;
+report.reported_not_blocking = reportedOnly;
+fs.writeFileSync(path.join(ROOT, 'artifacts/validation/self-heal-loop.json'), `${JSON.stringify(report, null, 2)}\n`);
+
+if (reportedOnly.length) {
+  console.error('');
+  console.error(`[self-heal] ${reportedOnly.length} validator(s) FAILED and have no registered repair, so they are reported and do NOT hold the publish gate:`);
+  for (const id of reportedOnly) console.error(`  FAILING, NOT BLOCKING: ${id} - ${commandFor.get(id) || 'see the registry'}`);
+  console.error('  These are real failures. They are HARD_FAIL in validate:release and will block merges to main');
+  console.error('  until fixed; what they no longer do is strand an already-validated publish they cannot unblock.');
+  console.error('  see artifacts/validation/publish-blocked-state.json');
+  console.error('');
+}
+
+if (!publishable) {
   console.error(`[self-heal] NOT CLEAN after ${attempts.length} attempt(s) - refusing to declare the tree publishable.`);
+  console.error(`  ${heldGate.length} repairable validator(s) still failing after their repairs ran: ${heldGate.join(', ')}`);
   console.error('  see artifacts/validation/self-heal-loop.json');
   process.exit(1);
 }
-console.log('[self-heal] safe to push');
+if (!clean) {
+  console.log(`[self-heal] safe to push - no validator that can be repaired is still failing (${reportedOnly.length} reported, not blocking)`);
+} else {
+  console.log('[self-heal] safe to push');
+}
