@@ -25,6 +25,25 @@ const LANE_EVIDENCE_PATTERNS = [
   'data/queries/evidence/*.json',
   'data/authority_scale/query_atlas.json',
   'artifacts/validation/*.json',
+  // _artifact_validation_manifest.json is a validation receipt of the same class as
+  // artifacts/validation/*.json - build_artifact_validation_manifest.js writes it as a
+  // sha256 roll-up over a fixed file list, and that list INCLUDES the receipts on the
+  // line above (local-guides-tree-hygiene.json, daily-proof-packet.json,
+  // workflow-yaml-inventory.json, validation-summary-core.json and more). So the lane
+  // was allowed to commit the receipts but not the manifest that hashes them: any run
+  // whose receipts actually changed content regenerated the manifest, and the manifest
+  // was the one path outside the surface. run_lane_selfheal.mjs then hard-stopped with
+  // "1 repaired path(s) are outside this lane's commit surface" while its own line
+  // above read "no validator needed repair; this step changed only validation
+  // receipts" - a lane deadlocking on its own bookkeeping. That is runs 34320457186
+  // (06:44) and 34372962600 (15:51) on 2026-09-09, and the same shape on 2026-08-30
+  // and 2026-09-02/03.
+  //
+  // This widens the surface by one derived receipt, not by any content path. The guard
+  // it belongs to exists to stop this lane publishing RENDERED output it did not build
+  // - dist/, insights/*.html, data/report_fixes/** - and every one of those still falls
+  // outside the surface and still hard-stops the run.
+  '_artifact_validation_manifest.json',
 ];
 
 function activeRepairWrites(root = ROOT) {
