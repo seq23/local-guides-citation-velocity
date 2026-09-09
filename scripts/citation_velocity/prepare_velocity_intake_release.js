@@ -7,7 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
-const { resolveTargetPath, routeFromPath, statedFilepathFrom } = require('../lib/citation_route_resolver');
+const { resolveTargetPath, routeFromPath, statedFilepathFrom, canonicalizeRawTarget } = require('../lib/citation_route_resolver');
 const { parseManifestBundle, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -231,11 +231,36 @@ function routeFromRepoPath(repoPath) {
   if (!repoPath) return '';
   return '/' + String(repoPath).replace(/^\//, '');
 }
+// "FILEPATH:" IS NOT A URL SCHEME, AND AN ABSENT HOST IS NOT A FOREIGN ONE.
+//
+// The agent's free_wins and outperform sections put the whole recommendation line in
+// the winner field:
+//
+//   "FILEPATH: insights/trt-013-does-insurance-cover-trt.html || CURRENT: H2 ..."
+//
+// This check ran on that raw string. `new URL(...)` reads the leading "FILEPATH:" as a
+// SCHEME, which makes the result a non-special URL whose hostname is the empty string -
+// and "" is not in the allowed set, so the row was recorded BLOCKED_EXTERNAL_DOMAIN
+// against a page sitting in this repo. Measured on 2026-09-09: all 39 rows carrying
+// intended_winner_page_not_on_allowed_host name a LOCAL path, not one names an external
+// host, and the resolver places all 39 on files that exist.
+//
+// Two corrections, both narrow:
+//   - canonicalize first, so the host question is asked of the target the rest of this
+//     function will actually use rather than of the decorated line around it;
+//   - an EMPTY hostname means no host was named, which is the same state the existing
+//     `catch { return true; }` already treats as allowed. Only a host that is actually
+//     present and actually foreign blocks.
+//
+// A genuinely external winner - "https://competitor.example/page" - still parses to a
+// real hostname and is still refused. Nothing about the external-domain guard is
+// loosened; it simply stops firing on strings that name no domain at all.
 function allowedHostFromUrl(url, policy) {
-  const raw = String(url || '').trim();
+  const raw = canonicalizeRawTarget(String(url || '').trim()) || String(url || '').trim();
   if (!raw) return true;
   try {
     const parsed = raw.startsWith('http') ? new URL(raw) : new URL(raw, 'https://theindustryguides.com');
+    if (!parsed.hostname) return true;
     return new Set(policy.allowed_intended_winner_hosts || ['theindustryguides.com']).has(parsed.hostname);
   } catch { return true; }
 }

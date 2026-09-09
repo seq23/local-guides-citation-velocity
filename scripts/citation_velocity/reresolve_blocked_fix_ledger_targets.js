@@ -77,13 +77,45 @@ function main() {
     process.exit(1);
   }
 
-  const blocked = fixes.filter((row) => row && row.implementation_status === 'BLOCKED_MISSING_TARGET');
+  // BLOCKED_EXTERNAL_DOMAIN is the same defect one field over.
+  //
+  // The winner field often carries the whole recommendation line, and
+  // allowedHostFromUrl ran on it raw: `new URL(...)` reads the leading "FILEPATH:" as a
+  // SCHEME, the resulting non-special URL has an empty hostname, "" is not in the
+  // allowed host set, and the row was refused as though it pointed at a competitor.
+  // Measured on 2026-09-09: all 39 such rows name a LOCAL path, none names an external
+  // host, and the resolver places all 39 on files that exist. The source is fixed in
+  // prepare_velocity_intake_release.js; these are the rows written before it was.
+  //
+  // The external-domain guard is NOT relaxed here. A row whose named target parses to a
+  // hostname that is not ours is left blocked and reported, whatever the resolver would
+  // otherwise say about it.
+  const ALLOWED_HOSTS = new Set(['theindustryguides.com']);
+  const namesForeignHost = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return false;
+    try {
+      const parsed = raw.startsWith('http') ? new URL(raw) : new URL(raw, 'https://theindustryguides.com');
+      return Boolean(parsed.hostname) && !ALLOWED_HOSTS.has(parsed.hostname);
+    } catch { return false; }
+  };
+  const blocked = fixes.filter((row) => row
+    && (row.implementation_status === 'BLOCKED_MISSING_TARGET' || row.implementation_status === 'BLOCKED_EXTERNAL_DOMAIN'));
   const moves = [];
   const held = [];
 
   for (const row of blocked) {
     const named = row.intended_winner_page || row.intended_winner_path || '';
     if (!named) { held.push({ row_id: row.id, named_target: '(none)', reason: 'The row names no target at all, so there is nothing to re-resolve.' }); continue; }
+    if (namesForeignHost(named)) {
+      held.push({
+        row_id: row.id,
+        named_target: named,
+        blocked_as: row.implementation_status,
+        reason: 'The named target is on a host this repo does not publish. The external-domain refusal is correct and stands.'
+      });
+      continue;
+    }
     let verdict;
     try { verdict = resolveTargetPath({ value: named, query: row.query, family: row.vertical }); }
     catch (error) { held.push({ row_id: row.id, named_target: named, reason: `Resolver threw: ${error.message}` }); continue; }
