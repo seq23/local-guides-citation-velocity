@@ -461,21 +461,53 @@ function normalizeForbidden(value) {
 //   `instead of / rather than / no longer / stop saying "X"`.
 // "Fix the table artifact: replace 'Use the same questions with every lawyer on your
 // shortlist' with dentist-specific language" still matches, on its `replace ... with`.
+//
+// 2026-09-09, third pass: A QUOTED HEADING CAN BE THE ADDRESS RATHER THAN THE OBJECT.
+//
+// The 2026-08 TRT run said of trt/index.html:
+//
+//   "Replace the body immediately under \"Direct Answer: TRT side effects what to
+//    watch for\" with a concise checklist ..."
+//
+// The `replace ... with` shape matched, and the quoted heading became a forbidden
+// phrase - so cleanCarried stripped the artifact whose title it is, the compiler
+// re-authored the entry with the heading still named in required_blocks, and
+// removal-directive-not-published correctly reported that a phrase a landed report
+// asked to remove was still promised. It went red on main at 21:55 UTC on 2026-09-09
+// and BLOCKED THE ENTIRE RELEASE LANE - 118 validators recorded NOT_RUN_AFTER_BLOCK -
+// on a recommendation that never asked for that heading to go at all. What it asked
+// to replace is THE BODY UNDER the heading; the heading is how the agent said WHERE.
+//
+// The gap between the verb and the quote is what distinguishes the two, and it says
+// so in plain words. When it ends in a locative preposition - under, beneath, below,
+// after, within, in - the quoted phrase is an ADDRESS and the object of the verb is
+// whatever the gap names ("the body", "the rows", "the first paragraph"). When the
+// quote follows the verb directly, as in "replace 'Use the same questions with every
+// lawyer on your shortlist' with dentist-specific language", the quote IS the object
+// and the removal stands.
+//
+// This narrows nothing that was being enforced. Every genuine removal shape in the
+// fixtures still matches; only a quote the sentence itself marks as a location stops
+// being read as a deletion order.
 const REMOVAL_VERB = '(?:remove|delete|strip|drop|eliminate)';
 const SWAP_VERB = '(?:replace|replacing|swap|swapping|substitute|substituting)';
+const LOCATIVE_GAP = /\b(?:under|underneath|beneath|below|above|after|following|preceding|before|within|inside|in|at|near|next to|adjacent to|alongside)\s*$/i;
 function phrasesTheFixAsksToRemove(recommendation) {
   const text = String(recommendation || '');
   const out = new Set();
   if (!text) return out;
   const patterns = [
-    new RegExp(`${REMOVAL_VERB}[^'"\`]{0,40}['"\`]([^'"\`]{4,160})['"\`]`, 'gi'),
-    new RegExp(`${SWAP_VERB}[^'"\`]{0,40}['"\`]([^'"\`]{4,160})['"\`][^a-z0-9]{0,12}with\\b`, 'gi'),
-    /(?:instead of|rather than|no longer|stop (?:saying|using))[^'"`]{0,20}['"`]([^'"`]{4,160})['"`]/gi
+    { rx: new RegExp(`${REMOVAL_VERB}([^'"\`]{0,40})['"\`]([^'"\`]{4,160})['"\`]`, 'gi'), gap: 1, phrase: 2 },
+    { rx: new RegExp(`${SWAP_VERB}([^'"\`]{0,40})['"\`]([^'"\`]{4,160})['"\`][^a-z0-9]{0,12}with\\b`, 'gi'), gap: 1, phrase: 2 },
+    { rx: /(?:instead of|rather than|no longer|stop (?:saying|using))([^'"`]{0,20})['"`]([^'"`]{4,160})['"`]/gi, gap: 1, phrase: 2 }
   ];
-  for (const rx of patterns) {
+  for (const { rx, gap, phrase: phraseIndex } of patterns) {
     let m;
     while ((m = rx.exec(text)) !== null) {
-      const phrase = normalizeForbidden(m[1]);
+      // The quote names WHERE, not WHAT: the object of the verb is what the gap
+      // describes, and the quoted heading is only the address it sits under.
+      if (LOCATIVE_GAP.test(String(m[gap] || ''))) continue;
+      const phrase = normalizeForbidden(m[phraseIndex]);
       if (phrase) out.add(phrase);
     }
   }

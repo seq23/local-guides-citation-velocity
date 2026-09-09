@@ -152,6 +152,64 @@ function authorityGroundedEntryForSpec(spec) {
       ]
     });
   }
+  // 2026-09-09. This route had a semantic entry once - the fix ledger still records
+  // semantic_repair_status SEMANTICALLY_APPLIED for it - but the entry was lost before
+  // the manifest became durable on 2026-09-01, and every recompile since has REFUSED
+  // to re-author it because no grounded template covered the route. The page kept
+  // delivering the previous run's marker while the ledger minted a new one, and
+  // `agent_7b5d43b6820884d4:repair_not_proven` took run 34409865197 red.
+  //
+  // The first artifact deliberately reuses the type and title the accepted output
+  // already carries ('checklist' / 'Current I-693 Validity Rule (as of June 11, 2025)')
+  // so mergeAcceptedArtifacts REPLACES that block in place rather than appending a
+  // second copy beside it. What it replaces is worth replacing: the generic compiler
+  // had filled it with fragments of the EDIT instruction itself - "Both date
+  // thresholds", "Written for direct LLM extraction" - which is internal process text
+  // on a public page. This is the same content stated from the primary sources.
+  if (p === 'uscis-medical/timeline-validity/index.html') {
+    const keys=['validity','i693','medreq'];
+    return finish(spec, {
+      title:'How Long Is the I-693 Medical Exam Valid? Current USCIS Validity Rules',
+      description:'The current I-693 validity rules split by civil surgeon signature date, including the November 1, 2023 cut-off and the June 11, 2025 USCIS policy update tying validity to the pending application.',
+      answer:'It depends on when the civil surgeon signed the form. For a Form I-693 signed before November 1, 2023, the earlier fixed validity period and filing-date conditions may still apply. For a form properly completed and signed on or after November 1, 2023, USCIS removed the fixed expiration period, and under the June 11, 2025 policy update the I-693 generally remains valid only while the benefit application it was submitted with is still pending. If that application is withdrawn, rejected, or denied, USCIS may require a new medical examination and a new sealed I-693 for a later filing.',
+      checklist:[
+        'Find the civil surgeon signature date on your copy of Form I-693.',
+        'Determine which policy period applies: signed before November 1, 2023, or on or after that date.',
+        'Confirm the I-693 was submitted with, or in support of, a benefit application that is still pending.',
+        'If the associated application was withdrawn, rejected, or denied, check whether a new exam is required before refiling.',
+        'Check the current Form I-693 page and USCIS Policy Manual before relying on any validity period, because this policy has changed twice since 2023.'
+      ],
+      red_flags:[
+        'Guidance states a flat two-year expiration as the current rule without naming the November 1, 2023 signature cut-off.',
+        'Guidance repeats the removed "no expiration" rule without the June 11, 2025 pending-application condition.',
+        'A validity answer is given without asking for the civil surgeon signature date.',
+        'A prior I-693 is assumed to carry over to a new filing after the earlier application was withdrawn or denied.'
+      ],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'checklist',title:'Current I-693 Validity Rule (as of June 11, 2025)',intro:'Two facts decide the answer: the civil surgeon signature date, and whether the application the form was filed with is still pending.',items:[
+          'Signed before November 1, 2023: the earlier fixed validity period and filing-date conditions may still apply — verify against the current Policy Manual.',
+          'Signed on or after November 1, 2023: USCIS removed the fixed expiration period for a properly completed and signed Form I-693.',
+          'Under the June 11, 2025 policy update, that form generally stays valid only while the benefit application it was submitted with remains pending.',
+          'If that application is withdrawn, rejected, or denied, USCIS may require a new examination and a new sealed I-693 for a later filing.',
+          'Policy has changed twice since 2023, so confirm the current rule on the USCIS Form I-693 page before relying on any validity period.'
+        ]},
+        {type:'timeline_table',title:'Which I-693 Validity Rule Applies to You',headers:['Civil surgeon signature date','What USCIS policy provides','What to verify'],rows:[
+          ['Before November 1, 2023','The earlier fixed validity period and filing-date conditions may apply.','The signature date, the filing date, and the current Policy Manual text for that period.'],
+          ['On or after November 1, 2023','USCIS removed the fixed expiration period for a properly completed and signed form.','That the form was properly completed, signed, and submitted in support of a benefit application.'],
+          ['On or after November 1, 2023, application no longer pending','Validity is tied to the pending application under the June 11, 2025 update.','Whether the associated application was withdrawn, rejected, or denied, and whether a new exam is required.']
+        ]},
+        {type:'decision_matrix',title:'Do You Need a New I-693?',headers:['Your situation','Next step'],rows:[
+          ['The application you filed the I-693 with is still pending','No new exam is required solely because time has passed; keep following any USCIS notice you receive.'],
+          ['That application was withdrawn, rejected, or denied and you are refiling','Check whether USCIS requires a new medical examination and a new sealed I-693 for the new filing.'],
+          ['USCIS issued an RFE about the medical evidence','Follow the notice and its deadline exactly; obtain corrected or updated medical documentation if the notice requires it.'],
+          ['The sealed packet was opened, damaged, or lost','Contact the civil surgeon’s office about a replacement sealed form before filing.']
+        ]},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
   if (p === 'uscis-medical/civil-surgeon-near-me/index.html') {
     const keys=['finder','i693','medreq'];
     return finish(spec, {
