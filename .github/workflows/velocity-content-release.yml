@@ -320,12 +320,50 @@ jobs:
           # does, because the commit it is replaying carries published pages from
           # release:velocity-intake that a reset would discard and this step cannot
           # regenerate on its own.
+          # VALIDATION RECEIPTS MUST NOT BURN A REBASE ATTEMPT.
+          #
+          # artifacts/validation/validation-summary.json and -release.json are GENERATED and also
+          # COMMITTED, and both sides of the rebase rewrite them. So they conflict on EVERY run --
+          # not occasionally, structurally. On 2026-09-09 a run lost an attempt to exactly this
+          # pair while nothing about the source had actually diverged.
+          #
+          # Three attempts is a small budget. Spending one on a file whose only job is to record
+          # that validation ran is how a loop exhausts itself without ever reaching the work.
+          #
+          # SO: if the ONLY conflicted paths are receipts, resolve them to the replayed commit's
+          # version and continue. If ANYTHING ELSE conflicts, abort and retry exactly as before --
+          # a genuine source conflict must still stop this step, and this must never become a
+          # blanket "take theirs" that silently discards a real change.
+          #
+          # Taking the replayed side is safe because validate:release runs later in this same
+          # attempt and rewrites both files from the tree it actually validated. The committed copy
+          # is a receipt, and the run that produces it is the authority.
+          resolve_receipt_conflicts() {
+            local conflicted
+            conflicted="$(git diff --name-only --diff-filter=U)"
+            [ -n "$conflicted" ] || return 1
+            if printf '%s\n' "$conflicted" | grep -qv '^artifacts/validation/validation-summary\(-release\)\?\.json$'; then
+              echo "[publish] rebase conflict outside the validation receipts -- aborting:"
+              printf '%s\n' "$conflicted" | sed 's/^/  /'
+              return 1
+            fi
+            echo "[publish] rebase conflict confined to validation receipts; resolving to the replayed run and continuing"
+            printf '%s\n' "$conflicted" | while read -r f; do
+              [ -n "$f" ] || continue
+              git checkout --theirs -- "$f" 2>/dev/null || git checkout --ours -- "$f"
+              git add -- "$f"
+            done
+            GIT_EDITOR=true git rebase --continue
+          }
+
           for attempt in 1 2 3; do
             git fetch origin main
             if ! git rebase origin/main; then
-              git rebase --abort || true
-              sleep $((attempt * 15))
-              continue
+              if ! resolve_receipt_conflicts; then
+                git rebase --abort || true
+                sleep $((attempt * 15))
+                continue
+              fi
             fi
             phase "$attempt" "build:cached:prune"
             npm run build:cached:prune
