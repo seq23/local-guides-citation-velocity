@@ -88,6 +88,41 @@ function cadenceDaysFromWorkflow() {
   return { days };
 }
 
+/**
+ * How old a landed artifact is, is a question about the CALENDAR, not about the
+ * content being built.
+ *
+ * SOURCE_DATE is this repo's reproducible-build stamp. `scripts/release/run_staged_release.js`
+ * derives it with readReleaseDate() - the newest DURABLE RELEASE DATE found in
+ * data/citation_velocity/runs.json, content/_shared/content_state.json and the page
+ * admission registry - and exports it into every stage of `release:ci-validate`. It is
+ * therefore "the day the library was last published", which trails the wall clock by
+ * however long it has been since the last successful release.
+ *
+ * Reading it as "today" is what put Validate Repo red on 2026-09-09 (run 34360436588).
+ * The TRT run landed that morning; the last durable release was 2026-09-08; so the age
+ * of a run that was ZERO days old came out as -1, and classifyPendingAbsorption
+ * correctly refuses a negative age as a future-dated run:
+ *
+ *   normalized_output_missing:READY_FOR_ABSORPTION:.../2026-09-09/trt:age_days=-1:allowed_days=2
+ *
+ * The decision table was right and the deadline was right. The CLOCK was wrong, and it
+ * was wrong in the direction that is guaranteed to recur: every agent run that lands
+ * after the day of the last release is dated in the "future" of SOURCE_DATE, so the
+ * absorption window can never protect the very handoff it exists for. The window only
+ * appeared to work on days the release lane had already published.
+ *
+ * A deadline is measured against the wall clock and nothing else. This is the single
+ * definition, shared with agent-artifact-continuity through the same import that
+ * already shares the window, so the two cannot drift onto two clocks either.
+ *
+ * store-clock-independence enrols and probes this contract; it is the guard that
+ * hard-fails if a verdict here starts moving with SOURCE_DATE again.
+ */
+function wallClockToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function daysBetween(fromISO, toISO) {
   const a = Date.parse(`${fromISO}T00:00:00Z`);
   const b = Date.parse(`${toISO}T00:00:00Z`);
@@ -107,7 +142,7 @@ function main() {
     process.exit(1);
   }
   const allowedDays = cadence.days * (1 + GRACE_CYCLES);
-  const today = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
+  const today = wallClockToday();
 
   const runsDir = path.join(ROOT, RUNS_REL);
   if (!fs.existsSync(runsDir)) {
@@ -194,4 +229,4 @@ function absorptionWindow() {
 
 if (require.main === module) main();
 
-module.exports = { absorptionWindow, cadenceDaysFromWorkflow, daysBetween, GRACE_CYCLES, WORKFLOW_REL, DISPATCH_SIGNAL };
+module.exports = { absorptionWindow, cadenceDaysFromWorkflow, daysBetween, wallClockToday, GRACE_CYCLES, WORKFLOW_REL, DISPATCH_SIGNAL };
