@@ -1,0 +1,163 @@
+{
+  "schema_version": "1.0",
+  "validator": "validation-lane-repairs-nothing",
+  "status": "PASS",
+  "lane": "scripts/release/run_staged_release.js",
+  "enrolment_rule": "every git-tracked JSON carrying a top-level generated_from",
+  "projections_examined": 2,
+  "projections": [
+    {
+      "projection": "_repo_validation_matrix.json",
+      "generated_from": "_validation_registry.json",
+      "sources": [
+        "_validation_registry.json"
+      ],
+      "asserted_by": "validation-registry"
+    },
+    {
+      "projection": "data/mocks/browserless-route-audit-fixtures.json",
+      "generated_from": "_browser_suite_contract.json + _public_route_manifest.json",
+      "sources": [
+        "_browser_suite_contract.json",
+        "_public_route_manifest.json"
+      ],
+      "asserted_by": "browserless-mock-backup"
+    }
+  ],
+  "stages_examined": 15,
+  "scripts_scanned_for_write_targets": 391,
+  "stages_executed_as_writer_candidates": 2,
+  "stages": [
+    {
+      "stage": "monitor-metadata-reconcile",
+      "command": "node scripts/citation_velocity/reconcile_monitor_ledger.js",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "programmatic-source-self-heal-loop",
+      "command": "node scripts/content/run_source_self_heal_loop.js",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "monitor-ledger-validation",
+      "command": "node scripts/validators/validate_monitor_ledger.js",
+      "registered_validator_command": true,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "programmatic-source-quality",
+      "command": "node scripts/content/validate_programmatic_substance.js",
+      "registered_validator_command": true,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "site-build",
+      "command": "npm run build",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "programmatic-render-quality",
+      "command": "node scripts/content/validate_rendered_programmatic_substance.js",
+      "registered_validator_command": true,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "page-admission-registry",
+      "command": "node scripts/build_page_admission_registry_2026_06_19.js",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "route-and-disposition-registries",
+      "command": "node scripts/build_full_scope_route_and_disposition_registries.js",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "search-submission-manifest",
+      "command": "node scripts/seo/build_search_submission_manifest.js",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "validation-matrix-parity",
+      "command": "node scripts/validation/generate_validation_matrix.js --check",
+      "registered_validator_command": false,
+      "writer_candidates": [
+        {
+          "projection": "_repo_validation_matrix.json",
+          "writer": "scripts/validation/generate_validation_matrix.js"
+        }
+      ],
+      "executed": true,
+      "rewrote": []
+    },
+    {
+      "stage": "release-validation",
+      "command": "node scripts/validation/run_validation_registry.js --profile release",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "advisory-validation",
+      "command": "node scripts/validation/run_validation_registry.js --profile advisory --collect-all",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "release-evidence",
+      "command": "npm run release:reports",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    },
+    {
+      "stage": "artifact-manifest",
+      "command": "node scripts/validators/build_artifact_validation_manifest.js",
+      "registered_validator_command": false,
+      "writer_candidates": [
+        {
+          "projection": "_repo_validation_matrix.json",
+          "writer": "scripts/validators/build_artifact_validation_manifest.js"
+        }
+      ],
+      "executed": true,
+      "rewrote": []
+    },
+    {
+      "stage": "artifact-attestation",
+      "command": "node scripts/create_validation_attestation.js",
+      "registered_validator_command": false,
+      "writer_candidates": [],
+      "executed": false,
+      "rewrote": []
+    }
+  ],
+  "errors": []
+}
