@@ -126,6 +126,35 @@ for (const row of (acceptance && acceptance.rejected) || []) {
   refusedByPath.set(normalizeImplementationPath(row.rendered_file || routeToImplementationPath(row.route)), row);
 }
 
+// The fourth named hold. compile_html_fix_acceptance_manifest.js REFUSES to author a
+// semantic acceptance entry for a uscis-medical route that has no authority-grounded
+// template - immigration guidance may not be compiled out of an agent's free-text
+// FIX/EDIT line, and the very next validator would reject an ungrounded entry anyway.
+//
+// A refused route therefore has NOTHING that can carry its ledger marker into the
+// rendered page: applyEntryToTarget takes its no-semantic-entry branch and authors no
+// artifact, while mergeLedgerEntries still mints a marker because the record_ids
+// changed. Demanding proof of that marker makes a correctly-refused repair
+// indistinguishable from a broken pipeline, and one such row fails the WHOLE batch -
+// which is why batch_size=5 releases passed and batch_size=1000 could not.
+//
+// Evidence-gated exactly like the three holds above: a spec is excused only if THIS
+// run's compiler artifact names its route AND names this spec's record id. Without
+// that file nothing is excused, and a route the compiler DID author still has to
+// prove its marker.
+const acceptanceRefusals = readJson('artifacts/validation/semantic-acceptance-refusals.json', null);
+const compilerRefusedByPath = new Map();
+for (const row of (acceptanceRefusals && acceptanceRefusals.refused) || []) {
+  const key = normalizeImplementationPath(row.implementation_path || routeToImplementationPath(row.target_route));
+  if (key) compilerRefusedByPath.set(key, row);
+}
+function compilerRefusalFor(spec, implementationPath) {
+  const row = compilerRefusedByPath.get(implementationPath);
+  if (!row) return null;
+  const ids = new Set([row.record_id, ...(row.record_ids || [])].filter(Boolean));
+  return ids.size === 0 || ids.has(spec.record_id) ? row : null;
+}
+
 const traces = [];
 const errors = [];
 
@@ -168,8 +197,12 @@ for (const spec of plan.specs || []) {
       const pass = Boolean(hasLedger && hasApply && item && hasItemMarker && hasRenderedMarker && hasQuery);
       traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, item_exists: Boolean(item), applied_status: applied?.status || '', has_ledger: hasLedger, has_item_marker: hasItemMarker, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
       if (!pass) {
+        const compilerRefused = compilerRefusalFor(spec, implementationPath);
         const refused = refusedByPath.get(implementationPath);
-        if (refused) traces[traces.length - 1].trace_status = 'REFUSED_TO_PROTECT_DELIVERED_CONTENT';
+        if (compilerRefused) {
+          traces[traces.length - 1].trace_status = 'REFUSED_BY_ACCEPTANCE_COMPILER';
+          traces[traces.length - 1].acceptance_refusal_reason = compilerRefused.reason || 'no_authority_grounded_entry';
+        } else if (refused) traces[traces.length - 1].trace_status = 'REFUSED_TO_PROTECT_DELIVERED_CONTENT';
         else errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
       }
       continue;
@@ -187,8 +220,12 @@ for (const spec of plan.specs || []) {
       const pass = Boolean(hasLedger && hasApply && page && hasRenderedMarker && hasQuery);
       traces.push({ ...spec, target_type: targetType, trace_status: pass ? 'PASS' : 'FAIL', ledger_marker: marker || '', rendered_path: renderedPath, page_exists: Boolean(page), applied_status: applied?.status || '', has_ledger: hasLedger, has_rendered_marker: hasRenderedMarker, query_marker_found: hasQuery });
       if (!pass) {
+        const compilerRefused = compilerRefusalFor(spec, implementationPath);
         const refused = refusedByPath.get(implementationPath);
-        if (refused) traces[traces.length - 1].trace_status = 'REFUSED_TO_PROTECT_DELIVERED_CONTENT';
+        if (compilerRefused) {
+          traces[traces.length - 1].trace_status = 'REFUSED_BY_ACCEPTANCE_COMPILER';
+          traces[traces.length - 1].acceptance_refusal_reason = compilerRefused.reason || 'no_authority_grounded_entry';
+        } else if (refused) traces[traces.length - 1].trace_status = 'REFUSED_TO_PROTECT_DELIVERED_CONTENT';
         else errors.push(`${spec.record_id}:repair_not_proven:${implementationPath}`);
       }
       continue;
@@ -239,6 +276,7 @@ const demandHeldCount = countBy('HELD_BY_MEASURED_DEMAND_GATE');
 const carriedCount = countBy('CARRIED');
 const refusedCount = countBy('REFUSED_TO_PROTECT_DELIVERED_CONTENT');
 const queueRefusedCount = countBy('REFUSED_BY_RELEASE_QUEUE');
+const acceptanceRefusedCount = countBy('REFUSED_BY_ACCEPTANCE_COMPILER');
 const failedCount = countBy('FAIL');
 
 const report = {
@@ -259,12 +297,14 @@ const report = {
   carried_count: carriedCount,
   refused_count: refusedCount,
   queue_refused_count: queueRefusedCount,
+  acceptance_refused_count: acceptanceRefusedCount,
   refused_routes: [...refusedByPath.keys()],
+  acceptance_refused_routes: [...compilerRefusedByPath.keys()],
   failed_count: failedCount,
   // The complete outcome census. Every trace_status that occurred appears here and
   // in the printed summary, whether or not anyone remembered to add a named field.
   outcome_counts: outcomeCounts,
-  blocked_policy: 'BLOCKED, CARRIED and REFUSED_TO_PROTECT_DELIVERED_CONTENT specs do not fail the build, and are never counted as proven. A REFUSED spec is only excused while artifacts/validation/mutation-scope-acceptance.json names its route as rejected by this release; it stays eligible for selection and must be re-planned, never retired.',
+  blocked_policy: 'BLOCKED, CARRIED, REFUSED_TO_PROTECT_DELIVERED_CONTENT and REFUSED_BY_ACCEPTANCE_COMPILER specs do not fail the build, and are never counted as proven. A REFUSED_TO_PROTECT_DELIVERED_CONTENT spec is only excused while artifacts/validation/mutation-scope-acceptance.json names its route as rejected by this release; a REFUSED_BY_ACCEPTANCE_COMPILER spec only while artifacts/validation/semantic-acceptance-refusals.json names its route AND its record id for this run. Both stay eligible for selection and must be re-planned, never retired.',
   traces,
   errors
 };

@@ -48,18 +48,65 @@ function main() {
   // Refusing here is the repo's own "generate candidate -> validate -> write" law. The
   // spec is not silently dropped: it is reported as a named refusal, so the route stays
   // visible as work that needs a grounded entry authored rather than disappearing.
+  //
+  // 2026-09-09: THE REFUSAL WAS NAMED TO A HUMAN AND TO NOTHING ELSE.
+  //
+  // It was a console.warn. Downstream, three things carried on as if the entry existed:
+  // mergeLedgerEntries re-minted the route's marker (record_ids changed, so
+  // hash(record_ids|path) changed), applyEntryToTarget took its no-semantic-entry
+  // branch and authored no artifact to carry that marker, and
+  // trace_agent_exact_implementation then demanded the new marker in the rendered page
+  // and hard-failed when it was not there. The refusal and the proof requirement were
+  // two lists with no link between them - so a route this compiler deliberately
+  // declined to author read downstream as a broken pipeline.
+  //
+  //   agent_7b5d43b6820884d4:repair_not_proven:uscis-medical/timeline-validity/index.html
+  //
+  // took run 34409865197 red on a batch of 85 units. At batch_size=5 an ungrounded
+  // uscis route is rarely drawn, so small batches passed and large ones could not;
+  // 36 live uscis routes currently have ungrounded rows, i.e. 36 separate mines in
+  // the same field. The trace is not wrong - the marker genuinely is absent - so the
+  // fix belongs here, where the decision is actually made.
+  //
+  // The refusal is now written as evidence, in the same shape the trace already reads
+  // for the daily ceiling, the measured-demand gate and the release queue: a route
+  // named here this run is REFUSED_BY_ACCEPTANCE_COMPILER downstream - carried, never
+  // proven, never silent. The file is written on EVERY run, including with an empty
+  // list, so "no refusals" and "the compiler never ran" stay distinguishable.
   const ungroundedUscis = [];
   const compile = (spec) => {
     const grounded = authorityGroundedEntryForSpec(spec);
     if (grounded) return grounded;
     const implPath = String(spec.implementation_path || spec.intended_winner_path || '');
     if (implPath.startsWith('uscis-medical/')) {
-      ungroundedUscis.push({ implementation_path: implPath, record_id: spec.record_id || '', run_date: spec.run_date || '' });
+      ungroundedUscis.push({
+        implementation_path: implPath,
+        record_id: spec.record_id || '',
+        record_ids: [...new Set([spec.record_id, ...(spec.record_ids || [])].filter(Boolean))],
+        run_date: spec.run_date || '',
+        reason: 'no_authority_grounded_entry',
+        detail: 'uscis-medical is a high-stakes vertical: validate_html_fix_acceptance_compiler.js requires authority_grounded/authority_source_ids/authority_urls on every entry under uscis-medical/, and only authorityGroundedEntryForSpec() can supply them. No template matched this route, so no semantic entry was authored and no artifact can carry this route\'s ledger marker.',
+        unblocked_by: 'Author an authority-grounded template for this route in scripts/lib/authority_grounded_repairs.js.'
+      });
       return null;
     }
     return compileEntryFromSpec(spec);
   };
   const compiled = specs.map(compile).filter(Boolean);
+  // Written unconditionally - an empty `refused` list is the evidence that this run
+  // refused nothing, and is not the same as a missing file.
+  writeJson('artifacts/validation/semantic-acceptance-refusals.json', {
+    schema_version: '1.0',
+    guard: 'semantic-acceptance-refusals',
+    status: 'PASS',
+    generated_by: 'compile_html_fix_acceptance_manifest.js',
+    generated_at: DATE,
+    source_plan: PLAN_PATH,
+    planned_repair_specs: specs.length,
+    refused_count: ungroundedUscis.length,
+    policy: 'A route named here had no semantic acceptance entry authored this run, so nothing could carry its ledger marker into the rendered page. trace_agent_exact_implementation.js records such a spec as REFUSED_BY_ACCEPTANCE_COMPILER: carried, never proven, never counted as landed work. The row stays eligible for selection and must be released by authoring its grounded entry - it is never retired.',
+    refused: ungroundedUscis
+  });
   if (ungroundedUscis.length) {
     console.warn(`HTML FIX ACCEPTANCE COMPILER: refused ${ungroundedUscis.length} uscis-medical spec(s) with no authority-grounded entry in scripts/lib/authority_grounded_repairs.js. They are NOT compiled, because an ungrounded uscis entry is one the acceptance validator is guaranteed to reject. Author a grounded entry for each route to release it:`);
     for (const row of ungroundedUscis) console.warn(`  - ${row.implementation_path} (record ${row.record_id || 'unknown'}, run ${row.run_date || 'unknown'})`);
