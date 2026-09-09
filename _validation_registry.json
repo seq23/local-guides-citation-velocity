@@ -8603,7 +8603,7 @@
         "artifacts/validation/blocked-target-resolvability.json"
       ],
       "why_existing_checks_do_not_cover": "ledger-reresolution asks the same question of the EXACT-IMPLEMENTATION ledger (data/report_fixes/agent_exact_implementation_ledger.json, 176 entries) and never reads the FIX ledger, where the 3,225 recommendation rows and every BLOCKED_MISSING_TARGET verdict actually live. velocity-route-resolution-self-test pins the resolver against fixtures, proving the parser is right - which it is; it cannot see rows written before it was. agent-run-absorption-completeness governs runs inside the absorption window; these five runs are outside it, which is precisely why nothing looked at them again.",
-      "repair_command": "node scripts/citation_velocity/reresolve_blocked_fix_ledger_targets.js",
+      "repair_command": "npm run recover:blocked-target-resolvability",
       "repair_writes": [
         "data/report_fixes/agent_fix_ledger.json",
         "artifacts/validation/blocked-target-resolvability.json"
