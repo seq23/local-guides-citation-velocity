@@ -8565,6 +8565,58 @@
       ],
       "evidence_file": "artifacts/validation/semantic-acceptance-refusal-legibility.json",
       "failure_action": "stop release and repair"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "id": "blocked-target-resolvability",
+      "title": "No fix-ledger row is blocked on a target the resolver can find",
+      "path": "scripts/citation_velocity/reresolve_blocked_fix_ledger_targets.js",
+      "command": "node scripts/citation_velocity/reresolve_blocked_fix_ledger_targets.js --check",
+      "risk_prevented": "Prevents a resolver improvement from leaving behind the rows the old resolver got wrong. citation_route_resolver.js learned that a filesystem path never contains \"|\" or \"&bull;\", which stopped NEW rows being manufactured against decorated pseudo-paths - but data/report_fixes/agent_fix_ledger.json still carried 17 rows across 5 agent runs marked BLOCKED_MISSING_TARGET / TARGET_NOT_FOUND against strings like \"personal-injury/index.html%20|%20LEVEL:%20L1%20|...\" while personal-injury/index.html sat in the repo. The current resolver places all 17 on pages that exist, and not one of those 17 source records had a second correctly-resolved row anywhere - the work was stranded, not duplicated. The intake cannot recover them because it only re-derives status for runs inside the absorption window, and these are long outside it.",
+      "requires_files": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "scripts/lib/citation_route_resolver.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/blocked-target-resolvability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/blocked-target-resolvability.json"
+      ],
+      "why_existing_checks_do_not_cover": "ledger-reresolution asks the same question of the EXACT-IMPLEMENTATION ledger (data/report_fixes/agent_exact_implementation_ledger.json, 176 entries) and never reads the FIX ledger, where the 3,225 recommendation rows and every BLOCKED_MISSING_TARGET verdict actually live. velocity-route-resolution-self-test pins the resolver against fixtures, proving the parser is right - which it is; it cannot see rows written before it was. agent-run-absorption-completeness governs runs inside the absorption window; these five runs are outside it, which is precisely why nothing looked at them again.",
+      "repair_command": "node scripts/citation_velocity/reresolve_blocked_fix_ledger_targets.js",
+      "repair_writes": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "artifacts/validation/blocked-target-resolvability.json"
+      ],
+      "repair_scope": "Re-points only rows currently marked BLOCKED_MISSING_TARGET, and only when the resolver returns a RESOLVED status AND the file it names exists on disk. Anything else is HELD with its reason and the row stands. The original named target is preserved in resolver_aliases, and a recovered row returns to QUEUED_FOR_FUTURE_RELEASE - back in the queue, not straight into a release: it is planned, compiled and traced like any other row.",
+      "tags": [
+        "validation",
+        "authority",
+        "agent-runs",
+        "release"
+      ],
+      "evidence_file": "artifacts/validation/blocked-target-resolvability.json",
+      "failure_action": "stop release and repair"
     }
   ],
   "legacy_policy": {
