@@ -11,7 +11,11 @@ const POLICY_REL = 'data/report_fixes/agent_exact_implementation_policy.json';
 // One question, one threshold. agent-artifact-stranding owns how long a landed run
 // may sit READY_FOR_ABSORPTION with no normalized artifact beside it; that window is
 // read out of the cron of the lane that dispatches the absorption, not hardcoded here.
-const { absorptionWindow, daysBetween } = require('./validate_agent_artifact_stranding');
+// The CLOCK is imported from the same place as the window. SOURCE_DATE is the
+// reproducible-build stamp (the last durable release date), not today; measuring an
+// absorption deadline against it dated every freshly landed run into the future. See
+// wallClockToday() in validate_agent_artifact_stranding.js.
+const { absorptionWindow, daysBetween, wallClockToday } = require('./validate_agent_artifact_stranding');
 
 // Run directories are named by the raw vertical token ("personal-injury"), but the
 // intake normalizer writes its output under the canonical vertical ("personal_injury").
@@ -75,7 +79,7 @@ function main() {
   const checked = [];
   const pendingAbsorption = [];
   const WINDOW = absorptionWindow();
-  const TODAY = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
+  const TODAY = wallClockToday();
   for (const date of fs.existsSync(runsRoot) ? fs.readdirSync(runsRoot).sort() : []) {
     const dateDir = path.join(runsRoot, date);
     if (!fs.statSync(dateDir).isDirectory()) continue;

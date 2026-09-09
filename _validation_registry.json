@@ -6579,7 +6579,10 @@
       "evidence_file": "artifacts/validation/validation-registry.json",
       "failure_action": "stop release and repair",
       "depends_on": [],
-      "requires_files": [],
+      "requires_files": [
+        "_validation_registry.json",
+        "_repo_validation_matrix.json"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
@@ -8235,6 +8238,104 @@
         "artifacts/validation/ledgered-related-link-preservation-result.json"
       ],
       "enforce_no_source_mutation": true
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 10,
+      "id": "validation-lane-repairs-nothing",
+      "title": "A validation lane does not repair the input it is about to check",
+      "path": "scripts/validators/validate_validation_lane_repairs_nothing.js",
+      "command": "node scripts/validators/validate_validation_lane_repairs_nothing.js",
+      "risk_prevented": "Prevents a validation lane from handing a check a file that same run has just repaired, which makes the check structurally unable to see the state it exists to catch. _repo_validation_matrix.json is a committed projection of _validation_registry.json and validation-registry hard-fails when they disagree. On 2026-09-08 PR #93 edited the registry without regenerating the matrix; Validate Repo passed because release:ci-validate ran the generator as its validation-matrix-refresh stage six stages before validation-registry compared the two. The desync merged, and Velocity Content Release and Query Evidence Refresh - which go straight into the self-heal loop and never run the generator - failed on validation-registry on every run afterwards with no registered repair, reporting NOT CLEAN and going red daily. The check was never broken; it was never allowed to see the state.",
+      "requires_files": [
+        "scripts/release/run_staged_release.js",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/validation-lane-repairs-nothing.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/validation-lane-repairs-nothing.json",
+        "_repo_validation_matrix.json"
+      ],
+      "why_existing_checks_do_not_cover": "validation-registry proves the projection MATCHES its source; it cannot see that the lane rewrote the projection moments before it looked, because from inside the check the two states are identical. self-heal-repair-contract governs registered repairs, and this is not a registered repair - it is an ordinary pipeline stage. workflow-runtime-mutations governs what a workflow commits, not what a validation stage rewrites in the working tree before a validator reads it. Nothing else reads the stage list in scripts/release/run_staged_release.js and asks whether any stage produces a file a later stage checks.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair, and none is possible by command. A failure here means either a committed projection has no ACTIVE HARD_FAIL validator declared to read it alongside its source, or a stage in the validate-mode stage list of scripts/release/run_staged_release.js rewrote such a projection when it ran. The fix is to make that stage ASSERT parity and fail with the remedy - as validation-matrix-parity now does with generate_validation_matrix.js --check - rather than restore it silently. Repairing this automatically would be the lane repairing the guard against the lane repairing things.",
+      "tags": [
+        "validation",
+        "authority",
+        "release"
+      ],
+      "evidence_file": "artifacts/validation/validation-lane-repairs-nothing.json",
+      "failure_action": "stop release and repair"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 900,
+      "depends_on": [],
+      "estimated_runtime_seconds": 30,
+      "id": "clock-source-independence",
+      "title": "SOURCE_DATE is the build stamp, not the clock",
+      "path": "scripts/validators/validate_clock_source_independence.js",
+      "command": "node scripts/validators/validate_clock_source_independence.js",
+      "risk_prevented": "Prevents a validator from measuring an age, a deadline or a window against SOURCE_DATE, which scripts/release/run_staged_release.js derives from the newest DURABLE RELEASE DATE and exports into every validation stage. It trails the wall clock by however long it has been since the last publish. agent-artifact-continuity read it as today, so on 2026-09-09 an agent run that landed that morning measured age_days=-1 against a 2-day absorption window, the decision table correctly refused the negative age as a future-dated run, and Validate Repo run 34360436588 hard-failed and blocked 155 further validators. The window and the decision table were both right; the clock was wrong, and wrong in the direction that recurs every day a run lands after the last release.",
+      "requires_files": [
+        "_validation_registry.json",
+        "data/citation_velocity/runs.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/clock-source-independence.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/clock-source-independence.json"
+      ],
+      "why_existing_checks_do_not_cover": "store-clock-independence owns the same question - a verdict that moves with the clock - but enrols only validators that DECLARE a JSON store carrying a top-level generated_at stamp. agent-artifact-continuity declares no such store; it walks a directory of agent runs. So the guard written for clock-dependent verdicts could not reach the clock-dependent verdict that took the lane down, which is the guard-cannot-reach-what-it-governs shape its own header names. It also probes only distant fixed dates, and a date-keyed check fails under every date but its own, so two wrong dates agree. This enrols on the other axis - does the validator read SOURCE_DATE at all - and probes the two clocks that actually occur: the wall clock against the durable release date the lane exports. absorption-window-agreement pins the decision table over a constructed age; it is never handed a real clock.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair, and none is possible by command. A failure names a validator whose verdict differs between the wall clock and the SOURCE_DATE the staged release lane exports. The fix is in that validator's source: anything measuring an AGE, a DEADLINE or a WINDOW must read the wall clock (wallClockToday() in scripts/validators/validate_agent_artifact_stranding.js is the shared definition). Stamping SOURCE_DATE into a report field such as checked_at is legitimate and this guard permits it.",
+      "tags": [
+        "validation",
+        "authority",
+        "agent-runs"
+      ],
+      "evidence_file": "artifacts/validation/clock-source-independence.json",
+      "failure_action": "stop release and repair"
     }
   ],
   "legacy_policy": {

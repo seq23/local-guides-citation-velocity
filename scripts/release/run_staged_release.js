@@ -33,7 +33,13 @@ stages.push(
  stage('page-admission-registry','node scripts/build_page_admission_registry_2026_06_19.js',5),
  stage('route-and-disposition-registries','node scripts/build_full_scope_route_and_disposition_registries.js',5),
  stage('search-submission-manifest','node scripts/seo/build_search_submission_manifest.js',5),
- stage('validation-matrix-refresh','node scripts/validation/generate_validation_matrix.js',3),
+ // ASSERTS parity, never restores it. This stage used to run the generator, which
+ // meant the validate lane repaired _repo_validation_matrix.json a few stages before
+ // validation-registry compared it to _validation_registry.json - so a registry edit
+ // committed without its matrix passed here and then reddened every lane that goes
+ // straight into self-heal. validation-lane-repairs-nothing hard-fails if a producing
+ // command is put back into this list.
+ stage('validation-matrix-parity','node scripts/validation/generate_validation_matrix.js --check',3),
  stage('release-validation','node scripts/validation/run_validation_registry.js --profile release',35),
  stage('advisory-validation','node scripts/validation/run_validation_registry.js --profile advisory --collect-all',10),
  stage('release-evidence','npm run release:reports',10),
