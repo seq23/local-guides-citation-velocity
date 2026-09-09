@@ -199,7 +199,31 @@ function resolveDescriptiveNumberedSlug(raw) {
 // personal-injury run's only named target resolved to a directory literally called
 // "personal-injury/index.html &bull; INTENT: ..." and was written off as a malformed
 // source artifact - while personal-injury/index.html sat right there in the repo.
-const INSTRUCTION_FIELD_LABELS = /\s*(?:&bull;|•|\|\|)\s*(?:INTENT|DECISION|CURRENT|MISSING|EDIT|WHY|EVIDENCE|ACTION|NOTE)\s*:.*$/i;
+// A fourth shape is the same defect again, and enumerating labels is why it kept
+// recurring. The scorecard sections of the artifact decorate the winner field with
+// progress metadata whose labels were not in the list above, and separate the fields
+// with a SINGLE pipe rather than "||":
+//
+//   "personal-injury/index.html | LEVEL: L1 | DELTA: L1 vs. 2026-07-20 (7d ago)"
+//   "uscis-medical/index.html &bull; LEVEL: L3"
+//   "dentistry/pediatric-dentistry/index.html | LEVEL: L1 | GAP: medium incumbent"
+//   "uscis-medical/ | Progress: L1 → L4"
+//
+// Seventeen rows across five runs (2026-07-27, 2026-08-07, 2026-08-21, 2026-08-28,
+// 2026-09-01) were recorded BLOCKED_MISSING_TARGET / TARGET_NOT_FOUND against paths
+// like "personal-injury/index.html%20|%20LEVEL:%20L1%20|..." - the decorated string,
+// percent-encoded into a pseudo-path - while personal-injury/index.html and
+// uscis-medical/index.html both sat in the repo. Those two are the pages
+// velocity-content-release.yml reported as `repair_not_proven:` on 2026-09-06 and
+// 2026-09-08.
+//
+// The label list is replaced by the structural fact that makes all four shapes the
+// same shape: a filesystem path never contains "|" or "&bull;", so a separator
+// followed by a short "Word:" field label is report metadata, whatever the label is
+// called. This stops the parser needing a new entry every time the artifact grows a
+// column. A bare title carrying a colon ("TRT and Sleep Apnea: What to Ask") has no
+// separator and is deliberately left alone for the title matcher below.
+const INSTRUCTION_FIELD_LABELS = /\s*(?:&bull;|•|\|\||\|)\s*[A-Za-z][A-Za-z0-9_ -]{0,24}\s*:.*$/;
 function canonicalizeRawTarget(raw) {
   let text = String(raw || '').trim();
   const filepath = text.match(/FILEPATH:\s*([^|]+?)\s*(?:\|\||$)/i);
@@ -207,6 +231,11 @@ function canonicalizeRawTarget(raw) {
   text = text.replace(INSTRUCTION_FIELD_LABELS, '').trim();
   if (/%[0-9a-f]{2}/i.test(text)) {
     try { text = decodeURIComponent(text); } catch { /* leave as-is if malformed */ }
+    // The strip above runs on the encoded form, where "%20|%20LEVEL:" puts a "%"
+    // after the separator and the label pattern cannot match. Decoding is what makes
+    // the metadata visible, so the same strip has to run again on the decoded text.
+    // Both ledger rows already carrying an encoded pseudo-path reach this branch.
+    text = text.replace(INSTRUCTION_FIELD_LABELS, '').trim();
   }
   return text;
 }
