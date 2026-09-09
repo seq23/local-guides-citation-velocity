@@ -234,7 +234,8 @@ jobs:
               git reset --hard origin/main
               npm run citation:prepare-velocity-intake
               npm run build:cached
-              npm run selfheal:release
+              phase "$attempt" "selfheal:release (validate -> repair -> re-validate, up to 3 passes over 159 validators)"
+            npm run selfheal:release
               npm run validate:release
               git add -A
               if git diff --cached --quiet; then
@@ -288,7 +289,31 @@ jobs:
           git commit -m "velocity content release $(date -u +%F)"
       - name: Rebase, rebuild, revalidate, and push Velocity
         if: ${{ steps.candidate.outputs.changed == 'true' }}
+        # A STEP THAT CANNOT SAY WHAT IT IS DOING CANNOT BE TOLD FROM A HUNG ONE.
+        #
+        # Each attempt below runs selfheal:release and then validate:release, and both
+        # drive run_validation_registry.js --collect-all, which routes per-validator
+        # output into artifacts/validation/runtime/ instead of stdout. So this step goes
+        # SILENT for four to five minutes at a stretch while doing exactly the work it is
+        # meant to do. On 2026-09-09 that cost two runs: 34392913967 and 34395472450 were
+        # both cancelled by a human as "wedged". Neither was. 34392913967's own log shows
+        # 153 timestamped lines over 11.2 minutes with a maximum gap of 272s - one
+        # release-profile pass - and self-heal converging 5 failing -> 2 failing before it
+        # was killed 76s into the next pass.
+        #
+        # Two things follow, and both are fixed here rather than explained again:
+        #   - the step now prints a heartbeat naming the attempt, the phase and the UTC
+        #     time before every long command, so silence has a stated expected duration
+        #     and an observer can tell converging from stuck without reading the log tail;
+        #   - it declares its own timeout. The loop was already bounded in ITERATIONS
+        #     (three attempts, then exit 1), but not in TIME: a single genuinely stuck
+        #     command could burn the job's whole 120-minute budget. 60 minutes is roughly
+        #     three full attempts at the 11-minute pace measured above, so hitting it
+        #     means something really did stop, and the runner is released with a named
+        #     stop instead of held.
+        timeout-minutes: 60
         run: |
+          phase() { echo "::notice::[publish] attempt $1 | $2 | $(date -u +%H:%M:%SZ)"; echo "[publish] attempt $1 | $2 | $(date -u +%H:%M:%SZ) | this phase is expected to be silent for several minutes"; }
           # Same unreachable-retry defect as the absorption step: a bare `git rebase`
           # under `bash -e` ended the step on the first conflict. Aborting a failed
           # rebase leaves a clean tree so the remaining attempts can actually run.
@@ -303,6 +328,7 @@ jobs:
               sleep $((attempt * 15))
               continue
             fi
+            phase "$attempt" "build:cached:prune"
             npm run build:cached:prune
             # The cadence ledger records what the sitemap held the last time the gate
             # ran. cadence_gate.js writes it, but the only other job that runs the gate
@@ -315,6 +341,7 @@ jobs:
             # rebuilds and amends - is what makes the ledger persist. It also enforces
             # the weekly cap at the point of publication, where refusing is still
             # possible, rather than after the pages are already on main.
+            phase "$attempt" "cadence:gate"
             npm run cadence:gate
             # This step follows release:velocity-intake, which can publish new
             # pages via release:velocity-content. `npm run build` restores
@@ -344,16 +371,26 @@ jobs:
             # keeps workflow-data-trace's "a release revalidation precedes every push"
             # satisfied by code rather than by the word validate:release appearing in
             # a comment, which is how this step satisfied it before.
+            phase "$attempt" "validate:release (unassisted re-validation of the healed tree)"
             npm run validate:release
+            phase "$attempt" "agent-exact and citation-agent traces"
             npm run trace:agent-exact
             npm run validate:agent-exact
             npm run trace:citation-agent-fixes
             npm run validate:citation-agent-fixes
             git add -A
             git commit --amend --no-edit
-            if git push origin HEAD:main; then exit 0; fi
+            phase "$attempt" "push to main"
+            if git push origin HEAD:main; then
+              echo "[publish] attempt $attempt SUCCEEDED at $(date -u +%H:%M:%SZ)"
+              exit 0
+            fi
+            echo "[publish] attempt $attempt could not push (main moved); retrying after backoff"
             sleep $((attempt * 15))
           done
+          # NAMED STOP. Three attempts is the cap; saying which phase kept failing is what
+          # makes the next attempt possible, by a human or by the next scheduled run.
+          echo "::error::PUBLISH DID NOT CONVERGE: three rebase-rebuild-revalidate-push attempts all failed to land on main. The last attempt's phase banners above name where it stopped. Nothing was published; the absorption committed by the earlier step is already on main and will be retried by the next run."
           exit 1
       - name: Re-validate main after this workflow pushes
         # The daily agent run lands on main as raw artifacts plus a manifest already
