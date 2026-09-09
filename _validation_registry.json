@@ -8589,8 +8589,8 @@
       "estimated_runtime_seconds": 20,
       "id": "blocked-target-resolvability",
       "title": "No fix-ledger row is blocked on a target the resolver can find",
-      "path": "scripts/citation_velocity/reresolve_blocked_fix_ledger_targets.js",
-      "command": "node scripts/citation_velocity/reresolve_blocked_fix_ledger_targets.js --check",
+      "path": "scripts/validators/validate_blocked_target_resolvability.js",
+      "command": "node scripts/validators/validate_blocked_target_resolvability.js",
       "risk_prevented": "Prevents a resolver improvement from leaving behind the rows the old resolver got wrong. citation_route_resolver.js learned that a filesystem path never contains \"|\" or \"&bull;\", which stopped NEW rows being manufactured against decorated pseudo-paths - but data/report_fixes/agent_fix_ledger.json still carried 17 rows across 5 agent runs marked BLOCKED_MISSING_TARGET / TARGET_NOT_FOUND against strings like \"personal-injury/index.html%20|%20LEVEL:%20L1%20|...\" while personal-injury/index.html sat in the repo. The current resolver places all 17 on pages that exist, and not one of those 17 source records had a second correctly-resolved row anywhere - the work was stranded, not duplicated. The intake cannot recover them because it only re-derives status for runs inside the absorption window, and these are long outside it.",
       "requires_files": [
         "data/report_fixes/agent_fix_ledger.json",
