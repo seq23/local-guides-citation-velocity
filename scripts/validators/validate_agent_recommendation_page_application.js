@@ -231,7 +231,7 @@ function main() {
     const payload = {
       schema_version: '2.0',
       note: 'Shrink-only ratchet keyed on recommendation id. unapplied_ids are the recommendations allowed to remain unshown by their target page; applied_ids are the ones proven shown. An id may move from unapplied_ids to applied_ids and never back: a row in applied_ids that stops being shown is a REGRESSION and this repair refuses to enrol it.',
-      updated_at: new Date().toISOString().slice(0, 10),
+      updated_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10),
       unapplied_count: nextUnapplied.length,
       applied_count: nextApplied.length,
       unapplied_ids: nextUnapplied,
@@ -289,7 +289,11 @@ function main() {
     unenrolled_recommendations: unenrolledIds.length,
     stale_allowances: staleIds.length,
     pages: rows.map((r) => ({ page: r.page, exists: r.exists, recommended: r.recommended, applied: r.applied, not_applied: r.not_applied, examples: r.examples })),
-    checked_at: new Date().toISOString(),
+    // SOURCE_DATE is the repo's reproducible-build stamp, and stamping it into a report
+    // field is what clock-source-independence explicitly permits: it records when the
+    // tree was graded without any verdict depending on it. A raw wall-clock ISO string
+    // here changed on every single run, churning a committed receipt for no information.
+    checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10),
   };
   fs.mkdirSync(path.join(ROOT, path.dirname(OUT_REL)), { recursive: true });
   fs.writeFileSync(path.join(ROOT, OUT_REL), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
