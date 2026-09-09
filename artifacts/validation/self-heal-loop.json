@@ -8,69 +8,6 @@
     {
       "attempt": 1,
       "failed": [
-        "accepted-artifact-recovery",
-        "agent-recommendation-page-application",
-        "agent-run-delivery-coverage",
-        "removal-directive-not-published",
-        "rendered-output-shrink-guard"
-      ],
-      "repaired": [
-        {
-          "id": "accepted-artifact-recovery",
-          "cmd": "npm run recover:accepted-artifacts",
-          "code": 0,
-          "no_op": false,
-          "resolved_by_recheck": true,
-          "said": "> recover:accepted-artifacts\n> node scripts/citation_velocity/recover_accepted_page_artifacts.js\n\nACCEPTED ARTIFACT RECOVERY PASS: 2069 accepted route(s) examined; 636 route(s) carry 2013 recovered artifact(s); 0 withheld by a removal directive."
-        },
-        {
-          "id": "agent-recommendation-page-application",
-          "cmd": "npm run recover:recommendation-page-application",
-          "code": 1,
-          "no_op": false,
-          "resolved_by_recheck": true,
-          "said": "> recover:recommendation-page-application\n> node scripts/validators/validate_agent_recommendation_page_application.js --rebaseline\n\nAGENT RECOMMENDATION PAGE APPLICATION REBASELINE REFUSED: no recommendation is unenrolled and no allowance can be retired, so this would rewrite the identical baseline and report success. Nothing to repair."
-        },
-        {
-          "id": "agent-run-delivery-coverage",
-          "cmd": "npm run recover:run-delivery-coverage-ratchet",
-          "code": 1,
-          "no_op": false,
-          "resolved_by_recheck": true,
-          "said": "> recover:run-delivery-coverage-ratchet\n> node scripts/validators/validate_agent_run_delivery_coverage.js --rebaseline\n\nAGENT RUN DELIVERY COVERAGE REBASELINE REFUSED: no run is unenrolled and no cap can be tightened, so this would rewrite the identical baseline and report success. Nothing to repair."
-        },
-        {
-          "id": "rendered-output-shrink-guard",
-          "cmd": "npm run measure:historic-page-maximum",
-          "code": 0,
-          "no_op": false,
-          "resolved_by_recheck": true,
-          "said": "> measure:historic-page-maximum\n> node scripts/release/measure_historic_page_maximum.js\n\nHISTORIC PAGE MAXIMUM PASS: 40 commit(s) sampled; 2069 accepted route(s) measured; 1363 below their historic maximum (1510324 bytes), of which 87 lost 260 delivered artifact block(s)."
-        }
-      ],
-      "result": "REPAIRED_RETRYING"
-    },
-    {
-      "attempt": 2,
-      "failed": [
-        "historic-artifact-recovery",
-        "removal-directive-not-published"
-      ],
-      "repaired": [
-        {
-          "id": "historic-artifact-recovery",
-          "cmd": "npm run recover:historic-artifacts",
-          "code": 0,
-          "no_op": false,
-          "resolved_by_recheck": true,
-          "said": "> recover:historic-artifacts\n> node scripts/citation_velocity/recover_historic_artifact_loss.js\n\nHISTORIC ARTIFACT RECOVERY PASS: 87 of 87 candidate route(s) examined; recovered 1 clean block(s) across 1 route(s); refused 258 internal-instruction, 0 withheld-phrase, 1 already-present."
-        }
-      ],
-      "result": "REPAIRED_RETRYING"
-    },
-    {
-      "attempt": 3,
-      "failed": [
         "removal-directive-not-published"
       ],
       "repaired": [],
