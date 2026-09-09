@@ -184,8 +184,15 @@ function main() {
 
   if (leaks.length || sourceLeaks.length) {
     console.error(`REMOVAL DIRECTIVE GUARD FAIL: ${leaks.length} rendered page(s) and ${sourceLeaks.length} source record(s) still carry a phrase a landed report asked to remove.`);
-    for (const l of leaks.slice(0, 20)) console.error(`  RENDERED ${l.implementation_path} :: ${l.phrase} (${l.origin})`);
-    for (const l of sourceLeaks.slice(0, 20)) console.error(`  SOURCE   ${l.implementation_path} :: ${l.phrase}`);
+    // One line per DISTINCT finding. The source line used to omit `surface`, so the two
+    // records for trt/index.html - one artifact_title, one heading_exact - rendered as
+    // the same string and the log read as four identical copies of a two-record problem.
+    // A guard that repeats itself makes a small defect look enormous and buries the
+    // counts that matter, which are the two numbers on the line above.
+    const seen = new Set();
+    const say = (line) => { if (seen.has(line)) return; seen.add(line); console.error(line); };
+    for (const l of leaks.slice(0, 20)) say(`  RENDERED ${l.implementation_path} :: "${l.phrase}" [${l.surface || 'page'}] (${l.origin})`);
+    for (const l of sourceLeaks.slice(0, 20)) say(`  SOURCE   ${l.implementation_path} :: "${l.phrase}" [${l.surface || 'source'}] (${l.origin || 'enumerated'})`);
     process.exit(1);
   }
   console.log(`REMOVAL DIRECTIVE GUARD PASS: ${phrasesChecked} rendered phrase check(s) across ${pagesChecked} page(s), ${authoredChecks} authored-surface check(s) across ${authored.size} route(s); ${enumerated} enumerated and ${derived} ledger-derived directive(s); no removal directive is published.`);
