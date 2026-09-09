@@ -47,14 +47,22 @@
  * Rule 0: examining zero pages, zero rows or zero markers is a FAILURE. An empty,
  * missing or unreadable ledger means application is UNKNOWN, not proven.
  *
- * The baseline is a shrink-only RATCHET, per page: the maximum number of
- * recommendations that page may leave unshown. A page over its cap is a regression.
- * A page whose gaps have fallen must be re-baselined down, so a repair cannot be
- * banked twice. A page the baseline has never seen is UNENROLLED - a third state,
- * not a regression - which still fails, because an unenrolled page has no cap, but is
- * repairable by `npm run recover:recommendation-page-application`. Enrolment buys no
- * slack: the shrink-only rule drives the new cap down on the next cycle as the release
- * lane renders the pages.
+ * The baseline is a shrink-only RATCHET keyed on the recommendation ID rather than on
+ * a per-page count, because a count cannot separate the three things that make a page's
+ * gap number rise, and conflating them is how a ratchet becomes a rubber stamp:
+ *
+ *   REGRESSED  - an id the baseline recorded as APPLIED is no longer shown. Content that
+ *                had landed is gone. The repair REFUSES to enrol it.
+ *   UNENROLLED - an id never seen before: newly ingested work. A failure, because it is
+ *                ungoverned, but repairable by enrolment.
+ *   STALE      - an allowance for an id now shown. The ratchet must retire it or a
+ *                landed repair can be spent twice.
+ *
+ * This validator's first version capped a per-page COUNT, and its repair set that cap to
+ * whatever it measured - so ingesting new work looked identical to a page regressing and
+ * the repair would have RAISED the cap and banked the regression. That is the "repair
+ * that merely makes it stop failing" the registry's self_heal_policy forbids. Keyed on
+ * ids, the repair structurally cannot un-fail a regression.
  */
 
 const fs = require('fs');
@@ -104,6 +112,8 @@ function verdictOf(fix) {
 
 function measure(ledger) {
   const pages = new Map();
+  const unappliedIds = new Set();
+  const appliedIds = new Set();
   let uncheckable = 0;
   let markersExamined = 0;
   for (const fix of ledger.fixes || []) {
@@ -112,6 +122,7 @@ function measure(ledger) {
     const key = pageKeyOf(fix);
     if (!key) { uncheckable += 1; continue; }
     markersExamined += (fix.required_markers || []).filter(Boolean).length;
+    if (verdict.state === 'APPLIED') appliedIds.add(fix.id); else unappliedIds.add(fix.id);
     if (!pages.has(key)) {
       pages.set(key, {
         page: key,
@@ -130,7 +141,7 @@ function measure(ledger) {
       if (row.examples.length < 3) row.examples.push({ id: fix.id, run_date: fix.run_date || '', reason: verdict.detail });
     }
   }
-  return { pages, uncheckable, markersExamined };
+  return { pages, uncheckable, markersExamined, unappliedIds, appliedIds };
 }
 
 function main() {
@@ -147,7 +158,7 @@ function main() {
     process.exit(1);
   }
 
-  const { pages, uncheckable, markersExamined } = measure(ledger);
+  const { pages, uncheckable, markersExamined, appliedIds: appliedNow } = measure(ledger);
 
   if (!pages.size) {
     console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${ledger.fixes.length} recommendation(s) present but none names a checkable page, so this validator examined zero pages. Refusing to pass on an empty loop.`);
@@ -159,55 +170,95 @@ function main() {
   }
 
   const baseline = readJson(BASELINE_REL, null);
-  const caps = (baseline && baseline.max_unapplied_by_page) || {};
+  const allowedUnapplied = new Set((baseline && baseline.unapplied_ids) || []);
+  const provenApplied = new Set((baseline && baseline.applied_ids) || []);
 
   const rows = [...pages.values()].sort((a, b) => (b.not_applied - a.not_applied) || a.page.localeCompare(b.page));
+  const pageOfId = new Map();
+  for (const fix of ledger.fixes) pageOfId.set(fix.id, pageKeyOf(fix));
+
+  // The ratchet is keyed on the recommendation ID, not on a per-page count, because a
+  // count cannot tell three different things apart and this repo has already been bitten
+  // by conflating them:
+  //
+  //   REGRESSED  - an id this baseline recorded as APPLIED is now unapplied. The page
+  //                lost content it had. This can never be rebaselined away.
+  //   UNENROLLED - an id the baseline has never seen. Newly ingested work, not yet
+  //                released. A real failure (it is ungoverned) but repairable by
+  //                enrolment, exactly as agent-run-delivery-coverage treats a new run.
+  //   STALE      - an id the baseline allows to be unapplied that is now applied. The
+  //                ratchet must tighten or a landed repair can be silently spent again.
+  //
+  // A count-based cap reports all three as the same number, so ingesting new work looks
+  // identical to a page regressing - and the repair, which sets the cap to whatever is
+  // measured, would then RAISE the cap and bank the regression. That is precisely the
+  // "repair that merely makes it stop failing" the registry's self_heal_policy forbids,
+  // and this validator's first version had it. Keyed on ids, the repair enrols new ids
+  // and retires applied ones, and structurally cannot un-fail a regression.
+  const regressedIds = [];
+  const unenrolledIds = [];
+  const staleIds = [];
+  for (const fix of ledger.fixes) {
+    const key = pageKeyOf(fix);
+    if (!key || !pages.has(key)) continue;
+    const applied = verdictOf(fix).state === 'APPLIED';
+    if (applied) {
+      if (allowedUnapplied.has(fix.id)) staleIds.push(fix.id);
+    } else if (provenApplied.has(fix.id)) {
+      regressedIds.push(fix.id);
+    } else if (!allowedUnapplied.has(fix.id)) {
+      unenrolledIds.push(fix.id);
+    }
+  }
 
   if (rebaseline) {
-    const next = {};
-    for (const row of rows) if (row.not_applied > 0) next[row.page] = row.not_applied;
-    const before = Object.keys(caps).length ? caps : null;
-    const identical = before && JSON.stringify(before) === JSON.stringify(next);
-    if (identical) {
-      console.error('AGENT RECOMMENDATION PAGE APPLICATION REBASELINE REFUSED: every page is already enrolled at its measured gap count and no cap can be tightened, so this would rewrite the identical baseline and report success. Nothing to repair.');
+    if (regressedIds.length) {
+      const byPage = new Map();
+      for (const id of regressedIds) {
+        const p = pageOfId.get(id) || '(unknown page)';
+        byPage.set(p, (byPage.get(p) || 0) + 1);
+      }
+      console.error(`AGENT RECOMMENDATION PAGE APPLICATION REBASELINE REFUSED: ${regressedIds.length} recommendation(s) this baseline recorded as APPLIED are no longer shown by their page. Enrolling them would bank a regression and retire content that had already landed. Put the content back on the page instead.`);
+      for (const [p, n] of [...byPage].slice(0, 10)) console.error(`  ${p}: ${n} regressed`);
       process.exit(1);
     }
+    if (!unenrolledIds.length && !staleIds.length && baseline) {
+      console.error('AGENT RECOMMENDATION PAGE APPLICATION REBASELINE REFUSED: no recommendation is unenrolled and no allowance can be retired, so this would rewrite the identical baseline and report success. Nothing to repair.');
+      process.exit(1);
+    }
+    const nextUnapplied = [...new Set([...allowedUnapplied, ...unenrolledIds])].filter((id) => !appliedNow.has(id)).sort();
+    const nextApplied = [...appliedNow].sort();
     const payload = {
-      schema_version: '1.0',
-      note: 'Shrink-only ratchet, per page. Each value is the maximum number of recommendations that page may leave unshown by its own rendered bytes. Lower it when a repair lands; never raise it. A page absent from this map must have zero gaps.',
+      schema_version: '2.0',
+      note: 'Shrink-only ratchet keyed on recommendation id. unapplied_ids are the recommendations allowed to remain unshown by their target page; applied_ids are the ones proven shown. An id may move from unapplied_ids to applied_ids and never back: a row in applied_ids that stops being shown is a REGRESSION and this repair refuses to enrol it.',
       updated_at: new Date().toISOString().slice(0, 10),
-      total_max_unapplied: Object.values(next).reduce((a, b) => a + b, 0),
-      pages_with_gaps: Object.keys(next).length,
-      max_unapplied_by_page: Object.fromEntries(Object.keys(next).sort().map((k) => [k, next[k]])),
+      unapplied_count: nextUnapplied.length,
+      applied_count: nextApplied.length,
+      unapplied_ids: nextUnapplied,
+      applied_ids: nextApplied,
     };
     fs.writeFileSync(path.join(ROOT, BASELINE_REL), `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-    console.log(`AGENT RECOMMENDATION PAGE APPLICATION REBASELINED: ${payload.pages_with_gaps} page(s) with gaps, ${payload.total_max_unapplied} unapplied recommendation(s) capped.`);
+    console.log(`AGENT RECOMMENDATION PAGE APPLICATION REBASELINED: ${unenrolledIds.length} newly ingested recommendation(s) enrolled, ${staleIds.length} allowance(s) retired; ${nextUnapplied.length} still unshown, ${nextApplied.length} proven shown.`);
     process.exit(0);
   }
 
   if (!baseline) {
-    console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${BASELINE_REL} is missing, so no page has a cap and every gap is ungoverned. Repair with: npm run recover:recommendation-page-application`);
+    console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${BASELINE_REL} is missing, so no recommendation has an allowance and every gap is ungoverned. Repair with: npm run recover:recommendation-page-application`);
     process.exit(1);
   }
 
-  const regressed = [];
-  const unenrolled = [];
-  const slack = [];
-  for (const row of rows) {
-    const cap = Object.prototype.hasOwnProperty.call(caps, row.page) ? caps[row.page] : null;
-    if (cap === null) {
-      // A page with no gaps and no cap is correct: the baseline only lists pages that
-      // have gaps, so absence means "must be zero" and zero is what it is.
-      if (row.not_applied > 0) unenrolled.push(row);
-      continue;
+  const groupByPage = (ids) => {
+    const m = new Map();
+    for (const id of ids) {
+      const p = pageOfId.get(id) || '(unknown page)';
+      if (!m.has(p)) m.set(p, []);
+      m.get(p).push(id);
     }
-    if (row.not_applied > cap) regressed.push({ ...row, cap });
-    else if (row.not_applied < cap) slack.push({ ...row, cap });
-  }
-  // A cap for a page that no longer appears at all is stale in the same way.
-  for (const page of Object.keys(caps)) {
-    if (!pages.has(page)) slack.push({ page, recommended: 0, applied: 0, not_applied: 0, cap: caps[page], examples: [] });
-  }
+    return [...m].map(([page, list]) => ({ page, count: list.length, ids: list.slice(0, 3) })).sort((a, b) => b.count - a.count);
+  };
+  const regressed = groupByPage(regressedIds);
+  const unenrolled = groupByPage(unenrolledIds);
+  const slack = groupByPage(staleIds);
 
   const totals = rows.reduce((acc, r) => {
     acc.recommended += r.recommended;
@@ -231,9 +282,12 @@ function main() {
     markers_examined: markersExamined,
     pages_examined: pages.size,
     totals,
-    regressed_pages: regressed.map((r) => ({ page: r.page, cap: r.cap, not_applied: r.not_applied, exists: r.exists, examples: r.examples })),
-    unenrolled_pages: unenrolled.map((r) => ({ page: r.page, not_applied: r.not_applied, exists: r.exists, examples: r.examples })),
-    slack_pages: slack.map((r) => ({ page: r.page, cap: r.cap, not_applied: r.not_applied })),
+    regressed_pages: regressed,
+    unenrolled_pages: unenrolled,
+    stale_allowance_pages: slack,
+    regressed_recommendations: regressedIds.length,
+    unenrolled_recommendations: unenrolledIds.length,
+    stale_allowances: staleIds.length,
     pages: rows.map((r) => ({ page: r.page, exists: r.exists, recommended: r.recommended, applied: r.applied, not_applied: r.not_applied, examples: r.examples })),
     checked_at: new Date().toISOString(),
   };
@@ -241,20 +295,20 @@ function main() {
   fs.writeFileSync(path.join(ROOT, OUT_REL), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
   for (const row of regressed.slice(0, 20)) {
-    console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${row.page} leaves ${row.not_applied} of ${row.recommended} recommendation(s) unshown, above its cap of ${row.cap}${row.exists ? '' : ' (the page is not in the tree at all)'} - e.g. ${row.examples[0] ? `${row.examples[0].id} ${row.examples[0].reason}` : 'see the report'}.`);
+    console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${row.page} REGRESSED - ${row.count} recommendation(s) this baseline recorded as applied are no longer shown by the page (e.g. ${row.ids[0]}). Content that had landed is gone; this cannot be rebaselined away.`);
   }
   for (const row of unenrolled.slice(0, 20)) {
-    console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${row.page} is UNENROLLED with ${row.not_applied} of ${row.recommended} recommendation(s) unshown${row.exists ? '' : ' (the page is not in the tree at all)'}; it has no cap, so its gaps are ungoverned.`);
+    console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${row.page} has ${row.count} UNENROLLED recommendation(s) not shown by the page (e.g. ${row.ids[0]}); newly ingested work with no allowance, so it is ungoverned until enrolled or released.`);
   }
   for (const row of slack.slice(0, 20)) {
-    console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${row.page} is capped at ${row.cap} but now leaves only ${row.not_applied} unshown. The ratchet is shrink-only; a banked repair must lower the cap or it can be silently spent again.`);
+    console.error(`AGENT RECOMMENDATION PAGE APPLICATION FAIL: ${row.page} has ${row.count} allowance(s) that are now shown by the page (e.g. ${row.ids[0]}). The ratchet is shrink-only; a landed repair must retire its allowance or it can be silently spent again.`);
   }
 
   if (status === 'FAIL') {
-    console.error(`AGENT RECOMMENDATION PAGE APPLICATION: FAIL - examined ${pages.size} page(s) and ${markersExamined} marker(s) across ${ledger.fixes.length} recommendation(s); ${regressed.length} regressed, ${unenrolled.length} unenrolled, ${slack.length} with stale slack. Repair with: npm run recover:recommendation-page-application`);
+    console.error(`AGENT RECOMMENDATION PAGE APPLICATION: FAIL - examined ${pages.size} page(s) and ${markersExamined} marker(s) across ${ledger.fixes.length} recommendation(s); ${regressedIds.length} regressed, ${unenrolledIds.length} unenrolled, ${staleIds.length} stale allowance(s) across ${regressed.length + unenrolled.length + slack.length} page(s). Repair with: npm run recover:recommendation-page-application`);
     process.exit(1);
   }
-  console.log(`AGENT RECOMMENDATION PAGE APPLICATION PASS: ${pages.size} page(s) examined against ${markersExamined} required marker(s) from ${ledger.fixes.length} recommendation(s). ${totals.applied}/${totals.recommended} applied; ${totals.pages_fully_applied} page(s) fully applied, ${totals.pages_partially_applied} partial, ${totals.pages_none_applied} with none applied, ${totals.pages_absent_from_tree} target page(s) absent from the tree. Every page is at or under its shrink-only cap.`);
+  console.log(`AGENT RECOMMENDATION PAGE APPLICATION PASS: ${pages.size} page(s) examined against ${markersExamined} required marker(s) from ${ledger.fixes.length} recommendation(s). ${totals.applied}/${totals.recommended} applied; ${totals.pages_fully_applied} page(s) fully applied, ${totals.pages_partially_applied} partial, ${totals.pages_none_applied} with none applied, ${totals.pages_absent_from_tree} target page(s) absent from the tree. Every unshown recommendation is a known, enrolled allowance and nothing that had landed has regressed.`);
 }
 
 if (require.main === module) main();
