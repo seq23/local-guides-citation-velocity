@@ -5976,6 +5976,49 @@
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
     },
     {
+      "id": "publish-step-bounded",
+      "title": "The publish step is bounded in time and announces its progress",
+      "path": "scripts/validators/validate_publish_step_bounded.js",
+      "command": "node scripts/validators/validate_publish_step_bounded.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "workflow",
+        "publish",
+        "timeout",
+        "observability"
+      ],
+      "risk_prevented": "The repo's only content publication step could run without a time bound and without saying what it was doing. Each of its attempts runs selfheal:release then validate:release, both driving run_validation_registry.js --collect-all, which sends per-validator output to artifacts/validation/runtime/ rather than stdout - so the step goes silent for four to five minutes at a stretch while working correctly. On 2026-09-09 two runs, 34392913967 and 34395472450, were cancelled by a human who read that silence as a hang. Neither was hung: 34392913967 emitted 153 timestamped lines over 11.2 minutes with a maximum gap of 272s (one release-profile pass) and self-heal converged 5 failing -> 2 failing before it was killed. A publish nobody can distinguish from a hang gets killed like one, and never lands. This asserts the step declares timeout-minutes below the job's, that its retry loop is bounded and ends in an explicit failure with a named stop, and that it announces every long phase.",
+      "why_existing_checks_do_not_cover": "workflow-topology maps lanes to commands and workflow-yaml-inventory records triggers and mutation surfaces; neither reads a step's timeout, its retry bound, or whether it emits progress. publish-gate-unblockable proves a repair-less validator cannot deadlock the gate - a different way for a publish to never land. Nothing asserted that the publish step itself terminates and is legible while it runs.",
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
+      "failure_action": "stop release and widen the lane commit surface, or stop the lane committing a state it did not validate",
+      "depends_on": [],
+      "requires_files": [
+        ".github/workflows/velocity-content-release.yml"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/publish-step-bounded.json"
+      ],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
       "id": "self-heal-repair-contract",
       "title": "Self-heal repair contract",
       "path": "scripts/validators/validate_self_heal_repair_contract.js",
