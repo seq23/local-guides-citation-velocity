@@ -5932,6 +5932,50 @@
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
     },
     {
+      "id": "publish-gate-unblockable",
+      "title": "Only a guard that can unblock a publish may hold the gate",
+      "path": "scripts/validators/validate_publish_gate_unblockable.js",
+      "command": "node scripts/validators/validate_publish_gate_unblockable.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "self-heal",
+        "publish-gate",
+        "deadlock",
+        "availability"
+      ],
+      "risk_prevented": "A validator with no registered repair_command could hold the publish gate, which it can only ever close and never open. Velocity Content Release was red on 9 of 11 days to 2026-09-09, and on 2026-09-09 alone three different repair-less validators each stopped the publish in turn: validation-registry (06:56), removal-directive-not-published (16:04) and clock-source-independence (18:09, 18:45). 135 of the 146 ACTIVE HARD_FAIL validators in the release profile carry no repair and could each have done the same. Because the INGEST half of the pipeline pushes unconditionally, eleven days of agent artifacts were absorbed into main and never published - 698 recommendations recorded and not applied, 63 pages named and never created - with nothing anywhere stating that publication had stopped. This asserts, against the gate's own source, that only a repairable validator may hold it, that repair-less failures are still printed by name, and that the publishable state is written to publish-blocked-state.json.",
+      "why_existing_checks_do_not_cover": "self-heal-repair-contract proves a declared repair rewrites a file its validator reads, and repair-command-efficacy and repair-fixture-capability prove a repair actually clears a failure - all three are about validators that HAVE a repair. Nothing examined the validators that have none, which is where the deadlock lived. self-heal-commit-coverage governs what the evidence lane may commit, not what may stop a publish. No existing check reads the gate's decision logic at all, so the rule could be reverted by one edit with nothing failing.",
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
+      "failure_action": "stop release and widen the lane commit surface, or stop the lane committing a state it did not validate",
+      "depends_on": [],
+      "requires_files": [
+        "scripts/selfheal/heal_until_clean.mjs",
+        "_validation_registry.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/publish-gate-unblockable.json"
+      ],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
       "id": "self-heal-repair-contract",
       "title": "Self-heal repair contract",
       "path": "scripts/validators/validate_self_heal_repair_contract.js",
