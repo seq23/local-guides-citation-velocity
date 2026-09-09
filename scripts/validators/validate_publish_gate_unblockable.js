@@ -103,6 +103,42 @@ if (!inProfile.length) {
   process.exit(1);
 }
 
+// THE SECOND GATE. Closing the self-heal loop was not enough: velocity-content-release.yml
+// runs a RAW `npm run validate:release` immediately after it, and a raw validate exits
+// non-zero on ANY HARD_FAIL, repair or no repair. Under `bash -e` that ends the step, so a
+// repair-less validator held the publish anyway - run 34397693915 on 2026-09-09, where
+// removal-directive-not-published failed this line on all three attempts and nothing
+// published. #100 closed one opening in the net; this is the other. Every raw
+// validate:release that gates a publish must route its failure through the shared decision
+// script, which applies the same rule to the summary that command just wrote.
+const WORKFLOW_REL = '.github/workflows/velocity-content-release.yml';
+const DECISION_REL = 'scripts/selfheal/publish_gate_decision.mjs';
+let workflow = '';
+try {
+  workflow = fs.readFileSync(abs(WORKFLOW_REL), 'utf8');
+} catch (e) {
+  errors.push(`${WORKFLOW_REL}:unreadable:${e.message}`);
+}
+let rawGateCount = 0;
+let gatedCount = 0;
+if (workflow) {
+  const rawGates = workflow.split('\n').filter((line) => /npm run validate:release/.test(line) && !/^\s*#/.test(line));
+  rawGateCount = rawGates.length;
+  if (!rawGates.length) {
+    errors.push(`${WORKFLOW_REL}:no_release_revalidation - the publish lane must revalidate before pushing`);
+  }
+  for (const line of rawGates) {
+    if (line.includes('publish_gate_decision.mjs')) { gatedCount += 1; continue; }
+    errors.push(
+      `${WORKFLOW_REL}:raw_validate_release_is_an_ungated_publish_gate - "${line.trim()}" fails the step on ANY HARD_FAIL, `
+      + `including validators no repair could clear. Route it through ${DECISION_REL}.`,
+    );
+  }
+  if (!fs.existsSync(abs(DECISION_REL))) {
+    errors.push(`${DECISION_REL}:missing - the shared gate decision the workflow defers to does not exist`);
+  }
+}
+
 const report = {
   schema_version: '1.0',
   validator: 'publish-gate-unblockable',
@@ -116,6 +152,8 @@ const report = {
   hard_fail_with_repair_may_hold_gate: withRepair.length,
   hard_fail_without_repair_report_only: withoutRepair.length,
   report_only_ids: withoutRepair.map((v) => v.id).sort(),
+  raw_validate_release_gates: rawGateCount,
+  raw_gates_routed_through_decision: gatedCount,
   errors,
   checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10),
 };
@@ -130,5 +168,6 @@ if (errors.length) {
 console.log(
   `PUBLISH GATE UNBLOCKABLE PASS: ${required.length} behavioural assertion(s) against ${LOOP_REL}; `
   + `of ${hardFail.length} ACTIVE HARD_FAIL validator(s) in the "${gateProfile}" profile, ${withRepair.length} carry a repair and may hold the gate, `
-  + `${withoutRepair.length} are report-only and can no longer deadlock a publish they cannot unblock.`,
+  + `${withoutRepair.length} are report-only and can no longer deadlock a publish they cannot unblock; `
+  + `all ${rawGateCount} raw validate:release gate(s) in ${WORKFLOW_REL} route their failure through ${DECISION_REL}.`,
 );

@@ -5932,6 +5932,48 @@
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
     },
     {
+      "id": "no-conflict-markers",
+      "title": "No tracked file carries a git conflict marker",
+      "path": "scripts/validators/validate_no_conflict_markers.js",
+      "command": "node scripts/validators/validate_no_conflict_markers.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "release",
+        "strict",
+        "postrelease",
+        "content-release",
+        "full-audit"
+      ],
+      "tags": [
+        "hygiene",
+        "git",
+        "corruption"
+      ],
+      "risk_prevented": "A tracked file could reach main carrying git conflict markers. On 2026-09-09 PRs #99, #100 and #101 were each rebased onto a main that had moved and the conflicts - all in regenerable validation receipts - were resolved with directory pathspecs (git checkout --theirs -- artifacts), which silently leaves any file git had already written markers into exactly as it found it. 28 receipts reached main corrupted, 828 marker lines in validation-summary-release.json alone. Nothing caught it: JSON with a conflict marker does not parse, so every reader fell into a catch and treated the file as ABSENT rather than corrupt - publish_gate_decision.mjs could not read the release summary at all. A corrupt receipt is worse than a missing one because it looks present. This scans every tracked text file for a marker at the start of a line.",
+      "why_existing_checks_do_not_cover": "repo-hygiene checks packaging and file placement, not file contents. Every validator that reads a JSON receipt wraps the parse in a try/catch and falls back to a default, which is what made this invisible rather than loud. No check anywhere read a tracked file looking for corruption, so a conflict marker could be committed, merged and carried indefinitely.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
+      "failure_action": "stop release and widen the lane commit surface, or stop the lane committing a state it did not validate",
+      "depends_on": [],
+      "requires_files": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/no-conflict-markers.json"
+      ],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
       "id": "publish-gate-unblockable",
       "title": "Only a guard that can unblock a publish may hold the gate",
       "path": "scripts/validators/validate_publish_gate_unblockable.js",

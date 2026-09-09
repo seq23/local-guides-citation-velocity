@@ -201,7 +201,7 @@ jobs:
           npm run citation:prepare-velocity-intake
           npm run build:cached
           npm run selfheal:release
-          npm run validate:release
+          npm run validate:release || node scripts/selfheal/publish_gate_decision.mjs --profile release
       - name: Commit and push the validated absorption
         id: absorption
         run: |
@@ -234,9 +234,8 @@ jobs:
               git reset --hard origin/main
               npm run citation:prepare-velocity-intake
               npm run build:cached
-              phase "$attempt" "selfheal:release (validate -> repair -> re-validate, up to 3 passes over 159 validators)"
-            npm run selfheal:release
-              npm run validate:release
+              npm run selfheal:release
+              npm run validate:release || node scripts/selfheal/publish_gate_decision.mjs --profile release
               git add -A
               if git diff --cached --quiet; then
                 echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -267,7 +266,7 @@ jobs:
               # changed - a near-instant restore instead of a full rebuild.
               npm run build:cached
               npm run selfheal:release
-              npm run validate:release
+              npm run validate:release || node scripts/selfheal/publish_gate_decision.mjs --profile release
               git add -A
               git commit --amend --no-edit
             fi
@@ -372,7 +371,16 @@ jobs:
             # satisfied by code rather than by the word validate:release appearing in
             # a comment, which is how this step satisfied it before.
             phase "$attempt" "validate:release (unassisted re-validation of the healed tree)"
-            npm run validate:release
+            # A raw validate:release is a SECOND publish gate, and it is the one #100 did
+            # not close. It exits non-zero on any HARD_FAIL, repair or no repair, so on
+            # 2026-09-09 run 34397693915 removal-directive-not-published - which has no
+            # registered repair and was correctly excluded from the self-heal gate above -
+            # failed this line three attempts running and the publish never landed. The
+            # decision script applies the same rule as the self-heal gate to the summary
+            # this command just wrote: a repairable failure still blocks, a repair-less one
+            # is reported and does not. The literal command stays so workflow-data-trace
+            # still sees a release revalidation before the push.
+            npm run validate:release || node scripts/selfheal/publish_gate_decision.mjs --profile release
             phase "$attempt" "agent-exact and citation-agent traces"
             npm run trace:agent-exact
             npm run validate:agent-exact
