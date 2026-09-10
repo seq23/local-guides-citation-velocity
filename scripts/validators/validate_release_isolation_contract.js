@@ -185,6 +185,34 @@ const registryEntry = (id) => (registryDoc.validators || []).find((v) => v.id ==
 
 const MEASURED = [
   {
+    id: 'agent-recommendation-dist-application',
+    label: 'marker_dropped_between_source_and_dist',
+    route: '/trt/',
+    measured: 'Replacing the required marker "best way to compare TRT clinics in 2026" in dist/trt/index.html '
+      + '(8 occurrences) with a placeholder while leaving the SOURCE page untouched - exactly the failure this '
+      + 'validator exists for: content the build retired between the repo and dist/. The validator exited 1 having '
+      + 'examined 2,580 recommendations across 266 pages and 2,580 markers, and wrote 15 markers_absent_from_dist '
+      + 'rows, every one naming trt/index.html. The dist file was restored immediately afterwards.\n'
+      + 'MEASURED ON A RELEASE UNIT ON PURPOSE. The first attempt used an insights/*.html page, and the contract '
+      + 'refused it: the exit code was right but no unit was HELD, because an insights page is not a governed '
+      + 'release unit and there was nothing to charge. A mapping proved only against a page the isolator cannot '
+      + 'hold proves nothing about isolation.',
+    evidence: {
+      'artifacts/validation/agent-recommendation-dist-application.json': {
+        schema_version: '1.0',
+        recommendations_examined: 2580, pages_examined: 266, markers_examined: 2580,
+        markers_absent_from_dist: [{
+          id: 'agent_0012e54c3bbf4f3b',
+          page: 'trt/index.html',
+          dist_path: 'dist/trt/index.html',
+          run_date: '2026-09-02',
+          missing_markers: ['best way to compare TRT clinics in 2026'],
+        }],
+        page_absent_from_dist: [], page_absent_unenrolled: [], page_absent_stale_allowances: [],
+      },
+    },
+  },
+  {
     id: 'rendered-internal-hrefs',
     label: 'broken_internal_href',
     route: '/trt/',
