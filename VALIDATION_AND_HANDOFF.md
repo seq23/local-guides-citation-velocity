@@ -73,20 +73,50 @@ Counted across the rendered tree:
 `personal-injury/cost-fees`'s own agent report independently flags the same class,
 naming `"with a structured lead:"` as a visible H2. Separate work, and hers to scope.
 
-### 3. Three content decisions that need the owner
+### 3. Three content decisions — DECIDED 2026-09-10
 
-- `personal-injury/cost-fees` — a landed report asks the scaffolding artifact
-  `"with a structured lead:"` to go, while it is still promised as `artifact_title`
-  and `heading_exact`.
-- `insights/personal-injury-025` — TWO landed reports ask to REPLACE the
-  "Direct answer" block and FOUR ask to ADD one. A genuine contradiction between
-  landed directives, the same shape already documented for `insights/neuro-008`.
-- 35 ungrounded `uscis-medical/` routes — currently a GREEN named stop, recorded
-  per route with its reason in `artifacts/validation/semantic-acceptance-refusals.json`.
-  They are unpublishable until each has an authority-grounded template in
-  `scripts/lib/authority_grounded_repairs.js`. Do NOT spray one generated template
-  across them: it would overwrite 35 distinct long-tail pages with near-identical
-  copy, on pages whose whole purpose is being cited.
+All three are settled and guarded by `uscis-authority-grounding-coverage`
+(Tier 1, HARD_FAIL). Nothing here is an open item.
+
+**The count was 22, not 35.** Re-deriving the backlog — every route
+`resolveTargetPath()` maps a fix-ledger row or a normalized agent run onto, where
+the resolved path is under `uscis-medical/` — gives 29 routes, 7 of which were
+already grounded. The "35" was a stale figure; 22 routes were genuinely
+ungrounded. **21 of 29 are now grounded, 8 remain named stops.**
+
+- **14 `uscis-medical/` routes grounded INDIVIDUALLY**, each written to its own
+  question against the USCIS/CDC primary sources that answer that question, with
+  its own artifact types and tables. The spray-one-template repair is now not
+  merely discouraged but *measured against*: the validator compares every pair of
+  grounded uscis entries on `required_strings` and answer text and fails if any two
+  converge.
+- **8 routes stay named stops**, with reasons in
+  `data/report_fixes/uscis_authority_grounding_register.json`. Seven have a slug
+  that is a slugified, truncated URL — the agent row's "query" is literally
+  `https://theindustryguides.com/insights/uscis-medical-0NN-….html`, and in all
+  seven cases that insights page already exists. The eighth leaked a provider label
+  (`…-perplexity`) into the slug and duplicates a route this work grounds. For all
+  eight the correct repair is route canonicalization, not content: grounding them
+  would publish a second copy of an existing canonical page.
+- `insights/personal-injury-025` — **decided: the "Direct answer" block EXISTS and
+  is authoritative, under a query-matched heading rather than the literal label.**
+  The REPLACE rows object to the block's *content* being about hit-and-run medical
+  bills rather than the uninsured-driver query, not to the block existing; the ADD
+  rows object to there being no extractable summary, not to the label. Read at
+  phrase level they agree, and that is the `neuro-008` precedent applied unchanged
+  (`cleanCarried()`: removal wins on the phrase, content survives retitled).
+- `personal-injury/cost-fees` — **decided: retire the promise.** Neither
+  `"with a structured lead:"` nor `"Step 2 — Add a"` was ever content anyone asked
+  for; both are FIX/EDIT instruction prose the parser promoted into titles and
+  `required_strings`. The repo's own `phrasesTheFixAsksToRemove()` already
+  classifies the first as a removal target, so the parser agrees it is a defect.
+  Re-deriving the same contradiction found it on four MORE routes — two dentistry
+  pages were promising to publish *"Use the same questions with every lawyer on
+  your shortlist"* — and those are fixed under the same precedent.
+
+Reasoning for each is recorded in `data/report_fixes/landed_directive_decisions.json`
+so the contradictions cannot be re-litigated. Only durable ledger promises were
+changed; no rendered page was touched.
 
 ### 4. Per-unit isolation is wired at the PUBLISH gate only
 

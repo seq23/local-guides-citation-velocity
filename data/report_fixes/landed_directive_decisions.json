@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "register": "landed-directive-decisions",
+  "owner_validator": "uscis-authority-grounding-coverage",
+  "updated_at": "2026-09-10",
+  "purpose": "Landed agent reports sometimes contradict each other about the same page: one asks for a block to be removed, another authors the same block. Left undecided, that contradiction is re-litigated on every run - the compiler resolves it silently one way, a validator refuses it the other way, and the next reader re-opens the question from scratch. Each entry here is a DECISION, with its reasoning and the mechanism that carries it out, so the question is settled once.",
+  "precedent": {
+    "id": "removal-directive-wins-on-the-phrase-content-survives-retitled",
+    "established_on": "insights/neuro-008",
+    "established_at": "2026-09-03",
+    "mechanism": "cleanCarried() in scripts/citation_velocity/compile_html_fix_acceptance_manifest.js",
+    "rule": "When one landed directive asks for a phrase to be removed and another landed directive authors that same phrase as an artifact title or required_string, the REMOVAL wins on the phrase and the CONTENT survives. The artifact is not deleted: it is rebuilt from its own source_fix under a derived title, and the forbidden phrase is dropped from required_strings, checklist and heading_exact. Both directives are therefore honoured - the block the authoring directive asked for exists, and the label the removal directive objected to is gone.",
+    "why": "The two directives are rarely in genuine conflict. They disagree about a LABEL, not about whether the page should carry the block. Reading them at phrase level rather than block level satisfies both, and it is the only reading under which removal-directive-not-published can pass at all: a page cannot simultaneously publish a phrase and be proven to have removed it."
+  },
+  "decisions": [
+    {
+      "route": "insights/personal-injury-025-what-to-do-if-the-other-driver-is-uninsured.html",
+      "conflict": "Landed directives disagree about the 'Direct answer' block. The 2026-08-03 rows (agent_0da168e12a603519, agent_3ba856c605545b5f, agent_7a2182c8d0c936b9) say the existing 'Direct answer' is mismatched - it discusses comparison language and hit-and-run medical bills rather than the uninsured-driver query - and ask that it be REPLACED. The 2026-08-10 rows (agent_838ee2845cf52f6b, agent_da92b6c10f9b4d87, agent_e2f944055775b5e2) ask that a direct answer summary block be ADDED, and the 2026-08-17 rows (agent_5a4dfa7c3eddfc3a, agent_7c04f3e3067974ce, agent_98a11c3a1ab7266d) ask that a query-matched H2 checklist be ADDED under the H1.",
+      "decision": "THE BLOCK EXISTS AND IS AUTHORITATIVE, UNDER A QUERY-MATCHED HEADING RATHER THAN THE LITERAL LABEL 'Direct answer'.",
+      "reasoning": "Read at block level the directives look contradictory; read at phrase level they agree. Every one of them wants this page to open with an authoritative, query-matched answer to 'what to do if the other driver is uninsured'. The REPLACE rows do not object to the block existing - they object to its CONTENT being about a different question. The ADD rows do not object to the label - they object to there being no extractable summary. So the settlement that satisfies all of them is the neuro-008 precedent applied unchanged: keep the block, fix the content to answer the uninsured-driver query, and let the removal directive win on the phrase so the heading is the query-matched one the 2026-08-17 rows specify rather than the generic label the 2026-08-03 rows found mismatched. A direct-answer-shaped block is also the shape that actually gets cited on a citation-seeking page, so deleting it was never a live option.",
+      "mechanism": "cleanCarried() in scripts/citation_velocity/compile_html_fix_acceptance_manifest.js, which since 2026-09-03 runs over freshly compiled entries as well as carried ones. It computes the forbidden phrase set from every row_requirement's source_fix on the entry, drops those phrases from required_strings and checklist, and rebuilds any artifact titled with a forbidden phrase from its own source_fix under a derived title.",
+      "status": "SETTLED_BY_PRECEDENT",
+      "do_not_relitigate": "This entry is the answer. A future run that finds the same disagreement on this route must apply it rather than re-deciding, and must not resolve it by deleting the block or by restoring the literal 'Direct answer' label."
+    },
+    {
+      "route": "personal-injury/cost-fees/index.html",
+      "conflict": "An artifact was simultaneously PROMISED and RETIRED. The landed 2026-07-06 report agent_ce3b442f9fc3babb states that the H2 'with a structured lead:' is repair-instruction text rendered as visible content and asks for its removal. At the same time the durable exact-implementation ledger entry agent-exact-fee3af1d8a promises 'with a structured lead:' and 'Step 2 - Add a' in required_strings, and the 2026-07-06 semantic manifest carries 'with a structured lead:' as an entry title, an artifact title, and a heading_exact. A page cannot both publish a string and be proven to have removed it, so the acceptance contract was unsatisfiable by construction.",
+      "decision": "RETIRE THE PROMISE. 'with a structured lead:' and 'Step 2 - Add a' are removed from the durable ledger entry's required_strings.",
+      "reasoning": "Neither string was ever content anybody asked for. Both are fragments of the FIX/EDIT instruction prose - 'replace the current sentence ... with a structured lead:' and 'Step 2 - Add a ...' - that the acceptance parser promoted into artifact titles and required_strings. phrasesTheFixAsksToRemove() already classifies 'with a structured lead' as a phrase a landed fix asks to remove, so the repo's own parser agrees it is a removal target and not a promise. Between a landed directive asking for removal and a promise that was a parser artifact, the directive wins: the promise is the defect. This is the contract half only - the rendered page string and the scaffolding class it belongs to are a separate lane and are untouched here.",
+      "mechanism": "The forbidden strings are dropped from the required_strings of ledger entry agent-exact-fee3af1d8a in data/report_fixes/agent_exact_implementation_ledger.json. Nothing regenerates them: agent_exact_repairs.js entryFromSpec() derives required_strings from the CURRENT semantic manifest, which cleanCarried() already filters, and this route is LEDGERED rather than re-planned.",
+      "note_on_the_replacement_title": "The landed report asks that the H2 be replaced with 'Typical Contingency Fee Percentages'. That is not an invention of this decision: running the repo's own cleanCarried() rebuild over this entry's row_requirement derives exactly the title 'Typical Contingency Fee Percentages'. The established mechanism and the landed directive already agree, which is further reason to retire the promise rather than defend it.",
+      "status": "SETTLED",
+      "do_not_relitigate": "A future run must not restore 'with a structured lead:' or 'Step 2 - Add a' to any durable promise for this route. If the parser reintroduces an instruction fragment as a title, the defect is in the parser, not in this decision."
+    },
+    {
+      "route": "insights/personal-injury-025-what-to-do-if-the-other-driver-is-uninsured.html",
+      "conflict": "Contract half of the decision above. The durable ledger entry for this route promised 'Direct answer' and 'Direct answer,' in required_strings while its own landed fix_recommendations ask for the mismatched 'Direct answer' to be replaced - the same promised-and-retired contradiction as personal-injury/cost-fees.",
+      "decision": "RETIRE THE PROMISE. 'Direct answer' and 'Direct answer,' are removed from this route's durable required_strings.",
+      "reasoning": "This is the block-level decision above, carried into the contract. The block survives and is authoritative; the literal label the removal directive objected to stops being asserted as a thing the page must publish. Leaving the promise in place would make the acceptance contract unsatisfiable in exactly the way removal-directive-not-published exists to catch.",
+      "mechanism": "Forbidden phrases dropped from required_strings in data/report_fixes/agent_exact_implementation_ledger.json.",
+      "status": "SETTLED",
+      "do_not_relitigate": "Do not restore the literal 'Direct answer' label to this route's durable promises."
+    },
+    {
+      "route": "MULTIPLE",
+      "conflict": "The same promised-and-retired contradiction was present on four further routes, found by re-deriving it rather than by being reported. Each promised, in its durable ledger required_strings, a phrase its own landed fix_recommendations ask to remove.",
+      "affected_routes": [
+        {
+          "route": "dentistry/choosing-a-dentist/index.html",
+          "dropped": ["Use the same questions with every lawyer on your shortlist"]
+        },
+        {
+          "route": "dentistry/cost-financing/index.html",
+          "dropped": ["Fee and cost clarity", "Fee and cost clarity/contingency percentage"]
+        },
+        {
+          "route": "dentistry/cost-insurance/index.html",
+          "dropped": ["Use the same questions with every lawyer on your shortlist"]
+        },
+        {
+          "route": "insights/personal-injury-005-how-to-compare-accident-attorneys-without-relying-on-slogans.html",
+          "dropped": ["acceptance block 1"]
+        }
+      ],
+      "decision": "RETIRE THE PROMISES, under the same precedent, in the same commit.",
+      "reasoning": "These are one defect class, not four separate judgement calls, and the precedent already decides them. Two of the dropped strings are self-evidently wrong beyond the contract question: two dentistry pages were promising to publish 'Use the same questions with every lawyer on your shortlist', which is personal-injury copy on a dentistry page, and personal-injury-005 was promising to publish the literal words 'acceptance block 1'. Fixing only the two routes that happened to be reported, while a validator I was adding would have gone red on the rest, would have been handing back a red instead of a decision. Only durable ledger promises were changed; no rendered page was touched, so this stays clear of the scaffolding-string lane.",
+      "mechanism": "Forbidden phrases dropped from required_strings in data/report_fixes/agent_exact_implementation_ledger.json.",
+      "status": "SETTLED"
+    }
+  ]
+}

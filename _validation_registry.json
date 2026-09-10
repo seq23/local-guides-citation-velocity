@@ -8754,6 +8754,58 @@
       ],
       "evidence_file": "artifacts/validation/release-isolation-contract.json",
       "failure_action": "stop release and repair"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 10,
+      "id": "uscis-authority-grounding-coverage",
+      "title": "Every uscis-medical route is grounded in primary sources or a named stop with a reason",
+      "path": "scripts/validators/validate_uscis_authority_grounding_coverage.js",
+      "command": "node scripts/validators/validate_uscis_authority_grounding_coverage.js",
+      "risk_prevented": "Prevents a uscis-medical route from being neither authority-grounded nor deliberately stopped, which is the shape that let 22 ungrounded routes accumulate invisibly until a large batch drew one and took the whole release red - agent_7b5d43b6820884d4:repair_not_proven on run 34409865197 is the measured instance. It also prevents the repair that looks obvious and is forbidden: grounding the backlog by spraying one generated template across many routes. These are distinct long-tail pages whose entire purpose is being cited, so near-identical copy across them destroys more citation value than the named stops cost. That constraint is enforced by measuring pairwise similarity of required_strings and answer text across every grounded uscis entry, not by asserting it in a comment. Finally it prevents a landed-directive contradiction from being re-litigated every run, by failing any durable ledger entry that promises a phrase its own landed recommendations ask to remove unless a decision is recorded for that route.",
+      "requires_files": [
+        "scripts/lib/authority_grounded_repairs.js",
+        "data/report_fixes/uscis_authority_grounding_register.json",
+        "data/report_fixes/landed_directive_decisions.json",
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/report_fixes/agent_exact_implementation_ledger.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/uscis-authority-grounding-coverage.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/uscis-authority-grounding-coverage.json"
+      ],
+      "why_existing_checks_do_not_cover": "semantic-acceptance-refusal-legibility re-derives the compiler refusal decision, but only over PLANNED repair specs in the current plan, so it is structurally unable to see a uscis route that is ungrounded and was not planned that day - which is most of them, most days. That is exactly why the backlog grew silently while every run stayed green. html-fix-acceptance-compiler validates the entries the compiler DID write and cannot see a route it declined to write one for. Nothing else re-derives the whole uscis backlog from the fix ledger and the normalized runs and asks whether each route is grounded or deliberately stopped, and nothing anywhere measures whether two grounded high-stakes pages have converged on the same copy.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair by command, and none is possible. A failure names one of five source decisions a human must make: a uscis route with neither a grounded template nor a named stop - author the template in scripts/lib/authority_grounded_repairs.js or record the stop with its reason; a grounded entry missing authority grounding or citing a non-primary source; two grounded routes that have converged on near-identical copy, which must be rewritten to their own questions or one made a named stop; a stale named stop for a route that is now grounded; or a durable promise contradicting a landed removal directive, which needs the promise retired or the decision recorded.",
+      "tags": [
+        "validation",
+        "content",
+        "authority",
+        "uscis"
+      ],
+      "evidence_file": "artifacts/validation/uscis-authority-grounding-coverage.json",
+      "failure_action": "stop release and repair"
     }
   ],
   "legacy_policy": {
