@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "guard": "release-isolation-contract",
-  "status": "PASS",
+  "status": "FAIL",
   "checked_at": "2026-09-10",
-  "cases_examined": 43,
+  "cases_examined": 44,
   "mapped_validators": [
     "medical-schema-emission",
     "no-internal-instruction-leak",
@@ -11,7 +11,8 @@
     "rendered-internal-hrefs",
     "rendered-output-shrink-guard",
     "internal-link-inbound-coverage",
-    "agent-recommendation-page-application"
+    "agent-recommendation-page-application",
+    "agent-recommendation-dist-application"
   ],
   "examined": [
     {
@@ -321,7 +322,17 @@
         "unenrolled_pages[].page",
         "stale_allowance_pages[].page"
       ]
+    },
+    {
+      "case": "mapping_resolves:agent-recommendation-dist-application",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "markers_absent_from_dist[].page",
+        "page_absent_unenrolled[].page"
+      ]
     }
   ],
-  "errors": []
+  "errors": [
+    "agent-recommendation-dist-application: declares unit_attribution in _validation_registry.json but no constructed case in this contract exercises it. A mapping with no case behind it is a mapping nobody measured, and an unmeasured mapping holds units that were never at fault. Add it to MEASURED above with the evidence the validator actually wrote when you constructed its failing state, or remove the mapping and let the validator stay systemic."
+  ]
 }

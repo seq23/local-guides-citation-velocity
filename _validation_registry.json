@@ -391,6 +391,54 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "acceptance-manifest-deliverability",
+      "title": "Semantic acceptance manifest deliverability guard",
+      "path": "scripts/validators/validate_acceptance_manifest_deliverability.js",
+      "command": "node scripts/validators/validate_acceptance_manifest_deliverability.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "full-audit",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "content",
+        "semantic-acceptance",
+        "template-scaffolding"
+      ],
+      "risk_prevented": "The acceptance manifest can promise a page something the page is forbidden or unable to deliver: template scaffolding the emitters were fixed to stop printing, a min_rows count that only added up while padded rows existed, or a required_string absent from a frozen route whose bytes are restored verbatim on every build. Every such promise fails agent-exact-acceptance-manifest as a page defect when the page is in fact correct, and cascades into agent-exact-implementation as semantic_acceptance_manifest_not_pass.",
+      "why_existing_checks_do_not_cover": "validate_rendered_template_scaffolding.js screens the RENDERED pages and validate_agent_exact_acceptance_manifest.js tests pages against the manifest; neither asks whether the manifest itself is satisfiable. That is the missing link that let the emitters, the artifact stores and the compiler hold three different ideas of what a page contains.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/acceptance-manifest-deliverability.json",
+      "failure_action": "re-run node scripts/citation_velocity/compile_html_fix_acceptance_manifest.js; never restore the padded rows to make a count add up",
+      "depends_on": [
+        "html-fix-acceptance-compiler"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/acceptance-manifest-deliverability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/acceptance-manifest-deliverability.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "agent-exact-implementation",
       "title": "Exact agent intended-winner implementation validator",
       "path": "scripts/validators/validate_agent_exact_implementation.js",
