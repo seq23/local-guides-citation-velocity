@@ -58,7 +58,16 @@ let ROUTE_REGISTRY_CACHE = null;
 // rendered .html page under its own directory to restore on a cache hit -
 // the exact same "the page again under another prefix" duplication dist/
 // caused above, just from a gitignored cache store instead of a deploy dir.
-const BUILD_OUTPUT_PREFIX = /^(?:dist|\.pages-output|node_modules|artifacts|coverage|\.build-cache)\//;
+// .claude/worktrees/<agent>/ is the third source of the same duplication and the
+// first that is not build output: when several agents work this repo in parallel,
+// each worktree is a full checkout under the repo root, so walkHtml('') found
+// insights/trt-020-trt-and-sleep-apnea-what-to-ask.html four times and every title
+// match tied with itself. Reproduced 2026-09-10 against three live peer worktrees:
+// velocity-route-resolution-self-test failed bare_title_resolves_by_descriptive_slug
+// and family_breaks_a_cross_family_title_tie, and the resolver returned
+// TARGET_NOT_FOUND for a page sitting in the tree. CI has no worktrees, so this
+// never reached a release run - it silently mis-resolves for anyone working locally.
+const BUILD_OUTPUT_PREFIX = /^(?:dist|\.pages-output|node_modules|artifacts|coverage|\.build-cache|\.claude|\.git)\//;
 function buildRouteRegistry() {
   if (ROUTE_REGISTRY_CACHE) return ROUTE_REGISTRY_CACHE;
   const files = [...walkHtml('insights'), ...walkHtml('guides'), ...walkHtml('compare'), ...walkHtml('near-me'), ...walkHtml('')]
