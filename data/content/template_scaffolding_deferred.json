@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "authority": "scripts/validators/validate_rendered_template_scaffolding.js",
+  "note": "Rendered routes that still publish template scaffolding and were deliberately NOT thawed in the 2026-09-10 repair, because a concurrent lane owns those files. Each entry names why. SHRINK-ONLY: a listed route that no longer carries scaffolding FAILS the gate until its entry is deleted, so a deferral cannot outlive the defect. It can never admit a NEW offender - a route not on this list fails outright. DO NOT add entries here to get a build green.",
+  "deferred_at": "2026-09-10",
+  "routes": [
+    {
+      "path": "trt/community-questions/can-low-testosterone-cause-sudden-anxiety-and-panic-attacks/index.html",
+      "reason": "Owned by the concurrent TRT lane (VALIDATION_AND_HANDOFF.md item 1: 39 recommendations regressing on 13 TRT pages under trt/community-questions/ and trt/guides/). Thawing it here would have collided with that rebuild.",
+      "clears_when": "That lane lands; the generator fix in scripts/lib/html_fix_acceptance_parser.js and the store screen in scripts/lib/accepted_artifacts.js already apply to this route, so its next rebuild is clean and this entry must then be deleted."
+    },
+    {
+      "path": "trt/community-questions/how-long-until-trt-works/index.html",
+      "reason": "Owned by the concurrent TRT lane (VALIDATION_AND_HANDOFF.md item 1).",
+      "clears_when": "That lane lands and the route is rebuilt; delete this entry."
+    },
+    {
+      "path": "trt/community-questions/how-to-know-if-i-need-testosterone-therapy-or-if-i-m-just-burnt-out/index.html",
+      "reason": "Owned by the concurrent TRT lane (VALIDATION_AND_HANDOFF.md item 1).",
+      "clears_when": "That lane lands and the route is rebuilt; delete this entry."
+    },
+    {
+      "path": "trt/community-questions/symptoms-of-low-t-in-men-over-40-that-aren-t-just-low-libido/index.html",
+      "reason": "Owned by the concurrent TRT lane (VALIDATION_AND_HANDOFF.md item 1).",
+      "clears_when": "That lane lands and the route is rebuilt; delete this entry."
+    }
+  ]
+}
