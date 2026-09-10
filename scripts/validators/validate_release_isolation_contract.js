@@ -323,6 +323,39 @@ for (const m of MEASURED) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// NO MAPPING MAY BE ADDED WITHOUT A CONSTRUCTED CASE BEHIND IT.
+//
+// The whole hazard of this lane is a GUESSED mapping. A guessed one does not fail
+// loudly - it holds units that were never at fault, which silently retires good
+// pages, and it looks exactly like a working isolation. Requiring a pointer to
+// resolve against a PASSING evidence document does not catch it either: the
+// offender arrays are all empty while the lane is green, so a pointer at the wrong
+// key can still name a real key and resolve to nothing.
+//
+// So the bar is a case: to declare unit_attribution, the author must also record
+// the evidence the validator actually wrote when a failing state was constructed,
+// and prove the isolator picks the route out of it. Anything else is refused here.
+// ---------------------------------------------------------------------------
+const casedIds = new Set(cases.flatMap((c) => (c.spec.validators || []).map((v) => v.id)));
+
+// One named exception, not an allowlist to grow.
+const MAPPED_WITHOUT_LOCAL_CASE = new Map([
+  ['agent-recommendation-page-application',
+    'Mapped by PR #111 from its own measurement, and owned by another lane tonight. Its three pointers are still proved to resolve against the document it writes, by the mapping-resolution sweep below. A fixture case is deliberately NOT written here, because this author did not construct its failing state and inventing a row shape for it would be the exact guess this contract exists to refuse.']
+]);
+
+for (const v of (registryDoc.validators || [])) {
+  if (!Array.isArray(v.unit_attribution) || !v.unit_attribution.length) continue;
+  if (casedIds.has(v.id)) continue;
+  if (MAPPED_WITHOUT_LOCAL_CASE.has(v.id)) continue;
+  errorsBeforeCases.push(
+    `${v.id}: declares unit_attribution in _validation_registry.json but no constructed case in this contract exercises it. `
+    + 'A mapping with no case behind it is a mapping nobody measured, and an unmeasured mapping holds units that were never at fault. '
+    + 'Add it to MEASURED above with the evidence the validator actually wrote when you constructed its failing state, or remove the mapping and let the validator stay systemic.'
+  );
+}
+
 const errors = errorsBeforeCases;
 const examined = [];
 
