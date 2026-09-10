@@ -33,6 +33,7 @@
 const fs = require('fs');
 const path = require('path');
 const { artifactKey } = require('./rendered_artifact_recovery');
+const { stripTemplateScaffoldingFromArtifacts } = require('./template_scaffolding');
 
 const ROOT = path.resolve(__dirname, '../..');
 const STORE_REL = 'data/release/accepted_page_artifacts.json';
@@ -53,11 +54,24 @@ function loadStore() {
   const historic = readRoutes(HISTORIC_REL);
   // Accepted first, historic appended: what the page still has keeps its delivered order,
   // and what it lost is restored after it rather than shuffled into the middle.
+  //
+  // The store was recovered by PARSING THE ACCEPTED OUTPUT, so it faithfully carries
+  // whatever the delivered page carried - including 1,846 copies of "Translate “…”
+  // into a specific verification question" and 852 "Concrete verification point <n>".
+  // It also emits the accepted copy VERBATIM and, on a tie, lets the heavier accepted
+  // block win. Fixing the compiler alone would therefore change nothing: the
+  // freshly-clean, lighter block would lose the weight comparison to the placeholder
+  // one and the string would come straight back on the next build. That is precisely
+  // how this family shipped and stayed shipped.
+  //
+  // So the screen is applied to the store on load, before anything is merged or
+  // weighed. Both sides shrink together, the weight comparison stays honest, and no
+  // route can be re-hydrated with scaffolding this compiler no longer emits.
   const routes = {};
-  for (const [key, record] of Object.entries(accepted)) routes[key] = { ...record, artifacts: [...(record.artifacts || [])] };
+  for (const [key, record] of Object.entries(accepted)) routes[key] = { ...record, artifacts: stripTemplateScaffoldingFromArtifacts(record.artifacts || []) };
   for (const [key, record] of Object.entries(historic)) {
     if (!routes[key]) routes[key] = { ...record, artifacts: [] };
-    routes[key].artifacts = [...routes[key].artifacts, ...(record.artifacts || [])];
+    routes[key].artifacts = [...routes[key].artifacts, ...stripTemplateScaffoldingFromArtifacts(record.artifacts || [])];
   }
   CACHE = { schema_version: '1.0', routes };
   return CACHE;
@@ -140,6 +154,22 @@ function mergeAcceptedArtifacts(route, current) {
     if (!pending.has(key)) pending.set(key, []);
     pending.get(key).push(artifact);
   }
+  // BOTH SIDES ARE WEIGHED AFTER SCREENING, AND THAT IS DELIBERATE.
+  //
+  // Weighing the accepted side at its PRE-screen size was tried and reverted. It is
+  // the more principled-sounding rule - "the screen may change what a block says,
+  // never which block wins" - and it does fix
+  // /insights/uscis-medical-009-how-much-does-the-exam-cost.html, whose accepted
+  // cost_table would otherwise lose to the rebuild and take the ledgered marker in
+  // its intro with it. But it cannot hold both ends: the CURRENT side got lighter too
+  // when the compiler stopped padding, and there is no pre-fix weight for it. Applied
+  // to the accepted side alone it simply moved the failure, handing /personal-injury/
+  // to the accepted copy and losing "how should i preserve and compare evidence after
+  // an accident" from the rebuild's intro - a hub page, for a long-tail insight.
+  //
+  // Screened-vs-screened is the comparison that stays internally consistent. The one
+  // route it cannot repair is named in data/content/template_scaffolding_deferred.json
+  // with the measured reason.
   const weight = (artifact) => JSON.stringify(artifact || '').length;
   const consumed = new Set();
   const out = [];

@@ -391,6 +391,54 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "acceptance-manifest-deliverability",
+      "title": "Semantic acceptance manifest deliverability guard",
+      "path": "scripts/validators/validate_acceptance_manifest_deliverability.js",
+      "command": "node scripts/validators/validate_acceptance_manifest_deliverability.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "full-audit",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "content",
+        "semantic-acceptance",
+        "template-scaffolding"
+      ],
+      "risk_prevented": "The acceptance manifest can promise a page something the page is forbidden or unable to deliver: template scaffolding the emitters were fixed to stop printing, a min_rows count that only added up while padded rows existed, or a required_string absent from a frozen route whose bytes are restored verbatim on every build. Every such promise fails agent-exact-acceptance-manifest as a page defect when the page is in fact correct, and cascades into agent-exact-implementation as semantic_acceptance_manifest_not_pass.",
+      "why_existing_checks_do_not_cover": "validate_rendered_template_scaffolding.js screens the RENDERED pages and validate_agent_exact_acceptance_manifest.js tests pages against the manifest; neither asks whether the manifest itself is satisfiable. That is the missing link that let the emitters, the artifact stores and the compiler hold three different ideas of what a page contains.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/acceptance-manifest-deliverability.json",
+      "failure_action": "re-run node scripts/citation_velocity/compile_html_fix_acceptance_manifest.js; never restore the padded rows to make a count add up",
+      "depends_on": [
+        "html-fix-acceptance-compiler"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/acceptance-manifest-deliverability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/acceptance-manifest-deliverability.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "agent-exact-implementation",
       "title": "Exact agent intended-winner implementation validator",
       "path": "scripts/validators/validate_agent_exact_implementation.js",
@@ -3880,7 +3928,16 @@
       "mutates_files": [
         "artifacts/validation/medical-schema-emission.json"
       ],
-      "why_existing_checks_do_not_cover": "The existing schema checks assert Article, FAQPage, HowTo and BreadcrumbList. None asserts the medical types, and none checks that a price in the markup is also visible on the page."
+      "why_existing_checks_do_not_cover": "The existing schema checks assert Article, FAQPage, HowTo and BreadcrumbList. None asserts the medical types, and none checks that a price in the markup is also visible on the page.",
+      "unit_attribution": [
+        "missing_medical_web_page[]",
+        "medical_web_page_on_non_medical_route[]",
+        "missing_price_specification[]",
+        "price_mismatch[].file",
+        "price_in_markup_not_visible_on_page[].file",
+        "json_ld_parse_failures[].file"
+      ],
+      "unit_attribution_measured": "Every one of the six arrays was measured against a constructed failing state on 2026-09-09, not inferred from the source. Rewriting \"MedicalWebPage\" to \"WebPage\" in trt/index.html produced missing_medical_web_page: [\"trt/index.html\"]; adding a MedicalWebPage node to personal-injury/index.html produced medical_web_page_on_non_medical_route: [\"personal-injury/index.html\"]; rewriting \"PriceSpecification\" in dentistry/dental-implants/index.html produced missing_price_specification: [\"dentistry/dental-implants/index.html\"]; shifting a minPrice in dentistry/clear-aligners/index.html produced price_mismatch: [{file: \"dentistry/clear-aligners/index.html\", ...}]; changing the visible \"$3,000\" on that same page produced price_in_markup_not_visible_on_page: [{file: ...}]; corrupting a JSON-LD block produced json_ld_parse_failures: [{file: ...}]. Three arrays hold bare path strings and three hold objects keyed by file, which is why each is declared separately rather than assumed. Every row names the rendered file the validator itself read, so the failure belongs to that page's unit and to no other."
     },
     {
       "id": "medium-articles",
@@ -4248,7 +4305,58 @@
       "_retired_prepare_commands": [
         "npm run build"
       ],
-      "_retired_prepare_reason": "Unreachable: every prerequisite is a committed file, so run_validation_registry.js could never fire this prepare. These validators grade the committed rendered tree, which is the tree that was pushed; the declared refresh never ran and claiming it did was the untruth."
+      "_retired_prepare_reason": "Unreachable: every prerequisite is a committed file, so run_validation_registry.js could never fire this prepare. These validators grade the committed rendered tree, which is the tree that was pushed; the declared refresh never ran and claiming it did was the untruth.",
+      "unit_attribution": [
+        "offenders[].path"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: appending \"FILEPATH: trt/index.html || EDIT: add a table\" to trt/index.html produced offenders: [{path: \"trt/index.html\", reason: \"raw agent recommendation (FILEPATH:)\", shapes: [\"filepath\", \"field-separator\"]}] and exit 1. offenders is an OFFENDERS-ONLY array - a page sealed in data/content/internal_instruction_leak_baseline.json goes to `sealed` and never to `offenders` - so a row here is always a page that failed, never a page that was merely examined. The leaked instruction text is authored onto the page by the generator pass for that page, so the page is the correct charge. This validator walks the whole tree rather than this release's scope, so a leak on an untouched page resolves to a route outside the mutation scope and stays systemic, exactly as with rendered-output-shrink-guard."
+    },
+    {
+      "id": "rendered-template-scaffolding",
+      "title": "No rendered page publishes template scaffolding as content",
+      "path": "scripts/validators/validate_rendered_template_scaffolding.js",
+      "command": "node scripts/validators/validate_rendered_template_scaffolding.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 3",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "extraction"
+      ],
+      "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited.",
+      "why_existing_checks_do_not_cover": "no-internal-instruction-leak catches BUILD VOCABULARY on a page - FILEPATH:, Directly answer:, a validator's own failure message. It has no pattern for an unfilled template slot or for an instruction phrased as reader advice, so a numbered placeholder and a \"Translate ... into a question\" cell both counted as content. Substance and extraction validators count blocks, not whether a cell holds an answer.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/rendered-template-scaffolding.json",
+      "failure_action": "fix the GENERATOR, never the page - a hand-edited page has the string back on the next build. scripts/lib/html_fix_acceptance_parser.js emits the family and scripts/lib/template_scaffolding.js is the shared screen the producers and this gate both import. Where a section was never filled in, OMIT it; do not invent content for the slot.",
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/rendered-template-scaffolding.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/rendered-template-scaffolding.json"
+      ],
+      "enforce_no_source_mutation": true
     },
     {
       "status": "ACTIVE",
@@ -5220,7 +5328,11 @@
       "mutates_files": [
         "artifacts/validation/removal-directive-not-published.json"
       ],
-      "why_existing_checks_do_not_cover": "no-internal-instruction-leak and generator-instruction-refusal catch build directives leaking into copy. A legal boilerplate phrase quoted by an agent is not a build directive; it passed both while the pipeline guaranteed its presence."
+      "why_existing_checks_do_not_cover": "no-internal-instruction-leak and generator-instruction-refusal catch build directives leaking into copy. A legal boilerplate phrase quoted by an agent is not a build directive; it passed both while the pipeline guaranteed its presence.",
+      "unit_attribution": [
+        "rendered_leaks[].implementation_path"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: appending the enumerated withheld phrase \"Use the same questions with every lawyer on your shortlist\" to dentistry/cost-insurance/index.html produced rendered_leaks: [{implementation_path: \"dentistry/cost-insurance/index.html\", phrase: \"...\", origin: \"enumerated:data/release/withheld_page_phrases.json\"}] and exit 1. rendered_leaks is offenders-only: the loop pushes a row only when the page's readable text still contains a phrase a landed report asked to remove, and routes that were merely examined appear nowhere. The path is the route the removal directive itself names, so the charge lands on the unit that was told to drop the phrase and did not. source_leaks[].implementation_path is DELIBERATELY NOT DECLARED: it has the same field name but was not measured, so a source-only failure resolves to no route and stays systemic - loud, which is the safe direction."
     },
     {
       "id": "render-integrity",
@@ -5300,7 +5412,11 @@
       "mutates_files": [
         "artifacts/validation/hrefs.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "unit_attribution": [
+        "errors[].file"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: adding <a href=\"/zzz-nonexistent-route-measure/\"> to trt/index.html produced errors: [{file: \"trt/index.html\", href: \"/zzz-nonexistent-route-measure/\", issue: \"internal target missing\"}] and exit 1. The shape had to be measured rather than read off a passing run, because errors is empty while the lane is green and the key alone does not say whether its elements are strings or objects - here they are objects carrying `file`. errors is offenders-only; the 79,507 href values that resolved are counted in `checked` and named nowhere. `file` is the page CONTAINING the bad href, which is the page the release authored, so the charge is correct for the two failure shapes this validator raises on a touched page: a link to a target that does not exist, and an unresolved {{template token}}. The opposite direction - a release deleting a target so untouched pages now point at nothing - names those untouched linking pages, which are outside the mutation scope, so it stays systemic and fails the whole run. That is the right verdict: removing a route that others link to is a build fault, not one bad row."
     },
     {
       "status": "ACTIVE",
@@ -7690,7 +7806,11 @@
       "produces_files": [
         "artifacts/validation/internal-link-inbound-coverage.json"
       ],
-      "mutates_files": []
+      "mutates_files": [],
+      "unit_attribution": [
+        "new_orphans[].route"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: publishing zzz-isolation-measure/index.html and adding its <loc> to sitemaps/sitemap_all.xml - a page nothing links to, which is exactly the shape a release creates - produced new_orphans: [{route: \"/zzz-isolation-measure/\", dead_inbound: []}], the message \"/zzz-isolation-measure/ is published and indexable but no served page links to it\", and exit 1 across 2,056 examined published pages. The route arrives already canonical (\"/zzz-isolation-measure/\"), not as a file path. new_orphans is offenders-only by construction: it is the orphan list minus the accepted baseline minus the off-topic quarantine, so an accepted or quarantined orphan is never a row. Holding the named unit is the right charge and the right outcome - an unreachable page cannot pass citation authority on, so publishing it is worth nothing and withholding it costs nothing. stale_baseline is DELIBERATELY NOT DECLARED: it also fails this validator, it names routes that are no longer orphans, and charging a page for a bookkeeping entry about it would hold a page that is now correct. A stale-baseline-only failure therefore resolves to no route and stays systemic."
     },
     {
       "status": "ACTIVE",
@@ -7844,6 +7964,61 @@
         "unenrolled_pages[].page",
         "stale_allowance_pages[].page"
       ]
+    },
+    {
+      "id": "agent-recommendation-dist-application",
+      "title": "Every landed recommendation is still shown by the page the build PUBLISHED",
+      "path": "scripts/validators/validate_agent_recommendation_dist_application.js",
+      "command": "node scripts/validators/validate_agent_recommendation_dist_application.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-artifact",
+        "ledger",
+        "per-page",
+        "application",
+        "ratchet",
+        "dist",
+        "published-bytes"
+      ],
+      "risk_prevented": "Every application guard in this repo grades a recommendation on the bytes of the page in the SOURCE tree, and the page a reader gets is the one in dist/. Five writers run between them - the frozen accepted output guard (2,069 restores on the 2026-09-10 tree), build_pages_dist, the answer-shape pass, the dentistry marker pass and clarity:install - and any of them can return a published page that no longer shows a marker its source copy still shows. Nothing would have caught that: the whole ledger would read APPLIED while the live page had dropped the content. This re-confirms every recommendation the application baseline records as APPLIED, and which is still shown by its source page, against dist/<renderedPath>. Measured 2026-09-10: 2,577 landed recommendations across 266 pages, 2,577 markers, zero dropped by the build, 9 rows on 8 source pages that show the content but never reached dist at all.",
+      "why_existing_checks_do_not_cover": "agent-recommendation-page-application, agent-fix-ledger-truthfulness and agent-run-delivery-coverage all read the SOURCE page and stop there; none of them opens dist/. rendered-output-shrink-guard measures page SIZE, so a marker swapped for filler of similar length passes it. deterministic-build proves two builds agree with each other, not that either agrees with the source page. content-pattern-contract asserts block SHAPES on published pages, never the specific required_markers a named recommendation asked for. Nothing else joins a ledger row to the published bytes of the page it named.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/agent-recommendation-dist-application.json",
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "restore the dropped block to the page and fix the build step that dropped it; the admission backlog is a shrink-only ratchet and a dropped marker has no allowance at all",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [
+        "agent-recommendation-page-application"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/report_fixes/agent_recommendation_page_application_baseline.json",
+        "data/report_fixes/agent_recommendation_dist_application_baseline.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-recommendation-dist-application.json"
+      ],
+      "mutates_files": [],
+      "unit_attribution": [
+        "markers_absent_from_dist[].page",
+        "page_absent_unenrolled[].page"
+      ],
+      "no_repair_reason": "A dropped marker is content the build retired between the source tree and dist/. This validator's own failure_action is \"restore the dropped block to the page and fix the build step that dropped it\" - there is no command that can supply that judgment. `recover:recommendation-dist-application` was observed on 2026-09-10 running against a live failure and changing nothing: --rebaseline REFUSES a genuine regression, correctly, so it can never clear this. Claiming it as a repair made self-heal burn an attempt on a command that cannot work and report UNRESOLVED instead of the real reason. The script still exists for an operator enrolling legitimately new pages; what is removed is the registry claim that self-heal can clear a regression with it. Same principle as PR #110: a repair that cannot clear its validator is a false claim, not a repair."
     },
     {
       "status": "ACTIVE",
@@ -8670,6 +8845,58 @@
         "authority"
       ],
       "evidence_file": "artifacts/validation/release-isolation-contract.json",
+      "failure_action": "stop release and repair"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 10,
+      "id": "uscis-authority-grounding-coverage",
+      "title": "Every uscis-medical route is grounded in primary sources or a named stop with a reason",
+      "path": "scripts/validators/validate_uscis_authority_grounding_coverage.js",
+      "command": "node scripts/validators/validate_uscis_authority_grounding_coverage.js",
+      "risk_prevented": "Prevents a uscis-medical route from being neither authority-grounded nor deliberately stopped, which is the shape that let 22 ungrounded routes accumulate invisibly until a large batch drew one and took the whole release red - agent_7b5d43b6820884d4:repair_not_proven on run 34409865197 is the measured instance. It also prevents the repair that looks obvious and is forbidden: grounding the backlog by spraying one generated template across many routes. These are distinct long-tail pages whose entire purpose is being cited, so near-identical copy across them destroys more citation value than the named stops cost. That constraint is enforced by measuring pairwise similarity of required_strings and answer text across every grounded uscis entry, not by asserting it in a comment. Finally it prevents a landed-directive contradiction from being re-litigated every run, by failing any durable ledger entry that promises a phrase its own landed recommendations ask to remove unless a decision is recorded for that route.",
+      "requires_files": [
+        "scripts/lib/authority_grounded_repairs.js",
+        "data/report_fixes/uscis_authority_grounding_register.json",
+        "data/report_fixes/landed_directive_decisions.json",
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/report_fixes/agent_exact_implementation_ledger.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/uscis-authority-grounding-coverage.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/uscis-authority-grounding-coverage.json"
+      ],
+      "why_existing_checks_do_not_cover": "semantic-acceptance-refusal-legibility re-derives the compiler refusal decision, but only over PLANNED repair specs in the current plan, so it is structurally unable to see a uscis route that is ungrounded and was not planned that day - which is most of them, most days. That is exactly why the backlog grew silently while every run stayed green. html-fix-acceptance-compiler validates the entries the compiler DID write and cannot see a route it declined to write one for. Nothing else re-derives the whole uscis backlog from the fix ledger and the normalized runs and asks whether each route is grounded or deliberately stopped, and nothing anywhere measures whether two grounded high-stakes pages have converged on the same copy.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair by command, and none is possible. A failure names one of five source decisions a human must make: a uscis route with neither a grounded template nor a named stop - author the template in scripts/lib/authority_grounded_repairs.js or record the stop with its reason; a grounded entry missing authority grounding or citing a non-primary source; two grounded routes that have converged on near-identical copy, which must be rewritten to their own questions or one made a named stop; a stale named stop for a route that is now grounded; or a durable promise contradicting a landed removal directive, which needs the promise retired or the decision recorded.",
+      "tags": [
+        "validation",
+        "content",
+        "authority",
+        "uscis"
+      ],
+      "evidence_file": "artifacts/validation/uscis-authority-grounding-coverage.json",
       "failure_action": "stop release and repair"
     }
   ],

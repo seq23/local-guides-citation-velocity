@@ -107,12 +107,23 @@ function mapCitationArtifact(artifact, context) {
   if (['comparison_table', 'cost_table', 'timeline_table', 'scorecard', 'worksheet', 'severity_matrix'].includes(type)) {
     const headers = unique(artifact.headers || []);
     const rows = Array.isArray(artifact.rows) ? artifact.rows.filter((row) => Array.isArray(row) && row.length >= 2).map((row) => row.map(clean)) : [];
-    if (rows.length >= 2) return finalize({ type: 'original_comparison_table', title, headers, rows, source_basis: basis }, context);
+    // Thresholds here MUST match validateContentAtom below: it requires 3 rows for
+    // original_comparison_table and 3 branches for decision_tree, and
+    // renderProgrammaticContentAtom THROWS on a rejected atom rather than falling
+    // through. Accepting at 2 therefore did not produce a smaller page, it killed the
+    // build - `Programmatic content gate rejected How to Choose the Right Dentist:
+    // decision_branches_insufficient`. The mismatch was invisible while the compiler
+    // padded every table out to its requested row count with "Concrete verification
+    // point <n>": no artifact ever arrived here with exactly two real rows. Removing
+    // the padding is what surfaced it. Returning null lets the caller fall through to
+    // the Proceed/Compare/Pause derivation below, which is the intended behaviour for
+    // a source that cannot support a table.
+    if (rows.length >= 3) return finalize({ type: 'original_comparison_table', title, headers, rows, source_basis: basis }, context);
   }
   if (type === 'decision_matrix') {
     const rows = Array.isArray(artifact.rows) ? artifact.rows.filter((row) => Array.isArray(row) && row.length >= 2) : [];
     const branches = rows.map((row) => ({ condition: clean(row[0]), action: clean(row[1]), rationale: clean(row[2] || 'Use the stated condition to choose the next step.') }));
-    if (branches.length >= 2) return finalize({ type: 'decision_tree', title, branches, source_basis: basis }, context);
+    if (branches.length >= 3) return finalize({ type: 'decision_tree', title, branches, source_basis: basis }, context);
   }
   if (['numbered_framework', 'protocol', 'checklist'].includes(type)) {
     const steps = unique(artifact.items || []).map((action, index) => ({ label: `Step ${index + 1}`, action }));

@@ -7,6 +7,9 @@ const path = require('path');
 const { compileEntryFromSpec, artifactFromFix, phrasesTheFixAsksToRemove, normalizeForbidden } = require('../lib/html_fix_acceptance_parser');
 const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
 const { mergeAcceptedArtifacts } = require('../lib/accepted_artifacts');
+const { stripTemplateScaffoldingFromArtifacts, withoutTemplateScaffolding } = require('../lib/template_scaffolding');
+const { countRowsNearHeading, includesNormalized } = require('../lib/html_fix_rendering_contract');
+const { acceptedHtmlForRoute, normalizeRoute, mutableRouteSet } = require('../lib/frozen_pages');
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const PLAN_PATH = 'artifacts/validation/agent-exact-implementation-plan.json';
@@ -213,6 +216,47 @@ function main() {
     const key = String(entry && entry.implementation_path || '');
     if (key) byPath.set(key, cleanCarried(entry));
   }
+  // THE MANIFEST IS PART OF THE PAGE, SO IT GETS THE SAME SCREEN THE PAGE GETS.
+  //
+  // scripts/lib/template_scaffolding.js stopped the emitters padding a table up to a
+  // requested row count with `Concrete verification point <n>` / `Requirement <n>`,
+  // and screens the two durable artifact stores on load. This compiler was never
+  // told. So the manifest went on ASSERTING the padding as required_strings, and went
+  // on carrying min_rows counts that only added up while the padded rows existed - and
+  // the rendering contract dutifully reported the pages as broken:
+  //
+  //   dentistry/anxiety-trust/index.html:missing_required_string:Concrete verification point 3
+  //   dentistry/choosing-a-dentist/index.html:row:agent_62c166acdc8b1f94:min_rows_not_met:1<3
+  //
+  // Two components, each keeping its own idea of what a page contains, with no link
+  // between them - which is why this screens through the SAME module the emitters and
+  // the stores use rather than restating the patterns here. There is no fourth copy of
+  // the list.
+  //
+  // The entry's own `artifacts` are screened too, not just its strings: the block
+  // below derives what "will actually render" from mergeAcceptedArtifacts(path,
+  // entry.artifacts), and an unscreened carried artifact put the padded rows straight
+  // back into that answer - which is exactly how a string like "Concrete verification
+  // point 3" survived a filter whose whole job was to drop strings the page does not
+  // publish.
+  //
+  // OMIT, NEVER PAD: the padded rows are not restored to make the count add up. The
+  // count falls to the rows that genuinely survive.
+  const screenTemplateScaffolding = (entry) => {
+    if (!entry || typeof entry !== 'object') return entry;
+    return {
+      ...entry,
+      artifacts: stripTemplateScaffoldingFromArtifacts(entry.artifacts || []),
+      required_strings: withoutTemplateScaffolding(entry.required_strings),
+      checklist: withoutTemplateScaffolding(entry.checklist),
+      row_requirements: (entry.row_requirements || []).map((row) => ({
+        ...row,
+        required_strings: withoutTemplateScaffolding(row.required_strings)
+      }))
+    };
+  };
+  for (const key of [...byPath.keys()]) byPath.set(key, screenTemplateScaffolding(byPath.get(key)));
+
   // A CARRIED entry's promises are re-tested against what will actually render.
   //
   // Carrying an entry forward carried its required_strings with it, including strings
@@ -227,13 +271,85 @@ function main() {
   // Only strings the merged artifacts do not contain are dropped, so nothing a page
   // genuinely publishes stops being asserted, and an entry that loses every string
   // keeps its row requirements and headings - the substantive part of the contract.
+  //
+  // min_rows is re-derived here for the same reason and from the same source. It was
+  // written once at compile time as `built.rows.length` and never revisited, so a block
+  // still demanded the row count the artifact had BEFORE its padding was screened off.
+  // The delivered artifact is the authority on how many rows exist, so the count is
+  // taken from it. It is only ever LOWERED: raising it would assert rows nothing has
+  // shown the page to have, which is the same mistake one column over.
+  //
+  // ON A FROZEN ROUTE THE ACCEPTED BYTES ARE THE ANSWER, NOT THE COMPILER'S ARTIFACTS.
+  //
+  // build_site.js ends with restoreFrozenPages(), which puts 1,879 of 2,069 routes back
+  // byte-for-byte from the accepted store. For those routes recompiling the manifest
+  // cannot change one character of what a reader or a crawler sees, so a promise
+  // derived from this run's artifacts is not a statement about the page at all.
+  //
+  // That is the whole of the residual failure after the scaffolding screen above.
+  // /trt/ is frozen; its accepted HTML carries three rows under "Before starting TRT if
+  // fertility matters", the freshly compiled artifact carries four, and the manifest
+  // asserted four:
+  //
+  //   trt/index.html:row:agent_216e7290b4e17f8d:min_rows_not_met:3<4
+  //   trt/community-questions/how-long-until-trt-works/index.html:missing_required_string:Body composition
+  //
+  // Neither is satisfiable by any amount of rebuilding, and neither describes a
+  // defect - the manifest was simply measuring the wrong artifact.
+  //
+  // So a frozen route is measured against its own delivered bytes, with the SAME
+  // functions the rendering contract will use on them (countRowsNearHeading,
+  // includesNormalized, imported, not restated). A mutable route keeps being measured
+  // against the artifacts, because there the page really is rebuilt to match them.
+  //
+  // This does not make the check inert. min_rows is still a floor and required_strings
+  // is still a set of promises; what changes is that the floor is now the number of
+  // rows the page has TODAY. A later build that drops a row, unfreezes into something
+  // shorter, or re-accepts a thinner block still fails - which is the shrink guard the
+  // accepted store exists for, and the same bargain renderedStrings already strikes
+  // for strings one line down.
+  const mutable = mutableRouteSet();
+  const deliveredFrozenHtml = (implementationPath) => {
+    const route = normalizeRoute(String(implementationPath || ''));
+    if (!route || (mutable && mutable.has && mutable.has(route))) return null;
+    try { return acceptedHtmlForRoute(route) || null; } catch { return null; }
+  };
+  const blockKey = (value) => String(value === undefined || value === null ? '' : value).replace(/\s+/g, ' ').trim().toLowerCase();
   const renderedStrings = (entry) => {
-    const rendered = JSON.stringify(mergeAcceptedArtifacts(entry.implementation_path, entry.artifacts || []));
-    const keep = (value) => rendered.includes(JSON.stringify(String(value)).slice(1, -1));
+    const merged = mergeAcceptedArtifacts(entry.implementation_path, entry.artifacts || []);
+    const rendered = JSON.stringify(merged);
+    const frozenHtml = deliveredFrozenHtml(entry.implementation_path);
+    const keep = (value) => rendered.includes(JSON.stringify(String(value)).slice(1, -1))
+      && (!frozenHtml || includesNormalized(frozenHtml, value));
+    const deliveredRowCount = new Map();
+    for (const artifact of merged || []) {
+      if (!artifact || !artifact.title) continue;
+      const count = Array.isArray(artifact.rows) ? artifact.rows.length : (artifact.items || artifact.lines || []).length;
+      deliveredRowCount.set(blockKey(artifact.title), count);
+    }
+    const trimBlock = (block) => {
+      if (!block || !block.min_rows) return block;
+      const candidates = [];
+      const fromArtifact = deliveredRowCount.get(blockKey(block.heading_exact));
+      if (fromArtifact !== undefined) candidates.push({ count: fromArtifact, source: 'delivered_artifact' });
+      if (frozenHtml) {
+        // 0 means the heading is not on the frozen page at all. The contract skips
+        // min_rows entirely in that case, so there is no count to take from it.
+        const fromPage = countRowsNearHeading(frozenHtml, block.heading_exact || '');
+        if (fromPage > 0) candidates.push({ count: fromPage, source: 'frozen_accepted_page' });
+      }
+      const lowest = candidates.sort((a, b) => a.count - b.count)[0];
+      if (!lowest || lowest.count >= Number(block.min_rows)) return block;
+      return { ...block, min_rows: lowest.count, min_rows_source: lowest.source };
+    };
     return {
       ...entry,
       required_strings: (entry.required_strings || []).filter(keep),
-      row_requirements: (entry.row_requirements || []).map((row) => ({ ...row, required_strings: (row.required_strings || []).filter(keep) }))
+      row_requirements: (entry.row_requirements || []).map((row) => ({
+        ...row,
+        required_blocks: (row.required_blocks || []).map(trimBlock),
+        required_strings: (row.required_strings || []).filter(keep)
+      }))
     };
   };
   const entries = [...byPath.values()].map(renderedStrings).sort((a, b) => String(a.implementation_path).localeCompare(String(b.implementation_path)));
@@ -254,7 +370,13 @@ function main() {
   for (const spec of specs) {
     const k = `${spec.run_date || DATE}_${inferVertical(spec)}`;
     if (!grouped.has(k)) grouped.set(k, []);
-    grouped.get(k).push(compile(spec));
+    // Put through BOTH passes on the way in, exactly as the durable manifest is:
+    // screened for scaffolding, then held to what the page can actually deliver. A
+    // per-run manifest that skipped either would be a second, weaker copy of the same
+    // promises sitting one directory over - and this directory is read, by
+    // scripts/search_intelligence/lib.js among others.
+    const entry = compile(spec);
+    if (entry) grouped.get(k).push(renderedStrings(screenTemplateScaffolding(entry)));
   }
   for (const [key, groupEntries] of grouped.entries()) {
     writeJson(`${MANIFEST_DIR}/${key}.json`, {

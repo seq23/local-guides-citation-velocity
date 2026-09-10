@@ -3,10 +3,16 @@
   "guard": "release-isolation-contract",
   "status": "PASS",
   "checked_at": "2026-09-10",
-  "cases_examined": 8,
+  "cases_examined": 47,
   "mapped_validators": [
+    "medical-schema-emission",
+    "no-internal-instruction-leak",
+    "removal-directive-not-published",
+    "rendered-internal-hrefs",
     "rendered-output-shrink-guard",
-    "agent-recommendation-page-application"
+    "internal-link-inbound-coverage",
+    "agent-recommendation-page-application",
+    "agent-recommendation-dist-application"
   ],
   "examined": [
     {
@@ -52,10 +58,281 @@
       "output_matched": true
     },
     {
+      "case": "measured_mapping_holds_its_own_unit:agent-recommendation-dist-application:marker_dropped_between_source_and_dist",
+      "why": "Replacing the required marker \"best way to compare TRT clinics in 2026\" in dist/trt/index.html (8 occurrences) with a placeholder while leaving the SOURCE page untouched - exactly the failure this validator exists for: content the build retired between the repo and dist/. The validator exited 1 having examined 2,580 recommendations across 266 pages and 2,580 markers, and wrote 15 markers_absent_from_dist rows, every one naming trt/index.html. The dist file was restored immediately afterwards.\nMEASURED ON A RELEASE UNIT ON PURPOSE. The first attempt used an insights/*.html page, and the contract refused it: the exit code was right but no unit was HELD, because an insights page is not a governed release unit and there was nothing to charge. A mapping proved only against a page the isolator cannot hold proves nothing about isolation. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:agent-recommendation-dist-application:marker_dropped_between_source_and_dist",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:agent-recommendation-dist-application:marker_dropped_between_source_and_dist",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:rendered-internal-hrefs:broken_internal_href",
+      "why": "Adding <a href=\"/zzz-nonexistent-route-measure/\"> to trt/index.html; the validator exited 1 and wrote this errors row. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:rendered-internal-hrefs:broken_internal_href",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:rendered-internal-hrefs:broken_internal_href",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:no-internal-instruction-leak:build_instruction_on_the_page",
+      "why": "Appending \"FILEPATH: trt/index.html || EDIT: add a table\" to trt/index.html; the validator exited 1 and wrote this offenders row. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:no-internal-instruction-leak:build_instruction_on_the_page",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:no-internal-instruction-leak:build_instruction_on_the_page",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:removal-directive-not-published:withheld_phrase_still_rendered",
+      "why": "Appending the enumerated withheld phrase \"Use the same questions with every lawyer on your shortlist\" to dentistry/cost-insurance/index.html; the validator exited 1 and wrote this rendered_leaks row. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:removal-directive-not-published:withheld_phrase_still_rendered",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:removal-directive-not-published:withheld_phrase_still_rendered",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:internal-link-inbound-coverage:published_page_nothing_links_to",
+      "why": "Publishing zzz-isolation-measure/index.html and adding its <loc> to sitemaps/sitemap_all.xml - a page nothing links to, which is the shape a release creates; the validator exited 1 across 2,056 examined pages and wrote this new_orphans row. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:internal-link-inbound-coverage:published_page_nothing_links_to",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:internal-link-inbound-coverage:published_page_nothing_links_to",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:medical-schema-emission:missing_medical_web_page",
+      "why": "Rewriting \"MedicalWebPage\" to \"WebPage\" in trt/index.html. The validator exited 1 and populated missing_medical_web_page. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:medical-schema-emission:missing_medical_web_page",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:medical-schema-emission:missing_medical_web_page",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:medical-schema-emission:medical_web_page_on_non_medical_route",
+      "why": "Adding a MedicalWebPage JSON-LD node to personal-injury/index.html. The validator exited 1 and populated medical_web_page_on_non_medical_route. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:medical-schema-emission:medical_web_page_on_non_medical_route",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:medical-schema-emission:medical_web_page_on_non_medical_route",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:medical-schema-emission:missing_price_specification",
+      "why": "Rewriting \"PriceSpecification\" to \"Thing\" in dentistry/dental-implants/index.html. The validator exited 1 and populated missing_price_specification. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:medical-schema-emission:missing_price_specification",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:medical-schema-emission:missing_price_specification",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:medical-schema-emission:price_mismatch",
+      "why": "Shifting a minPrice by 7 in dentistry/clear-aligners/index.html. The validator exited 1 and populated price_mismatch. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:medical-schema-emission:price_mismatch",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:medical-schema-emission:price_mismatch",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:medical-schema-emission:price_in_markup_not_visible_on_page",
+      "why": "Changing the visible \"$3,000\" to \"$3,001\" in dentistry/clear-aligners/index.html while leaving the markup correct. The validator exited 1 and populated price_in_markup_not_visible_on_page. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:medical-schema-emission:price_in_markup_not_visible_on_page",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:medical-schema-emission:price_in_markup_not_visible_on_page",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:medical-schema-emission:json_ld_parse_failures",
+      "why": "Corrupting a JSON-LD block in trt/index.html. The validator exited 1 and populated json_ld_parse_failures. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:medical-schema-emission:json_ld_parse_failures",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:medical-schema-emission:json_ld_parse_failures",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "mapping_resolves:medical-schema-emission",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "missing_medical_web_page[]",
+        "medical_web_page_on_non_medical_route[]",
+        "missing_price_specification[]",
+        "price_mismatch[].file",
+        "price_in_markup_not_visible_on_page[].file",
+        "json_ld_parse_failures[].file"
+      ]
+    },
+    {
+      "case": "mapping_resolves:no-internal-instruction-leak",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "offenders[].path"
+      ]
+    },
+    {
+      "case": "mapping_resolves:removal-directive-not-published",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "rendered_leaks[].implementation_path"
+      ]
+    },
+    {
+      "case": "mapping_resolves:rendered-internal-hrefs",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "errors[].file"
+      ]
+    },
+    {
       "case": "mapping_resolves:rendered-output-shrink-guard",
       "why": "A declared attribution pointer must match the shape its validator actually writes.",
       "pointers": [
         "unjustified_shrinks[].implementation_path"
+      ]
+    },
+    {
+      "case": "mapping_resolves:internal-link-inbound-coverage",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "new_orphans[].route"
       ]
     },
     {
@@ -65,6 +342,14 @@
         "regressed_pages[].page",
         "unenrolled_pages[].page",
         "stale_allowance_pages[].page"
+      ]
+    },
+    {
+      "case": "mapping_resolves:agent-recommendation-dist-application",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "markers_absent_from_dist[].page",
+        "page_absent_unenrolled[].page"
       ]
     }
   ],
