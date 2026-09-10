@@ -1873,18 +1873,13 @@
         "data/authority_scale/velocity_health.json",
         "scripts/authority_scale/measure_velocity_health.mjs"
       ],
-      "prepare_commands": [
-        "npm run measure:velocity-health"
-      ],
-      "prepare_produces_files": [
-        "data/authority_scale/velocity_health.json"
-      ],
-      "prepare_mutates_files": [
-        "data/authority_scale/velocity_health.json"
-      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
       "produces_files": [],
       "mutates_files": [],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "grades_committed_tree_note": "This validator grades the COMMITTED snapshot. It deliberately declares no prepare_commands: the registry refused an earlier version that declared `npm run measure:velocity-health` as a prepare, correctly - prepare only fires when a requires_files entry is MISSING, and velocity_health.json is committed, so the prepare could never have run. A prepare that never fires is the exact runs-but-inert defect this validator exists to catch, and registering one inside the fix for it would have been the same bug one level up. The measurer instead runs as a step of release:velocity-intake, and the 14-day freshness assertion here is what fails if it ever stops running."
     },
     {
       "id": "cluster-membership",
