@@ -3,13 +3,14 @@
   "guard": "release-isolation-contract",
   "status": "PASS",
   "checked_at": "2026-09-10",
-  "cases_examined": 39,
+  "cases_examined": 43,
   "mapped_validators": [
     "medical-schema-emission",
     "no-internal-instruction-leak",
     "removal-directive-not-published",
     "rendered-internal-hrefs",
     "rendered-output-shrink-guard",
+    "internal-link-inbound-coverage",
     "agent-recommendation-page-application"
   ],
   "examined": [
@@ -113,6 +114,27 @@
     },
     {
       "case": "measured_mapping_zero_published_fails:removal-directive-not-published:withheld_phrase_still_rendered",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:internal-link-inbound-coverage:published_page_nothing_links_to",
+      "why": "Publishing zzz-isolation-measure/index.html and adding its <loc> to sitemaps/sitemap_all.xml - a page nothing links to, which is the shape a release creates; the validator exited 1 across 2,056 examined pages and wrote this new_orphans row. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:internal-link-inbound-coverage:published_page_nothing_links_to",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:internal-link-inbound-coverage:published_page_nothing_links_to",
       "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
       "expected_exit": 1,
       "actual_exit": 1,
@@ -282,6 +304,13 @@
       "why": "A declared attribution pointer must match the shape its validator actually writes.",
       "pointers": [
         "unjustified_shrinks[].implementation_path"
+      ]
+    },
+    {
+      "case": "mapping_resolves:internal-link-inbound-coverage",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "new_orphans[].route"
       ]
     },
     {

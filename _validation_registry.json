@@ -7711,7 +7711,11 @@
       "produces_files": [
         "artifacts/validation/internal-link-inbound-coverage.json"
       ],
-      "mutates_files": []
+      "mutates_files": [],
+      "unit_attribution": [
+        "new_orphans[].route"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: publishing zzz-isolation-measure/index.html and adding its <loc> to sitemaps/sitemap_all.xml - a page nothing links to, which is exactly the shape a release creates - produced new_orphans: [{route: \"/zzz-isolation-measure/\", dead_inbound: []}], the message \"/zzz-isolation-measure/ is published and indexable but no served page links to it\", and exit 1 across 2,056 examined published pages. The route arrives already canonical (\"/zzz-isolation-measure/\"), not as a file path. new_orphans is offenders-only by construction: it is the orphan list minus the accepted baseline minus the off-topic quarantine, so an accepted or quarantined orphan is never a row. Holding the named unit is the right charge and the right outcome - an unreachable page cannot pass citation authority on, so publishing it is worth nothing and withholding it costs nothing. stale_baseline is DELIBERATELY NOT DECLARED: it also fails this validator, it names routes that are no longer orphans, and charging a page for a bookkeeping entry about it would hold a page that is now correct. A stale-baseline-only failure therefore resolves to no route and stays systemic."
     },
     {
       "status": "ACTIVE",

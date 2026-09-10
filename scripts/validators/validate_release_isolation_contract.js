@@ -225,6 +225,19 @@ const MEASURED = [
         }]
       }
     }
+  },
+  {
+    id: 'internal-link-inbound-coverage',
+    label: 'published_page_nothing_links_to',
+    route: '/zzz-isolation-measure/',
+    measured: 'Publishing zzz-isolation-measure/index.html and adding its <loc> to sitemaps/sitemap_all.xml - a page nothing links to, which is the shape a release creates; the validator exited 1 across 2,056 examined pages and wrote this new_orphans row.',
+    evidence: {
+      'artifacts/validation/internal-link-inbound-coverage.json': {
+        schema_version: '1.0', validator: 'internal-link-inbound-coverage', status: 'FAIL',
+        orphan_count: 1, stale_baseline: [],
+        new_orphans: [{ route: '/zzz-isolation-measure/', dead_inbound: [] }]
+      }
+    }
   }
 ];
 
