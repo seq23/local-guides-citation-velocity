@@ -33,6 +33,7 @@
 const fs = require('fs');
 const path = require('path');
 const { artifactKey } = require('./rendered_artifact_recovery');
+const { stripTemplateScaffoldingFromArtifacts } = require('./template_scaffolding');
 
 const ROOT = path.resolve(__dirname, '../..');
 const STORE_REL = 'data/release/accepted_page_artifacts.json';
@@ -53,11 +54,24 @@ function loadStore() {
   const historic = readRoutes(HISTORIC_REL);
   // Accepted first, historic appended: what the page still has keeps its delivered order,
   // and what it lost is restored after it rather than shuffled into the middle.
+  //
+  // The store was recovered by PARSING THE ACCEPTED OUTPUT, so it faithfully carries
+  // whatever the delivered page carried - including 1,846 copies of "Translate “…”
+  // into a specific verification question" and 852 "Concrete verification point <n>".
+  // It also emits the accepted copy VERBATIM and, on a tie, lets the heavier accepted
+  // block win. Fixing the compiler alone would therefore change nothing: the
+  // freshly-clean, lighter block would lose the weight comparison to the placeholder
+  // one and the string would come straight back on the next build. That is precisely
+  // how this family shipped and stayed shipped.
+  //
+  // So the screen is applied to the store on load, before anything is merged or
+  // weighed. Both sides shrink together, the weight comparison stays honest, and no
+  // route can be re-hydrated with scaffolding this compiler no longer emits.
   const routes = {};
-  for (const [key, record] of Object.entries(accepted)) routes[key] = { ...record, artifacts: [...(record.artifacts || [])] };
+  for (const [key, record] of Object.entries(accepted)) routes[key] = { ...record, artifacts: stripTemplateScaffoldingFromArtifacts(record.artifacts || []) };
   for (const [key, record] of Object.entries(historic)) {
     if (!routes[key]) routes[key] = { ...record, artifacts: [] };
-    routes[key].artifacts = [...routes[key].artifacts, ...(record.artifacts || [])];
+    routes[key].artifacts = [...routes[key].artifacts, ...stripTemplateScaffoldingFromArtifacts(record.artifacts || [])];
   }
   CACHE = { schema_version: '1.0', routes };
   return CACHE;

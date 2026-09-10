@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { DEFAULT_HEADERS, canonicalBlockType } = require('./html_fix_block_schema');
 const { isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt } = require('./internal_instruction_text');
+const { isTemplateScaffolding, stripTemplateScaffolding } = require('./template_scaffolding');
 
 function normalizeSpace(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 function compact(value, max = 220) {
@@ -311,7 +312,14 @@ function requirementsFromFix(edit, query, count) {
   // Was `Directly answer: ${query}` - an instruction to the generator, published
   // as reader copy on 133 pages. Ask the question instead; same intent, right audience.
   if (query) out.push(readerFacingQueryPrompt(query));
-  while (out.length < count) out.push(`Concrete verification point ${out.length + 1}`);
+  // Was `while (out.length < count) out.push(\`Concrete verification point ${n}\`)`.
+  //
+  // The pad existed so a fix asking for four rows produced four rows. What it
+  // produced was a promise of four verification points and a delivery of one: 68
+  // rendered pages published "Concrete verification point 2/3/4" as a table cell or
+  // a checklist item, 491 occurrences of "point 3" alone. `count` is a ceiling, not
+  // a quota - a short list of real requirements is the honest output, and every
+  // downstream renderer already omits an empty block rather than announcing a gap.
   return unique(out).slice(0, Math.max(count, 4));
 }
 function itemsFromFix(edit, query, count) {
@@ -331,17 +339,34 @@ function tableRowForRequirement(requirement, query, index) {
   if (/trial readiness|pressure/i.test(r)) return ['Trial readiness and pressure tactics', 'Ask what happens if the insurer will not make a fair offer, and pause if the firm pressures you to sign immediately.', 'Real leverage comes from preparation and clear options, not urgency language or “best lawyer” claims.'];
   if (/written next steps/i.test(r)) return ['Written next steps', 'Ask for the next three steps, expected documents, and near-term timeline before signing.', 'A clear written process is easier to compare than reviews, awards, badges, or vague promises.'];
   if (/same criteria|specifics/i.test(r)) return ['Comparison method', 'Use the same verification questions with every option you compare.', 'A consistent comparison makes differences in scope, evidence, timing, cost, and next steps easier to verify.'];
-  return [
-    r || `Requirement ${index + 1}`,
-    query ? `Translate “${query}” into a specific verification question before choosing a provider.` : 'Turn the recommendation into a concrete verification question.',
-    'Specific, written answers are more reliable than broad marketing claims.'
-  ];
+  // Was a generic `else` row whose middle cell - the "What to verify" column, the
+  // one cell a reader actually reads for the answer - said:
+  //
+  //     Translate “<query>” into a specific verification question before choosing
+  //     a provider.
+  //
+  // That is the instruction to author the row, printed in place of the row. It
+  // reached 111 rendered pages, identical on every one of them, and it is what the
+  // review agent kept re-reporting: a table that tells you to go work it out.
+  //
+  // The seven branches above are the requirements this compiler can actually turn
+  // into a verification step. A requirement that matches none of them has no
+  // verification content, so it gets NO ROW - renderTable drops a table with no
+  // surviving rows entirely, which is the correct disclosure. Inventing a cell to
+  // fill the slot would be worse than either, on pages that exist to be cited.
+  return null;
 }
 function rowsFromFix(edit, query, headers, count) {
   const seeds = itemsFromFix(edit, query, count);
   const rows = [];
-  for (let i = 0; i < Math.max(count, 3); i++) {
-    const base = tableRowForRequirement(seeds[i] || `Requirement ${i + 1}`, query, i);
+  // Was `for (let i = 0; i < Math.max(count, 3); i++)` with `seeds[i] ||
+  // \`Requirement ${i + 1}\``, which manufactured rows for seeds that did not
+  // exist. Three rendered pages carried a literal "Requirement 3"/"Requirement 5"
+  // cell. Iterate the seeds we have; a null row from tableRowForRequirement is a
+  // requirement with no verification content and is dropped.
+  for (let i = 0; i < seeds.length; i++) {
+    const base = tableRowForRequirement(seeds[i], query, i);
+    if (!base) continue;
     if (headers.length >= 4) rows.push([...base, 'Ask for this in plain English before signing.'].slice(0, headers.length));
     else if (headers.length === 3) rows.push(base);
     else if (headers.length === 2) rows.push([base[0], base[1]]);
@@ -399,7 +424,11 @@ function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackS
     artifact.items = itemsFromFix(edit, query, minRows).filter(dropForbidden);
   }
   if (Array.isArray(artifact.items)) artifact.items = artifact.items.filter(dropForbidden);
-  return artifact;
+  // Belt and braces on top of the three call sites above. The producers were fixed at
+  // source, but this compiler has a dozen paths into `items`/`rows`/`lines` and a new
+  // one must not be able to reintroduce the family. Same shape as the
+  // containsInternalInstruction screen: one shared list, applied at the exit.
+  return stripTemplateScaffolding(artifact);
 }
 const { mergeAcceptedArtifacts } = require('./accepted_artifacts');
 function requiredStringsForArtifact(artifact, recommendation) {
@@ -419,6 +448,10 @@ function requiredStringsForArtifact(artifact, recommendation) {
   const forbidden = phrasesTheFixAsksToRemove(recommendation);
   return unique(out.map(asHeadingCopy).filter(Boolean))
     .filter((value) => !isInternalInstructionText(value))
+    // A required_string is a promise the trace enforces against the RENDERED page:
+    // requiring a placeholder would compel the renderer to publish one, and the
+    // trace would then report a missing string when the page is finally clean.
+    .filter((value) => !isTemplateScaffolding(value))
     .filter((value) => !forbidden.has(normalizeForbidden(value)))
     .slice(0, 30);
 }

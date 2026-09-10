@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { deriveContentAtom } = require('./content_atom');
 const { isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt } = require('./internal_instruction_text');
+const { stripTemplateScaffoldingFromArtifacts, withoutTemplateScaffolding } = require('./template_scaffolding');
 
 const ROOT = path.resolve(__dirname, '../..');
 const LEDGER_PATH = 'data/report_fixes/agent_exact_implementation_ledger.json';
@@ -19,10 +20,25 @@ function normalizeText(value) {
 }
 
 
+// The manifest is DURABLE - entries written before 2026-09-09 are carried forward
+// rather than recompiled - so 1,197 "into a specific verification question" and 1,499
+// "Concrete verification point <n>" strings sit in it as artifact cells AND as
+// `required_strings`, which the trace enforces against the rendered page. Screening
+// only the compiler would leave the manifest re-applying them at every render site,
+// and would leave the trace demanding a placeholder the page no longer has. Screen on
+// read, at the one place every consumer goes through.
 function readSemanticManifest() {
   const manifestPath = path.join(ROOT, SEMANTIC_MANIFEST_PATH);
   try {
-    return JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const entries = (manifest.entries || []).map((entry) => (entry && typeof entry === 'object'
+      ? {
+        ...entry,
+        artifacts: stripTemplateScaffoldingFromArtifacts(entry.artifacts || []),
+        required_strings: withoutTemplateScaffolding(entry.required_strings || [])
+      }
+      : entry));
+    return { ...manifest, entries };
   } catch {
     return { entries: [] };
   }

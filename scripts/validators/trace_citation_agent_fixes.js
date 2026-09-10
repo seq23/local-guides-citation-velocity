@@ -60,6 +60,7 @@ function isRenderedRepair(fixOrUnit) {
 // the parser uses is applied here rather than restated, so the producer and this check
 // cannot drift, and historical rows compare on the same basis as new ones.
 const { splitEngineSuffix } = require('../lib/agent_artifact_source_parser');
+const { withoutTemplateScaffolding } = require('../lib/template_scaffolding');
 function readerFacingMarker(value) { const { query } = splitEngineSuffix(value); return query || String(value || ''); }
 function markersFor(fixOrUnit) { return Array.from(new Set((fixOrUnit.required_markers || [fixOrUnit.query].filter(Boolean)).map(readerFacingMarker).filter(Boolean))); }
 
@@ -71,7 +72,12 @@ function semanticMarkersForRoute(route, fallback = []) {
   if (!entry || !entry.authority_grounded) return fallback;
   // For authority-grounded high-stakes repairs, trace the compiled acceptance
   // contract rather than requiring the raw agent query text to appear verbatim.
-  return Array.from(new Set((entry.required_strings || []).filter(Boolean)));
+  // A durable manifest entry can promise a template placeholder - the compiler used to
+  // pad required_strings with "Concrete verification point <n>" and the "Translate …
+  // into a specific verification question" instruction. Those strings are being taken
+  // OFF the pages by rendered-template-scaffolding, so demanding them here would turn
+  // the fix into a trace failure. Same shared list both producers screen against.
+  return Array.from(new Set(withoutTemplateScaffolding((entry.required_strings || []).filter(Boolean))));
 }
 function traceRenderedTarget(id, route, markers, requireInsightManifest = false) {
   const renderedPath = routeToRenderedPath(route);
