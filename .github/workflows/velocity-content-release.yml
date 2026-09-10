@@ -13,9 +13,20 @@ on:
   workflow_dispatch:
     inputs:
       batch_size:
-        description: "Maximum number of eligible governed Velocity release units to process; this is a cap, not a publication quota"
+        description: "Optional cap on eligible governed Velocity release units. LEAVE EMPTY to get the budget resolved from the landed backlog; a number caps the run at that number."
         required: false
-        default: "5"
+        # EMPTY, NOT "5". The env block below and the "Size the processing budget"
+        # step both say the budget is resolved from the landed backlog "with no
+        # input" - but a default of "5" meant every manual dispatch DID supply an
+        # input, so resolve_release_budget.mjs never ran for an operator. The
+        # resolver returns 228 against the real ready set; every hand-dispatched
+        # drain on 2026-09-09 silently capped itself at 5 units instead, which is
+        # why manual runs stayed tiny while the scheduled lane got the real budget.
+        # The default contradicted the comment that documents it.
+        #
+        # An explicitly supplied number is still honoured verbatim, unchanged, by
+        # the "operator supplied batch_size" branch below.
+        default: ""
         type: string
 
 permissions:
