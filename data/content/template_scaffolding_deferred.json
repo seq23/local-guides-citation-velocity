@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "authority": "scripts/validators/validate_rendered_template_scaffolding.js",
-  "note": "Rendered routes that still publish template scaffolding and were deliberately NOT thawed in the 2026-09-10 repair, because a concurrent lane owns those files. Each entry names why. SHRINK-ONLY: a listed route that no longer carries scaffolding FAILS the gate until its entry is deleted, so a deferral cannot outlive the defect. It can never admit a NEW offender - a route not on this list fails outright. DO NOT add entries here to get a build green.",
+  "note": "Rendered routes that still publish template scaffolding and were deliberately NOT thawed in the 2026-09-10 repair, because a concurrent lane owns those files. Each entry names why. SHRINK-ONLY: a listed route that no longer carries scaffolding FAILS the gate until its entry is deleted, so a deferral cannot outlive the defect. It can never admit a NEW offender - a route not on this list fails outright. DO NOT add entries here to get a build green. The insights/uscis-medical-009 entry was deleted the moment the route came back clean, which is the ratchet working: acceptMutationScope had accepted that route in an earlier round of this transaction, so it was already re-frozen without scaffolding and with its ledgered marker intact.",
   "deferred_at": "2026-09-10",
   "routes": [
     {
@@ -23,11 +23,6 @@
       "path": "trt/community-questions/symptoms-of-low-t-in-men-over-40-that-aren-t-just-low-libido/index.html",
       "reason": "Owned by the concurrent TRT lane (VALIDATION_AND_HANDOFF.md item 1).",
       "clears_when": "That lane lands and the route is rebuilt; delete this entry."
-    },
-    {
-      "path": "insights/uscis-medical-009-how-much-does-the-exam-cost.html",
-      "reason": "MEASURED, NOT SKIPPED. This route was thawed and rebuilt clean, and acceptMutationScope refused it with ledgered_markers_lost: the marker 'how much does the i-693 medical exam cost in 2026 (Gemini 1.5 Flash)' lives only in the intro of the accepted cost_table, and once that block's scaffolding cells are screened it is lighter than the rebuild's copy of the same block, so the rebuild wins the merge and its intro carries the query without the engine suffix. The refusal is correct and was not rebaselined away. The marker itself is a build artifact - an LLM engine name published as reader copy, one of 16 rendered pages carrying that shape - so removing it is an improvement the ledger has to sanction, not a page edit.",
-      "clears_when": "The owner decides whether an engine-suffixed query may be a required_marker. Either the ledger row for agent_ddd122590a7ee58c is restated against the reader-facing query (splitEngineSuffix already computes it), or the accepted block keeps its intro by some means other than a byte-weight tie-break. Then thaw the route, rebuild, accept, and delete this entry."
     }
   ]
 }
