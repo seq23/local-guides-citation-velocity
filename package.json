@@ -126,7 +126,7 @@
     "release:self-healing": "node scripts/release/run_staged_release.js --mode self-heal --resume",
     "release:velocity-content": "npm run strategy:opportunities && npm run strategy:release-queue && npm run release:velocity-content:raw && npm run backlog:reconcile && npm run strategy:release-queue",
     "release:velocity-content:raw": "node scripts/velocity_content_release.js",
-    "release:velocity-intake": "npm run validate:agent-run-intake && npm run citation:prepare-velocity-intake && npm run validate:seo-execution && npm run citation:apply-html-report-contract && npm run validate:html-report-contract && npm run validate:velocity-agent-source-coverage && npm run validate:velocity-agent-duplicate-resolution && npm run validate:page-family-contract && npm run validate:validator-authority && npm run validate:velocity-route-resolution-self-test && npm run citation:plan-agent-exact && npm run validate:carried-reason-truthfulness && npm run citation:compile-html-fix-acceptance && npm run release:velocity-content && npm run citation:apply-agent-exact && npm run citation:sync-alias-redirects && npm run link:queue-orphan-hosts && npm run release:content-finalize && npm run validate:velocity-agent-recommendation-driven-output && npm run trace:agent-exact && npm run validate:agent-exact && npm run trace:citation-agent-fixes && npm run validate:citation-agent-fixes && npm run validate:velocity-intake-workflow && npm run test:agent-artifact-accounting && npm run trace:agent-artifact-data-flow",
+    "release:velocity-intake": "npm run measure:velocity-health && npm run validate:agent-run-intake && npm run citation:prepare-velocity-intake && npm run validate:seo-execution && npm run citation:apply-html-report-contract && npm run validate:html-report-contract && npm run validate:velocity-agent-source-coverage && npm run validate:velocity-agent-duplicate-resolution && npm run validate:page-family-contract && npm run validate:validator-authority && npm run validate:velocity-route-resolution-self-test && npm run citation:plan-agent-exact && npm run validate:carried-reason-truthfulness && npm run citation:compile-html-fix-acceptance && npm run release:velocity-content && npm run citation:apply-agent-exact && npm run citation:sync-alias-redirects && npm run link:queue-orphan-hosts && npm run release:content-finalize && npm run validate:velocity-agent-recommendation-driven-output && npm run trace:agent-exact && npm run validate:agent-exact && npm run trace:citation-agent-fixes && npm run validate:citation-agent-fixes && npm run validate:velocity-intake-workflow && npm run test:agent-artifact-accounting && npm run trace:agent-artifact-data-flow",
     "repair:all": "npm run generate:clusters && npm run fix:all && npm run audit:all && npm run validate:all",
     "repair:unmapped-insights": "node scripts/repair_unmapped_insights.js",
     "report:ingestion": "node scripts/community/generate_ingestion_report.js",
@@ -333,7 +333,9 @@
     "validation:list": "node scripts/validation/run_validation_registry.js --list",
     "validation:matrix": "node scripts/validation/generate_validation_matrix.js",
     "workflow:inventory": "node scripts/workflows/build_workflow_yaml_inventory.js",
-    "validate:shared-proof-path-resolution": "node scripts/validation/run_validation_registry.js --id shared-proof-path-resolution"
+    "validate:shared-proof-path-resolution": "node scripts/validation/run_validation_registry.js --id shared-proof-path-resolution",
+    "measure:velocity-health": "node scripts/authority_scale/measure_velocity_health.mjs",
+    "validate:velocity-health": "node scripts/validation/run_validation_registry.js --id velocity-health-measured"
   },
   "engines": {
     "node": "24.x"

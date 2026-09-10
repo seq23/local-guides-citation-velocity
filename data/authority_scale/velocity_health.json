@@ -1,12 +1,43 @@
 {
   "schema_version": "1.0",
-  "as_of": null,
-  "validation_status": "UNKNOWN",
-  "semantic_duplicate_status": "UNKNOWN",
-  "distribution_status": "UNKNOWN",
+  "as_of": "2026-09-10T22:00:51.381Z",
+  "validation_status": "PASS",
+  "semantic_duplicate_status": "CLEAN",
+  "distribution_status": "HEALTHY",
   "indexation_status": "UNKNOWN",
   "observed_yield_trend": "UNKNOWN",
-  "source_claim_status": "UNKNOWN",
+  "source_claim_status": "PASS",
   "minimum_yield_events_for_upshift": 10,
-  "truth_rule": "UNKNOWN never means PASS. This file may be updated only from real validator/distribution/indexation/yield evidence."
+  "truth_rule": "UNKNOWN never means PASS. This file may be updated only from real validator/distribution/indexation/yield evidence.",
+  "measured_by": "scripts/authority_scale/measure_velocity_health.mjs",
+  "evidence_sources": {
+    "validation_status": {
+      "artifact": "artifacts/validation/validation-summary-release.json",
+      "verdict": "PASS"
+    },
+    "semantic_duplicate_status": {
+      "artifact": "artifacts/validation/velocity-agent-duplicate-resolution.json",
+      "verdict": "PASS"
+    },
+    "distribution_status": {
+      "artifact": "artifacts/validation/distribution-contract.json",
+      "verdict": "PASS"
+    },
+    "source_claim_status": {
+      "artifact": "artifacts/validation/repair-claim-integrity.json",
+      "verdict": "PASS"
+    },
+    "indexation_status": {
+      "artifact": null,
+      "verdict": "NO_EVIDENCE"
+    },
+    "observed_yield_trend": {
+      "artifact": "data/authority_scale/citation_yield_observations.json",
+      "verdict": "0 event(s)"
+    }
+  },
+  "gates_still_unknown": [
+    "indexation_status: no Search Console coverage source is wired in. A submission receipt is not an indexation result, so this stays UNKNOWN and continues to hold the tier.",
+    "observed_yield_trend: citation_yield_observations.json records zero events, so no trend exists to report. UNKNOWN, not STABLE."
+  ]
 }
