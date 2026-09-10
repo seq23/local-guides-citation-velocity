@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "6dd6c4d908f036c2a881dd91e1ebf1f3796aad3d731d282ff8585d70b47154f0",
+  "registry_sha256": "58f8f7fa9b3b56cd09ff9eda27f544efc5920cd216348d56b481a67c9b14e4bd",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 199,
-    "active": 172,
+    "total": 200,
+    "active": 173,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 170,
+    "hard_fail": 171,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -303,6 +303,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation",
         "agent-exact-implementation-plan",
         "agent-exact-implementation-trace",
@@ -569,6 +570,7 @@
         "agent-run-artifact-intake",
         "agent-exact-implementation-plan",
         "html-fix-acceptance-compiler",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation-trace",
         "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
@@ -650,6 +652,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation",
         "agent-exact-implementation-plan",
         "agent-exact-implementation-trace",
@@ -917,6 +920,7 @@
         "agent-exact-implementation-plan",
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation-trace",
         "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
@@ -1030,6 +1034,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation",
         "agent-exact-implementation-plan",
         "agent-exact-implementation-trace",
@@ -1295,6 +1300,7 @@
         "agent-exact-implementation-plan",
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation-trace",
         "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
@@ -1372,6 +1378,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation",
         "agent-exact-implementation-plan",
         "agent-exact-implementation-trace",
@@ -1648,6 +1655,7 @@
         "agent-exact-implementation-plan",
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation-trace",
         "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
@@ -1853,6 +1861,7 @@
       "validator_ids": [
         "admission-reachability",
         "agent-exact-acceptance-manifest",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation",
         "agent-exact-implementation-plan",
         "agent-exact-implementation-trace",
@@ -1952,6 +1961,7 @@
         "agent-run-artifact-intake",
         "agent-exact-implementation-plan",
         "html-fix-acceptance-compiler",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation-trace",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
@@ -2165,6 +2175,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation",
         "agent-exact-implementation-plan",
         "agent-exact-implementation-trace",
@@ -2230,6 +2241,7 @@
         "agent-exact-implementation-plan",
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation-trace",
         "agent-exact-acceptance-manifest",
         "agent-exact-implementation",
@@ -2255,6 +2267,7 @@
         "agent-artifact-continuity",
         "agent-artifact-priority",
         "agent-exact-acceptance-manifest",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation",
         "agent-exact-implementation-plan",
         "agent-exact-implementation-trace",
@@ -2407,6 +2420,7 @@
         "agent-exact-implementation-plan",
         "carried-reason-truthfulness",
         "html-fix-acceptance-compiler",
+        "acceptance-manifest-deliverability",
         "agent-exact-implementation-trace",
         "trace-outcome-legibility",
         "agent-exact-acceptance-manifest",
@@ -2525,6 +2539,10 @@
     {
       "from": "html-fix-acceptance-compiler",
       "to": "agent-exact-acceptance-manifest"
+    },
+    {
+      "from": "html-fix-acceptance-compiler",
+      "to": "acceptance-manifest-deliverability"
     },
     {
       "from": "agent-exact-acceptance-manifest",
@@ -3112,6 +3130,46 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Agent artifact page-fix recommendations could pass with marker-only framework cards instead of the requested rendered tables, scripts, callouts, checklists, or comparison sections.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "acceptance-manifest-deliverability",
+        "title": "Semantic acceptance manifest deliverability guard",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "full-audit",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_acceptance_manifest_deliverability.js",
+        "command": "node scripts/validators/validate_acceptance_manifest_deliverability.js",
+        "depends_on": [
+          "html-fix-acceptance-compiler"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/acceptance-manifest-deliverability.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/acceptance-manifest-deliverability.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "The acceptance manifest can promise a page something the page is forbidden or unable to deliver: template scaffolding the emitters were fixed to stop printing, a min_rows count that only added up while padded rows existed, or a required_string absent from a frozen route whose bytes are restored verbatim on every build. Every such promise fails agent-exact-acceptance-manifest as a page defect when the page is in fact correct, and cascades into agent-exact-implementation as semantic_acceptance_manifest_not_pass.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -14598,6 +14656,46 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Agent artifact page-fix recommendations could pass with marker-only framework cards instead of the requested rendered tables, scripts, callouts, checklists, or comparison sections.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "acceptance-manifest-deliverability",
+        "title": "Semantic acceptance manifest deliverability guard",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "agent-run",
+          "audit",
+          "full-audit",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_acceptance_manifest_deliverability.js",
+        "command": "node scripts/validators/validate_acceptance_manifest_deliverability.js",
+        "depends_on": [
+          "html-fix-acceptance-compiler"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/acceptance-manifest-deliverability.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/acceptance-manifest-deliverability.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "The acceptance manifest can promise a page something the page is forbidden or unable to deliver: template scaffolding the emitters were fixed to stop printing, a min_rows count that only added up while padded rows existed, or a required_string absent from a frozen route whose bytes are restored verbatim on every build. Every such promise fails agent-exact-acceptance-manifest as a page defect when the page is in fact correct, and cascades into agent-exact-implementation as semantic_acceptance_manifest_not_pass.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
