@@ -9,20 +9,21 @@ const warnings = [];
 function readJson(rel, fb = null) { const p = path.join(ROOT, rel); if (!fs.existsSync(p)) return fb; return JSON.parse(fs.readFileSync(p, 'utf8')); }
 function read(rel) { const p = path.join(ROOT, rel); return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : ''; }
 function exists(rel) { return fs.existsSync(path.join(ROOT, rel)); }
-function normalizeRoute(route) {
-  let value = String(route || '').trim();
-  if (!value) return '';
-  value = value.replace(/^https?:\/\/[^/]+/, '');
-  if (!value.startsWith('/')) value = `/${value}`;
-  return value.replace(/\/+/g, '/');
-}
-function routeToRenderedPath(route) {
-  let value = normalizeRoute(route).replace(/^\//, '');
-  if (!value) return '';
-  if (value.endsWith('.html')) return value;
-  value = value.replace(/\/+$/, '');
-  return value ? `${value}/index.html` : '';
-}
+// ONE answer to "where does this recommendation's proof live, and does that page exist
+// yet?", shared with prepare_velocity_intake_release.js (the writer) and
+// compile_html_fix_acceptance_manifest.js. This validator used to resolve rendered
+// routes on its own and reported rendered_missing_route on 8 TRT routes that PR #114
+// had deliberately recorded as pending_retarget_path - pages a LATER step in this same
+// lane creates. See scripts/lib/recommendation_proof_path.js.
+const {
+  normalizeRoute,
+  routeToRenderedPath,
+  renderedPathToRoute,
+  releaseUnitPathsFromPlan,
+  resolveRecommendationProof,
+  PROOF_STATES
+} = require('../lib/recommendation_proof_path');
+const releaseUnitPaths = releaseUnitPathsFromPlan(ROOT);
 function pagesPayload(rel) { return readJson(rel, { pages: [] }); }
 function pageExists(payload, route) {
   const wantedRoute = normalizeRoute(route);
@@ -77,12 +78,33 @@ function semanticMarkersForRoute(route, fallback = []) {
   // into a specific verification question" instruction. Those strings are being taken
   // OFF the pages by rendered-template-scaffolding, so demanding them here would turn
   // the fix into a trace failure. Same shared list both producers screen against.
-  return Array.from(new Set(withoutTemplateScaffolding((entry.required_strings || []).filter(Boolean))));
+  // The compiled list is an ENRICHMENT of the row's own marker, never a replacement.
+  // compile_html_fix_acceptance_manifest.js screens required_strings against what the
+  // delivered artifacts actually carry, and an entry can legitimately come back with
+  // every string filtered out - authority_grounded_repairs.js authors an entry for
+  // uscis-medical/exam-day-documents/index.html whose strings the deliverability screen
+  // drops in full. Returning [] there made the trace report the ROW as
+  // `missing_required_markers`, which says the recommendation declares nothing to
+  // check. It declares its reader-facing query, and that is what gets checked instead.
+  // Strictly more is asserted this way, not less.
+  const compiled = Array.from(new Set(withoutTemplateScaffolding((entry.required_strings || []).filter(Boolean))));
+  return compiled.length ? compiled : fallback;
 }
-function traceRenderedTarget(id, route, markers, requireInsightManifest = false) {
-  const renderedPath = routeToRenderedPath(route);
+function traceRenderedTarget(id, route, markers, requireInsightManifest = false, row = null) {
+  // Resolved through the shared module rather than by testing the route here. A target
+  // route that does not exist is only a failure when nothing in this lane is going to
+  // create it; a page the release step writes LATER is HELD and named, not failed.
+  const proof = resolveRecommendationProof(
+    row || { renderedPath: routeToRenderedPath(route), target_route: route },
+    { root: ROOT, releaseUnitPaths }
+  );
+  if (proof.state === PROOF_STATES.PENDING_RELEASE_UNIT) {
+    warnings.push(`${id}:rendered_target_pending_release_unit:${proof.pendingRetargetPath || proof.targetPath}:${proof.detail}`);
+    return;
+  }
+  const renderedPath = proof.gradeAt;
   if (!renderedPath || !exists(renderedPath)) {
-    errors.push(`${id}:rendered_missing_route:${renderedPath || route}`);
+    errors.push(`${id}:rendered_missing_route:${proof.targetPath || routeToRenderedPath(route) || route}`);
     return;
   }
   const text = read(renderedPath);
@@ -138,11 +160,15 @@ function isRefusedByReleaseQueue(id) { return releaseQueueRefusedById.has(id); }
 for (const fix of selected) {
   const id = fix.id || fix.query;
   const rawMarkers = markersFor(fix);
-  const route = fix.target_route || (`/${String(fix.renderedPath || '').replace(/index\.html$/, '')}`);
-  const markers = isRenderedRepair(fix) ? semanticMarkersForRoute(route, rawMarkers) : rawMarkers;
+  const route = fix.target_route || renderedPathToRoute(fix.renderedPath);
+  // Grade the acceptance contract of the page the proof is actually ON. Resolving the
+  // markers from target_route asked the manifest about a page that does not exist yet.
+  const proof = resolveRecommendationProof(fix, { root: ROOT, releaseUnitPaths });
+  const markerRoute = proof.gradeAt ? renderedPathToRoute(proof.gradeAt) : route;
+  const markers = isRenderedRepair(fix) ? semanticMarkersForRoute(markerRoute, rawMarkers) : rawMarkers;
   if (!markers.length) { errors.push(`${id}:missing_required_markers`); continue; }
   if (isRenderedRepair(fix)) {
-    traceRenderedTarget(id, route, markers, String(fix.liveManifestPath || '').includes('insights.json') && String(route || '').startsWith('/insights/'));
+    traceRenderedTarget(id, route, markers, String(fix.liveManifestPath || '').includes('insights.json') && String(markerRoute || '').startsWith('/insights/'), fix);
     continue;
   }
   if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:selected_new_page_deferred_by_daily_new_url_ceiling:${route}`); continue; }
@@ -169,7 +195,9 @@ if (plan && plan.selected_count > 0) {
     const id = unit.id || unit.query;
     if (isRenderedRepair(unit)) {
       const route = unit.target_route || unit.intended_winner_path;
-      traceRenderedTarget(id, route, semanticMarkersForRoute(route, [unit.query].filter(Boolean)), String(unit.target_route || '').startsWith('/insights/'));
+      const unitProof = resolveRecommendationProof(unit, { root: ROOT, releaseUnitPaths });
+      const unitMarkerRoute = unitProof.gradeAt ? renderedPathToRoute(unitProof.gradeAt) : route;
+      traceRenderedTarget(id, route, semanticMarkersForRoute(unitMarkerRoute, [unit.query].filter(Boolean)), String(unitMarkerRoute || '').startsWith('/insights/'), unit);
       continue;
     }
     if (isSocialFallbackUnit(unit) && !createdReleaseIds.has(id)) {

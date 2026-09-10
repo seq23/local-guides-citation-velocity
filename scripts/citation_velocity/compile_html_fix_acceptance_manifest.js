@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { compileEntryFromSpec, artifactFromFix, phrasesTheFixAsksToRemove, normalizeForbidden } = require('../lib/html_fix_acceptance_parser');
 const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
+const { releaseUnitPathsFromPlan, resolveRecommendationProof, PROOF_STATES } = require('../lib/recommendation_proof_path');
 const { mergeAcceptedArtifacts } = require('../lib/accepted_artifacts');
 const { stripTemplateScaffoldingFromArtifacts, withoutTemplateScaffolding } = require('../lib/template_scaffolding');
 const { countRowsNearHeading, includesNormalized } = require('../lib/html_fix_rendering_contract');
@@ -352,7 +353,34 @@ function main() {
       }))
     };
   };
-  const entries = [...byPath.values()].map(renderedStrings).sort((a, b) => String(a.implementation_path).localeCompare(String(b.implementation_path)));
+  // WHERE DOES THIS ENTRY'S PROOF LIVE, AND DOES THAT PAGE EXIST YET?
+  //
+  // Resolved through scripts/lib/recommendation_proof_path.js - the same module the
+  // intake writer and the citation-agent-fix trace use. This compiler used to answer
+  // that question privately, and so asserted required content against pages that
+  // `release:velocity-content` had not written yet: the entry looked broken to every
+  // downstream acceptance check for the whole window between the intake choosing the
+  // route and the release step creating it. An entry whose path a LATER step in this
+  // same lane creates is HELD - named in the artifact, not compiled and not silently
+  // dropped - and it compiles on the next run once the page is really there. An entry
+  // whose path simply does not exist and is not coming is compiled exactly as before,
+  // because that is a real gap and the acceptance validator must see it.
+  const releaseUnitPaths = releaseUnitPathsFromPlan(ROOT);
+  const heldPendingReleaseUnit = [];
+  const gradeable = [];
+  for (const entry of [...byPath.values()]) {
+    const proof = resolveRecommendationProof(entry, { root: ROOT, releaseUnitPaths, pathField: 'implementation_path' });
+    if (proof.state === PROOF_STATES.PENDING_RELEASE_UNIT) {
+      heldPendingReleaseUnit.push({ implementation_path: String(entry.implementation_path || ''), pending_retarget_path: proof.pendingRetargetPath, reason: proof.detail });
+      continue;
+    }
+    gradeable.push(entry);
+  }
+  if (heldPendingReleaseUnit.length) {
+    console.warn(`HTML FIX ACCEPTANCE COMPILER: holding ${heldPendingReleaseUnit.length} entry(ies) whose page a later step in this lane creates. They are not asserted this run and compile on the next one:`);
+    for (const row of heldPendingReleaseUnit) console.warn(`  - ${row.implementation_path} (${row.reason})`);
+  }
+  const entries = gradeable.map(renderedStrings).sort((a, b) => String(a.implementation_path).localeCompare(String(b.implementation_path)));
   const manifest = {
     schema_version: '2.0',
     status: 'PASS',
@@ -361,6 +389,7 @@ function main() {
     source_plan: PLAN_PATH,
     rule: 'Production semantic manifests are generated. High-stakes verticals compile agent intent through admitted primary-source authority templates; other verticals compile source FIX/EDIT text into rendered acceptance criteria.',
     entry_count: entries.length,
+    held_pending_release_unit: heldPendingReleaseUnit,
     row_requirement_count: entries.reduce((sum, entry) => sum + (entry.row_requirements || []).length, 0),
     entries
   };
@@ -384,7 +413,7 @@ function main() {
     });
   }
   writeJson('artifacts/validation/html-fix-acceptance-compiler.json', {
-    schema_version: '1.0', status: 'PASS', generated_at: DATE, source_plan: PLAN_PATH, entries: entries.length, row_requirements: manifest.row_requirement_count, manifest_path: CURRENT_MANIFEST_PATH, run_specific_manifests: [...grouped.keys()].map((key) => `${MANIFEST_DIR}/${key}.json`)
+    schema_version: '1.0', status: 'PASS', generated_at: DATE, source_plan: PLAN_PATH, entries: entries.length, held_pending_release_unit: heldPendingReleaseUnit, row_requirements: manifest.row_requirement_count, manifest_path: CURRENT_MANIFEST_PATH, run_specific_manifests: [...grouped.keys()].map((key) => `${MANIFEST_DIR}/${key}.json`)
   });
   console.log(`HTML FIX ACCEPTANCE COMPILER PASS: entries=${entries.length} (${compiled.length} compiled this run, ${carried} carried forward); row_requirements=${manifest.row_requirement_count}`);
 }
