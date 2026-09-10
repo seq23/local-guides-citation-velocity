@@ -9,6 +9,7 @@ const { routePage, routeForFamily } = require('../lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
 const { resolveTargetPath, routeFromPath, statedFilepathFrom, canonicalizeRawTarget } = require('../lib/citation_route_resolver');
 const { parseManifestBundle, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
+const { auditFix } = require('../validators/validate_agent_fix_ledger_truthfulness');
 
 const ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_TARGET = 125;
@@ -628,6 +629,43 @@ function existingRouteSet() {
   }
   return routes;
 }
+/**
+ * A ledger row's `renderedPath` is where the recommendation is PROVEN to be showing,
+ * not merely where the plan would like it to live one day.
+ *
+ * Re-resolution moves that pointer, and on 2026-09-09 it moved 39 rows off pages that
+ * were showing the requested content and onto 13 `trt/community-questions/` and
+ * `trt/guides/` pages that the same run had not created yet - the intake decides
+ * CREATE_NEW_TARGET_PAGE, the pages are only written later by `release:velocity-content`,
+ * and the absorption step validates in between. Nothing was removed from any page. But
+ * agent-recommendation-page-application read the move exactly as it should - 39 ids the
+ * baseline recorded as APPLIED were no longer shown by "their" page - and refused to
+ * rebaseline; agent-run-delivery-coverage recorded the same 39 as gaps on 2026-07-29.
+ * Four consecutive release runs published zero pages because of it, and both refusals
+ * were correct: the data was telling them content had been retired.
+ *
+ * So the proof pointer only moves onto a page that exists. If the row is currently
+ * proven at its recorded path and the newly chosen target is not in the tree yet, the
+ * proof stays where the content actually is and the intended move is recorded as
+ * pending. The release plan is untouched - the normalized run still carries
+ * CREATE_NEW_TARGET_PAGE and the unit still creates the page - so the next intake
+ * retargets on its own once the page is really there. This preserves evidence; it
+ * does not excuse a gap. A row whose recorded path does NOT show its markers is
+ * retargeted exactly as before, and a target that already exists is adopted at once.
+ */
+function resolveProofPath(prior, record, computed) {
+  const priorPath = String(prior.renderedPath || '');
+  if (!priorPath || priorPath === computed) return { renderedPath: computed, pending: '', reason: '' };
+  if (!computed || fs.existsSync(path.join(ROOT, computed))) return { renderedPath: computed, pending: '', reason: '' };
+  const priorMarkers = Array.isArray(prior.required_markers) ? prior.required_markers.filter(Boolean) : [];
+  const markers = priorMarkers.length ? priorMarkers : [record.query].filter(Boolean);
+  if (!markers.length) return { renderedPath: computed, pending: '', reason: '' };
+  if (auditFix({ renderedPath: priorPath, required_markers: markers }).reason) {
+    return { renderedPath: computed, pending: '', reason: '' };
+  }
+  return { renderedPath: priorPath, pending: computed, reason: 'retarget_deferred_until_new_target_page_exists' };
+}
+
 function updateLedger(agentRecords, plan) {
   const current = readJson(LEDGER_PATH, { schema_version: '1.0', ledger_type: 'cumulative_agent_fix_ledger', fixes: [] });
   const byId = new Map((current.fixes || []).map((fix) => [fix.id, fix]));
@@ -636,6 +674,8 @@ function updateLedger(agentRecords, plan) {
     const selectedForRelease = selected.has(record.id);
     const prior = byId.get(record.id) || {};
     const completed = ['RELEASED_VERIFIED','APPLIED_VERIFIED'].includes(String(prior.implementation_status || ''));
+    const computedRendered = record.renderedPath || record.target_route.replace(/^\//, '').replace(/\/$/, '/index.html');
+    const proof = resolveProofPath(prior, record, computedRendered);
     byId.set(record.id, {
       ...prior,
       id: record.id,
@@ -660,8 +700,10 @@ function updateLedger(agentRecords, plan) {
       sourceFiles: record.operation === 'REPAIR_INTENDED_WINNER_PAGE' ? ['content/_live/insights.json'] : ['content/_staged/pages.json', 'content/_live/pages.json'],
       liveManifestPath: record.operation === 'REPAIR_INTENDED_WINNER_PAGE' ? 'content/_live/insights.json' : 'content/_live/pages.json',
       stagedManifestPath: record.operation === 'REPAIR_INTENDED_WINNER_PAGE' ? '' : 'content/_staged/pages.json',
-      renderedPath: record.renderedPath || record.target_route.replace(/^\//, '').replace(/\/$/, '/index.html'),
-      before_hash: record.renderedPath ? fileHash(record.renderedPath) : null,
+      renderedPath: proof.renderedPath,
+      pending_retarget_path: proof.pending,
+      pending_retarget_reason: proof.reason,
+      before_hash: proof.renderedPath ? fileHash(proof.renderedPath) : null,
       required_markers: [record.query]
     });
   }

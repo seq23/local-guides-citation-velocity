@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "af3d13c8860fcf889a68286cc0b9c5812e289b2bc8ca70796bd891d9bd896b51",
+  "registry_sha256": "3f018e7cc33e322e3afa37f227d43c4669c4ecc682a92188abfc4604d0521ace",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 196,
-    "active": 169,
+    "total": 197,
+    "active": 170,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 167,
+    "hard_fail": 168,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -156,6 +156,7 @@
         "agent-fix-ledger-truthfulness",
         "agent-run-delivery-coverage",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-artifact-stranding",
         "lane-git-history-depth",
         "lane-accepted-artifact-regen-reach",
@@ -181,6 +182,7 @@
         "agent-fix-ledger-truthfulness",
         "agent-named-target-parseability",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-run-absorption-completeness",
         "agent-run-delivery-coverage",
         "authority-contracts",
@@ -438,6 +440,7 @@
         "agent-fix-ledger-truthfulness",
         "agent-run-delivery-coverage",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-artifact-stranding",
         "lane-git-history-depth",
         "lane-accepted-artifact-regen-reach",
@@ -467,6 +470,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-run-absorption-completeness",
         "agent-run-delivery-coverage",
         "atom-contract",
@@ -779,6 +783,7 @@
         "agent-fix-ledger-truthfulness",
         "agent-run-delivery-coverage",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-artifact-stranding",
         "lane-git-history-depth",
         "lane-accepted-artifact-regen-reach",
@@ -808,6 +813,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-run-absorption-completeness",
         "agent-run-delivery-coverage",
         "atom-contract",
@@ -1151,6 +1157,7 @@
         "agent-fix-ledger-truthfulness",
         "agent-run-delivery-coverage",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-artifact-stranding",
         "lane-git-history-depth",
         "lane-accepted-artifact-regen-reach",
@@ -1180,6 +1187,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-run-absorption-completeness",
         "agent-run-delivery-coverage",
         "atom-contract",
@@ -1498,6 +1506,7 @@
         "agent-fix-ledger-truthfulness",
         "agent-run-delivery-coverage",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-artifact-stranding",
         "lane-git-history-depth",
         "lane-accepted-artifact-regen-reach",
@@ -1527,6 +1536,7 @@
         "agent-improvement-capability",
         "agent-named-target-parseability",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-run-absorption-completeness",
         "agent-run-delivery-coverage",
         "atom-contract",
@@ -1891,12 +1901,14 @@
         "agent-fix-ledger-truthfulness",
         "agent-run-delivery-coverage",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-artifact-stranding"
       ],
       "execution_order": [
         "agent-artifact-stranding",
         "agent-fix-ledger-truthfulness",
         "agent-recommendation-page-application",
+        "agent-recommendation-dist-application",
         "agent-run-delivery-coverage",
         "authority-contracts",
         "generator-instruction-refusal",
@@ -2821,6 +2833,10 @@
     {
       "from": "agent-exact-implementation-plan",
       "to": "carried-reason-truthfulness"
+    },
+    {
+      "from": "agent-recommendation-page-application",
+      "to": "agent-recommendation-dist-application"
     },
     {
       "from": "rich-new-page-contract",
@@ -8594,6 +8610,45 @@
         "retirement_reason": null
       },
       {
+        "id": "agent-recommendation-dist-application",
+        "title": "Every landed recommendation is still shown by the page the build PUBLISHED",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_agent_recommendation_dist_application.js",
+        "command": "node scripts/validators/validate_agent_recommendation_dist_application.js",
+        "depends_on": [
+          "agent-recommendation-page-application"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/report_fixes/agent_recommendation_page_application_baseline.json",
+          "data/report_fixes/agent_recommendation_dist_application_baseline.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-recommendation-dist-application.json"
+        ],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Every application guard in this repo grades a recommendation on the bytes of the page in the SOURCE tree, and the page a reader gets is the one in dist/. Five writers run between them - the frozen accepted output guard (2,069 restores on the 2026-09-10 tree), build_pages_dist, the answer-shape pass, the dentistry marker pass and clarity:install - and any of them can return a published page that no longer shows a marker its source copy still shows. Nothing would have caught that: the whole ledger would read APPLIED while the live page had dropped the content. This re-confirms every recommendation the application baseline records as APPLIED, and which is still shown by its source page, against dist/<renderedPath>. Measured 2026-09-10: 2,577 landed recommendations across 266 pages, 2,577 markers, zero dropped by the build, 9 rows on 8 source pages that show the content but never reached dist at all.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "agent-artifact-stranding",
         "title": "No landed agent artifact sits pending longer than one release cadence",
         "status": "ACTIVE",
@@ -12968,6 +13023,45 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A recommendation could be recorded, counted in a run's aggregate and still never reach the page it named, with no record anywhere of WHICH page was left undone. The ledger's implementation_status is the thing that cannot be trusted here: on 2026-09-02 all 51 rows of a TRT run read RELEASED_VERIFIED while twelve of their required_markers were absent from the page. This joins every ledger row to the page it names and grades it on that page's own rendered bytes, per page rather than per run date. Measured 2026-09-09 after the day's absorption: 366 pages named, 2,527 of 3,225 recommendations shown (78.4%), 698 not shown, 224 pages fully applied, 41 partial, 101 with none applied, and 63 target pages absent from the tree. The ratchet is keyed on recommendation id, so it separates a REGRESSION (an id once shown that is no longer shown) from newly INGESTED work and from a STALE allowance; the repair enrols and retires but structurally refuses to enrol a regression, which is what stops the guard degrading into a rubber stamp as the daily absorption grows the ledger.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "agent-recommendation-dist-application",
+        "title": "Every landed recommendation is still shown by the page the build PUBLISHED",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_agent_recommendation_dist_application.js",
+        "command": "node scripts/validators/validate_agent_recommendation_dist_application.js",
+        "depends_on": [
+          "agent-recommendation-page-application"
+        ],
+        "requires_files": [
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/report_fixes/agent_recommendation_page_application_baseline.json",
+          "data/report_fixes/agent_recommendation_dist_application_baseline.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/agent-recommendation-dist-application.json"
+        ],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Every application guard in this repo grades a recommendation on the bytes of the page in the SOURCE tree, and the page a reader gets is the one in dist/. Five writers run between them - the frozen accepted output guard (2,069 restores on the 2026-09-10 tree), build_pages_dist, the answer-shape pass, the dentistry marker pass and clarity:install - and any of them can return a published page that no longer shows a marker its source copy still shows. Nothing would have caught that: the whole ledger would read APPLIED while the live page had dropped the content. This re-confirms every recommendation the application baseline records as APPLIED, and which is still shown by its source page, against dist/<renderedPath>. Measured 2026-09-10: 2,577 landed recommendations across 266 pages, 2,577 markers, zero dropped by the build, 9 rows on 8 source pages that show the content but never reached dist at all.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

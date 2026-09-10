@@ -7846,6 +7846,64 @@
       ]
     },
     {
+      "id": "agent-recommendation-dist-application",
+      "title": "Every landed recommendation is still shown by the page the build PUBLISHED",
+      "path": "scripts/validators/validate_agent_recommendation_dist_application.js",
+      "command": "node scripts/validators/validate_agent_recommendation_dist_application.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-artifact",
+        "ledger",
+        "per-page",
+        "application",
+        "ratchet",
+        "dist",
+        "published-bytes"
+      ],
+      "risk_prevented": "Every application guard in this repo grades a recommendation on the bytes of the page in the SOURCE tree, and the page a reader gets is the one in dist/. Five writers run between them - the frozen accepted output guard (2,069 restores on the 2026-09-10 tree), build_pages_dist, the answer-shape pass, the dentistry marker pass and clarity:install - and any of them can return a published page that no longer shows a marker its source copy still shows. Nothing would have caught that: the whole ledger would read APPLIED while the live page had dropped the content. This re-confirms every recommendation the application baseline records as APPLIED, and which is still shown by its source page, against dist/<renderedPath>. Measured 2026-09-10: 2,577 landed recommendations across 266 pages, 2,577 markers, zero dropped by the build, 9 rows on 8 source pages that show the content but never reached dist at all.",
+      "why_existing_checks_do_not_cover": "agent-recommendation-page-application, agent-fix-ledger-truthfulness and agent-run-delivery-coverage all read the SOURCE page and stop there; none of them opens dist/. rendered-output-shrink-guard measures page SIZE, so a marker swapped for filler of similar length passes it. deterministic-build proves two builds agree with each other, not that either agrees with the source page. content-pattern-contract asserts block SHAPES on published pages, never the specific required_markers a named recommendation asked for. Nothing else joins a ledger row to the published bytes of the page it named.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/agent-recommendation-dist-application.json",
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "restore the dropped block to the page and fix the build step that dropped it; the admission backlog is a shrink-only ratchet and a dropped marker has no allowance at all",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [
+        "agent-recommendation-page-application"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_fix_ledger.json",
+        "data/report_fixes/agent_recommendation_page_application_baseline.json",
+        "data/report_fixes/agent_recommendation_dist_application_baseline.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-recommendation-dist-application.json"
+      ],
+      "mutates_files": [],
+      "repair_command": "npm run recover:recommendation-dist-application",
+      "repair_writes": [
+        "data/report_fixes/agent_recommendation_dist_application_baseline.json"
+      ],
+      "unit_attribution": [
+        "markers_absent_from_dist[].page",
+        "page_absent_unenrolled[].page"
+      ]
+    },
+    {
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "scope": "CONTAINER",
