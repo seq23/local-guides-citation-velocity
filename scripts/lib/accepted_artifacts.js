@@ -44,6 +44,18 @@ const STORE_REL = 'data/release/accepted_page_artifacts.json';
 const HISTORIC_REL = 'data/release/historic_recovered_artifacts.json';
 
 let CACHE = null;
+// Screened artifact -> the byte weight it had before screening. See `weight` in
+// mergeAcceptedArtifacts: the screen may change what a block says, never which block
+// wins.
+const PRE_SCREEN_WEIGHT = new WeakMap();
+function screenArtifacts(artifacts) {
+  const source = Array.isArray(artifacts) ? artifacts : [];
+  const screened = stripTemplateScaffoldingFromArtifacts(source);
+  screened.forEach((artifact, i) => {
+    if (artifact && typeof artifact === 'object') PRE_SCREEN_WEIGHT.set(artifact, JSON.stringify(source[i] || '').length);
+  });
+  return screened;
+}
 function readRoutes(relPath) {
   try { return (JSON.parse(fs.readFileSync(path.join(ROOT, relPath), 'utf8')).routes) || {}; }
   catch { return {}; }
@@ -68,10 +80,10 @@ function loadStore() {
   // weighed. Both sides shrink together, the weight comparison stays honest, and no
   // route can be re-hydrated with scaffolding this compiler no longer emits.
   const routes = {};
-  for (const [key, record] of Object.entries(accepted)) routes[key] = { ...record, artifacts: stripTemplateScaffoldingFromArtifacts(record.artifacts || []) };
+  for (const [key, record] of Object.entries(accepted)) routes[key] = { ...record, artifacts: screenArtifacts(record.artifacts || []) };
   for (const [key, record] of Object.entries(historic)) {
     if (!routes[key]) routes[key] = { ...record, artifacts: [] };
-    routes[key].artifacts = [...routes[key].artifacts, ...stripTemplateScaffoldingFromArtifacts(record.artifacts || [])];
+    routes[key].artifacts = [...routes[key].artifacts, ...screenArtifacts(record.artifacts || [])];
   }
   CACHE = { schema_version: '1.0', routes };
   return CACHE;
@@ -154,7 +166,17 @@ function mergeAcceptedArtifacts(route, current) {
     if (!pending.has(key)) pending.set(key, []);
     pending.get(key).push(artifact);
   }
-  const weight = (artifact) => JSON.stringify(artifact || '').length;
+  // Weighed at its PRE-SCREEN size. Removing scaffolding from the accepted copy must
+  // not change WHICH copy wins, only what that copy says - otherwise the screen
+  // silently hands routes to the rebuild and takes whatever the rebuild happens to
+  // carry. Measured: on /insights/uscis-medical-009-how-much-does-the-exam-cost.html
+  // the accepted cost_table won on weight, and its intro was the only place the
+  // ledgered marker "how much does the i-693 medical exam cost in 2026 (Gemini 1.5
+  // Flash)" appeared. Screening its cells made it lighter than the rebuild's copy of
+  // the same block, the rebuild won, and the rebuild's intro carries the query
+  // without the engine suffix - so acceptMutationScope refused the route with
+  // ledgered_markers_lost.
+  const weight = (artifact) => PRE_SCREEN_WEIGHT.get(artifact) ?? JSON.stringify(artifact || '').length;
   const consumed = new Set();
   const out = [];
   for (const artifact of accepted) {
