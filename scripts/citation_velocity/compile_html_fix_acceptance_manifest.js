@@ -30,6 +30,85 @@ function inferVertical(spec) {
   if (p.includes('uscis')) return 'uscis-medical';
   return 'mixed';
 }
+/**
+ * Every reader-facing surface of ONE manifest entry, held to the removal directives
+ * of its WHOLE ROUTE - not just of the recommendation that authored each surface.
+ *
+ * Hoisted to module scope so the regression test can drive it directly. It is the
+ * only implementation of this screen; scripts/validators/validate_removal_directive_route_scope.js
+ * asserts against this function rather than restating its rules.
+ */
+function cleanRouteRemovalDirectives(entry) {
+  const forbidden = new Set();
+  for (const row of entry.row_requirements || []) {
+    for (const phrase of phrasesTheFixAsksToRemove(row.source_fix || '')) forbidden.add(phrase);
+  }
+  if (!forbidden.size) return entry;
+  const isForbidden = (value) => forbidden.has(normalizeForbidden(value));
+  const drop = (list) => (list || []).filter((value) => !isForbidden(value));
+  const rowForTitle = (title) => (entry.row_requirements || [])
+    .find((row) => (row.required_blocks || []).some((block) => block && block.heading_exact === title));
+  const retitled = new Map();
+  const refused = new Set();
+  const artifacts = (entry.artifacts || []).map((artifact) => {
+    if (!artifact || !isForbidden(artifact.title)) return artifact;
+    const row = rowForTitle(artifact.title);
+    if (!row) { refused.add(artifact.title); return null; } // Nothing to recompile from: refuse to publish it at all.
+    // THE REBUILD HAS TO KNOW WHAT THE DETECTION KNEW.
+    //
+    // `forbidden` above is route-scoped - the union across every row's source_fix.
+    // artifactFromFix, called without it, screened only the ONE recommendation it
+    // was handed, and the offending title was lifted out of that very
+    // recommendation's EDIT text. So the "repair" fed the phrase back through the
+    // parser that had just produced it and got the identical forbidden string
+    // back: detection fired on every run, retitled.set(t, t) was a no-op, and the
+    // entry was written out exactly as it came in. A guard that cannot reach what
+    // it governs.
+    //
+    // Measured on 2026-09-10 against the manifest at 3d63ee8f: two routes,
+    // "Direct answer" and "with a structured lead:", both DETECTED and both
+    // rebuilt to themselves - which is what took Validate Repo red on run
+    // 34501826995 with 0 rendered pages and 4 source records.
+    const rebuilt = artifactFromFix({
+      recommendation: row.source_fix, query: row.query, recordId: row.row_id, index: 0, routeForbidden: forbidden
+    });
+    // Belt and braces, and the thing that makes the inertness impossible to
+    // reintroduce rather than merely fixed: a rebuild that STILL lands on a
+    // forbidden title has not repaired anything, so it is refused outright rather
+    // than written back. Silence here is what let this ship.
+    if (isForbidden(rebuilt.title)) { refused.add(artifact.title); return null; }
+    retitled.set(artifact.title, rebuilt.title);
+    return { ...rebuilt, id: artifact.id, marker: artifact.marker };
+  }).filter(Boolean);
+  // A refused artifact's row requirement has to go with it, or the manifest keeps
+  // demanding the exact heading this pass just refused to publish - unsatisfiable
+  // by construction, and still a forbidden phrase on a surface the guard reads.
+  // Recorded rather than deleted, so a refusal stays visible as a refusal.
+  const keptRows = (entry.row_requirements || [])
+    .filter((row) => !refused.has(row.required_blocks?.[0]?.heading_exact));
+  const newlyWithheld = (entry.row_requirements || [])
+    .filter((row) => refused.has(row.required_blocks?.[0]?.heading_exact))
+    .map((row) => ({
+      row_id: row.row_id, query: row.query, heading_exact: row.required_blocks?.[0]?.heading_exact || '',
+      withheld_reason: 'artifact_title_is_a_phrase_a_landed_report_asked_to_remove'
+    }));
+  return {
+    ...entry,
+    title: isForbidden(entry.title) ? (retitled.get(entry.title) || artifacts[0]?.title || entry.title) : entry.title,
+    artifacts,
+    required_strings: drop(entry.required_strings),
+    checklist: drop(entry.checklist),
+    withheld_row_requirements: [...(entry.withheld_row_requirements || []), ...newlyWithheld],
+    row_requirements: keptRows.map((row) => ({
+      ...row,
+      required_blocks: (row.required_blocks || []).map((block) => (block && isForbidden(block.heading_exact)
+        ? { ...block, heading_exact: retitled.get(block.heading_exact) || block.heading_exact, heading_source: 'derived' }
+        : block)),
+      required_strings: drop(row.required_strings)
+    }))
+  };
+}
+
 function main() {
   const plan = readJson(PLAN_PATH, { specs: [] });
   const specs = (plan.specs || []).filter((spec) => spec && spec.status === 'PLANNED' && spec.operation === 'REPAIR_INTENDED_WINNER_PAGE');
@@ -156,40 +235,7 @@ function main() {
   // A carried artifact whose title is a phrase its own fix asked to delete is now
   // RECOMPILED from that same source_fix through the repaired parser, rather than
   // merely un-asserted, and its row's heading_exact is re-pointed at the new title.
-  const cleanCarried = (entry) => {
-    const forbidden = new Set();
-    for (const row of entry.row_requirements || []) {
-      for (const phrase of phrasesTheFixAsksToRemove(row.source_fix || '')) forbidden.add(phrase);
-    }
-    if (!forbidden.size) return entry;
-    const isForbidden = (value) => forbidden.has(normalizeForbidden(value));
-    const drop = (list) => (list || []).filter((value) => !isForbidden(value));
-    const rowForTitle = (title) => (entry.row_requirements || [])
-      .find((row) => (row.required_blocks || []).some((block) => block && block.heading_exact === title));
-    const retitled = new Map();
-    const artifacts = (entry.artifacts || []).map((artifact) => {
-      if (!artifact || !isForbidden(artifact.title)) return artifact;
-      const row = rowForTitle(artifact.title);
-      if (!row) return null; // Nothing to recompile from: refuse to publish it at all.
-      const rebuilt = artifactFromFix({ recommendation: row.source_fix, query: row.query, recordId: row.row_id, index: 0 });
-      retitled.set(artifact.title, rebuilt.title);
-      return { ...rebuilt, id: artifact.id, marker: artifact.marker };
-    }).filter(Boolean);
-    return {
-      ...entry,
-      title: isForbidden(entry.title) ? (retitled.get(entry.title) || artifacts[0]?.title || entry.title) : entry.title,
-      artifacts,
-      required_strings: drop(entry.required_strings),
-      checklist: drop(entry.checklist),
-      row_requirements: (entry.row_requirements || []).map((row) => ({
-        ...row,
-        required_blocks: (row.required_blocks || []).map((block) => (block && isForbidden(block.heading_exact)
-          ? { ...block, heading_exact: retitled.get(block.heading_exact) || block.heading_exact, heading_source: 'derived' }
-          : block)),
-        required_strings: drop(row.required_strings)
-      }))
-    };
-  };
+  const cleanCarried = cleanRouteRemovalDirectives;
 
   let carried = 0;
   for (const key of [...byPath.keys()]) {
@@ -417,4 +463,6 @@ function main() {
   });
   console.log(`HTML FIX ACCEPTANCE COMPILER PASS: entries=${entries.length} (${compiled.length} compiled this run, ${carried} carried forward); row_requirements=${manifest.row_requirement_count}`);
 }
-main();
+if (require.main === module) main();
+
+module.exports = { cleanRouteRemovalDirectives };

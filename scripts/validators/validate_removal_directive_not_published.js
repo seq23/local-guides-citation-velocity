@@ -172,6 +172,21 @@ function main() {
     process.exit(1);
   }
 
+  // RULE 0 FOR THE DERIVED HALF.
+  //
+  // The rendered half is covered above: zero pages on disk is a hard failure. The
+  // DERIVED half had no equivalent, and its examined set is the intersection of two
+  // independently-maintained files - routes that carry a ledger removal directive AND
+  // appear in the acceptance manifest. Either side drifting to zero (a manifest that
+  // failed to compile and was written out empty, a route-key convention changing on
+  // one side only) leaves `authoredChecks === 0`, `sourceLeaks` empty, and the
+  // validator printing PASS having compared nothing at all. An empty loop is not
+  // evidence of a clean manifest.
+  if (authored.size > 0 && authoredChecks === 0) {
+    console.error(`REMOVAL DIRECTIVE GUARD FAIL: ${authored.size} route(s) carry a ledger-derived removal directive, and not one authored surface was examined for any of them. ${MANIFEST} has ${(manifest.entries || []).length} entry/entries and none of them matched a route under directive, so nothing was compared. Passing here would assert a clean manifest on an empty loop.`);
+    process.exit(1);
+  }
+
   const status = (leaks.length || sourceLeaks.length) ? 'FAIL' : 'PASS';
   fs.mkdirSync(rel('artifacts/validation'), { recursive: true });
   fs.writeFileSync(rel(OUT), `${JSON.stringify({

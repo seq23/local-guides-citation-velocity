@@ -79,7 +79,22 @@ function isWorkflowInstruction(value) {
     /^note state-by-state\b/.test(v) ||
     /^include\s+(?:a|an|the|two-part|three-row|numbered|parallel|proceed\/pause|post-accident)\b/.test(v) ||
     /^use the exact source artifact recommendation\b/.test(v) ||
-    /^preserve source boundaries\b/.test(v)
+    /^preserve source boundaries\b/.test(v) ||
+    // A NUMBERED BUILD STEP IS NEVER A READER HEADING.
+    //
+    // Multi-step EDIT text ("Step 1 - Add a 'How a Contingency Fee Works' H2...
+    // Step 2 - Add a 'Typical Contingency Fee Percentages' three-row table...") is
+    // split on punctuation by the candidate extractors, so "Step 2 - Add a" arrives
+    // here as a title candidate in its own right. Every existing imperative rule
+    // above anchors on the VERB, and this fragment leads with the step number, so it
+    // walked through all of them - and did become the heading the moment the route's
+    // previous title was refused as a removal directive.
+    /^step\s*\d+\b/.test(v) ||
+    // A candidate that ENDS on an article, conjunction or preposition is a sentence
+    // cut mid-clause, not a heading. "Step 2 - Add a", "replace it with", "and". The
+    // rule is about the shape of the fragment, so it holds for candidates no
+    // verb-anchored rule anticipates.
+    /\b(?:a|an|the|with|and|or|of|for|to|in|on|at|by|from)$/.test(v.replace(/[^a-z0-9\s]+$/, '').trim())
   );
 }
 function readerIntroForArtifact(title, query, type) {
@@ -393,13 +408,21 @@ function scriptLinesFromFix(edit, query, count) {
   ];
   return itemsFromFix(edit, query, count).slice(0, Math.max(0, count - base.length)).concat(base).slice(0, Math.max(count, 4));
 }
-function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null }) {
+function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null, routeForbidden = null }) {
   const edit = stripPrefixes(recommendation);
   const type = typeFromFix(edit);
   // Every string this artifact can put on a public page is screened against the
   // phrases THIS recommendation asks to remove - title, column headers, table cells,
   // list items and script lines - not just the required_strings the trace enforces.
-  const forbidden = phrasesTheFixAsksToRemove(recommendation);
+  //
+  // ...AND against every phrase ANY landed recommendation for the SAME ROUTE asks to
+  // remove. A removal directive is addressed to a PAGE, not to the sentence that
+  // carries it: "remove the rendered H2 'with a structured lead:'" is a statement
+  // about personal-injury/cost-fees/index.html, and the recommendation that authored
+  // that heading is a different one entirely. Screening only the authoring
+  // recommendation therefore cannot see the order, which is why compiling a route
+  // whose report asked for a heading to go re-emitted it unchanged.
+  const forbidden = withRouteForbidden(phrasesTheFixAsksToRemove(recommendation), routeForbidden);
   const dropForbidden = (value) => !forbidden.has(normalizeForbidden(value));
   const { title, source: titleSource } = titleFromFix(edit, query, index, type, fallbackSeq, forbidden);
   const minRows = rowCountFromFix(edit, type);
@@ -441,7 +464,7 @@ function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackS
   return stripTemplateScaffolding(artifact);
 }
 const { mergeAcceptedArtifacts } = require('./accepted_artifacts');
-function requiredStringsForArtifact(artifact, recommendation) {
+function requiredStringsForArtifact(artifact, recommendation, routeForbidden = null) {
   // A derived title is this compiler's phrasing, not the agent's. Requiring it as a
   // string would re-impose the exact heading the contract deliberately stopped
   // asserting. Everything substantive below - headers, rows, items, the extracted
@@ -455,7 +478,12 @@ function requiredStringsForArtifact(artifact, recommendation) {
   if (Array.isArray(artifact.lines)) out.push(...artifact.lines.filter((line) => String(line || '').length <= 90).slice(0, 10));
   // A required_string is a promise the trace enforces against the rendered page.
   // Requiring a build directive would compel the renderer to publish one.
-  const forbidden = phrasesTheFixAsksToRemove(recommendation);
+  //
+  // Route-scoped for the same reason artifactFromFix is: an accepted-store artifact
+  // merged back in has no title_source, so its title IS pushed as a required_string
+  // above, and the only recommendation available to screen it is whichever one
+  // happens to sit at its index.
+  const forbidden = withRouteForbidden(phrasesTheFixAsksToRemove(recommendation), routeForbidden);
   return unique(out.map(asHeadingCopy).filter(Boolean))
     .filter((value) => !isInternalInstructionText(value))
     // A required_string is a promise the trace enforces against the RENDERED page:
@@ -556,11 +584,42 @@ function phrasesTheFixAsksToRemove(recommendation) {
   }
   return out;
 }
+/**
+ * The union of every phrase ANY of a route's recommendations asks to remove.
+ *
+ * A removal directive names a PAGE and a phrase; it says nothing about which
+ * recommendation authored that phrase, and in practice it never is the same one - an
+ * agent reports "the H2 'with a structured lead:' is a repair instruction rendered as
+ * content, remove it" in a LATER pass than the pass whose EDIT text that heading was
+ * lifted out of. So the directive and its offender live in different recommendations
+ * of the same ledger entry, and any screen scoped to a single recommendation is
+ * structurally unable to connect them.
+ *
+ * This is the set removal-directive-not-published aggregates when it decides whether
+ * the manifest publishes a phrase a landed report asked to delete, so it is the set
+ * the compiler has to author against. Two components each keeping their own idea of
+ * what "forbidden" means, with no link between them, is the defect.
+ */
+function phrasesTheRouteAsksToRemove(recommendations) {
+  const out = new Set();
+  for (const recommendation of recommendations || []) {
+    for (const phrase of phrasesTheFixAsksToRemove(recommendation)) out.add(phrase);
+  }
+  return out;
+}
+/** One recommendation's removal phrases, widened to its whole route. */
+function withRouteForbidden(own, routeForbidden) {
+  if (!routeForbidden || typeof routeForbidden[Symbol.iterator] !== 'function') return own;
+  const out = new Set(own);
+  for (const phrase of routeForbidden) out.add(phrase);
+  return out;
+}
+
 // `artifact` lets a caller that has already compiled the artifact reuse it. Building
 // it twice would advance the shared fallback-heading counter twice and number the
 // page's headings 2, 4, 6.
-function rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index = 0, artifact = null }) {
-  const built = artifact || artifactFromFix({ recommendation, query, recordId, index });
+function rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index = 0, artifact = null, routeForbidden = null }) {
+  const built = artifact || artifactFromFix({ recommendation, query, recordId, index, routeForbidden });
   return {
     row_id: recordId || '',
     query: query || '',
@@ -574,7 +633,7 @@ function rowRequirementFromFix({ recommendation, query, recordId, implementation
       min_rows: Array.isArray(built.rows) ? built.rows.length : (built.items || built.lines || []).length,
       placement: /first screen|top|after the direct answer|immediately after/i.test(recommendation || '') ? 'near_top_or_requested_location' : 'rendered_content'
     }],
-    required_strings: requiredStringsForArtifact(built, recommendation),
+    required_strings: requiredStringsForArtifact(built, recommendation, routeForbidden),
     block_reason_if_not_possible: 'VALIDATION_FAILED'
   };
 }
@@ -591,12 +650,15 @@ function compileEntryFromSpec(spec) {
   // One counter for the whole page, so colliding fallback headings are numbered
   // 1..n across its recommendations rather than restarting per recommendation.
   const fallbackSeq = new Map();
+  // Computed ONCE for the whole page, before any artifact is built, and handed to
+  // every one of them. See phrasesTheRouteAsksToRemove.
+  const routeForbidden = phrasesTheRouteAsksToRemove(recommendations);
   recommendations.forEach((recommendation, index) => {
     const query = queries[index] || queries[0] || spec.query || '';
     const recordId = rowIds[index] || rowIds[0] || spec.record_id || `${implementationPath}:${index}`;
-    const artifact = artifactFromFix({ recommendation, query, recordId, index, fallbackSeq });
+    const artifact = artifactFromFix({ recommendation, query, recordId, index, fallbackSeq, routeForbidden });
     artifacts.push(artifact);
-    rowRequirements.push(rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index, artifact }));
+    rowRequirements.push(rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index, artifact, routeForbidden }));
   });
   const mergedArtifacts = mergeArtifacts(artifacts);
   // mergeArtifacts drops any artifact that would publish internal instruction text.
@@ -630,7 +692,7 @@ function compileEntryFromSpec(spec) {
   const renderedArtifacts = mergeAcceptedArtifacts(implementationPath, mergedArtifacts);
   const recommendationForArtifact = new Map(mergedArtifacts.map((artifact, index) => [artifact.title, recommendations[index] || recommendations[0] || '']));
   const requiredStrings = unique(
-    renderedArtifacts.flatMap((artifact) => requiredStringsForArtifact(artifact, recommendationForArtifact.get(artifact.title) || recommendations[0] || ''))
+    renderedArtifacts.flatMap((artifact) => requiredStringsForArtifact(artifact, recommendationForArtifact.get(artifact.title) || recommendations[0] || '', routeForbidden))
   ).slice(0, 80);
   return {
     implementation_path: implementationPath,
@@ -681,6 +743,7 @@ function compileEntryFromSpec(spec) {
 
 module.exports = {
   phrasesTheFixAsksToRemove,
+  phrasesTheRouteAsksToRemove,
   normalizeForbidden,
   extractInstructionRequirements,
   normalizeSpace,
