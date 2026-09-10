@@ -9,7 +9,7 @@
     "source_of_source_date": "readReleaseDate() in scripts/release/run_staged_release.js"
   },
   "probe_budget_seconds": 30,
-  "probed_count": 22,
+  "probed_count": 23,
   "unprobed_over_budget": [
     {
       "id": "store-clock-independence",
@@ -18,6 +18,11 @@
     },
     {
       "id": "deterministic-build",
+      "estimated_runtime_seconds": 60,
+      "reason": "declared runtime 60s exceeds the 30s probe budget"
+    },
+    {
+      "id": "repair-command-efficacy",
       "estimated_runtime_seconds": 60,
       "reason": "declared runtime 60s exceeds the 30s probe budget"
     }
@@ -194,6 +199,14 @@
     {
       "id": "semantic-acceptance-refusal-legibility",
       "command": "node scripts/validators/validate_semantic_acceptance_refusal_legibility.js",
+      "wall_clock_exit": 0,
+      "source_date_exit": 0,
+      "source_date_probed": "2026-09-09",
+      "clock_independent": true
+    },
+    {
+      "id": "release-isolation-contract",
+      "command": "node scripts/validators/validate_release_isolation_contract.js",
       "wall_clock_exit": 0,
       "source_date_exit": 0,
       "source_date_probed": "2026-09-09",
