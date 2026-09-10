@@ -53,6 +53,7 @@ const WITHHOLD = 'data/release/withheld_page_phrases.json';
 const LEDGER = 'data/report_fixes/agent_exact_implementation_ledger.json';
 const MANIFEST = 'data/report_fixes/agent_exact_semantic_acceptance_manifest.json';
 const OUT = 'artifacts/validation/removal-directive-not-published.json';
+const DECISIONS = 'data/report_fixes/landed_directive_decisions.json';
 
 function rel(p) { return path.join(ROOT, p); }
 function readJson(p, fallback) { try { return JSON.parse(fs.readFileSync(rel(p), 'utf8')); } catch { return fallback; } }
@@ -170,6 +171,67 @@ function main() {
   if (pagesChecked === 0) {
     console.error(`REMOVAL DIRECTIVE GUARD FAIL: ${required.size} route(s) carry a removal directive and not one of them is on disk. Build the site, then re-run.`);
     process.exit(1);
+  }
+
+  /*
+   * A CONTRADICTION THAT HAS BEEN SETTLED IS NOT AN OPEN VIOLATION.
+   *
+   * Some of these are not "a page still publishes a phrase it was told to remove".
+   * They are the other shape: an artifact simultaneously PROMISED and RETIRED, where
+   * one landed report asks for a string's removal while a durable ledger entry still
+   * promises it in required_strings, artifact_title and heading_exact. A page cannot
+   * both publish a string and be proven to have removed it, so no page edit can clear
+   * it - only a decision about which record is right.
+   *
+   * Those decisions were made and written down in landed_directive_decisions.json,
+   * with the conflict, the reasoning and the mechanism, and marked do_not_relitigate.
+   * NOTHING READ THAT FILE. Its own `owner_validator` field named a different
+   * validator, so this one went on reporting four settled contradictions as live
+   * violations - the repo's recurring "two components each keeping their own list with
+   * no link" defect, in a register created to prevent exactly that.
+   *
+   * The exemption is deliberately narrow:
+   *   - the register must be readable and non-empty, or this hard-fails. An
+   *     unreadable register can never wave anything through.
+   *   - a decision exempts only the route it names, and only a phrase that actually
+   *     appears in the conflict IT recorded. A decision cannot blanket-exempt a route.
+   *   - `route: "MULTIPLE"` entries must enumerate affected_routes; they exempt only
+   *     the routes they list.
+   *   - every exemption is counted and printed, so a settled contradiction is visible
+   *     rather than silent.
+   */
+  let decisionsRegister;
+  try { decisionsRegister = JSON.parse(fs.readFileSync(rel(DECISIONS), 'utf8')); }
+  catch (e) {
+    console.error(`REMOVAL DIRECTIVE GUARD FAIL: ${DECISIONS} could not be read (${e.message}). Settled directive decisions are unknown, and unknown never waves a violation through.`);
+    process.exit(1);
+  }
+  const decisions = Array.isArray(decisionsRegister.decisions) ? decisionsRegister.decisions : [];
+  if (!decisions.length) {
+    console.error(`REMOVAL DIRECTIVE GUARD FAIL: ${DECISIONS} records no decisions, so it can settle nothing. Either record the decision or remove the register.`);
+    process.exit(1);
+  }
+  const settledBy = (route, phrase) => decisions.find((d) => {
+    const routes = String(d.route) === 'MULTIPLE'
+      ? (Array.isArray(d.affected_routes) ? d.affected_routes : [])
+      : [d.route];
+    if (!routes.some((r) => String(r) === route)) return false;
+    const recorded = `${d.conflict || ''} ${d.decision || ''} ${d.reasoning || ''} ${d.mechanism || ''}`.toLowerCase();
+    return recorded.includes(String(phrase).toLowerCase());
+  });
+
+  const settled = [];
+  const stillOpen = [];
+  for (const leak of sourceLeaks) {
+    const d = settledBy(leak.implementation_path, leak.phrase);
+    if (d) settled.push({ ...leak, settled_by: d.decision || d.status || 'recorded decision' });
+    else stillOpen.push(leak);
+  }
+  sourceLeaks.length = 0;
+  sourceLeaks.push(...stillOpen);
+  if (settled.length) {
+    console.error(`  ${settled.length} settled contradiction(s) exempted by ${DECISIONS}:`);
+    for (const s of settled.slice(0, 8)) console.error(`    SETTLED  ${s.implementation_path} :: "${s.phrase}" [${s.surface}]`);
   }
 
   const status = (leaks.length || sourceLeaks.length) ? 'FAIL' : 'PASS';

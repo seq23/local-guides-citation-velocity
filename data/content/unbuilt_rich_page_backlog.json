@@ -4,7 +4,7 @@
   "baseline_date": "2026-08-29",
   "what_happened": "scripts/validators/validate_rich_new_page_contract.js scoped its candidate rows to a HARDCODED run date of 2026-07-03, read them through field names (source_run_id, source_artifacts.manifest) that html-report-contract page_specs do not carry, and treated a missing release artifact as an empty created list. All three defects pointed the same way: it matched zero rows and printed \"PASS (0 created page(s))\" on every run since it was written. Rescoping it to the latest run date actually present in the sources exposed what the stale date had been covering. Of the 191 rich-authority-required page_specs in artifacts/validation/html-report-contract.json, 171 rows - 136 distinct target_routes, the rest being the same route re-admitted on a later run - name a target_route that exists in neither content/_live/pages.json nor content/_staged/pages.json nor on disk. They were discovered, classified, marked READY_TO_RELEASE and admitted for build, and then never built. The 171 admitted rows span 27 run dates from 2026-06-23 to 2026-08-27; the 136 distinct routes were first admitted on 25 of those dates. The oldest has been waiting since 2026-06-23.",
   "why_it_is_not_cleared_here": "The backlog is drained by the release lane, not by this file. scripts/content/build_page_release_queue.js now reads every AWAITING_RELEASE_LANE entry here as a third intake lane, oldest-first by first_admitted_on, and puts it through the unchanged page release law; scripts/velocity_content_release.js then builds whatever survives, up to the governed ceiling of 2 new URLs/day in data/authority_scale/velocity_decision.json. That ceiling was NOT raised: spiking new URLs harms discovery on these properties, so the drain runs at the rate policy already allows and no faster. scripts/content/reconcile_unbuilt_backlog.js deletes an entry once its route is built, so the depth here falls as the lane runs, and scripts/validators/validate_unbuilt_backlog_drain.js hard-fails if the backlog ever again has no consumer.",
-  "declared_count": 125,
+  "declared_count": 98,
   "admitted_row_count": 171,
   "by_run_date_first_admitted": {
     "2026-06-23": 1,
@@ -16,31 +16,28 @@
     "2026-07-13": 5,
     "2026-07-16": 4,
     "2026-07-21": 1,
-    "2026-07-28": 7,
+    "2026-07-28": 6,
     "2026-07-29": 3,
-    "2026-07-30": 3,
     "2026-07-31": 7,
     "2026-08-03": 2,
     "2026-08-04": 4,
-    "2026-08-06": 7,
-    "2026-08-07": 10,
+    "2026-08-06": 2,
+    "2026-08-07": 9,
     "2026-08-12": 5,
-    "2026-08-13": 7,
-    "2026-08-14": 12,
-    "2026-08-20": 2,
+    "2026-08-13": 6,
+    "2026-08-14": 7,
     "2026-08-21": 1,
-    "2026-08-24": 5,
-    "2026-08-26": 4,
+    "2026-08-24": 2,
+    "2026-08-26": 3,
     "2026-08-27": 1,
-    "2026-09-03": 11,
-    "2026-09-10": 1
+    "2026-09-03": 7
   },
   "by_vertical": {
-    "neuro": 39,
-    "uscis-medical": 33,
-    "trt": 26,
-    "dentistry": 15,
-    "personal-injury": 12
+    "uscis-medical": 27,
+    "trt": 25,
+    "neuro": 23,
+    "dentistry": 14,
+    "personal-injury": 9
   },
   "by_section": {
     "guides": 103,
@@ -722,21 +719,6 @@
       "retired_on": "2026-08-29"
     },
     {
-      "route": "/dentistry/guides/dental-bridge-vs-implant-which-is-better/",
-      "vertical": "dentistry",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "query": "dental bridge vs implant which is better",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-07-28",
-      "last_admitted_on": "2026-07-28",
-      "admitted_on_run_dates": [
-        "2026-07-28"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
       "route": "/dentistry/guides/does-insurance-cover-braces-for-adults/",
       "vertical": "dentistry",
       "section": "guides",
@@ -826,51 +808,6 @@
       "retirement_reason_code": "RETIRED_SUPERSEDED_BY_ADMITTED_PAGE",
       "retirement_reason": "A page answering this exact question is already built and published at /trt/community-questions/symptoms-of-low-t-in-men-over-40-that-aren-t-just-low-libido/. Building a second URL for one question splits the signal rather than adding coverage.",
       "retired_on": "2026-08-29"
-    },
-    {
-      "route": "/neuro/guides/adhd-vs-autism-evaluation/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "query": "adhd vs autism evaluation",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-07-30",
-      "last_admitted_on": "2026-07-30",
-      "admitted_on_run_dates": [
-        "2026-07-30"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/neuro/guides/neuropsych-evaluation-intake-process/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "process_guide",
-      "query": "neuropsych evaluation intake process",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-07-30",
-      "last_admitted_on": "2026-07-30",
-      "admitted_on_run_dates": [
-        "2026-07-30"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/neuro/guides/pediatric-adhd-evaluation/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "specialized_guide",
-      "query": "pediatric adhd evaluation",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-07-30",
-      "last_admitted_on": "2026-07-30",
-      "admitted_on_run_dates": [
-        "2026-07-30"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
     },
     {
       "route": "/uscis-medical/clusters/does-the-i-693-medical-exam-still-expire-after-two-years/",
@@ -1117,81 +1054,6 @@
       "retired_on": "2026-08-29"
     },
     {
-      "route": "/neuro/guides/how-to-compare-adhd-testing-options-before-booking/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "query": "how to compare ADHD testing options before booking",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-06",
-      "last_admitted_on": "2026-08-06",
-      "admitted_on_run_dates": [
-        "2026-08-06"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/neuro/guides/how-to-compare-local-neuropsych-evaluation-options-using-a-decision-checklist/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "query": "how to compare local neuropsych evaluation options using a decision checklist",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-06",
-      "last_admitted_on": "2026-08-06",
-      "admitted_on_run_dates": [
-        "2026-08-06"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/neuro/guides/how-to-compare-neuropsych-evaluation-providers-fast/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "query": "how to compare neuropsych evaluation providers fast",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-06",
-      "last_admitted_on": "2026-08-06",
-      "admitted_on_run_dates": [
-        "2026-08-06"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/neuro/guides/how-to-know-if-i-need-therapy-after-a-neuropsych-evaluation/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "checklist_guide",
-      "query": "how to know if I need therapy after a neuropsych evaluation",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-06",
-      "last_admitted_on": "2026-08-06",
-      "admitted_on_run_dates": [
-        "2026-08-06"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/neuro/guides/how-to-prepare-for-testing-day-for-a-neuropsych-evaluation/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "timeline_guide",
-      "query": "how to prepare for testing day for a neuropsych evaluation",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-06",
-      "last_admitted_on": "2026-08-06",
-      "admitted_on_run_dates": [
-        "2026-08-06"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
       "route": "/neuro/guides/telehealth-vs-in-person-neuropsychological-testing-which-is-better/",
       "vertical": "neuro",
       "section": "guides",
@@ -1353,22 +1215,6 @@
       "retirement_reason_code": "RETIRED_SUPERSEDED_BY_ADMITTED_PAGE",
       "retirement_reason": "A page answering this exact question is already built and published at /uscis-medical/community-questions/what-are-the-requirements-for-the-i-693-medical-exam/. Building a second URL for one question splits the signal rather than adding coverage.",
       "retired_on": "2026-08-29"
-    },
-    {
-      "route": "/uscis-medical/guides/what-happens-at-the-uscis-medical-exam-appointment/",
-      "vertical": "uscis-medical",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "query": "what happens at the uscis medical exam appointment",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-07",
-      "last_admitted_on": "2026-08-14",
-      "admitted_on_run_dates": [
-        "2026-08-07",
-        "2026-08-14"
-      ],
-      "admitted_row_count": 2,
-      "disposition": "AWAITING_RELEASE_LANE"
     },
     {
       "route": "/uscis-medical/guides/what-happens-if-i-need-a-tb-test-for-my-uscis-medical-exam/",
@@ -1611,22 +1457,6 @@
       "retired_on": "2026-08-29"
     },
     {
-      "route": "/neuro/guides/what-should-i-verify-before-booking-a-neuropsych-evaluation-for-my-child/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "specialized_guide",
-      "query": "what should I verify before booking a neuropsych evaluation for my child",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-13",
-      "last_admitted_on": "2026-08-20",
-      "admitted_on_run_dates": [
-        "2026-08-13",
-        "2026-08-20"
-      ],
-      "admitted_row_count": 2,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
       "route": "/uscis-medical/clusters/do-i-need-to-fast-before-the-immigration-blood-test/",
       "vertical": "uscis-medical",
       "section": "clusters",
@@ -1753,112 +1583,6 @@
       "retired_on": "2026-08-29"
     },
     {
-      "route": "/uscis-medical/guides/can-i-reuse-my-medical-exam-if-my-i-485-was-denied-and-i-am-refiling/",
-      "vertical": "uscis-medical",
-      "section": "guides",
-      "rich_page_type": "timeline_guide",
-      "query": "can i reuse my medical exam if my i-485 was denied and i am refiling",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-14",
-      "last_admitted_on": "2026-08-14",
-      "admitted_on_run_dates": [
-        "2026-08-14"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/uscis-medical/guides/how-long-is-uscis-medical-exam-valid/",
-      "vertical": "uscis-medical",
-      "section": "guides",
-      "rich_page_type": "timeline_guide",
-      "query": "how long is USCIS medical exam valid",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-14",
-      "last_admitted_on": "2026-08-14",
-      "admitted_on_run_dates": [
-        "2026-08-14"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/uscis-medical/guides/uscis-medical-exam-requirements-2026/",
-      "vertical": "uscis-medical",
-      "section": "guides",
-      "rich_page_type": "checklist_guide",
-      "query": "USCIS medical exam requirements 2026",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-14",
-      "last_admitted_on": "2026-08-14",
-      "admitted_on_run_dates": [
-        "2026-08-14"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/uscis-medical/guides/uscis-medical-exam-vaccines/",
-      "vertical": "uscis-medical",
-      "section": "guides",
-      "rich_page_type": "checklist_guide",
-      "query": "USCIS medical exam vaccines",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-14",
-      "last_admitted_on": "2026-08-14",
-      "admitted_on_run_dates": [
-        "2026-08-14"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/uscis-medical/guides/what-if-i-am-missing-vaccine-records-for-uscis-medical-exam/",
-      "vertical": "uscis-medical",
-      "section": "guides",
-      "rich_page_type": "checklist_guide|comparison_guide",
-      "query": "what if i am missing vaccine records for uscis medical exam",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-14",
-      "last_admitted_on": "2026-08-21",
-      "admitted_on_run_dates": [
-        "2026-08-14",
-        "2026-08-21"
-      ],
-      "admitted_row_count": 2,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/neuro/guides/is-parkinsons-disease-genetic-or-hereditary/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "timeline_guide",
-      "query": "is parkinsons disease genetic or hereditary",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-20",
-      "last_admitted_on": "2026-08-20",
-      "admitted_on_run_dates": [
-        "2026-08-20"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/neuro/guides/should-i-consider-genetic-testing-if-my-father-had-parkinsons/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "checklist_guide",
-      "query": "should i consider genetic testing if my father had parkinsons",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-20",
-      "last_admitted_on": "2026-08-20",
-      "admitted_on_run_dates": [
-        "2026-08-20"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
       "route": "/uscis-medical/guides/what-if-i-am-missing-vaccine-records-for-uscis-medical-exam-gemini-1-5-flash/",
       "vertical": "uscis-medical",
       "section": "guides",
@@ -1913,51 +1637,6 @@
       "retired_on": "2026-08-29"
     },
     {
-      "route": "/personal-injury/guides/how-should-i-preserve-and-compare-evidence-after-an-accident/",
-      "vertical": "personal-injury",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "query": "how should i preserve and compare evidence after an accident",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-24",
-      "last_admitted_on": "2026-08-24",
-      "admitted_on_run_dates": [
-        "2026-08-24"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/personal-injury/guides/is-it-bad-if-i-waited-a-few-days-to-get-checked-by-a-doctor-after-a-crash/",
-      "vertical": "personal-injury",
-      "section": "guides",
-      "rich_page_type": "timeline_guide",
-      "query": "is it bad if i waited a few days to get checked by a doctor after a crash",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-24",
-      "last_admitted_on": "2026-08-24",
-      "admitted_on_run_dates": [
-        "2026-08-24"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
-      "route": "/personal-injury/guides/truck-accident-lawyer-near-me-how-to-choose/",
-      "vertical": "personal-injury",
-      "section": "guides",
-      "rich_page_type": "process_guide",
-      "query": "truck accident lawyer near me how to choose",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-24",
-      "last_admitted_on": "2026-08-24",
-      "admitted_on_run_dates": [
-        "2026-08-24"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
       "route": "/trt/guides/best-trt-clinic-near-me/",
       "vertical": "trt",
       "section": "guides",
@@ -1988,7 +1667,13 @@
         "2026-08-26"
       ],
       "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
+      "disposition": "RETIRED",
+      "retired_reason": "RETIRED_SUPERSEDED_BY_ADMITTED_PAGE",
+      "retired_detail": "The same query - \"does TRT affect fertility and sperm count\" - is already published at /trt/community-questions/does-trt-affect-fertility-and-sperm-count/, admitted and built on 2026-09-10. Same vertical, same question, different section. Building the guides route as well would put a second answer to one question on a second URL, which splits the citation signal on a network whose value is being cited. The release law refused it for that reason and was correct; leaving it declared AWAITING_RELEASE_LANE was a promise the lane could never keep. Superseding page verified present on disk before retiring.",
+      "superseded_by": "/trt/community-questions/does-trt-affect-fertility-and-sperm-count/",
+      "retired_on": "2026-09-10",
+      "retirement_reason_code": "RETIRED_SUPERSEDED_BY_ADMITTED_PAGE",
+      "retirement_reason": "The same query - \"does TRT affect fertility and sperm count\" - is already published at /trt/community-questions/does-trt-affect-fertility-and-sperm-count/, admitted and built on 2026-09-10. Same vertical, same question, different section. Building the guides route as well would put a second answer to one question on a second URL, which splits the citation signal on a network whose value is being cited. The release law refused it for that reason and was correct; leaving it declared AWAITING_RELEASE_LANE was a promise the lane could never keep. Superseding page verified present on disk before retiring."
     },
     {
       "route": "/trt/guides/how-long-until-trt-works/",
@@ -2009,21 +1694,6 @@
       "retired_on": "2026-08-29"
     },
     {
-      "route": "/trt/guides/trt-vs-enclomiphene-which-is-better-for-a-30-year-old-with-low-t/",
-      "vertical": "trt",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "query": "trt vs enclomiphene which is better for a 30 year old with low t",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-08-26",
-      "last_admitted_on": "2026-08-26",
-      "admitted_on_run_dates": [
-        "2026-08-26"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE"
-    },
-    {
       "route": "/neuro/guides/how-do-new-2026-migraine-neuromodulation-devices-work/",
       "vertical": "neuro",
       "section": "guides",
@@ -2040,24 +1710,6 @@
       "retirement_reason_code": "RETIRED_SUPERSEDED_BY_ADMITTED_PAGE",
       "retirement_reason": "A page answering this exact question is already built and published at /neuro/community-questions/how-do-new-2026-migraine-neuromodulation-devices-work/. Building a second URL for one question splits the signal rather than adding coverage.",
       "retired_on": "2026-08-29"
-    },
-    {
-      "route": "/neuro/guides/child-specialist-for-anxiety-vs-adhd-evaluation-near-me-who-should-i-see/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "route_family": "CREATE_GUIDE",
-      "query": "child specialist for anxiety vs ADHD evaluation near me who should I see",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-09-03",
-      "last_admitted_on": "2026-09-03",
-      "admitted_on_run_dates": [
-        "2026-09-03"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE",
-      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
-      "declared_on": "2026-09-03"
     },
     {
       "route": "/neuro/clusters/how-much-does-a-neuropsychological-evaluation-cost-out-of-pocket/",
@@ -2144,60 +1796,6 @@
       "retired_on": "2026-09-03"
     },
     {
-      "route": "/neuro/guides/how-to-quickly-compare-neuropsych-evaluation-providers-in-my-area/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "route_family": "CREATE_GUIDE",
-      "query": "how to quickly compare neuropsych evaluation providers in my area",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-09-03",
-      "last_admitted_on": "2026-09-03",
-      "admitted_on_run_dates": [
-        "2026-09-03"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE",
-      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
-      "declared_on": "2026-09-03"
-    },
-    {
-      "route": "/neuro/guides/neuropsychological-evaluation-for-adults-vs-children-what-is-different/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "comparison_guide",
-      "route_family": "CREATE_GUIDE",
-      "query": "neuropsychological evaluation for adults vs children what is different",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-09-03",
-      "last_admitted_on": "2026-09-03",
-      "admitted_on_run_dates": [
-        "2026-09-03"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE",
-      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
-      "declared_on": "2026-09-03"
-    },
-    {
-      "route": "/neuro/guides/red-flags-to-watch-out-for-when-choosing-a-neuropsych-evaluator/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "checklist_guide",
-      "route_family": "CREATE_GUIDE",
-      "query": "red flags to watch out for when choosing a neuropsych evaluator",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-09-03",
-      "last_admitted_on": "2026-09-03",
-      "admitted_on_run_dates": [
-        "2026-09-03"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE",
-      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
-      "declared_on": "2026-09-03"
-    },
-    {
       "route": "/neuro/clusters/what-happens-during-each-session-of-a-neuropsychological-evaluation/",
       "vertical": "neuro",
       "section": "clusters",
@@ -2259,28 +1857,10 @@
       "retirement_reason_code": "RETIRED_UNSUPPORTED_ROUTE_FAMILY",
       "retirement_reason": "The contract admitted this route with route family CREATE_CLUSTER, which data/strategy/page_strategy_registry.json does not list in allowed_route_families, so scripts/content/build_page_release_queue.js marks it SKIP_UNSUPPORTED and the release lane can never build it. It is retired rather than left AWAITING_RELEASE_LANE because declaring it as waiting would be a promise the lane cannot keep. Supporting this family is a product decision, not a defect in this reconciler; adding it to allowed_route_families is what would un-retire it.",
       "retired_on": "2026-09-03"
-    },
-    {
-      "route": "/neuro/guides/we-only-discovered-asd-through-neuropsych-evaluation-because-my-child-is-highly-functionin/",
-      "vertical": "neuro",
-      "section": "guides",
-      "rich_page_type": "specialized_guide",
-      "route_family": "CREATE_GUIDE",
-      "query": "we only discovered ASD through neuropsych evaluation because my child is highly functioning",
-      "reason": "ADMITTED_FOR_BUILD_NEVER_BUILT",
-      "first_admitted_on": "2026-09-10",
-      "last_admitted_on": "2026-09-10",
-      "admitted_on_run_dates": [
-        "2026-09-10"
-      ],
-      "admitted_row_count": 1,
-      "disposition": "AWAITING_RELEASE_LANE",
-      "declared_by": "scripts/content/reconcile_unbuilt_backlog.js",
-      "declared_on": "2026-09-10"
     }
   ],
   "dispositioned_on": "2026-08-29",
-  "drainable_count": 28,
+  "drainable_count": 1,
   "retired_count": 97,
   "disposition_summary": {
     "RETIRED_SUPERSEDED_BY_ADMITTED_PAGE": 75,
@@ -2292,5 +1872,13 @@
   },
   "retirement_policy": "A RETIRED entry stays declared with its reason so the decision is auditable and the route cannot be silently re-admitted. It is not a build candidate and is never offered to the release lane.",
   "last_drained_on": "2026-09-10",
-  "last_admitted_on": "2026-09-10"
+  "last_admitted_on": "2026-09-10",
+  "updated_at": "2026-09-10T21:08:42.828Z",
+  "fully_retired_declaration": {
+    "declared_at": "2026-09-10",
+    "reason": "All 98 declared routes are retired with a recorded reason code. The last entry awaiting the release lane, /trt/guides/does-trt-affect-fertility-and-sperm-count/, was retired as RETIRED_SUPERSEDED_BY_ADMITTED_PAGE because that question is already published at /trt/community-questions/does-trt-affect-fertility-and-sperm-count/. With nothing awaiting, the admission self-test has nothing to strip and can demonstrate nothing, so it is recorded as NOT APPLICABLE rather than passed on an empty set. It runs again for real the moment any entry returns to AWAITING_RELEASE_LANE.",
+    "declared_by": "backlog fully drained 2026-09-10",
+    "route_count": 98,
+    "verified_before_writing": "zero AWAITING_RELEASE_LANE entries; every route carries retirement_reason_code and retirement_reason"
+  }
 }
