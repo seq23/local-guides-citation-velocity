@@ -349,12 +349,26 @@ function tableRowForRequirement(requirement, query, index) {
   // reached 111 rendered pages, identical on every one of them, and it is what the
   // review agent kept re-reporting: a table that tells you to go work it out.
   //
-  // The seven branches above are the requirements this compiler can actually turn
-  // into a verification step. A requirement that matches none of them has no
-  // verification content, so it gets NO ROW - renderTable drops a table with no
-  // surviving rows entirely, which is the correct disclosure. Inventing a cell to
-  // fill the slot would be worse than either, on pages that exist to be cited.
-  return null;
+  // FIRST CUT WAS `return null` - drop the whole row - and the repo's own guard
+  // refused it, correctly. acceptMutationScope rejected 23 of the 108 thawed routes
+  // with `ledgered_markers_lost`: the row's FIRST cell is the requirement itself,
+  // and on /dentistry/cost-insurance/ that cell was the only place the ledgered
+  // markers "does medicare cover dental implants" (7 dependent rows), "how to choose
+  // a dentist" and "how to check if a dentist accepts my insurance" appeared. Taking
+  // the row out to remove the instruction would have banked exactly the regression
+  // VALIDATION_AND_HANDOFF.md item 1 describes.
+  //
+  // So the row stays and the OFFENDING CELL is rewritten for the right audience.
+  // Nothing is invented: the "What to verify" cell now says what to do with the
+  // factor named in cell one, in the same register as cell three, and it no longer
+  // quotes the query back at the reader as a task. A row with no requirement at all
+  // is still dropped - that is the "Requirement <n>" case, which carries no marker.
+  if (!r) return null;
+  return [
+    r,
+    'Ask this as a specific question and get the answer in writing before choosing a provider.',
+    'Specific, written answers are more reliable than broad marketing claims.'
+  ];
 }
 function rowsFromFix(edit, query, headers, count) {
   const seeds = itemsFromFix(edit, query, count);

@@ -79,10 +79,16 @@ function withoutTemplateScaffolding(values) {
 /**
  * Drop whole ROWS that carry scaffolding in any cell.
  *
- * Blanking the offending cell was the first cut and it is worse: renderTable turns an
- * empty cell into "Not stated", so the page would say "Not stated" in the column the
- * reader came for, under a factor label that is real. The row was never filled in.
- * Omit it.
+ * Used for artifacts recovered from the DURABLE STORES, where the row already exists
+ * and cannot be re-derived. Blanking the offending cell is worse than dropping the
+ * row: renderTable turns an empty cell into "Not stated", so the page would say "Not
+ * stated" in the column the reader came for.
+ *
+ * The compiler itself does NOT drop these rows - see tableRowForRequirement in
+ * html_fix_acceptance_parser.js. It rewrites the cell, because the row's first cell
+ * carries ledgered markers and acceptMutationScope refused 23 routes when they were
+ * dropped. Here there is no requirement text to rebuild the row from, so dropping is
+ * the only honest option; the compiler's own output no longer reaches this path.
  */
 function withoutTemplateScaffoldingRows(rows) {
   if (!Array.isArray(rows)) return [];
