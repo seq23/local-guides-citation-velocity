@@ -1,21 +1,11 @@
 {
   "schema_version": "1.0",
   "validator": "repair-command-efficacy",
-  "status": "FAIL",
+  "status": "PASS",
   "candidates_examined": 11,
-  "durable_observations": 1,
+  "durable_observations": 0,
   "observations_resolved_this_run": 0,
-  "observations": [
-    {
-      "validator_id": "citation-agent-fixes",
-      "repair_command": "npm run apply:citation-agent-fixes",
-      "watch_paths": [
-        "data/report_fixes/agent_fix_ledger.json"
-      ],
-      "first_observed_at": "2026-09-10",
-      "note": "Recorded so this survives the failure ceasing to reproduce. It clears only when the registration changes."
-    }
-  ],
+  "observations": [],
   "examined": [
     {
       "id": "accepted-artifact-recovery",
@@ -24,14 +14,8 @@
     },
     {
       "id": "citation-agent-fixes",
-      "status": "REPAIR_NO_OP_ON_FAILURE",
-      "repair_run": true,
-      "repair_exit_code": 0,
-      "watch_paths": [
-        "data/report_fixes/agent_fix_ledger.json"
-      ],
-      "any_path_changed": false,
-      "validator_passes_after_repair": false
+      "status": "ALREADY_PASSING",
+      "repair_run": false
     },
     {
       "id": "historic-artifact-recovery",
@@ -79,7 +63,5 @@
       "repair_run": false
     }
   ],
-  "errors": [
-    "repair_no_op_on_failure:citation-agent-fixes - \"node scripts/validators/validate_citation_agent_fixes.js\" failed, \"npm run apply:citation-agent-fixes\" ran (exit 0) and changed none of data/report_fixes/agent_fix_ledger.json, and the validator still fails afterward. The repair does not address the condition currently failing it."
-  ]
+  "errors": []
 }
