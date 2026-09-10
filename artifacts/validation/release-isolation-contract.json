@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "guard": "release-isolation-contract",
+  "status": "PASS",
+  "checked_at": "2026-09-10",
+  "cases_examined": 8,
+  "mapped_validators": [
+    "rendered-output-shrink-guard",
+    "agent-recommendation-page-application"
+  ],
+  "examined": [
+    {
+      "case": "in_scope_failure_is_held_and_the_rest_publishes",
+      "why": "A route the release thawed, failing a validator that names it, is charged to its own unit; the other two units publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "failure_outside_the_mutation_scope_is_systemic",
+      "why": "The release thawed /b/ and /c/ only. A shrink on /a/ cannot have been caused by a unit in this batch, so it must fail the whole run rather than be held.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "zero_published_fails_loudly",
+      "why": "Every unit in scope is held, so nothing would publish. A lane that ships nothing must not report success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "unmapped_blocking_validator_is_systemic",
+      "why": "A blocking validator with no declared attribution can never be routed around. Unknown must mean whole-run failure, not a silent hold.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "mapped_validator_naming_no_route_is_systemic",
+      "why": "The pointer resolved to nothing, so the evidence never said which unit is at fault. Charging one anyway would be a guess.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "unreadable_evidence_is_systemic",
+      "why": "A validator that failed without leaving readable evidence has not told anyone which unit to charge.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "mapping_resolves:rendered-output-shrink-guard",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "unjustified_shrinks[].implementation_path"
+      ]
+    },
+    {
+      "case": "mapping_resolves:agent-recommendation-page-application",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "regressed_pages[].page",
+        "unenrolled_pages[].page",
+        "stale_allowance_pages[].page"
+      ]
+    }
+  ],
+  "errors": []
+}

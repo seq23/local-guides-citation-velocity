@@ -5341,7 +5341,10 @@
       "why_existing_checks_do_not_cover": "published-inventory-stability counts pages and frozen-output-integrity hashes accepted bytes. Neither notices a page that is still present, still frozen and still hashing correctly after being re-accepted several kilobytes smaller.",
       "repair_command": "",
       "repair_writes": [],
-      "repair_scope": "NO REPAIR, AND NONE IS POSSIBLE BY COMMAND. This failure names a rendered page that came back from a build smaller than its accepted floor. Clearing it requires a judgment only a person can make: either the lost bytes are real content and must be RESTORED, or the shrink is correct - a duplicate cut, scaffolding deleted, content deliberately removed - and belongs in justified_shrinks in data/release/rendered_size_baseline.json WITH A WRITTEN REASON, which is the guard's own designed acceptance path and not a lowering of the bar. The previous registration claimed \"npm run measure:historic-page-maximum\", which writes data/release/historic_page_maximum.json; the failing verdict, unjustified_shrinks, is computed from data/release/rendered_size_baseline.json, which that command never touches. It ran against a live failure in Velocity Content Release run 34416882965, exited 0, changed nothing, and stranded the publish. With no repair declared, the guard stays HARD_FAIL in validate:release and blocks merges to main; what it no longer does is strand a publish it cannot unblock."
+      "repair_scope": "NO REPAIR, AND NONE IS POSSIBLE BY COMMAND. This failure names a rendered page that came back from a build smaller than its accepted floor. Clearing it requires a judgment only a person can make: either the lost bytes are real content and must be RESTORED, or the shrink is correct - a duplicate cut, scaffolding deleted, content deliberately removed - and belongs in justified_shrinks in data/release/rendered_size_baseline.json WITH A WRITTEN REASON, which is the guard's own designed acceptance path and not a lowering of the bar. The previous registration claimed \"npm run measure:historic-page-maximum\", which writes data/release/historic_page_maximum.json; the failing verdict, unjustified_shrinks, is computed from data/release/rendered_size_baseline.json, which that command never touches. It ran against a live failure in Velocity Content Release run 34416882965, exited 0, changed nothing, and stranded the publish. With no repair declared, the guard stays HARD_FAIL in validate:release and blocks merges to main; what it no longer does is strand a publish it cannot unblock.",
+      "unit_attribution": [
+        "unjustified_shrinks[].implementation_path"
+      ]
     },
     {
       "id": "rendered-programmatic-substance",
@@ -7835,6 +7838,11 @@
       "repair_command": "npm run recover:recommendation-page-application",
       "repair_writes": [
         "data/report_fixes/agent_recommendation_page_application_baseline.json"
+      ],
+      "unit_attribution": [
+        "regressed_pages[].page",
+        "unenrolled_pages[].page",
+        "stale_allowance_pages[].page"
       ]
     },
     {
@@ -8614,6 +8622,54 @@
         "release"
       ],
       "evidence_file": "artifacts/validation/blocked-target-resolvability.json",
+      "failure_action": "stop release and repair"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 15,
+      "id": "release-isolation-contract",
+      "title": "Per-unit release isolation never becomes suppression",
+      "path": "scripts/validators/validate_release_isolation_contract.js",
+      "command": "node scripts/validators/validate_release_isolation_contract.js",
+      "risk_prevented": "Prevents scripts/release/hold_failing_units.mjs from charging a SYSTEMIC failure to a release unit, which would publish while something real was swept into a held list nobody reads. The rule comes from a measured property: rendered-output-shrink-guard is TREE-LEVEL in what it scans - all 2,067 accepted floors, whether or not the release touched them - and per-route only in what it reports, so \"the evidence names a route\" is not sufficient authority to hold a unit. It also prevents a run that holds everything and publishes nothing from exiting 0, which is the runs-but-inert defect this repo names by name. Both are proved against constructed inputs on every run, while the real lane is green: a capability exercised only when production needs it is one nobody knows is dead.",
+      "requires_files": [
+        "scripts/release/hold_failing_units.mjs",
+        "_validation_registry.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/release-isolation-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/release-isolation-contract.json"
+      ],
+      "why_existing_checks_do_not_cover": "publish-step-bounded asserts the publish step is bounded and announces its phases, not what it may skip. self-heal-repair-contract governs whether a repair can clear its validator, a different question from whether a failure may be attributed to a unit. trace-outcome-legibility proves every trace_status is counted and printed; it knows nothing about the mutation scope. Nothing else reads a validator failure alongside the routes the release actually thawed and asks whether the two intersect.",
+      "repair_command": "",
+      "repair_writes": [],
+      "repair_scope": "No repair, and none is possible by command. A failure names either a broken safety property in the isolator - an out-of-scope failure being held, or a zero-published run exiting 0 - or a unit_attribution pointer that has drifted from the evidence its validator writes. Both are source corrections.",
+      "tags": [
+        "validation",
+        "release",
+        "authority"
+      ],
+      "evidence_file": "artifacts/validation/release-isolation-contract.json",
       "failure_action": "stop release and repair"
     }
   ],
