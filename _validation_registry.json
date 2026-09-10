@@ -639,7 +639,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -2829,7 +2829,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -8053,7 +8053,7 @@
         "workflow",
         "release"
       ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
       "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
       "requires_files": [
         ".github/workflows/query-evidence-refresh.yml",
@@ -8898,6 +8898,50 @@
       ],
       "evidence_file": "artifacts/validation/uscis-authority-grounding-coverage.json",
       "failure_action": "stop release and repair"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "depends_on": [],
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "profiles": [
+        "audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 120,
+      "tier": "Tier 8",
+      "id": "shared-proof-path-resolution",
+      "title": "Every reader of \"where does this recommendation's proof live\" resolves through one shared module",
+      "path": "scripts/validators/validate_shared_proof_path_resolution.js",
+      "command": "node scripts/validators/validate_shared_proof_path_resolution.js",
+      "tags": [
+        "integrity",
+        "shared-contract",
+        "citation-velocity",
+        "release"
+      ],
+      "risk_prevented": "Prevents a fourth private copy of the proof-path resolution. On 2026-09-09/10 the SAME defect was found and fixed three times in three files, each with its own answer to \"where does this recommendation's proof live, and does that page exist yet?\": prepare_velocity_intake_release.js moved 39 proof pointers onto 13 pages release:velocity-content had not written yet and four consecutive release runs published zero pages (PR #114); compile_html_fix_acceptance_manifest.js asserted required content on the same not-yet-created targets; trace_citation_agent_fixes.js failed run 34471600371 with rendered_missing_route on 8 of those routes, on the one run that had cleared absorption and pushed a real commit. scripts/lib/recommendation_proof_path.js now owns the rule; this makes sharing it structural. It reads PROOF_PATH_CONSUMERS from the module itself, requires each declared consumer to import it, refuses four named shapes of private re-implementation, and behaviourally proves the module still separates PROVEN from PENDING_RELEASE_UNIT from MISSING so it can never excuse a real regression.",
+      "why_existing_checks_do_not_cover": "Nothing in the repo relates the three consumers to each other. citation-agent-fix-trace, html-fix-acceptance-compiler and the intake validators each grade their own output and were all green while the three copies disagreed - that is the repo's named recurring defect class, \"two components each keeping their own list with no link\". A comment saying \"use the shared module\" is not enforcement: this is a static check over a declared consumer list, and it hard-fails on zero consumers examined rather than passing on an empty loop.",
+      "requires_files": [
+        "_validation_registry.json",
+        "scripts/lib/recommendation_proof_path.js",
+        "scripts/validators/validate_shared_proof_path_resolution.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/shared-proof-path-resolution.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/shared-proof-path-resolution.json"
+      ]
     }
   ],
   "legacy_policy": {

@@ -3,16 +3,32 @@
   "profile": "release",
   "max_attempts": 3,
   "dry_run": false,
-  "status": "CLEAN",
+  "status": "NOT_CLEAN",
   "attempts": [
     {
       "attempt": 1,
-      "failed": [],
-      "repaired": [],
-      "result": "CLEAN"
+      "failed": [
+        "citation-agent-fixes",
+        "repair-command-efficacy"
+      ],
+      "repaired": [
+        {
+          "id": "citation-agent-fixes",
+          "cmd": "npm run apply:citation-agent-fixes",
+          "code": 0,
+          "no_op": true,
+          "resolved_by_recheck": false,
+          "said": "AGENT EXACT IMPLEMENTATION APPLY PASS: ledgered_repairs=17; ledger=data/report_fixes/agent_exact_implementation_ledger.json\nCitation-agent source patches applied (8 page record updates).\nCitation-agent fixes apply PASS: exact=true, legacy=8, cumulative=3225."
+        }
+      ],
+      "result": "REPAIRS_CHANGED_NOTHING"
     }
   ],
-  "safe_to_push": true,
-  "held_gate_by": [],
-  "reported_not_blocking": []
+  "safe_to_push": false,
+  "held_gate_by": [
+    "citation-agent-fixes"
+  ],
+  "reported_not_blocking": [
+    "repair-command-efficacy"
+  ]
 }

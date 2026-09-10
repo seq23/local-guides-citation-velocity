@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "fa7a6ee5e22d78e979d2687396f7eb71a1dccbef20c3d79c1c771663e54e881f",
+  "registry_sha256": "13becc5aab6ef559b83bdfc07bdc0abfc9873c75de8281a68f2f5755ddde686d",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 200,
-    "active": 173,
+    "total": 201,
+    "active": 174,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 171,
+    "hard_fail": 172,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -465,7 +465,8 @@
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
         "release-isolation-contract",
-        "uscis-authority-grounding-coverage"
+        "uscis-authority-grounding-coverage",
+        "shared-proof-path-resolution"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -638,7 +639,8 @@
         "deterministic-build",
         "repair-command-efficacy",
         "repair-fixture-capability",
-        "repo-hygiene"
+        "repo-hygiene",
+        "shared-proof-path-resolution"
       ]
     },
     "strict": {
@@ -814,7 +816,8 @@
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
         "release-isolation-contract",
-        "uscis-authority-grounding-coverage"
+        "uscis-authority-grounding-coverage",
+        "shared-proof-path-resolution"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -985,7 +988,8 @@
         "deterministic-build",
         "repair-command-efficacy",
         "repair-fixture-capability",
-        "repo-hygiene"
+        "repo-hygiene",
+        "shared-proof-path-resolution"
       ]
     },
     "advisory": {
@@ -1194,7 +1198,8 @@
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
         "release-isolation-contract",
-        "uscis-authority-grounding-coverage"
+        "uscis-authority-grounding-coverage",
+        "shared-proof-path-resolution"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1364,7 +1369,8 @@
         "public-click-audit",
         "repair-command-efficacy",
         "repair-fixture-capability",
-        "repo-hygiene"
+        "repo-hygiene",
+        "shared-proof-path-resolution"
       ]
     },
     "audit": {
@@ -1549,7 +1555,8 @@
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
         "release-isolation-contract",
-        "uscis-authority-grounding-coverage"
+        "uscis-authority-grounding-coverage",
+        "shared-proof-path-resolution"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1729,7 +1736,8 @@
         "public-click-audit",
         "repair-command-efficacy",
         "repair-fixture-capability",
-        "repo-hygiene"
+        "repo-hygiene",
+        "shared-proof-path-resolution"
       ]
     },
     "distribution": {
@@ -9520,6 +9528,43 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents a uscis-medical route from being neither authority-grounded nor deliberately stopped, which is the shape that let 22 ungrounded routes accumulate invisibly until a large batch drew one and took the whole release red - agent_7b5d43b6820884d4:repair_not_proven on run 34409865197 is the measured instance. It also prevents the repair that looks obvious and is forbidden: grounding the backlog by spraying one generated template across many routes. These are distinct long-tail pages whose entire purpose is being cited, so near-identical copy across them destroys more citation value than the named stops cost. That constraint is enforced by measuring pairwise similarity of required_strings and answer text across every grounded uscis entry, not by asserting it in a comment. Finally it prevents a landed-directive contradiction from being re-litigated every run, by failing any durable ledger entry that promises a phrase its own landed recommendations ask to remove unless a decision is recorded for that route.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "shared-proof-path-resolution",
+        "title": "Every reader of \"where does this recommendation's proof live\" resolves through one shared module",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_shared_proof_path_resolution.js",
+        "command": "node scripts/validators/validate_shared_proof_path_resolution.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json",
+          "scripts/lib/recommendation_proof_path.js",
+          "scripts/validators/validate_shared_proof_path_resolution.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/shared-proof-path-resolution.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/shared-proof-path-resolution.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents a fourth private copy of the proof-path resolution. On 2026-09-09/10 the SAME defect was found and fixed three times in three files, each with its own answer to \"where does this recommendation's proof live, and does that page exist yet?\": prepare_velocity_intake_release.js moved 39 proof pointers onto 13 pages release:velocity-content had not written yet and four consecutive release runs published zero pages (PR #114); compile_html_fix_acceptance_manifest.js asserted required content on the same not-yet-created targets; trace_citation_agent_fixes.js failed run 34471600371 with rendered_missing_route on 8 of those routes, on the one run that had cleared absorption and pushed a real commit. scripts/lib/recommendation_proof_path.js now owns the rule; this makes sharing it structural. It reads PROOF_PATH_CONSUMERS from the module itself, requires each declared consumer to import it, refuses four named shapes of private re-implementation, and behaviourally proves the module still separates PROVEN from PENDING_RELEASE_UNIT from MISSING so it can never excuse a real regression.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -18018,6 +18063,43 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Logs, nested repos, generated junk, or backup artifacts can contaminate the baseline ZIP.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "shared-proof-path-resolution",
+        "title": "Every reader of \"where does this recommendation's proof live\" resolves through one shared module",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_shared_proof_path_resolution.js",
+        "command": "node scripts/validators/validate_shared_proof_path_resolution.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json",
+          "scripts/lib/recommendation_proof_path.js",
+          "scripts/validators/validate_shared_proof_path_resolution.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/shared-proof-path-resolution.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/shared-proof-path-resolution.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents a fourth private copy of the proof-path resolution. On 2026-09-09/10 the SAME defect was found and fixed three times in three files, each with its own answer to \"where does this recommendation's proof live, and does that page exist yet?\": prepare_velocity_intake_release.js moved 39 proof pointers onto 13 pages release:velocity-content had not written yet and four consecutive release runs published zero pages (PR #114); compile_html_fix_acceptance_manifest.js asserted required content on the same not-yet-created targets; trace_citation_agent_fixes.js failed run 34471600371 with rendered_missing_route on 8 of those routes, on the one run that had cleared absorption and pushed a real commit. scripts/lib/recommendation_proof_path.js now owns the rule; this makes sharing it structural. It reads PROOF_PATH_CONSUMERS from the module itself, requires each declared consumer to import it, refuses four named shapes of private re-implementation, and behaviourally proves the module still separates PROVEN from PENDING_RELEASE_UNIT from MISSING so it can never excuse a real regression.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
