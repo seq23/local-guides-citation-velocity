@@ -158,7 +158,205 @@ const cases = [
   }
 ];
 
-const errors = [];
+// ---------------------------------------------------------------------------
+// EVERY DECLARED MAPPING IS PROVED AGAINST THE SHAPE IT WAS MEASURED FROM.
+//
+// The cases above prove the isolator's RULES. These prove the MAPPINGS: that the
+// pointer a validator declares in _validation_registry.json actually picks the
+// offending route out of the document that validator writes when it fails.
+//
+// Each document below is a reduction of what the named validator ACTUALLY WROTE
+// when a failing state was constructed against the real tree on 2026-09-09. None
+// of it was inferred from reading the validator's source, and that distinction
+// earned its keep: every one of these arrays is EMPTY while the lane is green, so
+// a passing evidence file cannot say whether its elements are strings or objects.
+// medical-schema-emission turned out to be both - three arrays of bare path
+// strings, three of objects keyed by `file` - and a single guessed shape would
+// have declared three pointers that resolve to nothing.
+//
+// The validator entry is read LIVE from the registry, never copied here. So if a
+// mapping is deleted, renamed, or repointed at a key its validator does not
+// write, the in-scope case stops holding its route and this contract goes red.
+// That is the negative proof: the mapping cannot rot in silence.
+// ---------------------------------------------------------------------------
+const errorsBeforeCases = [];
+const registryDoc = readJson('_validation_registry.json', { validators: [] });
+const registryEntry = (id) => (registryDoc.validators || []).find((v) => v.id === id) || null;
+
+const MEASURED = [
+  {
+    id: 'rendered-internal-hrefs',
+    label: 'broken_internal_href',
+    route: '/trt/',
+    measured: 'Adding <a href="/zzz-nonexistent-route-measure/"> to trt/index.html; the validator exited 1 and wrote this errors row.',
+    evidence: {
+      'artifacts/validation/hrefs.json': {
+        validator: 'rendered-internal-hrefs', ok: false, checked: 79507, error_count: 1,
+        errors: [{ file: 'trt/index.html', href: '/zzz-nonexistent-route-measure/', issue: 'internal target missing' }]
+      }
+    }
+  },
+  {
+    id: 'no-internal-instruction-leak',
+    label: 'build_instruction_on_the_page',
+    route: '/trt/',
+    measured: 'Appending "FILEPATH: trt/index.html || EDIT: add a table" to trt/index.html; the validator exited 1 and wrote this offenders row.',
+    evidence: {
+      'artifacts/validation/internal-instruction-leak.json': {
+        schema_version: '1.0', validator: 'no-internal-instruction-leak', status: 'FAIL',
+        pages_scanned: 2351, offender_count: 1, sealed_pre_existing: 0,
+        offenders: [{ path: 'trt/index.html', reason: 'raw agent recommendation (FILEPATH:)', shapes: ['filepath', 'field-separator'] }]
+      }
+    }
+  },
+  {
+    id: 'removal-directive-not-published',
+    label: 'withheld_phrase_still_rendered',
+    route: '/dentistry/cost-insurance/',
+    measured: 'Appending the enumerated withheld phrase "Use the same questions with every lawyer on your shortlist" to dentistry/cost-insurance/index.html; the validator exited 1 and wrote this rendered_leaks row.',
+    evidence: {
+      'artifacts/validation/removal-directive-not-published.json': {
+        schema_version: '1.0', validator: 'removal-directive-not-published', status: 'FAIL',
+        routes_not_on_disk: [], source_leaks: [],
+        rendered_leaks: [{
+          implementation_path: 'dentistry/cost-insurance/index.html',
+          phrase: 'Use the same questions with every lawyer on your shortlist',
+          origin: 'enumerated:data/release/withheld_page_phrases.json'
+        }]
+      }
+    }
+  },
+  {
+    id: 'internal-link-inbound-coverage',
+    label: 'published_page_nothing_links_to',
+    route: '/zzz-isolation-measure/',
+    measured: 'Publishing zzz-isolation-measure/index.html and adding its <loc> to sitemaps/sitemap_all.xml - a page nothing links to, which is the shape a release creates; the validator exited 1 across 2,056 examined pages and wrote this new_orphans row.',
+    evidence: {
+      'artifacts/validation/internal-link-inbound-coverage.json': {
+        schema_version: '1.0', validator: 'internal-link-inbound-coverage', status: 'FAIL',
+        orphan_count: 1, stale_baseline: [],
+        new_orphans: [{ route: '/zzz-isolation-measure/', dead_inbound: [] }]
+      }
+    }
+  }
+];
+
+// One case per DECLARED POINTER on medical-schema-emission, because the six arrays
+// do not share a shape and a contract that exercised only the first would leave the
+// other five unproved. Each row is what the validator wrote when that specific
+// failure was constructed.
+const MEDICAL_EVIDENCE_BASE = {
+  schema_version: '1.0', validator: 'medical-schema-emission', status: 'FAIL',
+  missing_medical_web_page: [], medical_web_page_on_non_medical_route: [],
+  missing_price_specification: [], price_mismatch: [],
+  price_in_markup_not_visible_on_page: [], json_ld_parse_failures: []
+};
+const MEDICAL_CASES = [
+  { key: 'missing_medical_web_page', route: '/trt/', value: ['trt/index.html'],
+    measured: 'Rewriting "MedicalWebPage" to "WebPage" in trt/index.html.' },
+  { key: 'medical_web_page_on_non_medical_route', route: '/personal-injury/', value: ['personal-injury/index.html'],
+    measured: 'Adding a MedicalWebPage JSON-LD node to personal-injury/index.html.' },
+  { key: 'missing_price_specification', route: '/dentistry/dental-implants/', value: ['dentistry/dental-implants/index.html'],
+    measured: 'Rewriting "PriceSpecification" to "Thing" in dentistry/dental-implants/index.html.' },
+  { key: 'price_mismatch', route: '/dentistry/clear-aligners/',
+    value: [{ file: 'dentistry/clear-aligners/index.html', row: 'In-office, doctor-monitored (Invisalign, ClearCorrect, Spark)', expected: '3000-8500', emitted: '3007-8500' }],
+    measured: 'Shifting a minPrice by 7 in dentistry/clear-aligners/index.html.' },
+  { key: 'price_in_markup_not_visible_on_page', route: '/dentistry/clear-aligners/',
+    value: [{ file: 'dentistry/clear-aligners/index.html', row: 'In-office, doctor-monitored (Invisalign, ClearCorrect, Spark)', min: '$3,000', max: '$8,500' }],
+    measured: 'Changing the visible "$3,000" to "$3,001" in dentistry/clear-aligners/index.html while leaving the markup correct.' },
+  { key: 'json_ld_parse_failures', route: '/trt/',
+    value: [{ file: 'trt/index.html', errors: ["Expected property name or '}' in JSON at position 2 (line 1 column 3)"] }],
+    measured: 'Corrupting a JSON-LD block in trt/index.html.' }
+];
+for (const row of MEDICAL_CASES) {
+  MEASURED.push({
+    id: 'medical-schema-emission',
+    label: row.key,
+    route: row.route,
+    measured: `${row.measured} The validator exited 1 and populated ${row.key}.`,
+    evidence: { 'artifacts/validation/medical-schema-emission.json': { ...MEDICAL_EVIDENCE_BASE, [row.key]: row.value } }
+  });
+}
+
+const OTHER_UNITS = ['/an-untouched-sibling/', '/another-untouched-sibling/'];
+for (const m of MEASURED) {
+  const entry = registryEntry(m.id);
+  if (!entry) {
+    errorsBeforeCases.push(`${m.id}: this contract proves a measured mapping for it, but no validator with that id is in _validation_registry.json. A proof about a validator that is not registered proves nothing.`);
+    continue;
+  }
+  cases.push({
+    name: `measured_mapping_holds_its_own_unit:${m.id}:${m.label}`,
+    expect_code: 0,
+    expect_out: new RegExp(`HELD ${m.route.replace(/\//g, '\\/')} - ${m.id}`),
+    why: `${m.measured} With the route in this release's mutation scope, the failure is charged to it alone and the other ${OTHER_UNITS.length} units still publish.`,
+    spec: {
+      validators: [entry],
+      results: [failResult(m.id)],
+      accepted_routes: [m.route, ...OTHER_UNITS],
+      evidence: m.evidence
+    }
+  });
+  cases.push({
+    name: `measured_mapping_out_of_scope_is_systemic:${m.id}:${m.label}`,
+    expect_code: 1,
+    expect_out: /never touched|build fault/,
+    why: `The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.`,
+    spec: {
+      validators: [entry],
+      results: [failResult(m.id)],
+      accepted_routes: OTHER_UNITS,
+      evidence: m.evidence
+    }
+  });
+  cases.push({
+    name: `measured_mapping_zero_published_fails:${m.id}:${m.label}`,
+    expect_code: 1,
+    expect_out: /0 unit\(s\) publishable/,
+    why: 'The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.',
+    spec: {
+      validators: [entry],
+      results: [failResult(m.id)],
+      accepted_routes: [m.route],
+      evidence: m.evidence
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// NO MAPPING MAY BE ADDED WITHOUT A CONSTRUCTED CASE BEHIND IT.
+//
+// The whole hazard of this lane is a GUESSED mapping. A guessed one does not fail
+// loudly - it holds units that were never at fault, which silently retires good
+// pages, and it looks exactly like a working isolation. Requiring a pointer to
+// resolve against a PASSING evidence document does not catch it either: the
+// offender arrays are all empty while the lane is green, so a pointer at the wrong
+// key can still name a real key and resolve to nothing.
+//
+// So the bar is a case: to declare unit_attribution, the author must also record
+// the evidence the validator actually wrote when a failing state was constructed,
+// and prove the isolator picks the route out of it. Anything else is refused here.
+// ---------------------------------------------------------------------------
+const casedIds = new Set(cases.flatMap((c) => (c.spec.validators || []).map((v) => v.id)));
+
+// One named exception, not an allowlist to grow.
+const MAPPED_WITHOUT_LOCAL_CASE = new Map([
+  ['agent-recommendation-page-application',
+    'Mapped by PR #111 from its own measurement, and owned by another lane tonight. Its three pointers are still proved to resolve against the document it writes, by the mapping-resolution sweep below. A fixture case is deliberately NOT written here, because this author did not construct its failing state and inventing a row shape for it would be the exact guess this contract exists to refuse.']
+]);
+
+for (const v of (registryDoc.validators || [])) {
+  if (!Array.isArray(v.unit_attribution) || !v.unit_attribution.length) continue;
+  if (casedIds.has(v.id)) continue;
+  if (MAPPED_WITHOUT_LOCAL_CASE.has(v.id)) continue;
+  errorsBeforeCases.push(
+    `${v.id}: declares unit_attribution in _validation_registry.json but no constructed case in this contract exercises it. `
+    + 'A mapping with no case behind it is a mapping nobody measured, and an unmeasured mapping holds units that were never at fault. '
+    + 'Add it to MEASURED above with the evidence the validator actually wrote when you constructed its failing state, or remove the mapping and let the validator stay systemic.'
+  );
+}
+
+const errors = errorsBeforeCases;
 const examined = [];
 
 for (const testCase of cases) {

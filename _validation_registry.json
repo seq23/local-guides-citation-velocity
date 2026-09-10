@@ -3880,7 +3880,16 @@
       "mutates_files": [
         "artifacts/validation/medical-schema-emission.json"
       ],
-      "why_existing_checks_do_not_cover": "The existing schema checks assert Article, FAQPage, HowTo and BreadcrumbList. None asserts the medical types, and none checks that a price in the markup is also visible on the page."
+      "why_existing_checks_do_not_cover": "The existing schema checks assert Article, FAQPage, HowTo and BreadcrumbList. None asserts the medical types, and none checks that a price in the markup is also visible on the page.",
+      "unit_attribution": [
+        "missing_medical_web_page[]",
+        "medical_web_page_on_non_medical_route[]",
+        "missing_price_specification[]",
+        "price_mismatch[].file",
+        "price_in_markup_not_visible_on_page[].file",
+        "json_ld_parse_failures[].file"
+      ],
+      "unit_attribution_measured": "Every one of the six arrays was measured against a constructed failing state on 2026-09-09, not inferred from the source. Rewriting \"MedicalWebPage\" to \"WebPage\" in trt/index.html produced missing_medical_web_page: [\"trt/index.html\"]; adding a MedicalWebPage node to personal-injury/index.html produced medical_web_page_on_non_medical_route: [\"personal-injury/index.html\"]; rewriting \"PriceSpecification\" in dentistry/dental-implants/index.html produced missing_price_specification: [\"dentistry/dental-implants/index.html\"]; shifting a minPrice in dentistry/clear-aligners/index.html produced price_mismatch: [{file: \"dentistry/clear-aligners/index.html\", ...}]; changing the visible \"$3,000\" on that same page produced price_in_markup_not_visible_on_page: [{file: ...}]; corrupting a JSON-LD block produced json_ld_parse_failures: [{file: ...}]. Three arrays hold bare path strings and three hold objects keyed by file, which is why each is declared separately rather than assumed. Every row names the rendered file the validator itself read, so the failure belongs to that page's unit and to no other."
     },
     {
       "id": "medium-articles",
@@ -4248,7 +4257,11 @@
       "_retired_prepare_commands": [
         "npm run build"
       ],
-      "_retired_prepare_reason": "Unreachable: every prerequisite is a committed file, so run_validation_registry.js could never fire this prepare. These validators grade the committed rendered tree, which is the tree that was pushed; the declared refresh never ran and claiming it did was the untruth."
+      "_retired_prepare_reason": "Unreachable: every prerequisite is a committed file, so run_validation_registry.js could never fire this prepare. These validators grade the committed rendered tree, which is the tree that was pushed; the declared refresh never ran and claiming it did was the untruth.",
+      "unit_attribution": [
+        "offenders[].path"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: appending \"FILEPATH: trt/index.html || EDIT: add a table\" to trt/index.html produced offenders: [{path: \"trt/index.html\", reason: \"raw agent recommendation (FILEPATH:)\", shapes: [\"filepath\", \"field-separator\"]}] and exit 1. offenders is an OFFENDERS-ONLY array - a page sealed in data/content/internal_instruction_leak_baseline.json goes to `sealed` and never to `offenders` - so a row here is always a page that failed, never a page that was merely examined. The leaked instruction text is authored onto the page by the generator pass for that page, so the page is the correct charge. This validator walks the whole tree rather than this release's scope, so a leak on an untouched page resolves to a route outside the mutation scope and stays systemic, exactly as with rendered-output-shrink-guard."
     },
     {
       "status": "ACTIVE",
@@ -5220,7 +5233,11 @@
       "mutates_files": [
         "artifacts/validation/removal-directive-not-published.json"
       ],
-      "why_existing_checks_do_not_cover": "no-internal-instruction-leak and generator-instruction-refusal catch build directives leaking into copy. A legal boilerplate phrase quoted by an agent is not a build directive; it passed both while the pipeline guaranteed its presence."
+      "why_existing_checks_do_not_cover": "no-internal-instruction-leak and generator-instruction-refusal catch build directives leaking into copy. A legal boilerplate phrase quoted by an agent is not a build directive; it passed both while the pipeline guaranteed its presence.",
+      "unit_attribution": [
+        "rendered_leaks[].implementation_path"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: appending the enumerated withheld phrase \"Use the same questions with every lawyer on your shortlist\" to dentistry/cost-insurance/index.html produced rendered_leaks: [{implementation_path: \"dentistry/cost-insurance/index.html\", phrase: \"...\", origin: \"enumerated:data/release/withheld_page_phrases.json\"}] and exit 1. rendered_leaks is offenders-only: the loop pushes a row only when the page's readable text still contains a phrase a landed report asked to remove, and routes that were merely examined appear nowhere. The path is the route the removal directive itself names, so the charge lands on the unit that was told to drop the phrase and did not. source_leaks[].implementation_path is DELIBERATELY NOT DECLARED: it has the same field name but was not measured, so a source-only failure resolves to no route and stays systemic - loud, which is the safe direction."
     },
     {
       "id": "render-integrity",
@@ -5300,7 +5317,11 @@
       "mutates_files": [
         "artifacts/validation/hrefs.json"
       ],
-      "enforce_no_source_mutation": true
+      "enforce_no_source_mutation": true,
+      "unit_attribution": [
+        "errors[].file"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: adding <a href=\"/zzz-nonexistent-route-measure/\"> to trt/index.html produced errors: [{file: \"trt/index.html\", href: \"/zzz-nonexistent-route-measure/\", issue: \"internal target missing\"}] and exit 1. The shape had to be measured rather than read off a passing run, because errors is empty while the lane is green and the key alone does not say whether its elements are strings or objects - here they are objects carrying `file`. errors is offenders-only; the 79,507 href values that resolved are counted in `checked` and named nowhere. `file` is the page CONTAINING the bad href, which is the page the release authored, so the charge is correct for the two failure shapes this validator raises on a touched page: a link to a target that does not exist, and an unresolved {{template token}}. The opposite direction - a release deleting a target so untouched pages now point at nothing - names those untouched linking pages, which are outside the mutation scope, so it stays systemic and fails the whole run. That is the right verdict: removing a route that others link to is a build fault, not one bad row."
     },
     {
       "status": "ACTIVE",
@@ -7690,7 +7711,11 @@
       "produces_files": [
         "artifacts/validation/internal-link-inbound-coverage.json"
       ],
-      "mutates_files": []
+      "mutates_files": [],
+      "unit_attribution": [
+        "new_orphans[].route"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: publishing zzz-isolation-measure/index.html and adding its <loc> to sitemaps/sitemap_all.xml - a page nothing links to, which is exactly the shape a release creates - produced new_orphans: [{route: \"/zzz-isolation-measure/\", dead_inbound: []}], the message \"/zzz-isolation-measure/ is published and indexable but no served page links to it\", and exit 1 across 2,056 examined published pages. The route arrives already canonical (\"/zzz-isolation-measure/\"), not as a file path. new_orphans is offenders-only by construction: it is the orphan list minus the accepted baseline minus the off-topic quarantine, so an accepted or quarantined orphan is never a row. Holding the named unit is the right charge and the right outcome - an unreachable page cannot pass citation authority on, so publishing it is worth nothing and withholding it costs nothing. stale_baseline is DELIBERATELY NOT DECLARED: it also fails this validator, it names routes that are no longer orphans, and charging a page for a bookkeeping entry about it would hold a page that is now correct. A stale-baseline-only failure therefore resolves to no route and stays systemic."
     },
     {
       "status": "ACTIVE",
