@@ -1,16 +1,16 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-09-09
-Target publish units: 1000
-Selected units: 85
-Twin agent units: 85
+Release date: 2026-09-10
+Target publish units: 228
+Selected units: 93
+Twin agent units: 93
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 389
+Social fallback suppressed: 135
 Social fallback backlog depth (eligible, unreleased): 389
 Repair units: 73
-New page units: 12
+New page units: 20
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
@@ -53,6 +53,14 @@ New page units: 12
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /neuro/adhd-testing/index.html | adhd testing near me |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /neuro/autism-evaluation/index.html | adult autism evaluation near me |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /insights/neuro-017-what-should-the-intake-call-include.html | neuropsych evaluation intake process |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/how-to-evaluate-a-trt-clinic-before-signing-up/ | how to evaluate a TRT clinic before signing up |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/guides/best-way-to-compare-trt-clinics-in-2026/ | best way to compare TRT clinics in 2026 |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/what-are-the-common-side-effects-of-trt-to-watch-for/ | what are the common side effects of TRT to watch for |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/how-to-choose-the-right-trt-provider-for-me/ | how to choose the right TRT provider for me |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/does-trt-affect-fertility-and-sperm-count/ | does TRT affect fertility and sperm count |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/red-flags-that-a-trt-clinic-might-be-a-scam/ | red flags that a TRT clinic might be a scam |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/what-labs-should-be-monitored-while-on-trt/ | what labs should be monitored while on TRT |
+| twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/community-questions/is-online-trt-safer-than-a-local-clinic/ | is online TRT safer than a local clinic |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-024-how-to-choose-a-dentist-for-kids.html | how do I find a good dentist for my child |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /insights/dentistry-064-does-insurance-cover-braces-for-adults.html | does insurance cover braces for adults |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/community-questions/all-on-4-dental-implants-price-2026/index.html | how much is a single tooth implant |
