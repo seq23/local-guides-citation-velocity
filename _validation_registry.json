@@ -391,6 +391,54 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "acceptance-manifest-deliverability",
+      "title": "Semantic acceptance manifest deliverability guard",
+      "path": "scripts/validators/validate_acceptance_manifest_deliverability.js",
+      "command": "node scripts/validators/validate_acceptance_manifest_deliverability.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "full-audit",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "agent-runs",
+        "citation-velocity",
+        "content",
+        "semantic-acceptance",
+        "template-scaffolding"
+      ],
+      "risk_prevented": "The acceptance manifest can promise a page something the page is forbidden or unable to deliver: template scaffolding the emitters were fixed to stop printing, a min_rows count that only added up while padded rows existed, or a required_string absent from a frozen route whose bytes are restored verbatim on every build. Every such promise fails agent-exact-acceptance-manifest as a page defect when the page is in fact correct, and cascades into agent-exact-implementation as semantic_acceptance_manifest_not_pass.",
+      "why_existing_checks_do_not_cover": "validate_rendered_template_scaffolding.js screens the RENDERED pages and validate_agent_exact_acceptance_manifest.js tests pages against the manifest; neither asks whether the manifest itself is satisfiable. That is the missing link that let the emitters, the artifact stores and the compiler hold three different ideas of what a page contains.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/acceptance-manifest-deliverability.json",
+      "failure_action": "re-run node scripts/citation_velocity/compile_html_fix_acceptance_manifest.js; never restore the padded rows to make a count add up",
+      "depends_on": [
+        "html-fix-acceptance-compiler"
+      ],
+      "requires_files": [
+        "data/report_fixes/agent_exact_semantic_acceptance_manifest.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/acceptance-manifest-deliverability.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/acceptance-manifest-deliverability.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "agent-exact-implementation",
       "title": "Exact agent intended-winner implementation validator",
       "path": "scripts/validators/validate_agent_exact_implementation.js",
@@ -591,7 +639,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -2781,7 +2829,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -8008,7 +8056,7 @@
         "workflow",
         "release"
       ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
       "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
       "requires_files": [
         ".github/workflows/query-evidence-refresh.yml",

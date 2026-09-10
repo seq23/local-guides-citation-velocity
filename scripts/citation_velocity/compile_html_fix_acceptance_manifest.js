@@ -370,11 +370,13 @@ function main() {
   for (const spec of specs) {
     const k = `${spec.run_date || DATE}_${inferVertical(spec)}`;
     if (!grouped.has(k)) grouped.set(k, []);
-    // Screened on the way in, exactly as the durable manifest is. A per-run manifest
-    // that still carried the padding would be a second, unscreened copy of the same
-    // promises sitting one directory over.
+    // Put through BOTH passes on the way in, exactly as the durable manifest is:
+    // screened for scaffolding, then held to what the page can actually deliver. A
+    // per-run manifest that skipped either would be a second, weaker copy of the same
+    // promises sitting one directory over - and this directory is read, by
+    // scripts/search_intelligence/lib.js among others.
     const entry = compile(spec);
-    if (entry) grouped.get(k).push(screenTemplateScaffolding(entry));
+    if (entry) grouped.get(k).push(renderedStrings(screenTemplateScaffolding(entry)));
   }
   for (const [key, groupEntries] of grouped.entries()) {
     writeJson(`${MANIFEST_DIR}/${key}.json`, {
