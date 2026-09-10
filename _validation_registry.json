@@ -639,7 +639,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -1841,6 +1841,52 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "velocity-health-measured",
+      "title": "The publication governor reasons from a snapshot somebody took",
+      "path": "scripts/validators/validate_velocity_health_measured.js",
+      "command": "node scripts/validators/validate_velocity_health_measured.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "authority-scale",
+        "governor",
+        "publication-budget",
+        "freshness"
+      ],
+      "risk_prevented": "data/authority_scale/velocity_health.json decides whether the new-URL ceiling may rise. It was created on 2026-08-10 with every gate UNKNOWN and nothing ever wrote it again - three scripts read it, zero produced it. Because \"UNKNOWN never means PASS\", the upshift branch of evaluate_velocity.mjs was unreachable by construction, so the ceiling sat at 2 new URLs/day for seven weeks while pages cleared as SAFE_AUTOPUBLISH were released one per day. It took an owner override on 2026-09-10 to move it. This asserts the snapshot was measured by its named producer, is no more than 14 days old, that every gate names the evidence read for it, and that any UNKNOWN gate says why. It deliberately does NOT require a gate to be green: UNKNOWN holding the tier is correct behaviour, UNKNOWN because nobody looked is not.",
+      "why_existing_checks_do_not_cover": "citation-yield-feedback validates the DECISION file for internal consistency - that a downshift downshifts, that a halt sets zero - and reads velocity_health only to reject an upshift on unknown health. Nothing asserted that the health snapshot had ever been produced, or that it described the current tree. A file frozen at all-UNKNOWN since August passed every existing check.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "data/authority_scale/velocity_health.json",
+      "failure_action": "Run `npm run measure:velocity-health` to take a fresh snapshot from validator artifacts. If a gate is UNKNOWN, that is a missing evidence source, not a thing to overwrite by hand - wire the source or leave the tier held.",
+      "depends_on": [],
+      "requires_files": [
+        "data/authority_scale/velocity_health.json",
+        "scripts/authority_scale/measure_velocity_health.mjs"
+      ],
+      "prepare_commands": [
+        "npm run measure:velocity-health"
+      ],
+      "prepare_produces_files": [
+        "data/authority_scale/velocity_health.json"
+      ],
+      "prepare_mutates_files": [
+        "data/authority_scale/velocity_health.json"
+      ],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "cluster-membership",
       "title": "Legacy cluster membership checker",
       "path": "scripts/validate_cluster_membership.js",
@@ -2825,7 +2871,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -8049,7 +8095,7 @@
         "workflow",
         "release"
       ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
       "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
       "requires_files": [
         ".github/workflows/query-evidence-refresh.yml",
