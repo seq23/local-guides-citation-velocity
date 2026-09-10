@@ -591,7 +591,7 @@
       "title": "Landed agent runs are absorbed, not merely wired",
       "path": "scripts/validators/validate_agent_run_absorption_completeness.js",
       "command": "node scripts/validators/validate_agent_run_absorption_completeness.js",
-      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run’s 12 named targets reached the ledger and the run’s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
+      "risk_prevented": "Prevents a landed agent artifact from being accepted, normalized and then left unimplemented. agent-artifact-priority proves the intake PLUMBING exists; on 2026-09-01 it passed while only 4 of the dentistry run\u2019s 12 named targets reached the ledger and the run\u2019s reported 404 stayed a 404. This proves DELIVERY: every named target is absorbed or carries a named disposition, and every route whose repair the ledger claims actually resolves.",
       "requires_files": [
         "data/report_fixes/agent_runs",
         "data/report_fixes/agent_exact_implementation_ledger.json",
@@ -2781,7 +2781,7 @@
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md §9 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
+      "failure_action": "run `npm run freeze:restore` to return to accepted bytes, then make the change in durable source, generator, registry, or workflow code per PAGE_RELEASE_LAW.md \u00a79 and refreeze through an authorized mutation transaction (`frozen_pages.js begin` / `accept`)",
       "depends_on": [
         "page-release-law"
       ],
@@ -4249,6 +4249,53 @@
         "npm run build"
       ],
       "_retired_prepare_reason": "Unreachable: every prerequisite is a committed file, so run_validation_registry.js could never fire this prepare. These validators grade the committed rendered tree, which is the tree that was pushed; the declared refresh never ran and claiming it did was the untruth."
+    },
+    {
+      "id": "rendered-template-scaffolding",
+      "title": "No rendered page publishes template scaffolding as content",
+      "path": "scripts/validators/validate_rendered_template_scaffolding.js",
+      "command": "node scripts/validators/validate_rendered_template_scaffolding.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 3",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "extraction"
+      ],
+      "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited.",
+      "why_existing_checks_do_not_cover": "no-internal-instruction-leak catches BUILD VOCABULARY on a page - FILEPATH:, Directly answer:, a validator's own failure message. It has no pattern for an unfilled template slot or for an instruction phrased as reader advice, so a numbered placeholder and a \"Translate ... into a question\" cell both counted as content. Substance and extraction validators count blocks, not whether a cell holds an answer.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/rendered-template-scaffolding.json",
+      "failure_action": "fix the GENERATOR, never the page - a hand-edited page has the string back on the next build. scripts/lib/html_fix_acceptance_parser.js emits the family and scripts/lib/template_scaffolding.js is the shared screen the producers and this gate both import. Where a section was never filled in, OMIT it; do not invent content for the slot.",
+      "depends_on": [
+        "page-release-law"
+      ],
+      "requires_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/rendered-template-scaffolding.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/rendered-template-scaffolding.json"
+      ],
+      "enforce_no_source_mutation": true
     },
     {
       "status": "ACTIVE",
@@ -7878,7 +7925,7 @@
         "workflow",
         "release"
       ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
+      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo\u2019s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
       "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
       "requires_files": [
         ".github/workflows/query-evidence-refresh.yml",
