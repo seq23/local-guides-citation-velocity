@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 const { DEFAULT_HEADERS, canonicalBlockType } = require('./html_fix_block_schema');
 const { isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt } = require('./internal_instruction_text');
-const { isTemplateScaffolding, stripTemplateScaffolding } = require('./template_scaffolding');
+const { isTemplateScaffolding, stripTemplateScaffolding, READER_FACING_VERIFICATION_CELL } = require('./template_scaffolding');
 
 function normalizeSpace(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 function compact(value, max = 220) {
@@ -364,11 +364,7 @@ function tableRowForRequirement(requirement, query, index) {
   // quotes the query back at the reader as a task. A row with no requirement at all
   // is still dropped - that is the "Requirement <n>" case, which carries no marker.
   if (!r) return null;
-  return [
-    r,
-    'Ask this as a specific question and get the answer in writing before choosing a provider.',
-    'Specific, written answers are more reliable than broad marketing claims.'
-  ];
+  return [r, READER_FACING_VERIFICATION_CELL, 'Specific, written answers are more reliable than broad marketing claims.'];
 }
 function rowsFromFix(edit, query, headers, count) {
   const seeds = itemsFromFix(edit, query, count);

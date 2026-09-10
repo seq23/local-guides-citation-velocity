@@ -53,30 +53,34 @@ const DEFERRED = path.join(ROOT, 'data/content/template_scaffolding_deferred.jso
 // route. artifacts/, reports/, staging/ are not published.
 const SKIP_DIRS = new Set(['node_modules', '.git', 'data', 'artifacts', 'reports', 'staging', 'templates', 'docs', 'releases', 'content-bank', 'proofs', 'outputs']);
 
-// Third element is the shape id, so the per-shape tally is derived from the
-// patterns themselves and cannot be typed out of step with them by hand.
+// [gate pattern, human reason, shape id, the producer pattern it covers].
+//
+// The gate pattern is NOT the producer pattern. The producers match a whole CELL or
+// list item, so theirs are anchored; this one greps rendered HTML, where the string is
+// wrapped in tags, so it must not be. The fourth element is the producer pattern this
+// shape is the rendered-page counterpart of, and the parity assertion below checks
+// them off by identity rather than by guessing at regex equivalence.
+const { TEMPLATE_SCAFFOLDING_PATTERNS } = require('../lib/template_scaffolding');
+const [P_POINT, P_REQUIREMENT, P_TRANSLATE, P_TURN] = TEMPLATE_SCAFFOLDING_PATTERNS;
 const SHAPES = [
-  [/\bConcrete verification point\s*\d*/i, 'a numbered template slot the compiler never filled', 'concrete-verification-point'],
-  [/>\s*Requirement\s+\d+\s*</, 'a bare "Requirement <n>" placeholder in a table cell', 'bare-requirement-number'],
-  [/into a specific verification question\b/i, 'the authoring instruction, printed in the "What to verify" cell', 'translate-into-verification-question'],
-  [/\bTurn the recommendation into a concrete verification question\b/i, 'the same authoring instruction, query-less form', 'turn-recommendation-into-question']
+  [/\bConcrete verification point\s*\d*/i, 'a numbered template slot the compiler never filled', 'concrete-verification-point', P_POINT],
+  [/>\s*Requirement\s+\d+\s*</, 'a bare "Requirement <n>" placeholder in a table cell', 'bare-requirement-number', P_REQUIREMENT],
+  [/into a specific verification question\b/i, 'the authoring instruction, printed in the "What to verify" cell', 'translate-into-verification-question', P_TRANSLATE],
+  [/\bTurn the recommendation into a concrete verification question\b/i, 'the same authoring instruction, query-less form', 'turn-recommendation-into-question', P_TURN]
 ];
 
-// The producers strip on scripts/lib/template_scaffolding.js. If a pattern is added
-// there and not here, the producers would silently remove text this gate cannot see,
-// and the gate would report a clean site it never checked for. Refuse to run.
+// If a pattern is added to scripts/lib/template_scaffolding.js and not here, the
+// producers would silently remove text this gate cannot see, and the gate would go on
+// reporting a clean site it never checked for. That is the exact defect
+// validate_no_internal_instruction_leak.js records in its own header - two lists, no
+// link. Refuse to run rather than pass blind.
 (function assertPatternParity() {
-  const { TEMPLATE_SCAFFOLDING_PATTERNS } = require('../lib/template_scaffolding');
-  const mine = SHAPES.map(([re]) => re.source.toLowerCase());
-  const normalize = (source) => source.toLowerCase().replace(/^\^?\\s\*/, '').replace(/\\s\*\$?$/, '').replace(/^\^/, '').replace(/\$$/, '');
-  const missing = TEMPLATE_SCAFFOLDING_PATTERNS.filter((re) => {
-    const key = normalize(re.source);
-    return !mine.some((m) => m.includes(key) || key.includes(normalize(m)));
-  });
+  const covered = new Set(SHAPES.map(([, , , producer]) => producer && producer.source));
+  const missing = TEMPLATE_SCAFFOLDING_PATTERNS.filter((re) => !covered.has(re.source));
   if (missing.length) {
     console.error(`RENDERED TEMPLATE SCAFFOLDING GATE is missing ${missing.length} pattern(s) the producers strip on:`);
     for (const re of missing) console.error(`  ${re.source}`);
-    console.error('  Add them to SHAPES above, or the producers will strip text this gate cannot see.');
+    console.error('  Add a SHAPES row naming it, or the producers will strip text this gate cannot see.');
     process.exit(2);
   }
 })();

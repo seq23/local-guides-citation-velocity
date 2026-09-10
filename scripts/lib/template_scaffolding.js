@@ -47,20 +47,50 @@
  * is a different decision and not this guard's to make.
  */
 
-const TEMPLATE_SCAFFOLDING_PATTERNS = [
-  // A numbered slot the compiler padded a list out to.
+// The two halves behave differently on a table row, so they are declared separately
+// and the flat list below is derived from them rather than typed out again.
+//
+// UNFILLED SLOT: the compiler had no requirement for this position and printed the
+// position number. It is always the row's SUBJECT cell, so there is nothing to keep.
+const SLOT_PATTERNS = [
   /^\s*concrete verification point\s*\d*\s*$/i,
-  /^\s*requirement\s+\d+\s*$/i,
-  // The authoring instruction, in both the forms tableRowForRequirement can emit.
+  /^\s*requirement\s+\d+\s*$/i
+];
+
+// AUTHORING INSTRUCTION: the row has a real subject, and this is the guidance cell
+// written for whoever was filling the template instead of for the reader. Both forms
+// tableRowForRequirement used to emit.
+const INSTRUCTION_PATTERNS = [
   /into a specific verification question\b/i,
   /^\s*turn the recommendation into a concrete verification question\.?\s*$/i
 ];
+
+const TEMPLATE_SCAFFOLDING_PATTERNS = [...SLOT_PATTERNS, ...INSTRUCTION_PATTERNS];
+
+// What the instruction cell is rewritten to. Same sentence the compiler now emits
+// from tableRowForRequirement, imported from here so the live path and the recovery
+// path cannot drift into two different answers for the same cell.
+const READER_FACING_VERIFICATION_CELL = 'Ask this as a specific question and get the answer in writing before choosing a provider.';
 
 /** True when this exact string is a template placeholder or an authoring instruction. */
 function isTemplateScaffolding(value) {
   const text = String(value === undefined || value === null ? '' : value);
   if (!text.trim()) return false;
   return TEMPLATE_SCAFFOLDING_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+/** True when this string is a numbered slot the compiler never filled. */
+function isUnfilledSlot(value) {
+  const text = String(value === undefined || value === null ? '' : value);
+  if (!text.trim()) return false;
+  return SLOT_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+/** True when this string is an instruction to whoever was authoring the block. */
+function isAuthoringInstruction(value) {
+  const text = String(value === undefined || value === null ? '' : value);
+  if (!text.trim()) return false;
+  return INSTRUCTION_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 /** Which pattern matched, for a validator that has to name what it found. */
@@ -77,22 +107,37 @@ function withoutTemplateScaffolding(values) {
 }
 
 /**
- * Drop whole ROWS that carry scaffolding in any cell.
+ * Screen the ROWS of a recovered table: drop the rows that were never filled in,
+ * rewrite the instruction cell on the rows that were.
  *
- * Used for artifacts recovered from the DURABLE STORES, where the row already exists
- * and cannot be re-derived. Blanking the offending cell is worse than dropping the
- * row: renderTable turns an empty cell into "Not stated", so the page would say "Not
- * stated" in the column the reader came for.
+ * DROPPING EVERY ROW THAT TOUCHED SCAFFOLDING WAS WRONG, AND THE REPO'S OWN GUARD
+ * PROVED IT. /dentistry/cost-insurance/ has three rows in the accepted store and all
+ * three carry the "Translate …" cell, so a blanket drop emptied the table;
+ * renderTable then returns '' and renderArtifact drops the whole <section>, INTRO
+ * INCLUDED - and the intro was carrying the ledgered marker "does medicare cover
+ * dental implants", which 7 ledger rows depend on. acceptMutationScope refused 23 of
+ * 108 routes with ledgered_markers_lost, twice, for exactly this.
  *
- * The compiler itself does NOT drop these rows - see tableRowForRequirement in
- * html_fix_acceptance_parser.js. It rewrites the cell, because the row's first cell
- * carries ledgered markers and acceptMutationScope refused 23 routes when they were
- * dropped. Here there is no requirement text to rebuild the row from, so dropping is
- * the only honest option; the compiler's own output no longer reaches this path.
+ * The two halves of the family are not the same defect:
+ *
+ *   - a row whose SUBJECT cell is "Concrete verification point 3" was never filled
+ *     in. There is nothing to keep. Drop it.
+ *   - a row with a real subject and an instruction in its guidance cell WAS filled
+ *     in, badly, for the wrong audience. Keep the row, rewrite the cell.
+ *
+ * Blanking rather than rewriting is not an option: renderTable turns an empty cell
+ * into "Not stated", so the page would say "Not stated" in the column the reader came
+ * for.
  */
 function withoutTemplateScaffoldingRows(rows) {
   if (!Array.isArray(rows)) return [];
-  return rows.filter((row) => !(Array.isArray(row) ? row : [row]).some(isTemplateScaffolding));
+  const out = [];
+  for (const raw of rows) {
+    const row = Array.isArray(raw) ? raw : [raw];
+    if (row.some((cell) => isUnfilledSlot(cell))) continue;
+    out.push(row.map((cell) => (isAuthoringInstruction(cell) ? READER_FACING_VERIFICATION_CELL : cell)));
+  }
+  return out;
 }
 
 /**
@@ -128,6 +173,11 @@ function containsTemplateScaffolding(value) {
 
 module.exports = {
   TEMPLATE_SCAFFOLDING_PATTERNS,
+  SLOT_PATTERNS,
+  INSTRUCTION_PATTERNS,
+  READER_FACING_VERIFICATION_CELL,
+  isUnfilledSlot,
+  isAuthoringInstruction,
   isTemplateScaffolding,
   scaffoldingPatternFor,
   withoutTemplateScaffolding,
