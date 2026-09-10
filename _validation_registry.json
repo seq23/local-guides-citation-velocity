@@ -1570,11 +1570,7 @@
         "artifacts/validation/citation-agent-fixes.json"
       ],
       "enforce_no_source_mutation": true,
-      "repair_command": "npm run apply:citation-agent-fixes",
-      "repair_rationale": "Applies the agent-recommended citation fixes this validator checks for.",
-      "repair_writes": [
-        "data/report_fixes/agent_fix_ledger.json"
-      ]
+      "no_repair_reason": "Observed on 2026-09-10 (durably recorded in data/release/repair_efficacy_observations.json) running against a live failure of this validator and changing nothing. apply:citation-agent-fixes writes data/report_fixes/agent_fix_ledger.json, but the verdicts that fail this validator - rendered_missing_route, rendered_missing_marker and missing_required_markers - are computed from rendered pages and the reader-facing strings they carry. A missing route and a missing marker are content facts; no command can invent the sentence a reader needs, so no command can supply this judgment. Claiming one made self-heal burn an attempt and report UNRESOLVED instead of the real reason. The script still exists for applying agent-recommended fixes by hand; what is removed is the registry claim that self-heal can clear this validator with it. Same principle as PR #110: a repair that cannot clear its validator is a false claim, not a repair. Removed claim was: npm run apply:citation-agent-fixes"
     },
     {
       "id": "citation-agent-fixes-2026-05",
@@ -8898,6 +8894,50 @@
       ],
       "evidence_file": "artifacts/validation/uscis-authority-grounding-coverage.json",
       "failure_action": "stop release and repair"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "depends_on": [],
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "profiles": [
+        "audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 120,
+      "tier": "Tier 8",
+      "id": "repair-claim-integrity",
+      "title": "Every registered repair claim is structurally capable of being a repair",
+      "path": "scripts/validators/validate_repair_claim_integrity.js",
+      "command": "node scripts/validators/validate_repair_claim_integrity.js",
+      "tags": [
+        "integrity",
+        "self-heal",
+        "registry",
+        "release"
+      ],
+      "risk_prevented": "Prevents _validation_registry.json from claiming a repair that cannot repair. On 2026-09-10 citation-agent-fixes claimed `npm run apply:citation-agent-fixes`, which writes data/report_fixes/agent_fix_ledger.json; the verdicts that actually fail it - rendered_missing_route, rendered_missing_marker, missing_required_markers - are content facts about rendered pages that no command can invent. Self-heal burned an attempt on the false claim and the lane reported UNRESOLVED instead of the real reason, and Velocity Content Release failed 13 of 20 runs on main. This asserts, for every ACTIVE repair claim: the command resolves to a real npm script and a real .js entry point; repair_writes is declared so efficacy is measurable at all; every declared write path is actually named somewhere in that command's transitive source closure, so a repair cannot claim a file its own code can never touch; and no validator declares both repair_command and no_repair_reason. It also requires a no_repair_reason to be a substantive explanation, so removing a false claim stays honest work rather than becoming the quiet way to delete an inconvenient repair.",
+      "why_existing_checks_do_not_cover": "repair-command-efficacy is the behavioural check and it is the stronger one, but by its own construction it can only observe a repair WHILE ITS VALIDATOR IS FAILING - 'a repair is only tested against a validator it needs to fix'. On a clean tree all ten repair-bearing validators pass, no repair is exercised, and a false claim registered today stays invisible until the day self-heal needs it, which is the worst day to find out. self-heal-repair-contract checks declared file OVERLAP between validator and repair, and the validator's own header records that overlap is not efficacy - it passed over the broken rendered-output-shrink-guard registration on 2026-09-09. Neither one ever checks whether the repair's own source code can write the files it declares. This is the static half, it runs on every tree green or red, and it hard-fails on zero claims examined rather than passing on an empty loop.",
+      "requires_files": [
+        "_validation_registry.json",
+        "package.json",
+        "scripts/validators/validate_repair_claim_integrity.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/repair-claim-integrity.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/repair-claim-integrity.json"
+      ]
     },
     {
       "status": "ACTIVE",
