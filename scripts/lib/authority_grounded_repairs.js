@@ -278,6 +278,359 @@ function authorityGroundedEntryForSpec(spec) {
     });
   }
 
+  // 2026-09-10. Fourteen routes grounded INDIVIDUALLY, not from one template.
+  //
+  // 22 live uscis-medical routes carried agent rows with no grounded entry, so every
+  // one of them was a refusal the compiler had to make and a route that could never
+  // be released. The obvious repair - one generated template applied across all of
+  // them - is the one repair that must not be made: these are distinct long-tail
+  // pages whose entire purpose is being cited, and near-identical copy across 22
+  // cited pages destroys more citation value than 22 named stops ever cost.
+  //
+  // So each route below is written to its OWN question, against the primary sources
+  // that actually answer that question, with its own artifact types and tables. The
+  // eight routes that could not be honestly distinguished stay named stops with
+  // their reasons recorded in data/report_fixes/uscis_authority_grounding_register.json.
+  // uscis-authority-grounding-coverage enforces both halves, including a pairwise
+  // near-duplicate check that fails if any two grounded uscis entries converge.
+
+  if (p === 'uscis-medical/clusters/civil-surgeon-vs-regular-doctor-for-immigration-medical/index.html') {
+    const keys=['finder','medreq','i693'];
+    return finish(spec, {
+      title:'Civil Surgeon vs. Regular Doctor: Which One Can Complete Form I-693?',
+      description:'What the USCIS civil surgeon designation actually is, why an ordinary medical licence does not substitute for it, and how to check a physician’s designation before booking.',
+      answer:'A civil surgeon is a physician USCIS has specifically designated to perform the U.S. immigration medical examination and certify Form I-693. A regular doctor’s state medical licence does not carry that authority: unless that same physician currently holds the USCIS designation, they cannot complete the form for adjustment of status, no matter how long they have treated you.',
+      checklist:['Separate the two questions: is the physician licensed, and is the physician USCIS-designated.','Look the physician up through the official USCIS civil surgeon process rather than trusting a clinic’s own claim.','Confirm the designation is current, not one the office held in the past.','Confirm the office performs Form I-693 examinations for your immigration category.','Keep a record of how and when you verified the designation.'],
+      red_flags:['A clinic argues that any licensed physician can certify Form I-693.','A designation is described in the past tense, or the office cannot say when it was last confirmed.','Only a screenshot or a printed certificate is offered instead of verification through the official USCIS process.','A physician offers to complete the form for a U.S. adjustment-of-status case while describing themselves as a panel physician.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'comparison_table',title:'Civil Surgeon vs. Regular Doctor',headers:['','Civil surgeon','Regular licensed doctor'],rows:[
+          ['May certify Form I-693 for adjustment of status','Yes, while the USCIS designation is current','No, unless that physician also holds the current designation'],
+          ['Source of the authority','A designation granted by USCIS','A state medical licence, which is a different thing'],
+          ['How you confirm it','Through the official USCIS civil surgeon process','A licence lookup tells you nothing about I-693 authority'],
+          ['Follows CDC technical instructions for the exam','Yes','Not required to, and generally does not']
+        ]},
+        {type:'decision_matrix',title:'Which Physician Does Your Case Need?',headers:['Your situation','Who performs the exam'],rows:[
+          ['Adjusting status inside the United States','A USCIS-designated civil surgeon'],
+          ['Immigrant-visa processing at a consulate abroad','A Department of State panel physician'],
+          ['Your usual doctor happens to hold the current USCIS designation','That doctor may perform it — verify the designation first, not the relationship'],
+          ['Your usual doctor is not designated','The exam must be done by a designated civil surgeon; your doctor’s records can still be brought to that appointment']
+        ]},
+        {type:'checklist',title:'Verify Before You Book',items:['Search the official USCIS civil surgeon listing for the physician and office.','Call the office and confirm they currently perform Form I-693 examinations.','Ask whether the designated physician personally signs the form.','Note the date you verified, so an RFE later can be answered with specifics.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/community-questions/how-long-is-the-i-693-medical-exam-valid-for-green-card-application/index.html') {
+    const keys=['validity','i693','medreq'];
+    return finish(spec, {
+      title:'How Long Is the I-693 Valid for a Green Card Application?',
+      description:'The one fact that decides I-693 validity for a pending green card application, and why answers published before June 2025 are unsafe to rely on.',
+      answer:'Validity turns on the civil surgeon’s signature date and on whether the application the form was filed with is still pending. For a Form I-693 properly completed and signed on or after November 1, 2023, USCIS removed the former fixed expiration period; under the June 11, 2025 policy update that form generally stays valid only while the associated benefit application remains pending. Forms signed before November 1, 2023 may still fall under the earlier rules.',
+      checklist:['Read the civil surgeon signature date off your own copy of the form.','Establish whether the green card application it supports is still pending.','Do not rely on a validity answer published before June 11, 2025 without re-checking it.','If the supporting application was withdrawn, rejected, or denied, check whether a fresh exam is needed before refiling.','Confirm the rule on the current USCIS Form I-693 page before acting on any date.'],
+      red_flags:['An answer gives a flat number of years without asking when the form was signed.','An answer states the I-693 “never expires” without the pending-application condition added in June 2025.','A clinic or forum post cites a rule USCIS has since superseded.','A previously filed I-693 is assumed to carry over automatically to a new application.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'decision_matrix',title:'Is Your I-693 Still Valid?',headers:['Signature date and case status','What current policy provides'],rows:[
+          ['Signed on or after November 1, 2023, application still pending','No fixed expiration period applies; validity is tied to the pending application.'],
+          ['Signed on or after November 1, 2023, application no longer pending','USCIS may require a new examination and a new sealed form for any later filing.'],
+          ['Signed before November 1, 2023','The earlier fixed validity period and filing-date conditions may still apply — check the Policy Manual for that period.'],
+          ['You cannot find the signature date','Ask the civil surgeon’s office for your copy before assuming any validity period.']
+        ]},
+        {type:'checklist',title:'Two Facts Settle the Question',items:['The date the civil surgeon signed Form I-693.','Whether the benefit application the form was submitted with is still pending.','Everything else — how long ago the exam happened, how old the vaccinations are — is secondary to those two facts.','This policy changed in 2023 and again in June 2025, so verify against the current USCIS page rather than an older summary.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/community-questions/how-to-find-a-uscis-authorized-doctor-who-speaks-another-language/index.html') {
+    const keys=['finder','i693','medreq'];
+    return finish(spec, {
+      title:'Finding a USCIS Civil Surgeon Who Speaks Your Language',
+      description:'How to combine the official USCIS civil surgeon locator with language needs, and what to arrange when no designated physician speaks your language.',
+      answer:'Start from the official USCIS civil surgeon locator, because designation — not language — is the requirement that cannot be waived. Language is then arranged around that list: call the designated offices in your area and ask which languages the clinical staff speak, and if none matches, ask the office what interpreter arrangements they accept for the examination.',
+      checklist:['Build your shortlist from the official USCIS civil surgeon listing first.','Call each office and ask which languages the examining physician and clinical staff speak.','If no designated office matches your language, ask what interpreter arrangements the office accepts.','Ask whether the office requires the interpreter to be an adult, or a professional rather than a family member.','Confirm the language arrangement when you book, not when you arrive.'],
+      red_flags:['A non-designated clinic is recommended because it speaks your language — designation is not negotiable.','An office says an interpreter is unnecessary when you cannot follow the medical history questions.','A child is proposed as the interpreter for a medical examination.','Language is arranged only verbally and is not confirmed at booking.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'checklist',title:'Order of Operations',items:['Designation first: search the official USCIS civil surgeon listing for your area.','Language second: call the designated offices on that list and ask about languages spoken.','Interpretation third: if no match, ask each office what interpreter arrangement it accepts.','Confirm at booking, and ask what to bring so the medical history can be taken accurately.']},
+        {type:'comparison_table',title:'Ways to Cover a Language Gap',headers:['Option','What to confirm with the office'],rows:[
+          ['A designated office with staff who speak your language','That the examining physician, not only reception, can take the history in that language.'],
+          ['An interpreter the clinic provides or arranges','Whether it must be booked in advance and whether a separate charge applies.'],
+          ['An interpreter you bring','Any office rules on who may interpret, including age and relationship restrictions.'],
+          ['Translated records you bring','Whether translations of vaccination or medical records are accepted, and in what form.']
+        ]},
+        {type:'callout',title:'Designation Is the Constraint, Language Is the Preference',items:['A physician who speaks your language but is not a currently designated civil surgeon cannot complete Form I-693 for adjustment of status. Choose from the designated list, then solve language within it.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/community-questions/how-to-verify-a-civil-surgeon-is-authorized-by-uscis/index.html') {
+    const keys=['finder','medreq','i693'];
+    return finish(spec, {
+      title:'How to Verify a Civil Surgeon Is Currently Authorized by USCIS',
+      description:'A verification procedure for confirming a physician’s current USCIS civil surgeon designation, and what evidence is not proof.',
+      answer:'Verify through the official USCIS civil surgeon process rather than through anything the clinic supplies. A designation is specific to a physician and can change over time, so what matters is that the physician you will actually see is listed as currently designated — not that the practice was designated at some point, and not that a certificate is displayed on the wall.',
+      checklist:['Look the physician up through the official USCIS civil surgeon listing.','Match the individual physician’s name, not only the clinic name.','Confirm the designation is current as of today.','Ask the office to confirm that the listed physician is the one who will examine and sign.','Record the date and method of your verification.'],
+      red_flags:['A wall certificate, screenshot, or brochure is offered in place of verification through USCIS.','The clinic is listed but the physician who will actually examine you is not.','The office will not say which physician signs the form.','A designation is described as pending, renewing, or recently lapsed.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'protocol',title:'Verification Procedure',items:['Search the official USCIS civil surgeon listing for your area.','Find the individual physician by name, not just the practice.','Confirm the entry is current rather than a cached or historical result.','Telephone the office and confirm that physician performs and signs Form I-693 examinations.','Note the date you verified, and keep it with your immigration records.']},
+        {type:'comparison_table',title:'What Counts as Proof',headers:['Evidence','Does it verify current designation?'],rows:[
+          ['The physician appears in the official USCIS civil surgeon listing today','Yes — this is the verification USCIS provides.'],
+          ['A framed certificate in the waiting room','No — it shows nothing about current status.'],
+          ['A state medical licence lookup','No — licensure and USCIS designation are different things.'],
+          ['A review site or directory listing the clinic as “USCIS approved”','No — third-party directories are not the designation record.']
+        ]},
+        {type:'callout',title:'Verify the Physician, Not the Practice',items:['USCIS designates individual physicians. A practice with one designated physician does not make every physician in that practice able to certify Form I-693, so confirm the name of the doctor who will examine you.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/community-questions/list-of-items-to-bring-to-uscis-medical-exam-appointment/index.html') {
+    const keys=['i693','vaccines','cdc'];
+    return finish(spec, {
+      title:'What to Bring to the USCIS Medical Exam Appointment',
+      description:'What to gather before an I-693 appointment, why the vaccination record matters most, and how to confirm the list with the specific civil surgeon office.',
+      answer:'Bring government-issued photo identification, your complete vaccination records, any relevant medical history including past tuberculosis testing or treatment, a list of current medications, and whatever the civil surgeon office told you to bring when you booked. The vaccination record is the item that most often decides whether the appointment can be completed in one visit, because missing documentation may mean vaccines are administered or the review is deferred.',
+      checklist:['Government-issued photo identification.','Complete written vaccination records, including records from other countries.','Records of any previous tuberculosis testing, treatment, or chest imaging.','A list of current medications and known medical conditions.','The office’s own pre-appointment instructions, plus its payment method.'],
+      red_flags:['An office publishes no pre-appointment instruction list at all.','You are told vaccination records are unnecessary before the record has been reviewed.','You are advised to leave existing TB testing history at home.','The list you were given is generic and was never confirmed for your appointment.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'checklist',title:'Bring to the Appointment',items:['Photo identification.','Vaccination records — the full history, including doses received abroad.','Prior tuberculosis test results, treatment records, or chest X-ray reports.','A written list of current medications and diagnoses.','Any documentation the office specifically requested when you booked.','The payment method the office accepts.']},
+        {type:'decision_matrix',title:'Why Each Item Matters',headers:['What you bring','What it prevents'],rows:[
+          ['Complete vaccination records','Repeat doses, a deferred review, or a second appointment.'],
+          ['Prior TB testing and treatment history','Repeat testing, and confusion over an earlier positive result.'],
+          ['Photo identification','An appointment that cannot proceed at check-in.'],
+          ['Medication and condition list','An incomplete medical history on the form.'],
+          ['The office’s own instructions','Arriving without something only that office requires.']
+        ]},
+        {type:'callout',title:'Confirm the List With Your Own Office',items:['Requirements vary between civil surgeon offices, and the office you booked is the authority on what its appointment needs. Ask for its list when you book, and treat any general list as a starting point rather than a substitute.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/can-i-use-an-old-i-693-for-a-new-green-card-application/index.html') {
+    const keys=['validity','sealed','i693'];
+    return finish(spec, {
+      title:'Can You Reuse an Old I-693 for a New Green Card Application?',
+      description:'What happens to a previously completed Form I-693 when the application it supported ends, and what to check before reusing it on a new filing.',
+      answer:'Usually not, and the reason is not age. Under the June 11, 2025 USCIS policy update, a properly completed Form I-693 signed on or after November 1, 2023 generally remains valid only while the benefit application it was submitted with is pending. Once that application is withdrawn, rejected, or denied, USCIS may require a new examination and a new sealed form for the later filing — so the question to answer is what happened to the earlier case, not how old the form is.',
+      checklist:['Establish what happened to the application the earlier I-693 was filed with.','Find the civil surgeon signature date on your copy.','Check whether the sealed USCIS copy still exists, unopened, in your possession.','Ask whether USCIS returned or retained the earlier form.','Confirm the current rule on the USCIS Form I-693 page before assuming reuse is possible.'],
+      red_flags:['Reuse is assumed simply because the form is recent.','The sealed envelope was opened to check what was inside.','A prior denial or withdrawal is treated as irrelevant to the medical evidence.','Advice about reuse is taken from a source that predates the June 11, 2025 update.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'decision_matrix',title:'Can the Earlier Form Be Reused?',headers:['What happened to the earlier application','What to expect'],rows:[
+          ['Still pending, and you are not refiling','The form generally remains valid with that pending application; nothing needs redoing on time grounds alone.'],
+          ['Withdrawn by you','Treat a new examination as likely required for the new filing; confirm before filing.'],
+          ['Rejected or denied','USCIS may require a new examination and a new sealed I-693 for the new application.'],
+          ['You never filed the form with any application','Check the signature date and the current rule before relying on it.']
+        ]},
+        {type:'checklist',title:'Before You Rely on an Old Form',items:['Confirm the status of the application it was originally filed with.','Confirm the sealed USCIS copy is intact and unopened.','Confirm the signature date and which policy period applies to it.','Ask the civil surgeon office what it would take to obtain a fresh sealed form if one is needed.','Verify against the current USCIS Form I-693 page rather than an older answer.']},
+        {type:'callout',title:'Never Open the Sealed Envelope to Check',items:['The sealed copy is prepared for USCIS. Opening it to inspect the contents can make the form unusable, and your personal copy is what you should be reading instead.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/do-i-have-to-get-undressed-for-the-uscis-physical-exam/index.html') {
+    const keys=['cdc','i693','medreq'];
+    return finish(spec, {
+      title:'Do You Have to Undress for the USCIS Physical Exam?',
+      description:'What the immigration medical examination physically involves, why partial undressing may be needed, and what you can ask for regarding privacy.',
+      answer:'Partial undressing is often necessary, because the civil surgeon must perform a physical examination following CDC technical instructions rather than a paperwork review. What that involves in practice varies with your age, medical history, and findings. You can ask the office in advance what its examination involves, and you can ask about privacy accommodations such as a gown, a chaperone, or a same-sex examiner.',
+      checklist:['Ask the office in advance what its physical examination involves.','Ask whether a gown is provided and what clothing to wear.','Ask whether a chaperone can be present during the examination.','Ask whether a same-sex examiner or chaperone can be arranged.','Raise any concern before the appointment rather than at the examination itself.'],
+      red_flags:['An office refuses to describe what its examination involves before you arrive.','A chaperone is refused without explanation.','You are told there is no physical examination at all — the exam is not a records review.','You are pressured to proceed while a stated concern is unresolved.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'callout',title:'It Is a Real Physical Examination',items:['The civil surgeon examines you under CDC technical instructions, not from your paperwork alone. That is why some undressing may be required, and why the extent varies with age, history, and clinical findings.']},
+        {type:'checklist',title:'Questions to Ask When You Book',items:['What does your physical examination involve?','Is a gown provided, and what should I wear?','May I have a chaperone present?','Can a same-sex examiner or chaperone be arranged?','How long should I expect the appointment to take?']},
+        {type:'comparison_table',title:'Privacy Requests You Can Make',headers:['Request','Why offices are usually able to accommodate it'],rows:[
+          ['A gown rather than fully removing clothing','Standard clinical practice in most examination settings.'],
+          ['A chaperone in the room','A common clinical safeguard; ask when booking so staffing can be arranged.'],
+          ['A same-sex examiner or chaperone','May depend on which physicians the office has available on that day.'],
+          ['An explanation before each step','Reasonable to expect, and easier to arrange if raised at booking.']
+        ]},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/form-i-693-medical-exam-cost/index.html') {
+    const keys=['i693','i485','finder'];
+    return finish(spec, {
+      title:'Form I-693 Cost: The Clinic Fee and the USCIS Filing Fee Are Not the Same Thing',
+      description:'Separating the civil surgeon’s clinic charge from USCIS filing fees, and what the quoted I-693 price does and does not cover.',
+      answer:'There are two different money questions and they are constantly confused. The civil surgeon’s charge for performing the examination and completing Form I-693 is set by that clinic, not by USCIS, and USCIS publishes no national price for it. Separately, USCIS filing fees are set by USCIS and are published on its form pages — check the current fee for the application you are filing rather than assuming the medical exam carries one.',
+      checklist:['Treat the clinic charge and any USCIS filing fee as two separate questions.','Ask the civil surgeon office for its charge in writing, itemised.','Ask specifically what is bundled and what is billed afterwards.','Check current USCIS fees on the official form page for the application you are filing.','Do not treat any quoted figure as a government-set national price.'],
+      red_flags:['A clinic presents its own price as a USCIS-set fee.','A quote does not distinguish the examination from testing and vaccinations.','A price is quoted without saying what happens if additional testing is required.','A source states a single nationwide figure as the cost of the exam.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'comparison_table',title:'Two Different Charges',headers:['','Civil surgeon clinic charge','USCIS filing fee'],rows:[
+          ['Who sets it','The individual clinic','USCIS'],
+          ['Is there a published national figure','No','Yes — on the official USCIS form page'],
+          ['What it pays for','The examination, testing, vaccinations, and completing the form','Adjudication of the immigration application you file'],
+          ['Where to confirm it','In writing from the office, before booking','On the current USCIS page for that form']
+        ]},
+        {type:'cost_table',title:'What to Get Itemised in Writing',headers:['Line item','What to ask'],rows:[
+          ['Examination and form completion','Is completing and sealing Form I-693 included in the quoted figure?'],
+          ['Required laboratory testing','Which tests are in the price and which are billed separately?'],
+          ['Vaccinations and record review','Is reviewing the record included, and are any needed vaccines extra?'],
+          ['Additional testing if findings require it','What happens to the price if follow-up testing or imaging is needed?'],
+          ['Corrections or a replacement sealed form','Is there a charge if the form must be corrected or reissued?']
+        ]},
+        {type:'callout',title:'Insurance Is a Third Question Again',items:['Whether a health plan covers any part of the examination, laboratory work, or vaccinations is specific to that plan and that service. Verify each charge with the clinic and the insurer separately rather than assuming coverage.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/i-693-medical-exam-for-adjustment-of-status-timeline/index.html') {
+    const keys=['i693','i485','validity'];
+    return finish(spec, {
+      title:'Where the I-693 Fits in the Adjustment of Status Timeline',
+      description:'How the medical examination sequences against the Form I-485 filing, and why the old 60-day signature rule no longer drives the timing.',
+      answer:'The I-693 can be filed together with Form I-485 or provided later in response to a USCIS request, and current USCIS instructions — not the superseded 60-day signature rule — govern when it should be submitted. Because a form signed on or after November 1, 2023 no longer carries a fixed expiration period but is tied to the pending application, the timing question is about the filing instructions and any notice you receive, not about racing a countdown.',
+      checklist:['Read the current filing instructions on the USCIS Form I-693 page before scheduling.','Decide whether you are filing the form with the I-485 or supplying it later.','Book the civil surgeon appointment with enough margin for follow-up testing.','Keep the sealed form intact until it is filed.','If USCIS requests the form, follow that notice’s instructions and deadline exactly.'],
+      red_flags:['Timing advice relies on the removed 60-day civil surgeon signature rule.','An exam is rushed to beat an expiration period that no longer applies to the form.','A notice from USCIS is answered on a general timeline rather than the deadline it states.','The sealed form is opened while waiting to file.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'timeline_table',title:'Sequencing the Medical Exam',headers:['Stage','What happens','What to verify'],rows:[
+          ['Before booking','You read the current Form I-693 filing instructions.','Whether you will file the form with the I-485 or later.'],
+          ['The appointment','The civil surgeon examines you and orders any required testing.','How long the office needs to complete and seal the form.'],
+          ['Follow-up','Any required testing, imaging, or vaccination is completed.','Whether follow-up is needed before the form can be finalised.'],
+          ['Filing','The sealed form is submitted per current USCIS instructions.','That the envelope is unopened and filed as instructed.'],
+          ['After filing','USCIS may issue a notice or request about the medical evidence.','The specific deadline and instructions on that notice.']
+        ]},
+        {type:'callout',title:'The 60-Day Rule Is Gone',items:['USCIS removed the former requirement tying the civil surgeon’s signature date to a 60-day filing window. Timeline advice that still depends on it is out of date, and following it can cause an unnecessary repeat examination.']},
+        {type:'checklist',title:'Build Margin Into the Schedule',items:['Ask the office how long it takes to return the completed sealed form.','Ask what happens to the timeline if follow-up testing is required.','Ask whether missing vaccination records would extend the process.','Do not schedule on the assumption that one visit always completes the exam.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/i-693-medical-exam-for-children-immigration-requirements/index.html') {
+    const keys=['vaccines','tb','cdc'];
+    return finish(spec, {
+      title:'The I-693 Medical Exam for Children: What Is Different by Age',
+      description:'How the immigration medical examination differs for children, including the age threshold for TB blood testing and how age-appropriate vaccination is assessed.',
+      answer:'A child’s examination follows the same CDC technical instructions as an adult’s, but several requirements are age-dependent. Tuberculosis screening by IGRA blood test applies to applicants age 2 or older, and vaccination requirements are assessed against what is age-appropriate for that child rather than against a single fixed list — which is why a complete childhood immunisation record is the most valuable thing to bring.',
+      checklist:['Bring the child’s complete immunisation record, including doses given in another country.','Expect TB screening rules to depend on the child’s age.','Ask the office in advance what it needs for a child’s appointment.','Bring records of any chronic condition, specialist care, or prior TB testing.','Ask whether any needed vaccines can be given at the visit or must be arranged separately.'],
+      red_flags:['A child’s vaccination record is treated as unnecessary.','An age-based requirement is applied without asking the child’s age.','A single adult checklist is applied to a young child without adjustment.','A prior positive TB test in an older child is dismissed without the required follow-up.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'decision_matrix',title:'What Changes With the Child’s Age',headers:['Age','What to expect under CDC technical instructions'],rows:[
+          ['Under 2 years','TB screening by IGRA blood test is not required on the same basis as for older applicants; vaccination is assessed against what is age-appropriate.'],
+          ['Age 2 or older','An IGRA blood test is required for TB screening; a positive result requires a chest X-ray and further evaluation.'],
+          ['Any age','Vaccination requirements are assessed against the age-appropriate schedule, not a single fixed list.'],
+          ['Any age, with a chronic condition','Bring specialist records; the civil surgeon may need them to complete the form.']
+        ]},
+        {type:'checklist',title:'Bring for a Child’s Appointment',items:['The complete immunisation record, including overseas doses.','Records of any previous TB testing or treatment.','Details of chronic conditions, specialist care, and current medications.','Photo identification for the child as the office requires.','Whatever that specific civil surgeon office asked for when you booked.']},
+        {type:'callout',title:'The Immunisation Record Does the Most Work',items:['Age-appropriate vaccination is judged from documentation. A complete written record is what prevents repeat doses, a deferred review, or a second appointment for a child.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/i-693-medical-exam-requirements-checklist/index.html') {
+    const keys=['i693','medreq','cdc'];
+    return finish(spec, {
+      title:'I-693 Medical Exam Requirements: The Full Checklist',
+      description:'The complete set of requirements the I-693 examination has to satisfy, organised by who is responsible for each one.',
+      answer:'The requirements split cleanly by who owns them. You are responsible for using a currently designated civil surgeon, bringing documentation, and filing the sealed form under current instructions. The civil surgeon is responsible for examining you under CDC technical instructions, completing the current edition of Form I-693, certifying it, and sealing it. Confusing the two is what produces most avoidable problems.',
+      checklist:['Use a currently designated civil surgeon, verified through USCIS.','Bring identification, vaccination records, and relevant medical history.','Complete any required testing, imaging, or vaccination the exam identifies.','Receive the sealed form and keep it unopened.','File under the current USCIS instructions and respond to any notice exactly.'],
+      red_flags:['A requirement is assumed from an old edition of the form or an outdated summary.','The sealed envelope is opened before filing.','Required follow-up is skipped so the form can be filed sooner.','The physician is not verified as currently designated.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'comparison_table',title:'Who Is Responsible for What',headers:['Requirement','Yours','The civil surgeon’s'],rows:[
+          ['Using a currently designated civil surgeon','Verify the designation before booking','Hold and maintain the USCIS designation'],
+          ['Documentation','Bring identification, vaccination, and medical records','Review what you bring and record it on the form'],
+          ['The examination itself','Attend and complete required follow-up','Examine you under CDC technical instructions'],
+          ['The form','Keep your copy and keep the USCIS copy sealed','Complete the current edition, certify, and seal it'],
+          ['Filing','File under current USCIS instructions','Not the clinic’s responsibility']
+        ]},
+        {type:'checklist',title:'Before the Appointment',items:['Verify the civil surgeon’s current designation through USCIS.','Gather identification, full vaccination records, and TB history.','Ask the office for its own pre-appointment requirements.','Confirm what the quoted charge includes.']},
+        {type:'checklist',title:'After the Appointment',items:['Confirm any required follow-up testing or vaccination is complete.','Collect the sealed USCIS copy and keep it unopened.','Keep your own copy and read it for obvious omissions.','File under the current USCIS instructions, and answer any notice on its own deadline.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/uscis-civil-surgeon-near-me/index.html') {
+    const keys=['finder','i693'];
+    return finish(spec, {
+      title:'Searching for a Civil Surgeon Near You: How the USCIS Locator Works',
+      description:'How to run and read a USCIS civil surgeon locator search, what the results do and do not tell you, and when to widen the radius.',
+      answer:'Use the official USCIS Find a Civil Surgeon tool and search by location. The results tell you which physicians hold the designation and where they are listed — they do not tell you a clinic’s current appointment availability, price, or languages. Treat the search result as the shortlist, and settle everything else by telephoning the offices on it.',
+      checklist:['Search the official USCIS locator by your location.','Widen the search radius if few results appear nearby.','Read each result as a designation record, not an availability or price listing.','Telephone the offices on the shortlist to confirm availability and requirements.','Re-check the listing if any result looks stale before you book.'],
+      red_flags:['A directory that is not the official USCIS tool is used as the source of truth.','A search result is treated as confirmation that the office has appointments.','A price or wait time is inferred from the listing itself.','Only one result is contacted, with no fallback if that office cannot see you.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'protocol',title:'Running the Search',items:['Open the official USCIS Find a Civil Surgeon tool.','Search by your location, and note the radius the tool applied.','Widen the radius if the nearby result count is low.','Record the physician names, not just the clinic names.','Contact several offices rather than only the closest one.']},
+        {type:'comparison_table',title:'What the Search Result Tells You',headers:['Question','Answered by the locator?'],rows:[
+          ['Is this physician designated by USCIS','Yes — that is what the listing records.'],
+          ['Does the office have appointments soon','No — call the office.'],
+          ['What will it cost','No — ask the office for a written itemised quote.'],
+          ['What languages are spoken','No — ask the office.'],
+          ['What to bring to the appointment','No — ask the office for its own list.']
+        ]},
+        {type:'checklist',title:'Turning the Shortlist Into a Booking',items:['Call each shortlisted office and confirm it performs Form I-693 examinations.','Ask about the next available appointment and about total expected turnaround.','Ask for the charge in writing and what it includes.','Ask for that office’s pre-appointment document list.','Keep a second option, in case the first office cannot complete the exam in time.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/what-happens-at-the-i-693-medical-exam-step-by-step/index.html') {
+    const keys=['cdc','tb','i693'];
+    return finish(spec, {
+      title:'What Happens at the I-693 Medical Exam, Step by Step',
+      description:'The sequence of an immigration medical examination appointment, from check-in through the sealed form, and where the process can pause.',
+      answer:'The appointment moves through check-in and identity verification, a medical history, a physical examination performed under CDC technical instructions, required testing such as tuberculosis screening, a vaccination record review with any needed doses, and finally completion and sealing of Form I-693. It does not always finish in one visit: testing results, imaging, or missing vaccination records can pause the process before the form can be certified.',
+      checklist:['Bring identification, vaccination records, and medical history to check-in.','Expect a medical history to be taken before the physical examination.','Expect required testing based on your age and findings.','Expect the vaccination record to be reviewed and gaps addressed.','Expect the sealed form only once every required step is complete.'],
+      red_flags:['A form is certified before required testing results are back.','No physical examination is performed at all.','The vaccination record is not reviewed.','The sealed envelope is handed over opened, or you are told to open it.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'protocol',title:'The Appointment, in Order',items:['Check-in and identity verification.','Medical history, including medications, conditions, and prior TB testing.','Physical examination under CDC technical instructions.','Required testing, including tuberculosis screening as your age and findings require.','Vaccination record review, and any doses needed to meet requirements.','Completion, certification, and sealing of Form I-693 once every step is finished.']},
+        {type:'decision_matrix',title:'Where the Process Can Pause',headers:['What comes up','What typically happens next'],rows:[
+          ['Testing results are not back yet','The form is not certified until results are available.'],
+          ['A screening result requires imaging or further evaluation','That evaluation must be completed before the exam can be finalised.'],
+          ['Vaccination records are incomplete','Doses may be given, or the review deferred until records are produced.'],
+          ['A finding needs a public-health referral','The referral must be resolved before certification.']
+        ]},
+        {type:'callout',title:'One Visit Is Not Guaranteed',items:['Plan for the possibility of a second visit. Testing, imaging, and vaccination gaps are ordinary parts of this examination, not signs that something has gone wrong.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
+  if (p === 'uscis-medical/guides/what-vaccines-are-required-for-the-uscis-medical-exam/index.html') {
+    const keys=['vaccines','cdc','medreq'];
+    return finish(spec, {
+      title:'Which Vaccines Are Required for the USCIS Medical Exam?',
+      description:'How vaccination requirements for the immigration medical exam are actually determined, why the list is not fixed, and what documentation decides the outcome.',
+      answer:'There is no single fixed list that applies to everyone. The civil surgeon assesses vaccination against the CDC vaccination technical instructions, applied to what is age-appropriate and medically appropriate for you — and requirements have changed over time, including the removal of the COVID-19 vaccination requirement. Because the assessment is made from documentation, a complete written vaccination record is what most determines whether you need further doses.',
+      checklist:['Bring your complete written vaccination history, including doses given abroad.','Expect the assessment to be based on what is age-appropriate for you.','Ask the office which required vaccines it can administer at the visit.','Ask what happens if records are missing or incomplete.','Check the current CDC technical instructions rather than an older list.'],
+      red_flags:['A fixed universal vaccine list is presented as current without reference to age or medical appropriateness.','A source still lists the COVID-19 vaccination as required.','Missing records are treated as equivalent to no vaccinations without discussion.','A clinic will not say which vaccines it can give on site.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'callout',title:'The List Is Not Fixed',items:['Vaccination requirements for the immigration medical exam are assessed under the CDC vaccination technical instructions against what is age-appropriate and medically appropriate for the individual, and those instructions have changed over time — including the removal of the COVID-19 vaccination requirement. Check the current instructions rather than an older summary.']},
+        {type:'decision_matrix',title:'What Your Records Decide',headers:['What you can document','What usually follows'],rows:[
+          ['A complete, dated vaccination record','The civil surgeon assesses against it; fewer doses are typically needed.'],
+          ['Partial records','Missing items may be given at the visit, or the review deferred until records are found.'],
+          ['No records at all','Expect the assessment to proceed as though undocumented doses were not given.'],
+          ['Records in another language','Ask the office in advance whether a translation is required and in what form.'],
+          ['A documented medical contraindication','Discuss it with the civil surgeon, who records how the requirement is addressed.']
+        ]},
+        {type:'checklist',title:'Before the Appointment',items:['Collect every vaccination record you can obtain, including from other countries.','Ask the office whether translations of foreign records are needed.','Ask which required vaccines the office can administer on site.','Ask whether any needed vaccine is billed separately from the exam.','Confirm requirements against the current CDC vaccination technical instructions.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
   return null;
 }
 
