@@ -91,7 +91,45 @@ if (!backlog || !Array.isArray(backlog.routes)) {
     .filter((e) => e && e.route && String(e.disposition || '').toUpperCase() === 'AWAITING_RELEASE_LANE')
     .map((e) => e.route);
 
-  if (!awaiting.length) {
+  if (!awaiting.length && backlog.fully_retired_declaration) {
+    /*
+     * THE DRAIN SUCCEEDING MUST NOT FAIL THE GUARD.
+     *
+     * This branch is the path the error message below has always named - "either the
+     * backlog is fully retired (record that deliberately)" - and which was never
+     * implemented, so the two guards over this file could not both be satisfied:
+     * `unbuilt-backlog-drain` fails while an entry is declared AWAITING_RELEASE_LANE
+     * that the release law will not admit, and this one failed as soon as nothing was
+     * awaiting. Retiring the last unadmittable entry moved the repo from one failure
+     * straight into the other.
+     *
+     * It is NOT a pass-by-emptiness. It requires an explicit declaration in the backlog
+     * file, and it re-verifies the claim rather than trusting it: every route must
+     * actually carry a retirement reason code, and the declaration must say when and
+     * why. The moment any entry returns to AWAITING_RELEASE_LANE the self-test runs
+     * again for real, because the branch below is chosen on `awaiting.length`.
+     */
+    const d = backlog.fully_retired_declaration;
+    const unreasoned = backlog.routes.filter((e) => !(e && e.retirement_reason_code && e.retirement_reason));
+    if (!d.declared_at || !d.reason) {
+      errors.push(
+        `fully_retired_declaration_incomplete - ${BACKLOG_REL} declares the backlog fully retired but the ` +
+        `declaration must carry declared_at and reason. A declaration without them is a bypass, not a record.`
+      );
+    } else if (unreasoned.length) {
+      errors.push(
+        `fully_retired_declaration_is_false - ${BACKLOG_REL} declares the backlog fully retired, but ` +
+        `${unreasoned.length} route(s) carry no retirement_reason_code and reason: ` +
+        `${unreasoned.slice(0, 3).map((e) => e.route).join(', ')}. The declaration is checked, not believed.`
+      );
+    } else {
+      console.log(
+        `ADMISSION SELF-TEST NOT APPLICABLE: all ${backlog.routes.length} declared route(s) are retired with a ` +
+        `recorded reason, declared deliberately on ${d.declared_at}. The self-test runs again the moment any ` +
+        `entry returns to AWAITING_RELEASE_LANE.`
+      );
+    }
+  } else if (!awaiting.length) {
     // Not a pass-by-emptiness: with nothing awaiting there is nothing to strip,
     // so the self-test cannot demonstrate anything and must say so.
     errors.push(
@@ -198,6 +236,20 @@ console.log('Unbuilt backlog admission');
 console.log(`  candidate rows read               : ${admitted.sourceRowCount}`);
 console.log(`  rich-authority rows examined      : ${admitted.rows.length} over ${admitted.routes.length} route(s)`);
 console.log(`  admitted and unbuilt              : ${admittedUnbuilt.length}`);
-console.log(`  admission self-test               : stripped ${selfTest.stripped_awaiting} awaiting entr(ies), reconciler re-declared ${selfTest.redeclared}`);
+// `selfTest` is null on the fully-retired path: with nothing awaiting there is nothing
+// to strip, so no self-test ran. Say that, rather than dereferencing null and crashing
+// after the validator has already decided the tree is fine.
+if (selfTest) {
+  console.log(`  admission self-test               : stripped ${selfTest.stripped_awaiting} awaiting entr(ies), reconciler re-declared ${selfTest.redeclared}`);
+} else {
+  console.log('  admission self-test               : not applicable - nothing awaiting to strip (see the declaration above)');
+}
 console.log(`  release queue rebuilt after reconcile: yes`);
-console.log(`unbuilt-backlog-admission PASS: the reconciler rebuilt all ${selfTest.stripped_awaiting} stripped declaration(s) from the contract, so the backlog is maintained by a working admission half rather than by hand.`);
+// The PASS line has to say WHICH proof was obtained. On the normal path the reconciler
+// demonstrably rebuilt what was stripped. On the fully-retired path no such proof
+// exists, and claiming it would be the "runs but inert" defect in a success message.
+if (selfTest) {
+  console.log(`unbuilt-backlog-admission PASS: the reconciler rebuilt all ${selfTest.stripped_awaiting} stripped declaration(s) from the contract, so the backlog is maintained by a working admission half rather than by hand.`);
+} else {
+  console.log(`unbuilt-backlog-admission PASS: all ${backlog.routes.length} declared route(s) are retired with a recorded reason and none awaits the release lane, so there was nothing to strip and the reconciler self-test did not run. This is a NAMED STOP, not a demonstration - the self-test runs again the moment any entry returns to AWAITING_RELEASE_LANE.`);
+}

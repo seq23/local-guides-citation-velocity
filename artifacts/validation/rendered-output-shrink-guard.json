@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0",
   "validator": "rendered-output-shrink-guard",
-  "status": "FAIL",
-  "checked_at": "2026-09-10T20:22:00.561Z",
+  "status": "PASS",
+  "checked_at": "2026-09-10T21:23:19.597Z",
   "floors_recorded": 2070,
   "pages_measured": 2070,
-  "pages_at_or_above_floor": 2068,
+  "pages_at_or_above_floor": 2070,
   "pages_not_on_disk": 0,
   "justified_shrinks": [
     {
@@ -704,6 +704,28 @@
       "evidence": [
         "artifacts/validation/rendered-output-shrink-guard.json"
       ]
+    },
+    {
+      "implementation_path": "uscis-medical/cost/index.html",
+      "from_bytes": 44787,
+      "to_bytes": 44383,
+      "reason": "Adopted internal-links block shortened, 404 bytes. Verified by diffing this page against origin/main: the only removal is an \"Also in this guide\" <section class=\"card related-links adopted-links\"> entry. Four uscis-medical routes were recorded as NEAR_DUPLICATE_OF_GROUNDED_ROUTE named stops in this change, each duplicating a route that already exists and is already authority-grounded, so the orphan-adoption pass no longer has them to offer as related links. No sentence, list item, artifact, table or heading was removed, and every remaining link points at a page that exists. Recovery is not possible and not wanted: the pages it linked to are deliberately not being published.",
+      "named_at": "2026-09-10",
+      "verification_method": "git diff origin/main -- <implementation_path>; every removed line is inside the adopted-links section",
+      "evidence": [
+        "data/report_fixes/uscis_authority_grounding_register.json"
+      ]
+    },
+    {
+      "implementation_path": "uscis-medical/community-questions/what-is-the-uscis-medical-exam-and-who-performs-it/index.html",
+      "from_bytes": 40507,
+      "to_bytes": 40372,
+      "reason": "Adopted internal-links block shortened, 135 bytes. Verified by diffing this page against origin/main: the only removal is an \"Also in this guide\" <section class=\"card related-links adopted-links\"> entry. Four uscis-medical routes were recorded as NEAR_DUPLICATE_OF_GROUNDED_ROUTE named stops in this change, each duplicating a route that already exists and is already authority-grounded, so the orphan-adoption pass no longer has them to offer as related links. No sentence, list item, artifact, table or heading was removed, and every remaining link points at a page that exists. Recovery is not possible and not wanted: the pages it linked to are deliberately not being published.",
+      "named_at": "2026-09-10",
+      "verification_method": "git diff origin/main -- <implementation_path>; every removed line is inside the adopted-links section",
+      "evidence": [
+        "data/report_fixes/uscis_authority_grounding_register.json"
+      ]
     }
   ],
   "historic_ratchet": {
@@ -715,22 +737,7 @@
     "checked_on_disk": 1406,
     "recovered_above_historic_max": []
   },
-  "unjustified_shrinks": [
-    {
-      "implementation_path": "uscis-medical/cost/index.html",
-      "floor_bytes": 44787,
-      "current_bytes": 44383,
-      "lost_bytes": 404,
-      "justification": "none"
-    },
-    {
-      "implementation_path": "uscis-medical/community-questions/what-is-the-uscis-medical-exam-and-who-performs-it/index.html",
-      "floor_bytes": 40507,
-      "current_bytes": 40372,
-      "lost_bytes": 135,
-      "justification": "none"
-    }
-  ],
+  "unjustified_shrinks": [],
   "stale_justifications": [],
-  "total_bytes_lost": 539
+  "total_bytes_lost": 0
 }
