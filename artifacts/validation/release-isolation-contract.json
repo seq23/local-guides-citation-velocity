@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "guard": "release-isolation-contract",
-  "status": "FAIL",
+  "status": "PASS",
   "checked_at": "2026-09-10",
-  "cases_examined": 44,
+  "cases_examined": 47,
   "mapped_validators": [
     "medical-schema-emission",
     "no-internal-instruction-leak",
@@ -53,6 +53,27 @@
     {
       "case": "unreadable_evidence_is_systemic",
       "why": "A validator that failed without leaving readable evidence has not told anyone which unit to charge.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:agent-recommendation-dist-application:marker_dropped_between_source_and_dist",
+      "why": "Replacing the required marker \"best way to compare TRT clinics in 2026\" in dist/trt/index.html (8 occurrences) with a placeholder while leaving the SOURCE page untouched - exactly the failure this validator exists for: content the build retired between the repo and dist/. The validator exited 1 having examined 2,580 recommendations across 266 pages and 2,580 markers, and wrote 15 markers_absent_from_dist rows, every one naming trt/index.html. The dist file was restored immediately afterwards.\nMEASURED ON A RELEASE UNIT ON PURPOSE. The first attempt used an insights/*.html page, and the contract refused it: the exit code was right but no unit was HELD, because an insights page is not a governed release unit and there was nothing to charge. A mapping proved only against a page the isolator cannot hold proves nothing about isolation. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:agent-recommendation-dist-application:marker_dropped_between_source_and_dist",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:agent-recommendation-dist-application:marker_dropped_between_source_and_dist",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
       "expected_exit": 1,
       "actual_exit": 1,
       "output_matched": true
@@ -332,7 +353,5 @@
       ]
     }
   ],
-  "errors": [
-    "agent-recommendation-dist-application: declares unit_attribution in _validation_registry.json but no constructed case in this contract exercises it. A mapping with no case behind it is a mapping nobody measured, and an unmeasured mapping holds units that were never at fault. Add it to MEASURED above with the evidence the validator actually wrote when you constructed its failing state, or remove the mapping and let the validator stay systemic."
-  ]
+  "errors": []
 }
