@@ -7,6 +7,7 @@ const path = require('path');
 const { compileEntryFromSpec, artifactFromFix, phrasesTheFixAsksToRemove, normalizeForbidden } = require('../lib/html_fix_acceptance_parser');
 const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
 const { mergeAcceptedArtifacts } = require('../lib/accepted_artifacts');
+const { stripTemplateScaffoldingFromArtifacts, withoutTemplateScaffolding } = require('../lib/template_scaffolding');
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const PLAN_PATH = 'artifacts/validation/agent-exact-implementation-plan.json';
@@ -213,6 +214,47 @@ function main() {
     const key = String(entry && entry.implementation_path || '');
     if (key) byPath.set(key, cleanCarried(entry));
   }
+  // THE MANIFEST IS PART OF THE PAGE, SO IT GETS THE SAME SCREEN THE PAGE GETS.
+  //
+  // scripts/lib/template_scaffolding.js stopped the emitters padding a table up to a
+  // requested row count with `Concrete verification point <n>` / `Requirement <n>`,
+  // and screens the two durable artifact stores on load. This compiler was never
+  // told. So the manifest went on ASSERTING the padding as required_strings, and went
+  // on carrying min_rows counts that only added up while the padded rows existed - and
+  // the rendering contract dutifully reported the pages as broken:
+  //
+  //   dentistry/anxiety-trust/index.html:missing_required_string:Concrete verification point 3
+  //   dentistry/choosing-a-dentist/index.html:row:agent_62c166acdc8b1f94:min_rows_not_met:1<3
+  //
+  // Two components, each keeping its own idea of what a page contains, with no link
+  // between them - which is why this screens through the SAME module the emitters and
+  // the stores use rather than restating the patterns here. There is no fourth copy of
+  // the list.
+  //
+  // The entry's own `artifacts` are screened too, not just its strings: the block
+  // below derives what "will actually render" from mergeAcceptedArtifacts(path,
+  // entry.artifacts), and an unscreened carried artifact put the padded rows straight
+  // back into that answer - which is exactly how a string like "Concrete verification
+  // point 3" survived a filter whose whole job was to drop strings the page does not
+  // publish.
+  //
+  // OMIT, NEVER PAD: the padded rows are not restored to make the count add up. The
+  // count falls to the rows that genuinely survive.
+  const screenTemplateScaffolding = (entry) => {
+    if (!entry || typeof entry !== 'object') return entry;
+    return {
+      ...entry,
+      artifacts: stripTemplateScaffoldingFromArtifacts(entry.artifacts || []),
+      required_strings: withoutTemplateScaffolding(entry.required_strings),
+      checklist: withoutTemplateScaffolding(entry.checklist),
+      row_requirements: (entry.row_requirements || []).map((row) => ({
+        ...row,
+        required_strings: withoutTemplateScaffolding(row.required_strings)
+      }))
+    };
+  };
+  for (const key of [...byPath.keys()]) byPath.set(key, screenTemplateScaffolding(byPath.get(key)));
+
   // A CARRIED entry's promises are re-tested against what will actually render.
   //
   // Carrying an entry forward carried its required_strings with it, including strings
@@ -227,13 +269,38 @@ function main() {
   // Only strings the merged artifacts do not contain are dropped, so nothing a page
   // genuinely publishes stops being asserted, and an entry that loses every string
   // keeps its row requirements and headings - the substantive part of the contract.
+  //
+  // min_rows is re-derived here for the same reason and from the same source. It was
+  // written once at compile time as `built.rows.length` and never revisited, so a block
+  // still demanded the row count the artifact had BEFORE its padding was screened off.
+  // The delivered artifact is the authority on how many rows exist, so the count is
+  // taken from it. It is only ever LOWERED: raising it would assert rows nothing has
+  // shown the page to have, which is the same mistake one column over.
+  const blockKey = (value) => String(value === undefined || value === null ? '' : value).replace(/\s+/g, ' ').trim().toLowerCase();
   const renderedStrings = (entry) => {
-    const rendered = JSON.stringify(mergeAcceptedArtifacts(entry.implementation_path, entry.artifacts || []));
+    const merged = mergeAcceptedArtifacts(entry.implementation_path, entry.artifacts || []);
+    const rendered = JSON.stringify(merged);
     const keep = (value) => rendered.includes(JSON.stringify(String(value)).slice(1, -1));
+    const deliveredRowCount = new Map();
+    for (const artifact of merged || []) {
+      if (!artifact || !artifact.title) continue;
+      const count = Array.isArray(artifact.rows) ? artifact.rows.length : (artifact.items || artifact.lines || []).length;
+      deliveredRowCount.set(blockKey(artifact.title), count);
+    }
+    const trimBlock = (block) => {
+      if (!block || !block.min_rows) return block;
+      const delivered = deliveredRowCount.get(blockKey(block.heading_exact));
+      if (delivered === undefined || delivered >= Number(block.min_rows)) return block;
+      return { ...block, min_rows: delivered, min_rows_source: 'delivered_artifact' };
+    };
     return {
       ...entry,
       required_strings: (entry.required_strings || []).filter(keep),
-      row_requirements: (entry.row_requirements || []).map((row) => ({ ...row, required_strings: (row.required_strings || []).filter(keep) }))
+      row_requirements: (entry.row_requirements || []).map((row) => ({
+        ...row,
+        required_blocks: (row.required_blocks || []).map(trimBlock),
+        required_strings: (row.required_strings || []).filter(keep)
+      }))
     };
   };
   const entries = [...byPath.values()].map(renderedStrings).sort((a, b) => String(a.implementation_path).localeCompare(String(b.implementation_path)));
@@ -254,7 +321,11 @@ function main() {
   for (const spec of specs) {
     const k = `${spec.run_date || DATE}_${inferVertical(spec)}`;
     if (!grouped.has(k)) grouped.set(k, []);
-    grouped.get(k).push(compile(spec));
+    // Screened on the way in, exactly as the durable manifest is. A per-run manifest
+    // that still carried the padding would be a second, unscreened copy of the same
+    // promises sitting one directory over.
+    const entry = compile(spec);
+    if (entry) grouped.get(k).push(screenTemplateScaffolding(entry));
   }
   for (const [key, groupEntries] of grouped.entries()) {
     writeJson(`${MANIFEST_DIR}/${key}.json`, {
