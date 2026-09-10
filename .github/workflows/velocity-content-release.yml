@@ -400,7 +400,21 @@ jobs:
             # future release-profile validator with a registered repair gets
             # repaired before it can block the push, rather than each one being
             # found and patched by hand as the next lane failure.
-            npm run selfheal:release
+            # PER-UNIT ISOLATION. self-heal exits non-zero when it cannot make the tree
+            # clean, and under `bash -e` that ended the step - so ONE unprovable unit
+            # rejected all 85 in run 34409865197, and the same shape recurred three more
+            # times on 2026-09-09 with a different validator each time. At 648 outstanding
+            # recommendations that property alone makes the backlog undrainable.
+            #
+            # hold_failing_units.mjs charges each remaining failure to the unit that caused
+            # it, holds that unit, and lets the rest publish. It is NOT a bypass: a failure
+            # may be charged to a unit only when it names a route THIS release thawed.
+            # Anything else - an unmapped validator, a route outside the mutation scope, a
+            # validator that could not run - fails the whole run, and a run that holds
+            # everything exits non-zero rather than shipping nothing while reporting
+            # success. release-isolation-contract proves both properties against
+            # constructed inputs on every validation run.
+            npm run selfheal:release || npm run release:hold-failing-units
             # Then prove it UNHEALED. self-heal exits 0 when its own re-validation is
             # clean, but that re-validation is the one it just repaired into being
             # clean; a raw release-profile pass on the healed tree is a separate,
@@ -418,7 +432,7 @@ jobs:
             # this command just wrote: a repairable failure still blocks, a repair-less one
             # is reported and does not. The literal command stays so workflow-data-trace
             # still sees a release revalidation before the push.
-            npm run validate:release || node scripts/selfheal/publish_gate_decision.mjs --profile release
+            npm run validate:release || node scripts/selfheal/publish_gate_decision.mjs --profile release || npm run release:hold-failing-units
             phase "$attempt" "agent-exact and citation-agent traces"
             npm run trace:agent-exact
             npm run validate:agent-exact

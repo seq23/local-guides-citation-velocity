@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "f6894bdb5e3cf6c9f24cca708cb139145765c1ba856a87090a321ae873d94d98",
+  "registry_sha256": "af3d13c8860fcf889a68286cc0b9c5812e289b2bc8ca70796bd891d9bd896b51",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 195,
-    "active": 168,
+    "total": 196,
+    "active": 169,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 166,
+    "hard_fail": 167,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -170,7 +170,8 @@
         "validation-lane-repairs-nothing",
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
-        "blocked-target-resolvability"
+        "blocked-target-resolvability",
+        "release-isolation-contract"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -208,6 +209,7 @@
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
+        "release-isolation-contract",
         "release-lane-heals-before-push",
         "removal-directive-not-published",
         "rendered-output-shrink-guard",
@@ -452,7 +454,8 @@
         "validation-lane-repairs-nothing",
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
-        "blocked-target-resolvability"
+        "blocked-target-resolvability",
+        "release-isolation-contract"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -501,6 +504,7 @@
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
+        "release-isolation-contract",
         "release-lane-heals-before-push",
         "removal-directive-not-published",
         "rendered-output-shrink-guard",
@@ -791,7 +795,8 @@
         "validation-lane-repairs-nothing",
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
-        "blocked-target-resolvability"
+        "blocked-target-resolvability",
+        "release-isolation-contract"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -840,6 +845,7 @@
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
+        "release-isolation-contract",
         "release-lane-heals-before-push",
         "removal-directive-not-published",
         "rendered-output-shrink-guard",
@@ -1161,7 +1167,8 @@
         "validation-lane-repairs-nothing",
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
-        "blocked-target-resolvability"
+        "blocked-target-resolvability",
+        "release-isolation-contract"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1210,6 +1217,7 @@
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
+        "release-isolation-contract",
         "release-lane-heals-before-push",
         "removal-directive-not-published",
         "rendered-output-shrink-guard",
@@ -1506,7 +1514,8 @@
         "validation-lane-repairs-nothing",
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
-        "blocked-target-resolvability"
+        "blocked-target-resolvability",
+        "release-isolation-contract"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1555,6 +1564,7 @@
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
+        "release-isolation-contract",
         "release-lane-heals-before-push",
         "removal-directive-not-published",
         "rendered-output-shrink-guard",
@@ -2027,7 +2037,8 @@
         "validation-lane-repairs-nothing",
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
-        "blocked-target-resolvability"
+        "blocked-target-resolvability",
+        "release-isolation-contract"
       ],
       "execution_order": [
         "accepted-artifact-recovery",
@@ -2058,6 +2069,7 @@
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
+        "release-isolation-contract",
         "removal-directive-not-published",
         "rendered-output-shrink-guard",
         "repair-marker-survives-acceptance",
@@ -2279,7 +2291,8 @@
         "validation-lane-repairs-nothing",
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
-        "blocked-target-resolvability"
+        "blocked-target-resolvability",
+        "release-isolation-contract"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -2318,6 +2331,7 @@
         "query-atlas",
         "atlas-unit-contract",
         "atlas-release-join",
+        "release-isolation-contract",
         "release-lane-heals-before-push",
         "removal-directive-not-published",
         "rendered-output-shrink-guard",
@@ -9243,6 +9257,45 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "release-isolation-contract",
+        "title": "Per-unit release isolation never becomes suppression",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_release_isolation_contract.js",
+        "command": "node scripts/validators/validate_release_isolation_contract.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/release/hold_failing_units.mjs",
+          "_validation_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/release-isolation-contract.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/release-isolation-contract.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents scripts/release/hold_failing_units.mjs from charging a SYSTEMIC failure to a release unit, which would publish while something real was swept into a held list nobody reads. The rule comes from a measured property: rendered-output-shrink-guard is TREE-LEVEL in what it scans - all 2,067 accepted floors, whether or not the release touched them - and per-route only in what it reports, so \"the evidence names a route\" is not sufficient authority to hold a unit. It also prevents a run that holds everything and publishes nothing from exiting 0, which is the runs-but-inert defect this repo names by name. Both are proved against constructed inputs on every run, while the real lane is green: a capability exercised only when production needs it is one nobody knows is dead.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -13580,6 +13633,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents a resolver improvement from leaving behind the rows the old resolver got wrong. citation_route_resolver.js learned that a filesystem path never contains \"|\" or \"&bull;\", which stopped NEW rows being manufactured against decorated pseudo-paths - but data/report_fixes/agent_fix_ledger.json still carried 17 rows across 5 agent runs marked BLOCKED_MISSING_TARGET / TARGET_NOT_FOUND against strings like \"personal-injury/index.html%20|%20LEVEL:%20L1%20|...\" while personal-injury/index.html sat in the repo. The current resolver places all 17 on pages that exist, and not one of those 17 source records had a second correctly-resolved row anywhere - the work was stranded, not duplicated. The intake cannot recover them because it only re-derives status for runs inside the absorption window, and these are long outside it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "release-isolation-contract",
+        "title": "Per-unit release isolation never becomes suppression",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_release_isolation_contract.js",
+        "command": "node scripts/validators/validate_release_isolation_contract.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/release/hold_failing_units.mjs",
+          "_validation_registry.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/release-isolation-contract.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/release-isolation-contract.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents scripts/release/hold_failing_units.mjs from charging a SYSTEMIC failure to a release unit, which would publish while something real was swept into a held list nobody reads. The rule comes from a measured property: rendered-output-shrink-guard is TREE-LEVEL in what it scans - all 2,067 accepted floors, whether or not the release touched them - and per-route only in what it reports, so \"the evidence names a route\" is not sufficient authority to hold a unit. It also prevents a run that holds everything and publishes nothing from exiting 0, which is the runs-but-inert defect this repo names by name. Both are proved against constructed inputs on every run, while the real lane is green: a capability exercised only when production needs it is one nobody knows is dead.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
