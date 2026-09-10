@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "af3d13c8860fcf889a68286cc0b9c5812e289b2bc8ca70796bd891d9bd896b51",
+  "registry_sha256": "91e70155e91c89dabf0c3d03a979ceafbb1a20bc14223ce5aa6de4ec0b8d139e",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 196,
-    "active": 169,
+    "total": 197,
+    "active": 170,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 167,
+    "hard_fail": 168,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -171,7 +171,8 @@
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
-        "release-isolation-contract"
+        "release-isolation-contract",
+        "uscis-authority-grounding-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -221,6 +222,7 @@
         "strategy-gate",
         "local-guides-tree-hygiene",
         "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage",
         "validation-lane-repairs-nothing",
         "validation-policy",
         "validation-registry",
@@ -455,7 +457,8 @@
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
-        "release-isolation-contract"
+        "release-isolation-contract",
+        "uscis-authority-grounding-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -525,6 +528,7 @@
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
         "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage",
         "validation-lane-repairs-nothing",
         "validation-policy",
         "validation-registry",
@@ -796,7 +800,8 @@
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
-        "release-isolation-contract"
+        "release-isolation-contract",
+        "uscis-authority-grounding-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -866,6 +871,7 @@
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
         "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage",
         "validation-lane-repairs-nothing",
         "validation-policy",
         "validation-registry",
@@ -1168,7 +1174,8 @@
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
-        "release-isolation-contract"
+        "release-isolation-contract",
+        "uscis-authority-grounding-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1238,6 +1245,7 @@
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
         "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage",
         "validation-lane-repairs-nothing",
         "validation-policy",
         "validation-registry",
@@ -1515,7 +1523,8 @@
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
-        "release-isolation-contract"
+        "release-isolation-contract",
+        "uscis-authority-grounding-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1585,6 +1594,7 @@
         "local-guides-tree-hygiene",
         "structural-graph-live-policy",
         "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage",
         "validation-lane-repairs-nothing",
         "validation-policy",
         "validation-registry",
@@ -2038,7 +2048,8 @@
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
-        "release-isolation-contract"
+        "release-isolation-contract",
+        "uscis-authority-grounding-coverage"
       ],
       "execution_order": [
         "accepted-artifact-recovery",
@@ -2081,6 +2092,7 @@
         "social-fallback-backlog-visibility",
         "store-clock-independence",
         "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage",
         "validation-lane-repairs-nothing",
         "validator-authority-contract",
         "velocity-commercial-pages",
@@ -2292,7 +2304,8 @@
         "clock-source-independence",
         "semantic-acceptance-refusal-legibility",
         "blocked-target-resolvability",
-        "release-isolation-contract"
+        "release-isolation-contract",
+        "uscis-authority-grounding-coverage"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -2346,6 +2359,7 @@
         "store-clock-independence",
         "strategy-gate",
         "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage",
         "validation-lane-repairs-nothing",
         "validator-authority-contract",
         "validator-materiality",
@@ -9296,6 +9310,48 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "uscis-authority-grounding-coverage",
+        "title": "Every uscis-medical route is grounded in primary sources or a named stop with a reason",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_uscis_authority_grounding_coverage.js",
+        "command": "node scripts/validators/validate_uscis_authority_grounding_coverage.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/lib/authority_grounded_repairs.js",
+          "data/report_fixes/uscis_authority_grounding_register.json",
+          "data/report_fixes/landed_directive_decisions.json",
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/report_fixes/agent_exact_implementation_ledger.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/uscis-authority-grounding-coverage.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/uscis-authority-grounding-coverage.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a uscis-medical route from being neither authority-grounded nor deliberately stopped, which is the shape that let 22 ungrounded routes accumulate invisibly until a large batch drew one and took the whole release red - agent_7b5d43b6820884d4:repair_not_proven on run 34409865197 is the measured instance. It also prevents the repair that looks obvious and is forbidden: grounding the backlog by spraying one generated template across many routes. These are distinct long-tail pages whose entire purpose is being cited, so near-identical copy across them destroys more citation value than the named stops cost. That constraint is enforced by measuring pairwise similarity of required_strings and answer text across every grounded uscis entry, not by asserting it in a comment. Finally it prevents a landed-directive contradiction from being re-litigated every run, by failing any durable ledger entry that promises a phrase its own landed recommendations ask to remove unless a decision is recorded for that route.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
@@ -13672,6 +13728,48 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Prevents scripts/release/hold_failing_units.mjs from charging a SYSTEMIC failure to a release unit, which would publish while something real was swept into a held list nobody reads. The rule comes from a measured property: rendered-output-shrink-guard is TREE-LEVEL in what it scans - all 2,067 accepted floors, whether or not the release touched them - and per-route only in what it reports, so \"the evidence names a route\" is not sufficient authority to hold a unit. It also prevents a run that holds everything and publishes nothing from exiting 0, which is the runs-but-inert defect this repo names by name. Both are proved against constructed inputs on every run, while the real lane is green: a capability exercised only when production needs it is one nobody knows is dead.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "uscis-authority-grounding-coverage",
+        "title": "Every uscis-medical route is grounded in primary sources or a named stop with a reason",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_uscis_authority_grounding_coverage.js",
+        "command": "node scripts/validators/validate_uscis_authority_grounding_coverage.js",
+        "depends_on": [],
+        "requires_files": [
+          "scripts/lib/authority_grounded_repairs.js",
+          "data/report_fixes/uscis_authority_grounding_register.json",
+          "data/report_fixes/landed_directive_decisions.json",
+          "data/report_fixes/agent_fix_ledger.json",
+          "data/report_fixes/agent_exact_implementation_ledger.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/uscis-authority-grounding-coverage.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/uscis-authority-grounding-coverage.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Prevents a uscis-medical route from being neither authority-grounded nor deliberately stopped, which is the shape that let 22 ungrounded routes accumulate invisibly until a large batch drew one and took the whole release red - agent_7b5d43b6820884d4:repair_not_proven on run 34409865197 is the measured instance. It also prevents the repair that looks obvious and is forbidden: grounding the backlog by spraying one generated template across many routes. These are distinct long-tail pages whose entire purpose is being cited, so near-identical copy across them destroys more citation value than the named stops cost. That constraint is enforced by measuring pairwise similarity of required_strings and answer text across every grounded uscis entry, not by asserting it in a comment. Finally it prevents a landed-directive contradiction from being re-litigated every run, by failing any durable ledger entry that promises a phrase its own landed recommendations ask to remove unless a decision is recorded for that route.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
