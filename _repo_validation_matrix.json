@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "16ed58bb4e3bb2223cbb47d9fef68bd7cea03b1ed715fa48d80a0864bc50f6e7",
+  "registry_sha256": "6dd6c4d908f036c2a881dd91e1ebf1f3796aad3d731d282ff8585d70b47154f0",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 198,
-    "active": 171,
+    "total": 199,
+    "active": 172,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 169,
+    "hard_fail": 170,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -109,6 +109,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "occupancy-control-separation",
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
@@ -267,6 +268,7 @@
         "page-release-law",
         "content-pattern-contract",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "frozen-output-integrity",
         "vertical-topic-admission",
         "render-integrity",
@@ -370,6 +372,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "occupancy-control-separation",
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
@@ -599,6 +602,7 @@
         "page-release-law",
         "content-pattern-contract",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "frozen-output-integrity",
         "vertical-topic-admission",
         "render-integrity",
@@ -715,6 +719,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "occupancy-control-separation",
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
@@ -944,6 +949,7 @@
         "page-release-law",
         "content-pattern-contract",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "frozen-output-integrity",
         "vertical-topic-admission",
         "render-integrity",
@@ -1090,6 +1096,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "occupancy-control-separation",
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
@@ -1320,6 +1327,7 @@
         "page-release-law",
         "content-pattern-contract",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "frozen-output-integrity",
         "vertical-topic-admission",
         "render-integrity",
@@ -1439,6 +1447,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "occupancy-control-separation",
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
@@ -1676,6 +1685,7 @@
         "page-release-law",
         "content-pattern-contract",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "frozen-output-integrity",
         "vertical-topic-admission",
         "render-integrity",
@@ -1878,6 +1888,7 @@
         "network-crawler-contract",
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "page-record-identity",
         "page-release-law",
         "portfolio-kpi-truth",
@@ -1966,6 +1977,7 @@
         "page-release-law",
         "content-pattern-contract",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "frozen-output-integrity",
         "vertical-topic-admission",
         "render-integrity",
@@ -2021,6 +2033,7 @@
         "medical-schema-emission",
         "model-name-free-routes",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "occupancy-control-separation",
         "occupancy-probe-contract",
         "occupancy-reading-ratchet",
@@ -2134,6 +2147,7 @@
         "page-release-law",
         "content-pattern-contract",
         "no-internal-instruction-leak",
+        "rendered-template-scaffolding",
         "frozen-output-integrity",
         "vertical-topic-admission",
         "workflow-data-trace",
@@ -2703,6 +2717,10 @@
     {
       "from": "page-release-law",
       "to": "no-internal-instruction-leak"
+    },
+    {
+      "from": "page-release-law",
+      "to": "rendered-template-scaffolding"
     },
     {
       "from": "html-report-contract",
@@ -5648,6 +5666,47 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Agent recommendations are internal build directives shaped like 'FILEPATH: x || CURRENT: ... || EDIT: ...'. Two generator paths rendered them as reader-facing copy - a fallback acceptance-checklist card, and target.answer via 'Citation-ready update: '. 163 published pages carried the first and 100 the second, the latter inside the direct-answer block that answer engines extract. It also caused the external agent to re-flag pages marked released, because it was reading its own instruction back off the page.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "rendered-template-scaffolding",
+        "title": "No rendered page publishes template scaffolding as content",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 3",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_rendered_template_scaffolding.js",
+        "command": "node scripts/validators/validate_rendered_template_scaffolding.js",
+        "depends_on": [
+          "page-release-law"
+        ],
+        "requires_files": [
+          "sitemap.xml",
+          "index.html"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/rendered-template-scaffolding.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/rendered-template-scaffolding.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -16353,6 +16412,47 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Agent recommendations are internal build directives shaped like 'FILEPATH: x || CURRENT: ... || EDIT: ...'. Two generator paths rendered them as reader-facing copy - a fallback acceptance-checklist card, and target.answer via 'Citation-ready update: '. 163 published pages carried the first and 100 the second, the latter inside the direct-answer block that answer engines extract. It also caused the external agent to re-flag pages marked released, because it was reading its own instruction back off the page.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "rendered-template-scaffolding",
+        "title": "No rendered page publishes template scaffolding as content",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 3",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_rendered_template_scaffolding.js",
+        "command": "node scripts/validators/validate_rendered_template_scaffolding.js",
+        "depends_on": [
+          "page-release-law"
+        ],
+        "requires_files": [
+          "sitemap.xml",
+          "index.html"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/rendered-template-scaffolding.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/rendered-template-scaffolding.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
