@@ -51,10 +51,12 @@ const SRC = {
   tb: ['SRC-CDC-CIVIL-SURGEON-TB-2024', 'https://www.cdc.gov/immigrant-refugee-health/hcp/civil-surgeons/tuberculosis.html'],
   cdc: ['SRC-CDC-CIVIL-SURGEON-TECH-2024', 'https://www.cdc.gov/immigrant-refugee-health/hcp/civil-surgeons/index.html'],
   sealed: ['SRC-USCIS-CIVIL-SURGEON-SEALED-I693', 'https://www.uscis.gov/policy-manual/volume-8-part-c-chapter-3'],
-  validity: ['SRC-USCIS-I693-VALIDITY-2025', 'https://content.govdelivery.com/accounts/USDHSCIS/bulletins/3e49516']
+  validity: ['SRC-USCIS-I693-VALIDITY-2025', 'https://content.govdelivery.com/accounts/USDHSCIS/bulletins/3e49516'],
+  vaccines: ['SRC-CDC-CIVIL-SURGEON-VACCINATION-TI', 'https://www.cdc.gov/immigrant-refugee-health/hcp/civil-surgeons/vaccination.html'],
+  i485: ['SRC-USCIS-I485', 'https://www.uscis.gov/i-485']
 };
 function sources(keys) {
-  return keys.map((k) => ({ label: ({finder:'USCIS — Find a Civil Surgeon',i693:'USCIS — Form I-693',medreq:'USCIS Policy Manual — Medical Exam Requirements',tb:'CDC — TB Technical Instructions for Civil Surgeons',cdc:'CDC — Technical Instructions for Civil Surgeons',sealed:'USCIS Policy Manual — Civil Surgeon Certification',validity:'USCIS — June 11, 2025 I-693 validity update'})[k], url: SRC[k][1] }));
+  return keys.map((k) => ({ label: ({finder:'USCIS — Find a Civil Surgeon',i693:'USCIS — Form I-693',medreq:'USCIS Policy Manual — Medical Exam Requirements',tb:'CDC — TB Technical Instructions for Civil Surgeons',cdc:'CDC — Technical Instructions for Civil Surgeons',sealed:'USCIS Policy Manual — Civil Surgeon Certification',validity:'USCIS — June 11, 2025 I-693 validity update',vaccines:'CDC — Vaccination Technical Instructions for Civil Surgeons',i485:'USCIS — Form I-485, Application to Register Permanent Residence'})[k], url: SRC[k][1] }));
 }
 function ids(keys){ return keys.map((k)=>SRC[k][0]); }
 function urls(keys){ return keys.map((k)=>SRC[k][1]); }
