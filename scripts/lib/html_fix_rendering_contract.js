@@ -81,4 +81,7 @@ function validateEntryAgainstHtml(entry, html) {
   return errors;
 }
 
-module.exports = { normalizeText, includesNormalized, artifactTypesFromHtml, validateEntryAgainstHtml, forbiddenScaffoldMatches };
+// countRowsNearHeading is exported so the compiler can ask the SAME question this
+// contract will ask, against the same bytes, rather than keeping a second row counter
+// that agrees with this one only until one of them is edited.
+module.exports = { normalizeText, includesNormalized, countRowsNearHeading, artifactTypesFromHtml, validateEntryAgainstHtml, forbiddenScaffoldMatches };
