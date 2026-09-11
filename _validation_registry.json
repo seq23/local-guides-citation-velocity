@@ -9023,6 +9023,54 @@
       "mutates_files": [
         "artifacts/validation/shared-proof-path-resolution.json"
       ]
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": false,
+      "depends_on": [],
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "profiles": [
+        "audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 120,
+      "tier": "Tier 8",
+      "id": "shared-refusal-ledger-resolution",
+      "title": "Every trace that grades a recommendation reads the SAME ledger of what the lane refused, and why",
+      "path": "scripts/validators/validate_shared_refusal_ledger_resolution.js",
+      "command": "node scripts/validators/validate_shared_refusal_ledger_resolution.js",
+      "tags": [
+        "integrity",
+        "shared-contract",
+        "citation-velocity",
+        "release"
+      ],
+      "risk_prevented": "Prevents the citation trace and the exact-implementation trace from keeping two different lists of the holds the release lane may place on a recommendation. Velocity Content Release runs 34471600371, 34486150617 and 34604751262 (2026-09-10/11) all failed on CITATION AGENT FIX TRACE FAIL agent_aa7bdf139c78544b:rendered_missing_marker:trt/best-top-near-me/index.html one command after AGENT EXACT IMPLEMENTATION TRACE PASS had printed REFUSED_TO_PROTECT_DELIVERED_CONTENT=1 for that very route: acceptMutationScope() had refused the rebuild (it lost a marker three landed rows depend on), restored the accepted bytes and recorded why in mutation-scope-acceptance.json, and the citation trace had never heard of that file. It kept private copies of three of the five holds the exact trace honours and knew nothing of the other two. scripts/lib/recommendation_refusal_ledger.js now owns every kind; this validator requires each declared consumer to import it, refuses five named shapes of private hold-source reads, and proves on constructed fixtures that every declared kind is distinguished from an unexplained miss while absent artifacts, admitted queue rows, unreasoned BLOCKED specs, awaiting backlog routes and unrelated pages are excused by nothing. It also pins the two producer defects found behind the same failure: a page that exists only in content/_staged/pages.json must not read as built (37 routes sat STAGED with no backlog entry, no queue record and no retirement because the reconciler counted staged as built and the promoter, which reads the queue, could never see them - agent_ab25835732c76390:live_missing_route), and a merged spec carrying more queries than recommendations must put every query on the page verbatim, so a rebuild cannot drop a landed marker and be refused for it on every release.",
+      "why_existing_checks_do_not_cover": "citation-agent-fixes only asserts the trace receipt says PASS; agent-exact-implementation-trace and trace-outcome-legibility grade the exact trace alone; shared-proof-path-resolution guards a different shared rule (where proof lives, not whether it was refused). None relates the two traces to each other, which is the repo's named recurring defect, \"two components each keeping their own list with no link\". unbuilt-backlog-admission and rich-new-page-contract both read the built predicate and so agreed with each other while it was wrong. This is a static check over a declared consumer list plus behavioural probes over every declared refusal kind, and it hard-fails on zero consumers or zero kinds examined rather than passing on an empty loop.",
+      "requires_files": [
+        "_validation_registry.json",
+        "scripts/lib/recommendation_refusal_ledger.js",
+        "scripts/lib/rich_admitted_routes.js",
+        "scripts/lib/html_fix_acceptance_parser.js",
+        "scripts/validators/trace_citation_agent_fixes.js",
+        "scripts/validators/trace_agent_exact_implementation.js",
+        "scripts/validators/validate_shared_refusal_ledger_resolution.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/shared-refusal-ledger-resolution.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/shared-refusal-ledger-resolution.json"
+      ]
     }
   ],
   "legacy_policy": {

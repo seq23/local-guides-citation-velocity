@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "validator": "shared-refusal-ledger-resolution",
+  "status": "PASS",
+  "shared_module": "scripts/lib/recommendation_refusal_ledger.js",
+  "consumers_examined": [
+    "scripts/validators/trace_citation_agent_fixes.js",
+    "scripts/validators/trace_agent_exact_implementation.js"
+  ],
+  "consumer_count": 2,
+  "kinds_examined": [
+    "BLOCKED",
+    "REFUSED_TO_PROTECT_DELIVERED_CONTENT",
+    "REFUSED_BY_ACCEPTANCE_COMPILER",
+    "REFUSED_BY_RELEASE_QUEUE",
+    "DEFERRED_BY_DAILY_CEILING",
+    "HELD_BY_MEASURED_DEMAND_GATE",
+    "RETIRED_ROUTE"
+  ],
+  "kind_count": 7,
+  "probes": [
+    "absent_artifacts_excuse_nothing",
+    "demand_gate_by_route",
+    "negative:blocked_spec_without_reason",
+    "negative:admitted_queue_row",
+    "negative:compiler_refusal_naming_other_ids",
+    "negative:route_still_awaiting_lane",
+    "negative:exact_trace_fail",
+    "negative:exact_trace_pass_missing_page",
+    "negative:create_hold_does_not_reach_a_repair",
+    "negative:unrelated_page",
+    "built_predicate",
+    "surplus_queries_reach_the_page"
+  ],
+  "forked_hold_patterns": [
+    "private_mutation_scope_read",
+    "private_compiler_refusal_read",
+    "private_daily_ceiling_reason",
+    "private_demand_gate_reason",
+    "private_release_queue_refusal"
+  ],
+  "errors": [],
+  "checked_at": "2026-09-11"
+}

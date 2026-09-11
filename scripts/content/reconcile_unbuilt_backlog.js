@@ -205,6 +205,29 @@ if (drained.length || toAdmit.length) {
   }
   backlog.by_vertical = Object.fromEntries(Object.entries(byVertical).sort((a, b) => b[1] - a[1]));
   backlog.by_run_date_first_admitted = Object.fromEntries(Object.entries(byFirstAdmitted).sort());
+  // disposition_summary was written once by hand and never maintained, so it went on
+  // reporting 46 routes AWAITING_RELEASE_LANE across a file whose every entry was
+  // RETIRED. Recomputed from the entries, like the two breakdowns above.
+  const byDisposition = {};
+  for (const e of kept) {
+    if (!e || !e.route) continue;
+    const disp = String(e.disposition || '').toUpperCase() === 'AWAITING_RELEASE_LANE'
+      ? 'AWAITING_RELEASE_LANE'
+      : (e.retirement_reason_code || e.retired_reason || 'RETIRED');
+    byDisposition[disp] = (byDisposition[disp] || 0) + 1;
+  }
+  backlog.disposition_summary = Object.fromEntries(Object.entries(byDisposition).sort((a, b) => b[1] - a[1]));
+  // A fully-retired declaration is a claim about the file, and it is false the moment
+  // one entry is awaiting the lane again. validate_unbuilt_backlog_admission chooses
+  // its branch on the awaiting count, so a stale declaration would not excuse
+  // anything - but it would be a lie sitting in a governance record, so it goes.
+  if (awaiting > 0 && backlog.fully_retired_declaration) {
+    backlog.fully_retired_declaration_withdrawn = {
+      withdrawn_on: RUN_DATE,
+      reason: `${awaiting} route(s) returned to AWAITING_RELEASE_LANE on ${RUN_DATE}; the previous declaration (declared_at ${backlog.fully_retired_declaration.declared_at || 'unknown'}) no longer describes this file.`
+    };
+    delete backlog.fully_retired_declaration;
+  }
   write(BACKLOG_REL, backlog);
 }
 

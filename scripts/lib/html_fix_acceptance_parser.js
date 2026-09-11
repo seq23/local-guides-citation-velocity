@@ -599,6 +599,36 @@ function compileEntryFromSpec(spec) {
     rowRequirements.push(rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index, artifact }));
   });
   const mergedArtifacts = mergeArtifacts(artifacts);
+  // EVERY QUERY THE SPEC CARRIES MUST REACH THE PAGE, NOT JUST queries[0].
+  //
+  // The loop above pairs recommendations with queries BY INDEX. A merged spec for one
+  // page routinely carries more queries than distinct recommendations - six records on
+  // trt/best-top-near-me/index.html share ONE recommendation text and ask two
+  // different questions - so only queries[0] ever reached an artifact, and WHICH
+  // query was first depended on the order the plan builder happened to merge the
+  // records in. On 2026-09-10 that order put "symptoms of low t in men over 40 ..." on
+  // the page; on 2026-09-11 it put "checklist of symptoms for hypogonadism ..." there
+  // instead, and the rebuild dropped the first. Three landed ledger rows carried that
+  // first query as their required_marker, so acceptMutationScope() correctly REFUSED
+  // the rebuild to protect delivered content, restored the accepted bytes - and the
+  // second query's repair could never land, on any release, while the first was on
+  // the page. A repair that flips between two markers cannot satisfy both.
+  //
+  // The exact, lowercase query text is what every ledger row declares as its
+  // required_marker and what route_marker_preservation.shows() matches (case-
+  // sensitively, like finalize_content_release.markersPresent), so the surplus queries
+  // are carried VERBATIM in the first artifact's reader intro rather than through
+  // readerFacingQueryPrompt, which capitalises. The intro is reader copy on every
+  // artifact type, and it is not a required_string, so this adds no new promise for
+  // the trace to enforce - it only stops the page dropping one it already keeps.
+  const carriedText = JSON.stringify(mergedArtifacts).toLowerCase();
+  const surplusQueries = queries.filter((query) => query && !carriedText.includes(String(query).toLowerCase()));
+  if (surplusQueries.length && mergedArtifacts.length) {
+    const first = mergedArtifacts[0];
+    const alsoAnswers = surplusQueries.slice(0, 5);
+    first.intro = `${normalizeSpace(first.intro || '')} It also answers: ${alsoAnswers.join('; ')}.`.trim();
+    first.also_answers = alsoAnswers;
+  }
   // mergeArtifacts drops any artifact that would publish internal instruction text.
   // Its row requirement has to go with it. Keeping the row meant the manifest
   // demanded a heading for an artifact this compiler had deliberately refused to
