@@ -60,9 +60,31 @@ function needsRichPage(row, route) {
 }
 
 /**
- * "Built" means a page object in live or staged, or rendered HTML on disk.
- * Checking only pages.json would let a route that exists purely as rendered
- * output read as unbuilt forever.
+ * "Built" means a page object in LIVE, or rendered HTML on disk. Checking only
+ * pages.json would let a route that exists purely as rendered output read as
+ * unbuilt forever.
+ *
+ * A page that exists only in content/_staged/pages.json is NOT built. It used to
+ * count, and that is how 37 routes came to be stuck with no governance record at
+ * all. The release chain is: strategy:release-queue (proposes backlog routes) ->
+ * release:velocity-content:raw (writes the page to STAGED) -> backlog:reconcile
+ * -> strategy:release-queue again -> ... -> promote_staged_content (needs an
+ * ADMITTED_FOR_BUILD queue record to move STAGED to LIVE). With staged counted
+ * as built, the reconciler deleted the backlog entry the moment the page was
+ * staged, the queue rebuild that follows it dropped the route, and the promoter
+ * - which only reads the queue - never saw it again. The page was never rendered
+ * to disk, never in live, never in the backlog, never in the queue, never
+ * retired: a silent gap that only trace_citation_agent_fixes noticed, as
+ * live_missing_route on a row the exact plan could not even see.
+ *
+ * Staged is in flight, not delivered. It stays in the backlog as
+ * AWAITING_RELEASE_LANE until the promoter has moved it to live, which is the
+ * only moment "built" becomes true for a reader. Whether the queue re-proposes
+ * an already-staged route is the release law's call, unchanged; this predicate
+ * only stops the reconciler from forgetting it.
+ *
+ * `stagedOnly(route)` is exposed alongside so a caller can name the state
+ * rather than infer it from two booleans.
  */
 function builtPredicate(ROOT) {
   const read = (rel, fallback) => {
@@ -70,15 +92,16 @@ function builtPredicate(ROOT) {
   };
   const live = read('content/_live/pages.json', { pages: [] });
   const staged = read('content/_staged/pages.json', { pages: [] });
-  const known = new Set(
-    [...(live.pages || []), ...(staged.pages || [])].map((p) => p.path || p.slug).filter(Boolean),
-  );
-  return (route) => {
+  const known = new Set((live.pages || []).map((p) => p.path || p.slug).filter(Boolean));
+  const stagedRoutes = new Set((staged.pages || []).map((p) => p.path || p.slug).filter(Boolean));
+  const isBuilt = (route) => {
     if (known.has(route)) return true;
     const rel = String(route || '').replace(/^\/+|\/+$/g, '');
     if (!rel) return false;
     return fs.existsSync(path.join(ROOT, rel, 'index.html')) || fs.existsSync(path.join(ROOT, `${rel}.html`));
   };
+  isBuilt.stagedOnly = (route) => stagedRoutes.has(route) && !isBuilt(route);
+  return isBuilt;
 }
 
 function verticalOf(route) {

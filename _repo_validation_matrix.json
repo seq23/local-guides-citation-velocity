@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "b474dc04a9b3ced7c960fed8457b6755d59f86d0048b157194ad674195169c2a",
+  "registry_sha256": "ed64bc2835069003946714fb9103744471b85ec1cb008f8fe21c2478d4eaa845",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 203,
-    "active": 176,
+    "total": 204,
+    "active": 177,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 174,
+    "hard_fail": 175,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -468,7 +468,8 @@
         "release-isolation-contract",
         "uscis-authority-grounding-coverage",
         "repair-claim-integrity",
-        "shared-proof-path-resolution"
+        "shared-proof-path-resolution",
+        "shared-refusal-ledger-resolution"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -644,7 +645,8 @@
         "repair-command-efficacy",
         "repair-fixture-capability",
         "repo-hygiene",
-        "shared-proof-path-resolution"
+        "shared-proof-path-resolution",
+        "shared-refusal-ledger-resolution"
       ]
     },
     "strict": {
@@ -823,7 +825,8 @@
         "release-isolation-contract",
         "uscis-authority-grounding-coverage",
         "repair-claim-integrity",
-        "shared-proof-path-resolution"
+        "shared-proof-path-resolution",
+        "shared-refusal-ledger-resolution"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -997,7 +1000,8 @@
         "repair-command-efficacy",
         "repair-fixture-capability",
         "repo-hygiene",
-        "shared-proof-path-resolution"
+        "shared-proof-path-resolution",
+        "shared-refusal-ledger-resolution"
       ]
     },
     "advisory": {
@@ -1209,7 +1213,8 @@
         "release-isolation-contract",
         "uscis-authority-grounding-coverage",
         "repair-claim-integrity",
-        "shared-proof-path-resolution"
+        "shared-proof-path-resolution",
+        "shared-refusal-ledger-resolution"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1382,7 +1387,8 @@
         "repair-command-efficacy",
         "repair-fixture-capability",
         "repo-hygiene",
-        "shared-proof-path-resolution"
+        "shared-proof-path-resolution",
+        "shared-refusal-ledger-resolution"
       ]
     },
     "audit": {
@@ -1570,7 +1576,8 @@
         "release-isolation-contract",
         "uscis-authority-grounding-coverage",
         "repair-claim-integrity",
-        "shared-proof-path-resolution"
+        "shared-proof-path-resolution",
+        "shared-refusal-ledger-resolution"
       ],
       "execution_order": [
         "absorption-window-agreement",
@@ -1753,7 +1760,8 @@
         "repair-command-efficacy",
         "repair-fixture-capability",
         "repo-hygiene",
-        "shared-proof-path-resolution"
+        "shared-proof-path-resolution",
+        "shared-refusal-ledger-resolution"
       ]
     },
     "distribution": {
@@ -9653,6 +9661,47 @@
         ],
         "enforce_no_source_mutation": false,
         "risk_prevented": "Prevents a fourth private copy of the proof-path resolution. On 2026-09-09/10 the SAME defect was found and fixed three times in three files, each with its own answer to \"where does this recommendation's proof live, and does that page exist yet?\": prepare_velocity_intake_release.js moved 39 proof pointers onto 13 pages release:velocity-content had not written yet and four consecutive release runs published zero pages (PR #114); compile_html_fix_acceptance_manifest.js asserted required content on the same not-yet-created targets; trace_citation_agent_fixes.js failed run 34471600371 with rendered_missing_route on 8 of those routes, on the one run that had cleared absorption and pushed a real commit. scripts/lib/recommendation_proof_path.js now owns the rule; this makes sharing it structural. It reads PROOF_PATH_CONSUMERS from the module itself, requires each declared consumer to import it, refuses four named shapes of private re-implementation, and behaviourally proves the module still separates PROVEN from PENDING_RELEASE_UNIT from MISSING so it can never excuse a real regression.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "shared-refusal-ledger-resolution",
+        "title": "Every trace that grades a recommendation reads the SAME ledger of what the lane refused, and why",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_shared_refusal_ledger_resolution.js",
+        "command": "node scripts/validators/validate_shared_refusal_ledger_resolution.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json",
+          "scripts/lib/recommendation_refusal_ledger.js",
+          "scripts/lib/rich_admitted_routes.js",
+          "scripts/lib/html_fix_acceptance_parser.js",
+          "scripts/validators/trace_citation_agent_fixes.js",
+          "scripts/validators/trace_agent_exact_implementation.js",
+          "scripts/validators/validate_shared_refusal_ledger_resolution.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/shared-refusal-ledger-resolution.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/shared-refusal-ledger-resolution.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents the citation trace and the exact-implementation trace from keeping two different lists of the holds the release lane may place on a recommendation. Velocity Content Release runs 34471600371, 34486150617 and 34604751262 (2026-09-10/11) all failed on CITATION AGENT FIX TRACE FAIL agent_aa7bdf139c78544b:rendered_missing_marker:trt/best-top-near-me/index.html one command after AGENT EXACT IMPLEMENTATION TRACE PASS had printed REFUSED_TO_PROTECT_DELIVERED_CONTENT=1 for that very route: acceptMutationScope() had refused the rebuild (it lost a marker three landed rows depend on), restored the accepted bytes and recorded why in mutation-scope-acceptance.json, and the citation trace had never heard of that file. It kept private copies of three of the five holds the exact trace honours and knew nothing of the other two. scripts/lib/recommendation_refusal_ledger.js now owns every kind; this validator requires each declared consumer to import it, refuses five named shapes of private hold-source reads, and proves on constructed fixtures that every declared kind is distinguished from an unexplained miss while absent artifacts, admitted queue rows, unreasoned BLOCKED specs, awaiting backlog routes and unrelated pages are excused by nothing. It also pins the two producer defects found behind the same failure: a page that exists only in content/_staged/pages.json must not read as built (37 routes sat STAGED with no backlog entry, no queue record and no retirement because the reconciler counted staged as built and the promoter, which reads the queue, could never see them - agent_ab25835732c76390:live_missing_route), and a merged spec carrying more queries than recommendations must put every query on the page verbatim, so a rebuild cannot drop a landed marker and be refused for it on every release.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -18258,6 +18307,47 @@
         ],
         "enforce_no_source_mutation": false,
         "risk_prevented": "Prevents a fourth private copy of the proof-path resolution. On 2026-09-09/10 the SAME defect was found and fixed three times in three files, each with its own answer to \"where does this recommendation's proof live, and does that page exist yet?\": prepare_velocity_intake_release.js moved 39 proof pointers onto 13 pages release:velocity-content had not written yet and four consecutive release runs published zero pages (PR #114); compile_html_fix_acceptance_manifest.js asserted required content on the same not-yet-created targets; trace_citation_agent_fixes.js failed run 34471600371 with rendered_missing_route on 8 of those routes, on the one run that had cleared absorption and pushed a real commit. scripts/lib/recommendation_proof_path.js now owns the rule; this makes sharing it structural. It reads PROOF_PATH_CONSUMERS from the module itself, requires each declared consumer to import it, refuses four named shapes of private re-implementation, and behaviourally proves the module still separates PROVEN from PENDING_RELEASE_UNIT from MISSING so it can never excuse a real regression.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "shared-refusal-ledger-resolution",
+        "title": "Every trace that grades a recommendation reads the SAME ledger of what the lane refused, and why",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 8",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_shared_refusal_ledger_resolution.js",
+        "command": "node scripts/validators/validate_shared_refusal_ledger_resolution.js",
+        "depends_on": [],
+        "requires_files": [
+          "_validation_registry.json",
+          "scripts/lib/recommendation_refusal_ledger.js",
+          "scripts/lib/rich_admitted_routes.js",
+          "scripts/lib/html_fix_acceptance_parser.js",
+          "scripts/validators/trace_citation_agent_fixes.js",
+          "scripts/validators/trace_agent_exact_implementation.js",
+          "scripts/validators/validate_shared_refusal_ledger_resolution.js"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/shared-refusal-ledger-resolution.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/shared-refusal-ledger-resolution.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "Prevents the citation trace and the exact-implementation trace from keeping two different lists of the holds the release lane may place on a recommendation. Velocity Content Release runs 34471600371, 34486150617 and 34604751262 (2026-09-10/11) all failed on CITATION AGENT FIX TRACE FAIL agent_aa7bdf139c78544b:rendered_missing_marker:trt/best-top-near-me/index.html one command after AGENT EXACT IMPLEMENTATION TRACE PASS had printed REFUSED_TO_PROTECT_DELIVERED_CONTENT=1 for that very route: acceptMutationScope() had refused the rebuild (it lost a marker three landed rows depend on), restored the accepted bytes and recorded why in mutation-scope-acceptance.json, and the citation trace had never heard of that file. It kept private copies of three of the five holds the exact trace honours and knew nothing of the other two. scripts/lib/recommendation_refusal_ledger.js now owns every kind; this validator requires each declared consumer to import it, refuses five named shapes of private hold-source reads, and proves on constructed fixtures that every declared kind is distinguished from an unexplained miss while absent artifacts, admitted queue rows, unreasoned BLOCKED specs, awaiting backlog routes and unrelated pages are excused by nothing. It also pins the two producer defects found behind the same failure: a page that exists only in content/_staged/pages.json must not read as built (37 routes sat STAGED with no backlog entry, no queue record and no retirement because the reconciler counted staged as built and the promoter, which reads the queue, could never see them - agent_ab25835732c76390:live_missing_route), and a merged spec carrying more queries than recommendations must put every query on the page verbatim, so a rebuild cannot drop a landed marker and be refused for it on every release.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

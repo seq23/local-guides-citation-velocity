@@ -103,16 +103,20 @@ function traceRenderedTarget(id, route, markers, requireInsightManifest = false,
     return;
   }
   const renderedPath = proof.gradeAt;
+  const failures = [];
+  const holdKey = { id, ids: row && row.record_ids || [], route, renderedPath: renderedPath || proof.targetPath || routeToRenderedPath(route), operation: row && row.operation || 'REPAIR_INTENDED_WINNER_PAGE' };
   if (!renderedPath || !exists(renderedPath)) {
-    errors.push(`${id}:rendered_missing_route:${proof.targetPath || routeToRenderedPath(route) || route}`);
+    failures.push(`${id}:rendered_missing_route:${proof.targetPath || routeToRenderedPath(route) || route}`);
+    failOrNamedStop(id, failures, holdKey);
     return;
   }
   const text = read(renderedPath);
-  for (const marker of markers) if (!markerIn(text, marker)) errors.push(`${id}:rendered_missing_marker:${renderedPath}:${marker}`);
+  for (const marker of markers) if (!markerIn(text, marker)) failures.push(`${id}:rendered_missing_marker:${renderedPath}:${marker}`);
   if (requireInsightManifest) {
     const insights = readJson('content/_live/insights.json', { items: [] });
-    if (!insightItemExists(insights, route)) errors.push(`${id}:live_insight_missing_route:${route}`);
+    if (!insightItemExists(insights, route)) failures.push(`${id}:live_insight_missing_route:${route}`);
   }
+  failOrNamedStop(id, failures, holdKey);
 }
 
 const ledger = readJson('data/report_fixes/agent_fix_ledger.json', { fixes: [] });
@@ -124,38 +128,41 @@ const plan = readJson('artifacts/validation/velocity-intake-release-plan.json', 
 const velocityContentRelease = readJson('artifacts/validation/velocity-content-release.json', { created: [], skipped: [] });
 const createdReleaseIds = new Set((velocityContentRelease.created || []).map((row) => row.id).filter(Boolean));
 const skippedReleaseById = new Map((velocityContentRelease.skipped || []).map((row) => [row.id, row]));
-function isDeferredByDailyCeiling(id) { const skipped = skippedReleaseById.get(id); return Boolean(skipped && String(skipped.reason || '').includes('daily_new_url_ceiling_reached')); }
-// The third named hold, matching the ceiling above and the queue refusal below.
-// velocity_content_release.js records a route with no match in
-// data/demand/measured_demand.json as skipped:no_measured_demand_match and never
-// stages it. That is the demand gate working, not a missing page, and reporting it
-// as live_missing_route made a correct evidence refusal read as a broken release.
-// Asking the predicate directly rather than only reading the release artifact's
-// skipped list. A row the release lane never enumerated - selected in an earlier run,
-// never queued - is held by exactly the same gate, but appeared in no skipped list and
-// so read as an unexplained missing page. The gate is a property of the ROUTE, not of
-// whether one particular run happened to look at it, so it is evaluated as one.
-// An unreadable corpus holds nothing open: it throws, and the caller below treats a
-// failure to answer as "not held", which keeps the check strict rather than lenient.
+// EVERY named hold the lane can emit, from ONE module - the same one the exact
+// implementation trace reads. This validator used to keep its own copies of three of
+// them (daily ceiling, measured demand, release queue) and had never heard of the
+// other two (a route the freeze transaction REFUSED_TO_PROTECT_DELIVERED_CONTENT, a
+// route the acceptance compiler refused to author) or of the planner's BLOCKED specs.
+// So on 2026-09-10/11 the exact trace printed REFUSED_TO_PROTECT_DELIVERED_CONTENT=1
+// for /trt/best-top-near-me/ and PASSED, and this trace, one command later in the same
+// step, failed the publish demanding the marker that refusal had declined to render.
+// See scripts/lib/recommendation_refusal_ledger.js for the whole account.
+//
+// An unreadable demand corpus holds nothing open: demandBackingPredicate throws, the
+// predicate is null, and the ledger treats "cannot answer" as "not held".
+const { loadRefusalLedger } = require('../lib/recommendation_refusal_ledger');
 let demandBackedRoute = null;
 try { demandBackedRoute = require('../lib/demand_backing').demandBackingPredicate(ROOT); } catch { demandBackedRoute = null; }
-function isHeldByMeasuredDemand(id, route) {
-  const skipped = skippedReleaseById.get(id);
-  if (skipped && String(skipped.reason || '') === 'no_measured_demand_match') return true;
-  if (!demandBackedRoute || !demandBackedRoute.slugCount || !route) return false;
-  return !demandBackedRoute(route);
+const refusalLedger = loadRefusalLedger(ROOT, { demandBackedRoute });
+const namedStops = [];
+/**
+ * A failure on a row the lane has REFUSED with a recorded reason is a named stop, not
+ * an error: it is printed with its kind and reason, counted, and left selectable. A
+ * failure on a row with no named hold is exactly as fatal as it always was.
+ */
+function failOrNamedStop(id, failures, holdKey) {
+  if (!failures.length) return;
+  const hold = refusalLedger.namedStopFor(holdKey);
+  if (!hold) { errors.push(...failures); return; }
+  warnings.push(`${id}:named_stop:${hold.kind}:${hold.reason}:${holdKey.renderedPath || holdKey.route}`);
+  namedStops.push({ id, kind: hold.kind, reason: hold.reason, source: hold.source, matched_by: hold.matched_by, would_have_failed: failures });
 }
-// A create the release queue refused never reaches staged or live, by design. It
-// is not a missing route - it is a route governance declined to admit, and the
-// planner cannot filter it out because citation:plan-agent-exact runs before
-// strategy:release-queue exists. Same reconciliation as the daily-ceiling case
-// directly above, and it excuses nothing the pipeline actually admitted.
-const releaseQueueRefusedById = new Map(
-  ((readJson('data/release/page_release_queue.json', { records: [] }).records) || [])
-    .filter((row) => row && row.id && row.eligible === false && String(row.lifecycle_state || '') === 'NOT_ADMITTED')
-    .map((row) => [row.id, String(row.decision || 'NOT_ADMITTED')])
-);
-function isRefusedByReleaseQueue(id) { return releaseQueueRefusedById.has(id); }
+
+// A row is traced ONCE. The ledger's selected rows and the intake plan's selected
+// units overlap - the plan is built FROM those rows - and grading the same record in
+// both loops printed every failure twice (agent_aa7bdf139c78544b appeared twice in
+// run 34604751262). The plan loop skips a unit already graded from the ledger.
+const tracedFromLedger = new Set();
 
 for (const fix of selected) {
   const id = fix.id || fix.query;
@@ -167,24 +174,24 @@ for (const fix of selected) {
   const markerRoute = proof.gradeAt ? renderedPathToRoute(proof.gradeAt) : route;
   const markers = isRenderedRepair(fix) ? semanticMarkersForRoute(markerRoute, rawMarkers) : rawMarkers;
   if (!markers.length) { errors.push(`${id}:missing_required_markers`); continue; }
+  tracedFromLedger.add(`${id}|${routeToRenderedPath(route)}`);
   if (isRenderedRepair(fix)) {
     traceRenderedTarget(id, route, markers, String(fix.liveManifestPath || '').includes('insights.json') && String(markerRoute || '').startsWith('/insights/'), fix);
     continue;
   }
-  if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:selected_new_page_deferred_by_daily_new_url_ceiling:${route}`); continue; }
-  if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isHeldByMeasuredDemand(id, route)) { warnings.push(`${id}:selected_new_page_held_by_measured_demand_gate:${route}`); continue; }
-  if (fix.operation === 'CREATE_NEW_TARGET_PAGE' && isRefusedByReleaseQueue(id)) { warnings.push(`${id}:selected_new_page_refused_by_release_queue:${releaseQueueRefusedById.get(id)}:${route}`); continue; }
+  const failures = [];
   for (const [label, payload] of [['staged', stagedPages], ['live', livePages]]) {
-    if (!pageExists(payload, route)) { errors.push(`${id}:${label}_missing_route:${route}`); continue; }
-    for (const marker of markers) if (!pageHasMarker(payload, route, marker)) errors.push(`${id}:${label}_missing_marker:${marker}`);
+    if (!pageExists(payload, route)) { failures.push(`${id}:${label}_missing_route:${route}`); continue; }
+    for (const marker of markers) if (!pageHasMarker(payload, route, marker)) failures.push(`${id}:${label}_missing_marker:${marker}`);
   }
   if (fix.renderedPath) {
     if (!exists(fix.renderedPath)) warnings.push(`${id}:rendered_path_not_present_yet:${fix.renderedPath}`);
     else {
       const text = read(fix.renderedPath);
-      for (const marker of markers) if (!markerIn(text, marker)) errors.push(`${id}:rendered_missing_marker:${fix.renderedPath}:${marker}`);
+      for (const marker of markers) if (!markerIn(text, marker)) failures.push(`${id}:rendered_missing_marker:${fix.renderedPath}:${marker}`);
     }
   }
+  failOrNamedStop(id, failures, { id, route, renderedPath: fix.renderedPath || routeToRenderedPath(route), operation: fix.operation });
 }
 
 function isSocialFallbackUnit(unit) {
@@ -193,6 +200,8 @@ function isSocialFallbackUnit(unit) {
 if (plan && plan.selected_count > 0) {
   for (const unit of plan.selected_units || []) {
     const id = unit.id || unit.query;
+    const unitRoute = unit.target_route || unit.intended_winner_path;
+    if (tracedFromLedger.has(`${id}|${routeToRenderedPath(unitRoute)}`)) continue;
     if (isRenderedRepair(unit)) {
       const route = unit.target_route || unit.intended_winner_path;
       const unitProof = resolveRecommendationProof(unit, { root: ROOT, releaseUnitPaths });
@@ -208,18 +217,20 @@ if (plan && plan.selected_count > 0) {
     }
     const liveExists = pageExists(livePages, unit.target_route);
     const stagedExists = pageExists(stagedPages, unit.target_route);
-    if ((!liveExists || !stagedExists) && isDeferredByDailyCeiling(id)) { warnings.push(`${id}:deferred_by_daily_new_url_ceiling:${unit.target_route}`); continue; }
-    if ((!liveExists || !stagedExists) && isHeldByMeasuredDemand(id, unit.target_route)) { warnings.push(`${id}:held_by_measured_demand_gate:${unit.target_route}`); continue; }
-    if ((!liveExists || !stagedExists) && isRefusedByReleaseQueue(id)) { warnings.push(`${id}:refused_by_release_queue:${releaseQueueRefusedById.get(id)}:${unit.target_route}`); continue; }
-    if (!liveExists) errors.push(`${id}:live_missing_route:${unit.target_route}`);
-    else if (!pageHasMarker(livePages, unit.target_route, readerFacingMarker(unit.query))) errors.push(`${id}:live_missing_query`);
-    if (!stagedExists) errors.push(`${id}:staged_missing_route:${unit.target_route}`);
-    else if (!pageHasMarker(stagedPages, unit.target_route, readerFacingMarker(unit.query))) errors.push(`${id}:staged_missing_query`);
+    const failures = [];
+    if (!liveExists) failures.push(`${id}:live_missing_route:${unit.target_route}`);
+    else if (!pageHasMarker(livePages, unit.target_route, readerFacingMarker(unit.query))) failures.push(`${id}:live_missing_query`);
+    if (!stagedExists) failures.push(`${id}:staged_missing_route:${unit.target_route}`);
+    else if (!pageHasMarker(stagedPages, unit.target_route, readerFacingMarker(unit.query))) failures.push(`${id}:staged_missing_query`);
+    failOrNamedStop(id, failures, { id, route: unit.target_route, renderedPath: unit.renderedPath || routeToRenderedPath(unit.target_route), operation: unit.operation || 'CREATE_NEW_TARGET_PAGE' });
   }
 }
 if (!plan) warnings.push('velocity_intake_release_plan_missing; no current intake release to trace');
-const report = { schema_version: '1.3', validator: 'citation-agent-fix-trace', status: errors.length ? 'FAIL' : 'PASS', selected_trace_count: selected.length, release_plan_count: plan && plan.selected_count || 0, errors, warnings, checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10) };
+const report = { schema_version: '1.4', validator: 'citation-agent-fix-trace', status: errors.length ? 'FAIL' : 'PASS', selected_trace_count: selected.length, release_plan_count: plan && plan.selected_count || 0, named_stop_count: namedStops.length, named_stops: namedStops, refusal_sources_readable: refusalLedger.readable, errors, warnings, checked_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10) };
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'artifacts/validation/citation-agent-fix-trace.json'), JSON.stringify(report, null, 2) + '\n');
 if (errors.length) { console.error('CITATION AGENT FIX TRACE FAIL'); errors.forEach((e) => console.error(`- ${e}`)); process.exit(1); }
-console.log(`CITATION AGENT FIX TRACE PASS: ${selected.length} selected fix(es), ${report.release_plan_count} release unit(s).`);
+const stopCensus = namedStops.reduce((acc, stop) => { acc[stop.kind] = (acc[stop.kind] || 0) + 1; return acc; }, {});
+const stopSummary = Object.entries(stopCensus).sort().map(([kind, count]) => `${kind}=${count}`).join('; ');
+console.log(`CITATION AGENT FIX TRACE PASS: ${selected.length} selected fix(es), ${report.release_plan_count} release unit(s)${namedStops.length ? `; named stops: ${stopSummary}` : ''}.`);
+for (const stop of namedStops) console.log(`  NAMED STOP ${stop.kind} (${stop.reason}) ${stop.id} - ${stop.would_have_failed.length} check(s) held, not proven, still selectable`);

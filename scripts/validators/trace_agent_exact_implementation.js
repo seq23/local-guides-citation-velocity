@@ -64,8 +64,17 @@ function routeKeysForPage(page) {
 
 const plan = readJson('artifacts/validation/agent-exact-implementation-plan.json', { specs: [] });
 const apply = readJson('artifacts/validation/agent-exact-implementation-apply.json', { results: [] });
-const velocityContentRelease = readJson('artifacts/validation/velocity-content-release.json', { created: [], skipped: [] });
-const ceilingDeferredNewPageIds = new Set((velocityContentRelease.skipped || []).filter((row) => String(row.reason || '').includes('daily_new_url_ceiling_reached')).map((row) => row.id).filter(Boolean));
+// EVERY named hold this trace honours is read from ONE module, shared with
+// trace_citation_agent_fixes.js. The five holds below were each read here from their
+// own artifact, and the citation trace one command later kept its own copies of three
+// of them and had never heard of the other two - which is how a route this trace
+// reported as REFUSED_TO_PROTECT_DELIVERED_CONTENT and PASSED was failed by the next
+// trace in the same step, three release runs running. The maps are the same objects
+// both traces now key off; the commentary on each hold is kept where it was written.
+// See scripts/lib/recommendation_refusal_ledger.js.
+const { loadRefusalLedger } = require('../lib/recommendation_refusal_ledger');
+const refusalLedger = loadRefusalLedger(ROOT);
+const ceilingDeferredNewPageIds = new Set(refusalLedger.ceilingDeferredById.keys());
 // The third named hold, alongside the ceiling above and the queue refusal below.
 //
 // velocity_content_release.js applies a measured-demand gate: a route matching no
@@ -78,7 +87,7 @@ const ceilingDeferredNewPageIds = new Set((velocityContentRelease.skipped || [])
 // gate did its job and said so in the artifact. Held is not the same as dropped,
 // and neither is the same as failed. Recorded with the gate's own reason so a
 // genuinely unproven create still fails loudly.
-const demandHeldNewPageIds = new Set((velocityContentRelease.skipped || []).filter((row) => String(row.reason || '') === 'no_measured_demand_match').map((row) => row.id).filter(Boolean));
+const demandHeldNewPageIds = new Set(refusalLedger.demandHeldById.keys());
 // A create the release queue REFUSED is not unproven work - it is work the
 // governance layer forbade, and demanding proof of it makes a correctly-refused
 // release indistinguishable from a broken one.
@@ -93,12 +102,7 @@ const demandHeldNewPageIds = new Set((velocityContentRelease.skipped || []).filt
 // create the pipeline actually admitted. Only records the queue marked ineligible
 // and NOT_ADMITTED are excused, and they are recorded with the queue's own reason
 // rather than passing silently.
-const releaseQueueRecords = readJson('data/release/page_release_queue.json', { records: [] }).records || [];
-const queueRefusedNewPages = new Map(
-  releaseQueueRecords
-    .filter((row) => row && row.id && row.eligible === false && String(row.lifecycle_state || '') === 'NOT_ADMITTED')
-    .map((row) => [row.id, String(row.decision || 'NOT_ADMITTED')])
-);
+const queueRefusedNewPages = new Map([...refusalLedger.queueRefusedById].map(([id, row]) => [id, String(row.decision || 'NOT_ADMITTED')]));
 const ledger = readJson(LEDGER_PATH, { entries: [] });
 const insights = readJson('content/_live/insights.json', { items: [] });
 const livePages = readJson('content/_live/pages.json', { pages: [] });
@@ -120,11 +124,7 @@ for (const page of livePages.pages || []) {
 //
 // Evidence-gated, deliberately: a spec is only excused if THIS release's acceptance
 // report names its route as rejected. Without that file, nothing is excused.
-const acceptance = readJson('artifacts/validation/mutation-scope-acceptance.json', null);
-const refusedByPath = new Map();
-for (const row of (acceptance && acceptance.rejected) || []) {
-  refusedByPath.set(normalizeImplementationPath(row.rendered_file || routeToImplementationPath(row.route)), row);
-}
+const refusedByPath = refusalLedger.mutationRejectedByPath;
 
 // The fourth named hold. compile_html_fix_acceptance_manifest.js REFUSES to author a
 // semantic acceptance entry for a uscis-medical route that has no authority-grounded
@@ -142,17 +142,8 @@ for (const row of (acceptance && acceptance.rejected) || []) {
 // run's compiler artifact names its route AND names this spec's record id. Without
 // that file nothing is excused, and a route the compiler DID author still has to
 // prove its marker.
-const acceptanceRefusals = readJson('artifacts/validation/semantic-acceptance-refusals.json', null);
-const compilerRefusedByPath = new Map();
-for (const row of (acceptanceRefusals && acceptanceRefusals.refused) || []) {
-  const key = normalizeImplementationPath(row.implementation_path || routeToImplementationPath(row.target_route));
-  if (key) compilerRefusedByPath.set(key, row);
-}
 function compilerRefusalFor(spec, implementationPath) {
-  const row = compilerRefusedByPath.get(implementationPath);
-  if (!row) return null;
-  const ids = new Set([row.record_id, ...(row.record_ids || [])].filter(Boolean));
-  return ids.size === 0 || ids.has(spec.record_id) ? row : null;
+  return refusalLedger.compilerRefusalFor(implementationPath, [spec.record_id].filter(Boolean));
 }
 
 const traces = [];
@@ -299,7 +290,7 @@ const report = {
   queue_refused_count: queueRefusedCount,
   acceptance_refused_count: acceptanceRefusedCount,
   refused_routes: [...refusedByPath.keys()],
-  acceptance_refused_routes: [...compilerRefusedByPath.keys()],
+  acceptance_refused_routes: [...refusalLedger.compilerRefusedByPath.keys()],
   failed_count: failedCount,
   // The complete outcome census. Every trace_status that occurred appears here and
   // in the printed summary, whether or not anyone remembered to add a named field.
