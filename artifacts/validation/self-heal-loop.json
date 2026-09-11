@@ -3,16 +3,68 @@
   "profile": "release",
   "max_attempts": 3,
   "dry_run": false,
-  "status": "CLEAN",
+  "status": "NOT_CLEAN",
   "attempts": [
     {
       "attempt": 1,
-      "failed": [],
+      "failed": [
+        "accepted-artifact-recovery",
+        "agent-recommendation-page-application",
+        "agent-run-delivery-coverage",
+        "internal-link-inbound-coverage",
+        "rendered-output-shrink-guard",
+        "route-topic-quality",
+        "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage"
+      ],
+      "repaired": [
+        {
+          "id": "accepted-artifact-recovery",
+          "cmd": "npm run recover:accepted-artifacts",
+          "code": 0,
+          "no_op": false,
+          "resolved_by_recheck": true,
+          "said": "> recover:accepted-artifacts\n> node scripts/citation_velocity/recover_accepted_page_artifacts.js\n\nACCEPTED ARTIFACT RECOVERY PASS: 2118 accepted route(s) examined; 666 route(s) carry 2376 recovered artifact(s); 0 withheld by a removal directive."
+        },
+        {
+          "id": "agent-recommendation-page-application",
+          "cmd": "npm run recover:recommendation-page-application",
+          "code": 1,
+          "no_op": false,
+          "resolved_by_recheck": true,
+          "said": "> recover:recommendation-page-application\n> node scripts/validators/validate_agent_recommendation_page_application.js --rebaseline\n\nAGENT RECOMMENDATION PAGE APPLICATION REBASELINE REFUSED: no recommendation is unenrolled and no allowance can be retired, so this would rewrite the identical baseline and report success. Nothing to repair."
+        },
+        {
+          "id": "agent-run-delivery-coverage",
+          "cmd": "npm run recover:run-delivery-coverage-ratchet",
+          "code": 1,
+          "no_op": false,
+          "resolved_by_recheck": true,
+          "said": "> recover:run-delivery-coverage-ratchet\n> node scripts/validators/validate_agent_run_delivery_coverage.js --rebaseline\n\nAGENT RUN DELIVERY COVERAGE REBASELINE REFUSED: no run is unenrolled and no cap can be tightened, so this would rewrite the identical baseline and report success. Nothing to repair."
+        }
+      ],
+      "result": "REPAIRED_RETRYING"
+    },
+    {
+      "attempt": 2,
+      "failed": [
+        "internal-link-inbound-coverage",
+        "rendered-output-shrink-guard",
+        "route-topic-quality",
+        "unbuilt-backlog-admission",
+        "uscis-authority-grounding-coverage"
+      ],
       "repaired": [],
-      "result": "CLEAN"
+      "result": "NO_REPAIR_AVAILABLE"
     }
   ],
   "safe_to_push": true,
   "held_gate_by": [],
-  "reported_not_blocking": []
+  "reported_not_blocking": [
+    "internal-link-inbound-coverage",
+    "rendered-output-shrink-guard",
+    "route-topic-quality",
+    "unbuilt-backlog-admission",
+    "uscis-authority-grounding-coverage"
+  ]
 }

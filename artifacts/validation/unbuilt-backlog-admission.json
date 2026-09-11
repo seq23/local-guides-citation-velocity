@@ -1,20 +1,14 @@
 {
   "schema_version": "1.0",
   "validator": "unbuilt-backlog-admission",
-  "status": "PASS",
+  "status": "FAIL",
   "candidate_rows_read": 385,
   "rich_rows_examined": 208,
   "rich_routes_examined": 164,
-  "admitted_unbuilt_total": 129,
-  "admission_selftest": {
-    "stripped_awaiting": 32,
-    "reconciler_exit": 0,
-    "routes_after": 130,
-    "redeclared": 32,
-    "missed_count": 0,
-    "missed_first_10": [],
-    "canonical_untouched": true
-  },
+  "admitted_unbuilt_total": 97,
+  "admission_selftest": null,
   "release_script": "npm run strategy:opportunities && npm run strategy:release-queue && npm run release:velocity-content:raw && npm run backlog:reconcile && npm run strategy:release-queue",
-  "errors": []
+  "errors": [
+    "no_awaiting_entries_to_test - data/content/unbuilt_rich_page_backlog.json declares 98 route(s) but none with disposition AWAITING_RELEASE_LANE, so stripping them yields an unchanged file and the admission self-test would prove nothing. Either the backlog is fully retired (record that deliberately) or the dispositions changed shape."
+  ]
 }
