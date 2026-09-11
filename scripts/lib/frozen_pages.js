@@ -253,6 +253,54 @@ function beginMutationScope(routes, releaseId = `release-${Date.now()}`) {
   writeJsonAtomic(ACTIVE_SCOPE_PATH, { schema_version: '1.0', release_id: releaseId, created_at: stableNow(), routes: normalized, thawed_routes: thawed });
   return { release_id: releaseId, routes: normalized, thawed_routes: thawed };
 }
+/**
+ * Thaw further routes INTO the scope that is already open.
+ *
+ * beginMutationScope fixes the mutable set before anything is promoted or built. That
+ * is correct for repair specs, which are known up front, and impossible for inbound
+ * links, which are not: a release cannot know which host has to carry a link to a new
+ * page until the page exists, is rendered, and is in the sitemap - all of which happen
+ * after the scope is open.
+ *
+ * On 2026-09-11 that gap published 7 pages with no inbound link. The orphan-adoption
+ * pass runs at stage 19 of release:velocity-intake and promotion happens at stage 20,
+ * so a route promoted by a release could never be in the orphan set that release
+ * measured, and no host was ever thawed to receive its link. The queue could only ever
+ * work one release behind, which is the same as not working.
+ *
+ * Extending is safe because it is strictly additive and uses the same transaction the
+ * scope was opened with: a route thawed here is recorded in thawed_routes, so
+ * acceptMutationScope refreezes it under the same marker-preservation check as any
+ * other, and rollbackMutationScope restores it with the rest. A route already thawed in
+ * this transaction is left alone rather than re-stamped, so its prior_html_sha256 keeps
+ * pointing at the bytes the release actually started from.
+ */
+function extendMutationScope(routes, releaseId = null, source = 'runtime') {
+  const scope = readJson(ACTIVE_SCOPE_PATH, null);
+  if (!scope) throw new Error('extend_mutation_scope_without_active_scope');
+  const inScope = new Set((scope.routes || []).map(normalizeRoute));
+  const normalized = [...new Set((routes || []).map(normalizeRoute).filter(Boolean))];
+  const registry = loadRegistry();
+  const byRoute = new Map((registry.pages || []).map((p, i) => [normalizeRoute(p.route), i]));
+  const thawed = [];
+  const added = [];
+  for (const route of normalized) {
+    if (!inScope.has(route)) { inScope.add(route); added.push(route); }
+    const idx = byRoute.get(route);
+    if (idx === undefined) continue; // New route: no prior frozen output to thaw.
+    const record = registry.pages[idx];
+    if (record.state === 'TRANSACTIONALLY_THAWED') continue; // Already open in this transaction.
+    if (record.state !== 'FROZEN' && record.state !== 'UNLOCKED_FOR_REBUILD') throw new Error(`Route is not safely thawable: ${route}:${record.state}`);
+    registry.pages[idx] = { ...record, state: 'TRANSACTIONALLY_THAWED', transaction: { release_id: releaseId || scope.release_id, started_at: stableNow(), prior_html_sha256: record.accepted_html_sha256 } };
+    thawed.push(route);
+  }
+  saveRegistry(registry);
+  scope.routes = [...inScope].sort();
+  scope.thawed_routes = [...new Set([...(scope.thawed_routes || []), ...thawed])].sort();
+  scope.extensions = [...(scope.extensions || []), { source, extended_at: stableNow(), added, thawed }];
+  writeJsonAtomic(ACTIVE_SCOPE_PATH, scope);
+  return { release_id: scope.release_id, added, thawed_routes: thawed };
+}
 const ACCEPTANCE_REPORT_REL = 'artifacts/validation/mutation-scope-acceptance.json';
 
 /**
@@ -428,7 +476,7 @@ module.exports = {
   ROOT, REGISTRY_REL, ACTIVE_SCOPE_REL, PENDING_SCOPE_REL,
   normalizeRoute, implementationPathToRoute, routeToRenderedRel,
   loadRegistry, saveRegistry, seedAcceptedPages, freezeRoute, freezeNewAdmitted,
-  restoreFrozenPages, verifyFrozenPages, pruneFrozenCache, beginMutationScope, acceptMutationScope,
+  restoreFrozenPages, verifyFrozenPages, pruneFrozenCache, beginMutationScope, extendMutationScope, acceptMutationScope,
   rollbackMutationScope, queueMutationRoutes, consumePendingMutationRoutes, mutableRouteSet,
   applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, ACCEPTANCE_REPORT_REL,
   acceptedHtmlForRoute

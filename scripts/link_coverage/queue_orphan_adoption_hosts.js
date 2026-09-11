@@ -66,7 +66,22 @@ function verticalOf(route) {
 }
 
 function main() {
-  const apply = process.argv.includes('--apply');
+  // --in-release: the caller is scripts/release/finalize_content_release.js, running this
+  // INSIDE an open mutation scope, after promotion and after the build that puts the newly
+  // promoted routes into the sitemap. Two differences from a standalone --apply run:
+  //
+  //   1. Do not queue into pending_mutation_routes.json. That queue is consumed at the
+  //      START of a release, so a route queued there is thawed one release later - which
+  //      is exactly the lag that let a release publish a page it never linked. The
+  //      finalizer thaws these routes into the scope it already holds instead.
+  //   2. Do not exit 1 on an unplaceable orphan. The finalizer decides, and it charges
+  //      only the routes THIS release promoted; failing here would roll a release back
+  //      over a pre-existing orphan it did not create.
+  //
+  // The report is written on every path, including the empty one, because the finalizer
+  // reads it and a missing file would be indistinguishable from "nothing to do".
+  const inRelease = process.argv.includes('--in-release');
+  const apply = process.argv.includes('--apply') || inRelease;
   const graph = buildLinkGraph(ROOT);
 
   if (graph.published.length === 0) {
@@ -81,6 +96,22 @@ function main() {
 
   const orphans = findOrphans(graph).filter((o) => !quarantined.has(o.route));
   if (!orphans.length) {
+    // Write the empty report rather than returning silently. finalize_content_release.js
+    // reads this file to decide what to thaw, and an absent file cannot be told apart
+    // from a pass that never ran.
+    fs.mkdirSync(path.join(ROOT, path.dirname(OUT_REL)), { recursive: true });
+    fs.writeFileSync(path.join(ROOT, OUT_REL), `${JSON.stringify({
+      schema_version: '1.0',
+      generated_by: 'scripts/link_coverage/queue_orphan_adoption_hosts.js',
+      applied: apply,
+      in_release: inRelease,
+      published_pages_examined: graph.published.length,
+      orphan_count: 0,
+      placed_count: 0,
+      unplaceable_count: 0,
+      routes_to_thaw: [],
+      assignments: [],
+    }, null, 2)}\n`, 'utf8');
     console.log(`ORPHAN ADOPTION QUEUE: nothing to queue; all ${graph.published.length} published page(s) already have an inbound link from a served page.`);
     return;
   }
@@ -127,6 +158,7 @@ function main() {
     schema_version: '1.0',
     generated_by: 'scripts/link_coverage/queue_orphan_adoption_hosts.js',
     applied: apply,
+    in_release: inRelease,
     published_pages_examined: graph.published.length,
     orphan_count: orphans.length,
     placed_count: placed.length,
@@ -156,12 +188,16 @@ function main() {
       updated_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10),
       assignments: merged,
     }, null, 2)}\n`, 'utf8');
-    queueMutationRoutes(routes, 'queue_orphan_adoption_hosts');
-    console.log(`ORPHAN ADOPTION QUEUE: queued ${routes.length} route(s) for the next governed release (${placed.length} adoption(s) across ${new Set(placed.map((a) => a.host)).size} host(s)). Report: ${OUT_REL}`);
+    if (inRelease) {
+      console.log(`ORPHAN ADOPTION QUEUE (in release): recorded ${placed.length} adoption(s) across ${new Set(placed.map((a) => a.host)).size} host(s); the finalizer thaws the ${routes.length} route(s) into the scope it already holds. Report: ${OUT_REL}`);
+    } else {
+      queueMutationRoutes(routes, 'queue_orphan_adoption_hosts');
+      console.log(`ORPHAN ADOPTION QUEUE: queued ${routes.length} route(s) for the next governed release (${placed.length} adoption(s) across ${new Set(placed.map((a) => a.host)).size} host(s)). Report: ${OUT_REL}`);
+    }
   } else {
     console.log(`ORPHAN ADOPTION QUEUE (dry run): ${placed.length} adoption(s) would need ${routes.length} route(s) thawed. Re-run with --apply to queue them. Report: ${OUT_REL}`);
   }
-  if (unplaceable.length) process.exit(1);
+  if (unplaceable.length && !inRelease) process.exit(1);
 }
 
 main();
