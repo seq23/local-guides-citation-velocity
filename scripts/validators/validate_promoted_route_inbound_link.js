@@ -111,22 +111,23 @@ function checkOrder(text) {
   const positions = [];
   let cursor = -1;
   for (const required of REQUIRED_ORDER) {
-    const at = required.last ? text.lastIndexOf(required.fragment) : text.indexOf(required.fragment, cursor + 1);
+    const at = text.indexOf(required.fragment, cursor + 1);
     if (at < 0) {
-      errors.push({
+      // Distinguish the two failures. A fragment that is nowhere in the file is a
+      // deleted step; one that is present but only EARLIER is the defect this
+      // validator exists for - the mechanism intact, running at the wrong moment.
+      const anywhere = text.indexOf(required.fragment);
+      errors.push(anywhere < 0 ? {
         step: required.step,
         error: 'step_absent',
         fragment: required.fragment,
         detail: `${FINALIZER_REL} does not contain ${required.fragment}. ${required.why}.`,
-      });
-      continue;
-    }
-    if (at < cursor) {
-      errors.push({
+      } : {
         step: required.step,
         error: 'step_out_of_order',
         fragment: required.fragment,
-        detail: `${required.fragment} appears before the step that must precede it. ${required.why}.`,
+        found_at_offset: anywhere,
+        detail: `${required.fragment} is present in ${FINALIZER_REL} but only BEFORE the step it must follow. ${required.why}. A step that exists and runs at the wrong moment is the whole defect: the orphan-adoption mechanism was complete and correct on 2026-09-11 and still published 7 unlinked pages, purely because it ran before promotion.`,
       });
       continue;
     }

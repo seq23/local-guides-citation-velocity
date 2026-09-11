@@ -7856,6 +7856,56 @@
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
+      "depends_on": [],
+      "enforce_no_source_mutation": true,
+      "estimated_runtime_seconds": 45,
+      "timeout_seconds": 600,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "promoted-route-inbound-link",
+      "title": "The release that publishes a page is the release that links it",
+      "path": "scripts/validators/validate_promoted_route_inbound_link.js",
+      "command": "node scripts/validators/validate_promoted_route_inbound_link.js",
+      "tags": [
+        "internal-links",
+        "orphan",
+        "reachability",
+        "release",
+        "promotion"
+      ],
+      "risk_prevented": "On 2026-09-11 a release promoted 32 staged routes and 7 of them went live with no inbound link from any served page. Every stage of the 27-stage lane reported PASS; internal-link-inbound-coverage caught the orphans two runs later, as a property of the whole site rather than a fault of the release that created them. The cause was ordering, not a missing mechanism: npm run link:queue-orphan-hosts is stage 19 of release:velocity-intake and promotion is stage 20, inside finalize_content_release.js, so the adoption pass measured the served link graph before the routes it exists to adopt were live - and beginMutationScope had already fixed the mutable set, so no host could have been thawed to carry the link in any case. The pass could only ever work one release behind, which for a daily lane means every release mints a fresh set of orphans. This fails if the finalizer stops running the adoption pass after promotion and before the freeze, or if any route the last release promoted, or any route whose only inbound link the adoption pass placed, no longer has an inbound link from a page a crawler is served.",
+      "why_existing_checks_do_not_cover": "internal-link-inbound-coverage asks whether the site currently has orphans. It is the right question and it is silent on WHEN the gap may exist, so it discovers an unreachable page one or two runs after the release that published it and attributes it to the site rather than to the lane. generated-content-finalization-contract asserts the finalizer contains a set of steps but matches fragments unordered, so it would accept the adoption pass sitting before promotion - the exact arrangement that produced the 7. Neither asserts that link placement happens inside the release that creates the page, and neither watches whether a placed adoption survives the acceptance and restoration that follow it.",
+      "requires_files": [
+        "scripts/release/finalize_content_release.js",
+        "data/release/orphan_adoption_assignments.json",
+        "_redirects",
+        "sitemaps/sitemap_all.xml"
+      ],
+      "produces_files": [
+        "artifacts/validation/promoted-route-inbound-link.json"
+      ],
+      "mutates_files": [],
+      "unit_attribution": [
+        "unlinked_promoted_routes[].route"
+      ],
+      "unit_attribution_measured": "Measured on 2026-09-11 against two constructed failing states. (1) Outcome: removing the adoption anchors for /trt/guides/does-testosterone-therapy-raise-blood-pressure/ from its host produced unlinked_promoted_routes: [{route: \"/trt/guides/does-testosterone-therapy-raise-blood-pressure/\"}], the message naming that route as published with no served page linking to it, and exit 1. (2) Wiring: moving the queue_orphan_adoption_hosts.js --in-release call in finalize_content_release.js to before promote_staged_content.js - the original defect, restored - produced ordering_errors [{step: \"orphan_adoption_pass_in_release\", error: \"step_absent\"}] and exit 1. The route arrives already canonical. unlinked_promoted_routes is offenders-only by construction: it is the promoted-and-adopted subject minus the off-topic quarantine minus every route with a live inbound link. Holding the named unit is the right charge - an unreachable page cannot pass citation authority on, so publishing it is worth nothing and withholding it costs nothing. ordering_errors is DELIBERATELY NOT DECLARED as a unit: a mis-wired lane is a systemic fault that no single route is responsible for, and charging a page for it would hold a page that is itself correct."
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
       "enforce_no_source_mutation": true,
       "depends_on": [],
       "estimated_runtime_seconds": 30,
