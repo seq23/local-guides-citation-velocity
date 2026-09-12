@@ -52,14 +52,28 @@ function changedPaths() {
 const patterns = committablePatterns();
 const before = changedPaths();
 
-// The dry pass is a preview of what would be repaired. It reports NOT_CLEAN and
-// exits non-zero whenever anything needs repair, because it deliberately repairs
-// nothing - so it is exactly the runs that need healing that it fails on. The
-// lane previously ran it as a bare command under bash -e, which aborted the step
-// before the real pass could run: the loop could only ever complete when there
-// was nothing for it to do. Its exit code is informational here, never fatal.
-const dry = run('npm run selfheal:dry');
-console.log(`[lane self-heal] preview pass exited ${dry.status} (non-zero simply means it found work; the real pass decides)`);
+// There is no dry pass here any more, and that is the point.
+//
+// This runner used to call `npm run selfheal:dry` before `npm run selfheal`. The
+// dry pass runs the WHOLE core profile - every validator, once - and then
+// deliberately repairs nothing, so the only thing it can produce is a preview.
+// Nothing consumed that preview: its exit code was caught into a local and spent
+// on a single console.log that said the exit code "simply means it found work",
+// and the real pass immediately re-derived the same failure list from scratch.
+// It was a rehearsal whose only output was time.
+//
+// Measured, on the scheduled lane: 478s of run 34678719009's 918s self-heal step
+// (06:46 -> 06:54:18) and ~490s of run 34571184690's 974s. Both runs were then
+// CANCELLED at timeout-minutes: 30 inside `npm run validate:release`. A full
+// profile pass in this repo now costs ~450-500s on a runner, so the preview was
+// roughly a quarter of the entire job budget. On 2026-09-12 it also disagreed
+// with the pass it was previewing - the dry pass reported "1 failing (0
+// repairable)" and the real pass came back "clean on attempt 1" - which is the
+// clearest possible demonstration that its reading was never load-bearing.
+//
+// `npm run selfheal:dry` still exists for a human who wants a preview before
+// letting the loop write. A scheduled lane that is going to run the real pass
+// one second later is not that human.
 const heal = run('npm run selfheal');
 if (heal.status !== 0) {
   console.error(`LANE SELF-HEAL FAIL: the self-heal loop could not make the tree publishable (exit ${heal.status}); see artifacts/validation/self-heal-loop.json`);

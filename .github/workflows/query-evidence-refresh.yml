@@ -145,17 +145,39 @@ jobs:
         # repair touched anything outside it, so the lane can no longer validate
         # one tree and commit another.
         run: node scripts/selfheal/run_lane_selfheal.mjs
-      - name: Validate before publishing anything
-        # release, not core: workflow-data-trace requires npm run validate:release
-        # to appear before any git push in a repo-mutating workflow - release is a
-        # strict superset of core (145 validators vs 87), so this is strictly more
-        # coverage, not a narrowed check. It was `npm run validate` (core) while
-        # the push after it lived inside a third-party action the guard could not
-        # see; making the push visible (see the next step) is what surfaced that
-        # this lane had never actually been held to the same bar as every other
-        # push-capable lane.
-        run: npm run validate:release
 
+      # There is no standalone "Validate before publishing anything" step here
+      # any more. The release-profile proof lives in the commit step below,
+      # where the push is, and runs exactly once per push attempt.
+      #
+      # The lane used to run a release-profile pass HERE and then run a second
+      # one inside the commit step after the rebase. Together with the self-heal
+      # runner's preview pass, that was FOUR full validation passes in the normal
+      # path (dry core, real core, release, release-after-rebase) for a job with
+      # a 30-minute budget, and the job was cancelled at 30m00s on both
+      # 2026-09-11 (run 34571184690) and 2026-09-12 (run 34678719009) - inside
+      # the pass this step used to be.
+      #
+      # Of the two release-profile passes, THIS was the one that could go, and
+      # the repo had already said so in its own words. validate_push_after_rebase
+      # _revalidates.js exists because "a rebase that applies WITHOUT conflict is
+      # not a rebase that changes nothing: origin/main moved... so the result is
+      # a combination of two separately-validated trees, which is not itself a
+      # validated tree." By that rule, a pass taken BEFORE the fetch/rebase does
+      # not prove the tree that reaches main; the pass inside the commit step
+      # does, on every path, on the exact bytes being pushed. Keeping both means
+      # paying twice and trusting the later one anyway.
+      #
+      # So the lane still heals once (core, with repairs) and still proves once,
+      # unassisted, at release profile - it just stops proving a tree it is about
+      # to discard. workflow-data-trace is still satisfied: `npm run
+      # validate:release` appears textually before the first push to main in
+      # this file, inside the step below. That guard reads RAW text, comments
+      # included, so nothing above this line may quote the push command itself -
+      # a comment that did would become the "first push" it measures against and
+      # fail the lane for prose. lane-validation-pass-budget guards the
+      # arrangement so a future edit cannot re-add a pass whose result is thrown
+      # away.
       - name: Commit refreshed evidence, atlas and candidates
         id: commit
         # This step used to be stefanzweifel/git-auto-commit-action@v5, which

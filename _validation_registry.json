@@ -6086,6 +6086,55 @@
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
     },
     {
+      "id": "lane-validation-pass-budget",
+      "title": "Lane validation pass budget",
+      "path": "scripts/validators/validate_lane_validation_pass_budget.js",
+      "command": "node scripts/validators/validate_lane_validation_pass_budget.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 7",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "self-healing",
+        "workflow",
+        "ci-budget",
+        "validation-passes"
+      ],
+      "risk_prevented": "The scheduled self-heal lane runs the full validation suite more times than its 30-minute budget allows and is CANCELLED mid-pass on a perfectly healthy tree - runs 34571184690 and 34678719009 - while the extra passes prove nothing that reaches main: a dry pass repairs nothing and is read only by a log line, and a release-profile pass taken before the fetch/rebase proves a tree the lane then rebases away. The obvious response is to raise timeout-minutes, which hides a job doing four times the work it needs to.",
+      "why_existing_checks_do_not_cover": "push-after-rebase-revalidates proves a push is preceded by validation but is indifferent to how many passes precede it; workflow-data-trace only requires that one validate:release appear before a git push; self-heal-commit-coverage governs the commit surface, not the pass count. Nothing asserted that a full-profile pass must be able to affect what reaches main.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/lane-validation-pass-budget.json",
+      "failure_action": "delete the pass whose result is discarded, or move the release-profile proof into the step that pushes; never raise timeout-minutes to fit a duplicated pass",
+      "depends_on": [
+        "self-heal-commit-coverage",
+        "push-after-rebase-revalidates"
+      ],
+      "requires_files": [
+        ".github/workflows/query-evidence-refresh.yml",
+        "scripts/selfheal/run_lane_selfheal.mjs"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/lane-validation-pass-budget.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/lane-validation-pass-budget.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
+    },
+    {
       "id": "no-conflict-markers",
       "title": "No tracked file carries a git conflict marker",
       "path": "scripts/validators/validate_no_conflict_markers.js",
