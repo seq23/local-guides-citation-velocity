@@ -2,13 +2,13 @@
   "schema_version": "1.0",
   "register": "uscis-authority-grounding",
   "owner_validator": "uscis-authority-grounding-coverage",
-  "updated_at": "2026-09-10T21:20:08.108Z",
+  "updated_at": "2026-09-12",
   "policy": "uscis-medical is a high-stakes vertical. validate_html_fix_acceptance_compiler.js requires authority_grounded, authority_source_ids and authority_urls on every semantic entry under uscis-medical/, and only authorityGroundedEntryForSpec() in scripts/lib/authority_grounded_repairs.js can supply them. Every uscis-medical route that agent rows resolve to must therefore be in exactly one of two states: GROUNDED, meaning a route-specific authority-grounded template exists for it, or NAMED_STOP, meaning it is deliberately not grounded and the reason is recorded here. A route in neither state is a silent hole: the compiler refuses it, the trace demands a marker nothing carries, and the release lane goes red on a route nobody decided about.",
   "anti_duplication_rule": "A grounded entry must be written to its OWN question against the primary sources that answer that question. Spraying one generated template across the backlog is forbidden: these are distinct long-tail pages whose purpose is being cited, and near-identical copy across many cited pages is worse than the same number of named stops. uscis-authority-grounding-coverage enforces this with a pairwise near-duplicate check across every grounded uscis entry, so the rule is measured rather than merely stated.",
   "named_stop_policy": "A NAMED_STOP is green, not red, and is never a retirement. The row stays eligible for selection and is released the moment a grounded template is authored for it. Each stop below records why grounding it would be the wrong repair, and what the right repair is.",
   "counts": {
-    "routes_in_universe": 29,
-    "grounded": 21,
+    "routes_in_universe": 34,
+    "grounded": 22,
     "named_stops": 12
   },
   "universe_derivation": "Every route that resolveTargetPath() in scripts/lib/citation_route_resolver.js maps a data/report_fixes/agent_fix_ledger.json fix or a data/report_fixes/normalized_agent_runs/*.json record onto, where the resolved implementation_path begins with 'uscis-medical/' and the resolution carries no block_reason. The validator re-derives this list on every run rather than trusting these counts.",

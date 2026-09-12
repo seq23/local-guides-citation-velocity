@@ -81,7 +81,23 @@ for(const r of activeRetirements){
  if(!linePattern.test(redirectText))errors.push(`retirement_redirect_missing:${source}`);
 }
 for(const row of releaseQueue.records||[]){
- if(row.eligible===true && (row.decision!=='SAFE_AUTOPUBLISH'||row.lifecycle_state!=='ADMITTED_FOR_BUILD'))errors.push(`release_queue_invalid_eligible_state:${row.id||row.target_route}`);
+ /*
+  * ALREADY_STAGED is a legitimate eligible state, and refusing it was how a queue that had
+  * finished its work looked illegal.
+  *
+  * An eligible row used to have exactly one lawful destination: ADMITTED_FOR_BUILD. But a row whose
+  * route is ALREADY in content/_staged/pages.json is admitted work that HAS BEEN DONE - it is not
+  * NOT_ADMITTED, and admitting it again asks the release lane to build a page that exists. Before
+  * build_page_release_queue.js learned about the staged content, those rows stayed
+  * ADMITTED_FOR_BUILD for ever, and the lane selected them, skipped them silently and created
+  * nothing on every run - 32 of them on 2026-09-11, which is what took the release red twice.
+  *
+  * So the law now admits the third state, and it is NOT a loosening: an eligible row must still be
+  * SAFE_AUTOPUBLISH, and must still be in one of two named states. What it may no longer do is
+  * claim a row is illegal for having already been built.
+  */
+ const LAWFUL_ELIGIBLE_STATES = new Set(['ADMITTED_FOR_BUILD', 'ALREADY_STAGED']);
+ if(row.eligible===true && (row.decision!=='SAFE_AUTOPUBLISH'||!LAWFUL_ELIGIBLE_STATES.has(row.lifecycle_state)))errors.push(`release_queue_invalid_eligible_state:${row.id||row.target_route}`);
  if(row.eligible===true && /STRATEGY_GAP_FILL/i.test(String(row.admission_basis||'')))errors.push(`quota_gap_fill_still_eligible:${row.id||row.target_route}`);
  if(row.eligible===true && String(row.source||'')==='strategy_gap_fill_engine')errors.push(`synthetic_gap_fill_source_still_eligible:${row.id||row.target_route}`);
 }

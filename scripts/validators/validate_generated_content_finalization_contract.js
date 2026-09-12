@@ -12,8 +12,12 @@ mustScript('release:velocity-content',['strategy:opportunities','strategy:releas
 mustScript('release:apply',['release:velocity-content','release:content-finalize']);
 mustScript('release:velocity-intake',['release:velocity-content','citation:apply-agent-exact','release:content-finalize']);
 mustFileFragments('scripts/release/finalize_content_release.js',[
-  'consumePendingMutationRoutes','beginMutationScope','promote_staged_content.js','run_source_self_heal_loop.js','npm run build','validate_rendered_programmatic_substance.js','validate_rich_new_page_contract.js','validate_page_family_contract.js','build_page_admission_registry_2026_06_19.js','freezeNewAdmitted','acceptMutationScope','validate_page_release_law.js','build_pages_dist.js','rollbackMutationScope'
+  'consumePendingMutationRoutes','beginMutationScope','promote_staged_content.js','run_source_self_heal_loop.js','npm run build','validate_rendered_programmatic_substance.js','validate_rich_new_page_contract.js','validate_page_family_contract.js','build_page_admission_registry_2026_06_19.js','queue_orphan_adoption_hosts.js --in-release','extendMutationScope','validate_promoted_route_inbound_link.js','freezeNewAdmitted','acceptMutationScope','validate_page_release_law.js','build_pages_dist.js','rollbackMutationScope'
 ]);
+// This check matches fragments, unordered, so on its own it would accept the orphan
+// adoption pass sitting BEFORE promotion - which is exactly the arrangement that
+// published 7 unlinked pages on 2026-09-11. promoted-route-inbound-link asserts the
+// ORDER of these same steps; this one only asserts they are all present.
 mustFileFragments('scripts/build_site.js',['normal builds never copy staged content into LIVE','restoreFrozenPages']);
 for(const field of ['required_finish_sequence','forbidden_finish_states','finish_command','canonical_apply_command'])if(!(field in contract))errors.push(`contract_missing:${field}`);
 if(!Array.isArray(contract.required_finish_sequence)||!contract.required_finish_sequence.includes('freeze_new_and_refreeze_authorized_routes'))errors.push('contract_missing_freeze_finish_stage');

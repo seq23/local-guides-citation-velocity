@@ -631,6 +631,40 @@ function authorityGroundedEntryForSpec(spec) {
     });
   }
 
+  // Promoted on 2026-09-11, and a genuinely different question from
+  // what-vaccines-are-required-for-the-uscis-medical-exam. That page answers which
+  // vaccines are assessed; this one answers what happens when the documentation is
+  // not there, which is a separate decision with separate evidence - titers,
+  // re-vaccination, foreign records, and the two waiver routes. Recording it as
+  // NEAR_DUPLICATE_OF_GROUNDED_ROUTE would have been the cheap move and the wrong
+  // one: a named stop is for a route grounding would be wrong for, not a route
+  // grounding is merely more work for.
+  if (p === 'uscis-medical/guides/what-if-i-am-missing-vaccine-records-for-uscis-medical-exam/index.html') {
+    const keys=['vaccines','cdc','i693','medreq'];
+    return finish(spec, {
+      title:'What If I Am Missing Vaccine Records for the USCIS Medical Exam?',
+      description:'What a civil surgeon does when vaccination documentation is incomplete or unavailable, which alternatives to a written record are recognised, and how to prepare so a records gap does not become a delay.',
+      answer:'Missing records do not stop the exam; they change what happens at it. Vaccination is assessed from documentation, so where a written record cannot be produced the civil surgeon works from what can be evidenced instead — commonly serologic testing showing immunity, or administering the doses at the visit. Confirm the current approach for your situation against the CDC vaccination technical instructions for civil surgeons, because what is acceptable evidence is set there rather than by the clinic.',
+      checklist:['Request records from every source before the appointment: prior clinics, schools, employers, state or national immunisation registries, and health authorities in any country you have lived in.','Ask the civil surgeon\'s office, in advance, whether blood testing for immunity is offered and for which vaccines.','Ask whether foreign-language records need translation and in what form.','Ask which vaccines the office can administer on site and what each is billed at, separately from the exam fee.','Ask what the office does when a record is partial rather than absent.','Check the current CDC vaccination technical instructions rather than an older summary.'],
+      red_flags:['You are told missing records automatically mean starting the whole schedule again, with no discussion of testing or partial credit.','The office will not say which vaccines it can administer or what they cost until you are in the chair.','Serologic testing is presented as available for every vaccine, or as available for none.','A clinic claims it can waive a requirement itself. Waivers are decided by USCIS on the appropriate form, not by the examining physician.','Requirements are quoted from a fixed list with no reference to what is age-appropriate and medically appropriate for you.'],
+      authority_source_ids:ids(keys), authority_urls:urls(keys),
+      artifacts:[
+        {type:'callout',title:'A Records Gap Is an Ordinary Event',items:['Incomplete vaccination documentation is a routine part of immigration medical examinations, not a disqualification. What it changes is the evidence the civil surgeon works from, and possibly whether more than one visit is needed. Undocumented doses are generally assessed as though they were not given, which is why obtaining the record — or evidence in place of it — is worth the effort before the appointment.']},
+        {type:'decision_matrix',title:'What You Can Evidence, and What Usually Follows',headers:['Your situation','What the civil surgeon generally works from','What to ask before the visit'],rows:[
+          ['Complete, dated written record','The record itself; only gaps against what is age-appropriate are addressed.','Whether any dose is now out of date.'],
+          ['Partial record','The documented doses, plus whatever is needed to close the gap.','Whether the remaining doses can be given on site.'],
+          ['No record, but you believe you were vaccinated','Serologic testing is commonly used to evidence immunity for several vaccines; where immunity cannot be shown, doses are given.','Whether the office draws titers, for which vaccines, and at what cost.'],
+          ['Records exist abroad or in another language','The record once it is produced, subject to the office\'s translation requirements.','Whether a translation is required and in what form.'],
+          ['A medical reason not to vaccinate','A documented contraindication, recorded by the civil surgeon.','Bring the documenting clinician\'s letter.'],
+          ['A religious or moral objection to vaccination','Not a matter for the civil surgeon: this is a waiver decided by USCIS.','Which form applies to your category, and its timing.']
+        ]},
+        {type:'checklist',title:'Before the Appointment',items:['Contact prior clinics, schools, employers and any state or national immunisation registry that may hold your record.','Request records from health authorities in every country you have lived in, allowing time for the reply.','Ask the office whether it offers blood testing for immunity, and for which vaccines.','Ask which vaccines it can administer on the day, and the cost of each.','Ask whether a second visit is likely in your situation, and what would trigger it.','Bring any partial record you do have rather than leaving it behind because it is incomplete.']},
+        {type:'callout',title:'Waivers Are Decided by USCIS, Not the Clinic',items:['Two situations are handled by waiver rather than by the examining physician: a documented medical contraindication, and a religious or moral objection to vaccination. A clinic cannot grant either. Confirm on the USCIS pages for Form I-693 and your immigration category which form applies and when it must be filed, because filing it late is a common source of delay.']},
+        {type:'source_block',title:'Primary Sources',sources:sources(keys),reviewed_date:'2026-07-24',recheck_date:'2026-08-24'}
+      ]
+    });
+  }
+
   return null;
 }
 

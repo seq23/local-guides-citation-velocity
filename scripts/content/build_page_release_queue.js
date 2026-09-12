@@ -120,6 +120,30 @@ function decide(item) {
   return {decision:'SAFE_AUTOPUBLISH',eligible:true,reasons:['distinct_route','topic_fit','source_records_present','allowed_family','neutrality_gate_passed']};
 }
 
+
+/*
+ * THE QUEUE AND THE STAGED CONTENT KEPT SEPARATE LISTS WITH NO LINK.
+ *
+ * `lifecycle_state` was decided purely from `decide(item).eligible`, and this file had no
+ * reference to content/_staged/pages.json at all. So a route that had already been staged stayed
+ * ADMITTED_FOR_BUILD for ever: the release lane selected it, found it already present, skipped it,
+ * and created nothing - every single run, identically.
+ *
+ * On 2026-09-11 that was all 32 admitted rows. The release reported selected=32, created=0, and
+ * validate_rich_new_page_contract stopped the run because a release claiming 32 admissions with no
+ * created rows is a release whose evidence disagrees with itself. Twice, at 08:31 and 16:56.
+ *
+ * It only surfaced when the publication ceiling went from 2/day to 600: at 2 the lane picked one or
+ * two rows and usually found one genuinely new, so the stale admissions hid behind a created page.
+ *
+ * A staged route is not NOT_ADMITTED - it was admitted and the work was done. It is ALREADY_STAGED,
+ * which says so, and it carries the reason. The slug is compared verbatim, both sides keeping their
+ * leading and trailing slashes: normalising them here is how this was misdiagnosed for an hour.
+ */
+const stagedRoutes = new Set(
+  ((read('content/_staged/pages.json') || {}).pages || []).map((p) => String(p.slug || ''))
+);
+
 const records=(Array.isArray(intake)?intake:[]).map((item)=>({
   id:item.id,
   source:item.source,
@@ -138,7 +162,12 @@ const records=(Array.isArray(intake)?intake:[]).map((item)=>({
   source_artifacts:item.source_artifacts||{},
   original_status:item.status,
   ...decide(item),
-  lifecycle_state: decide(item).eligible ? 'ADMITTED_FOR_BUILD' : 'NOT_ADMITTED',
+  lifecycle_state: decide(item).eligible
+    ? (stagedRoutes.has(String(item.target_route||'')) ? 'ALREADY_STAGED' : 'ADMITTED_FOR_BUILD')
+    : 'NOT_ADMITTED',
+  ...(stagedRoutes.has(String(item.target_route||'')) && decide(item).eligible
+    ? { already_staged_reason: 'This route is already present in content/_staged/pages.json, so there is nothing for the release lane to create. It stays eligible - it is admitted work that has been done - but it is not ADMITTED_FOR_BUILD, because admitting it again asks the lane to build a page that exists.' }
+    : {}),
   evaluated_at:`${DATE}T00:00:00.000Z`
 }));
 const eligible=records.filter((r)=>r.eligible);

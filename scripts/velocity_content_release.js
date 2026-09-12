@@ -162,7 +162,26 @@ for (const rel of ['content/_staged/pages.json']) {
     if(!item.target_route) { report.skipped.push({id:item.id,reason:'missing_admitted_target_route'}); continue; }
     if(!route || shape==='unknown') { report.skipped.push({id:item.id,reason:'invalid_admitted_route_shape'}); continue; }
     if (requiresRichAuthorityPage(richType) && admittedFamily === 'CREATE_COMMUNITY_QA') { report.skipped.push({id:item.id,reason:'rich_page_downgraded_to_community_qa', rich_page_type: richType, route}); continue; }
-    if (existing.has(route)) continue;
+    /*
+     * A SKIP THAT RECORDS NOTHING MAKES THE ARTIFACT LIE.
+     *
+     * Every other guard in this loop pushes a reason - unsupported_vertical,
+     * question_too_short, invalid_admitted_route_shape, exact_title_already_exists_in_pages.
+     * This one just continued. So a run where all 32 selected rows were already staged wrote
+     * `selected=32, created=0, skipped=0`, which is self-contradictory, and
+     * validate_rich_new_page_contract correctly refused to grade it:
+     *
+     *   "does not declare a zero-page run (admitted_for_build=32, selected=32, created_count=0)
+     *    yet lists no created pages, so the release and its evidence disagree."
+     *
+     * That refusal is the CI failure on 2026-09-11, twice. The validator was right and the
+     * artifact was wrong. The route being already staged is a perfectly good reason not to
+     * build it again - it just has to be SAID.
+     *
+     * Only visible since the ceiling went to 600: at 2/day the loop picked one or two rows and
+     * usually found one genuinely new, so the silent path stayed hidden behind a created page.
+     */
+    if (existing.has(route)) { report.skipped.push({id:item.id, reason:'route_already_staged', route}); continue; }
     if (existingTitles.has(question.toLowerCase())) { report.skipped.push({id:item.id, reason:'exact_title_already_exists_in_pages', route}); continue; }
     const agentSourceRecordIds=[...new Set([...(Array.isArray(item.source_record_ids)?item.source_record_ids:[]), ...(Array.isArray(item.source_records)?item.source_records.filter((id)=>String(id).startsWith('velocity_src_')):[])])];
     const sourceRecords=[...new Set([...(Array.isArray(item.source_records)?item.source_records.filter((id)=>sourceRegistry.has(id)):[]), ...(sourceDefaults[vertical]||[])])];

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 const cp=require('child_process'),fs=require('fs'),path=require('path');
-const {beginMutationScope,acceptMutationScope,rollbackMutationScope,consumePendingMutationRoutes,freezeNewAdmitted,restoreFrozenPages,implementationPathToRoute,loadRegistry}=require('../lib/frozen_pages');
+const {beginMutationScope,extendMutationScope,acceptMutationScope,rollbackMutationScope,consumePendingMutationRoutes,freezeNewAdmitted,restoreFrozenPages,implementationPathToRoute,loadRegistry}=require('../lib/frozen_pages');
 const ROOT=path.resolve(__dirname,'../..');
 const DATE=process.env.SOURCE_DATE||new Date().toISOString().slice(0,10);
 const backupDir=path.join(ROOT,'.build','release-source-backup');
@@ -136,6 +136,40 @@ function main(){
    // still runs after this, so frozen page HTML is unaffected; the sitemap is not
    // a frozen page and is exactly what needs to advance.
    run('npm run build');
+   // A RELEASE THAT PUBLISHES A PAGE MUST ALSO PUBLISH A LINK TO IT.
+   //
+   // Promotion made a page live and nothing placed an inbound link for it. The
+   // orphan-adoption pass that exists to do exactly that (npm run link:queue-orphan-hosts)
+   // runs at stage 19 of release:velocity-intake, and promotion happens at stage 20,
+   // inside this file. So the pass measured the served link graph BEFORE the routes it
+   // was meant to adopt existed, and the mutable scope was already fixed by then, so no
+   // host could have been thawed to carry the link even if it had seen them. The pass
+   // could only ever work one release behind - which for a lane that publishes every day
+   // means every release mints a fresh set of orphans and the previous set gets adopted.
+   //
+   // On 2026-09-11 that published 7 pages nothing served linked to, and Validate caught
+   // them two runs later as internal-link-inbound-coverage orphans. The fix is not seven
+   // links: it is running the adoption pass HERE, after promotion and after the build
+   // that puts the new routes in the sitemap, so the release that creates a page is the
+   // release that links it.
+   run('node scripts/link_coverage/queue_orphan_adoption_hosts.js --in-release');
+   const adoption=readJson('artifacts/validation/orphan-adoption-host-queue.json',{assignments:[],routes_to_thaw:[]});
+   const promotedThisRelease=new Set((readJson('artifacts/validation/staged-content-promotion.json',{promoted_routes:[]}).promoted_routes||[]).map(implementationPathToRoute));
+   // An orphan this release did not create is not this release's to answer for, and
+   // rolling back over one would withhold every delivered page to punish a pre-existing
+   // gap. A route this release PROMOTED with nowhere to link it from is the named,
+   // loud condition: the lane stops rather than publishing an unreachable page.
+   const unplaceable=(adoption.assignments||[]).filter((a)=>!a.host&&promotedThisRelease.has(implementationPathToRoute(a.orphan)));
+   if(unplaceable.length)throw new Error(`promoted_routes_have_no_inbound_link_host:${unplaceable.map((a)=>a.orphan).join(',')}`);
+   const adoptionRoutes=adoption.routes_to_thaw||[];
+   if(adoptionRoutes.length){
+     // Additive thaw into the transaction already open. acceptMutationScope refreezes
+     // these under the same marker-preservation check as every other thawed route, so a
+     // host that would lose ledgered content to the rebuild is still rejected.
+     const extended=extendMutationScope(adoptionRoutes,releaseId,'orphan_adoption_in_release');
+     console.log(`ORPHAN ADOPTION IN RELEASE: thawed ${extended.thawed_routes.length} host route(s) so this release writes inbound links for the ${adoption.placed_count||0} page(s) it left unreachable. Rebuilding.`);
+     run('npm run build');
+   }
    const frozenNew=freezeNewAdmitted();
    const accepted=acceptMutationScope();
    const acceptedSet=new Set(accepted.routes||[]);
@@ -151,7 +185,35 @@ function main(){
      console.error(`MUTATION REJECTED ${row.route}: rebuild lost ${row.lost_marker_count} ledgered marker(s) that ${row.depended_on_by_rows} landed row(s) depend on; accepted bytes restored. See ${accepted.report_rel}.`);
    }
    restoreFrozenPages();
+   // A REJECTED ROUTE GETS ITS BYTES BACK, AND THE SITEMAP STILL DESCRIBES THE REBUILD.
+   //
+   // The sitemap, feeds and llms exports are written by the build above, which runs
+   // BEFORE acceptMutationScope decides. When acceptance rejects a route it puts the
+   // accepted bytes back on disk, but nothing rewrites the derived files, so the
+   // release ships a sitemap claiming a lastmod for content that was rolled back.
+   //
+   // 2026-09-12: /personal-injury/ was rejected for losing 1 ledgered marker that 3
+   // landed rows depend on. Its bytes reverted to the 2026-09-01 version while
+   // sitemap_core.xml, sitemap_all.xml, feed.xml and feed.json all advertised
+   // 2026-09-11, and deterministic-build caught it - a clean rebuild of the same tree
+   // produced 2026-09-01 and the two disagreed. The build is deterministic; the
+   // release was shipping a stale description of it.
+   //
+   // Only when something was actually rejected: with no rejections the derived files
+   // already describe the tree, and a third full build would be 48 seconds spent to
+   // reproduce the file it started from.
+   if((accepted.rejected||[]).length){
+     console.log(`RELEASE DERIVED OUTPUT REFRESH: ${(accepted.rejected||[]).length} route(s) were rejected and had their accepted bytes restored, so the sitemap and feeds written before that decision no longer describe the tree. Rebuilding them.`);
+     run('npm run build');
+     restoreFrozenPages();
+   }
    run('node scripts/validators/validate_page_release_law.js');
+   // AFTER restoreFrozenPages, deliberately. This is the first point at which the tree on
+   // disk is the tree a crawler is served: acceptMutationScope may have REJECTED a host
+   // whose rebuild dropped ledgered markers and put its accepted bytes back, which takes
+   // the anchor with it, and restoreFrozenPages overwrites any page that ended up outside
+   // the scope. Checking before either of those would prove a link that is no longer there.
+   run('node scripts/validators/validate_promoted_route_inbound_link.js');
    run('node scripts/build_pages_dist.js');
    const completedAgentRepairs=markCompletedAgentRepairs(accepted.routes||[]);
    fs.rmSync(backupDir,{recursive:true,force:true});

@@ -2,8 +2,8 @@
   "schema_version": "1.0",
   "guard": "release-isolation-contract",
   "status": "PASS",
-  "checked_at": "2026-09-11",
-  "cases_examined": 47,
+  "checked_at": "2026-09-12",
+  "cases_examined": 51,
   "mapped_validators": [
     "medical-schema-emission",
     "no-internal-instruction-leak",
@@ -11,6 +11,7 @@
     "rendered-internal-hrefs",
     "rendered-output-shrink-guard",
     "internal-link-inbound-coverage",
+    "promoted-route-inbound-link",
     "agent-recommendation-page-application",
     "agent-recommendation-dist-application"
   ],
@@ -157,6 +158,27 @@
     },
     {
       "case": "measured_mapping_zero_published_fails:internal-link-inbound-coverage:published_page_nothing_links_to",
+      "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_holds_its_own_unit:promoted-route-inbound-link:promoted_route_with_no_served_inbound_link",
+      "why": "Removing both references to /trt/guides/does-testosterone-therapy-raise-blood-pressure/ from trt/guides/does-insurance-cover-testosterone-replacement-therapy/index.html - its ONLY host, and the one the orphan-adoption pass placed the link on - leaving the page published, indexable and reachable from nothing a crawler is served. That is the exact shape of the 2026-09-11 defect, where 7 promoted routes went live with no inbound link at all. The validator exited 1 having examined 28 published routes of a 28-route subject against 2,104 published pages, and wrote one unlinked_promoted_routes row naming that route. The host was restored immediately afterwards and the validator returned to PASS.\nMEASURED ON A RELEASE UNIT ON PURPOSE. The first construction used a synthetic probe page (/zzz-promoted-unlinked-probe/) which proved the exit code and the message but is not a governed release unit, so there would have been nothing for the isolator to hold. Re-measured on a real promoted route.\nordering_errors is DELIBERATELY NOT MAPPED: it names a mis-wired release lane, which is systemic and not any single page's fault. Charging a route for it would hold a page that is itself perfectly correct. With the route in this release's mutation scope, the failure is charged to it alone and the other 2 units still publish.",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_out_of_scope_is_systemic:promoted-route-inbound-link:promoted_route_with_no_served_inbound_link",
+      "why": "The same measured failure, on a route this release never thawed. Safety property 1 holds for the new mappings too: the failure may not be held, and the whole run fails.",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "output_matched": true
+    },
+    {
+      "case": "measured_mapping_zero_published_fails:promoted-route-inbound-link:promoted_route_with_no_served_inbound_link",
       "why": "The held route is the only unit in scope, so nothing would publish. Safety property 2 holds for the new mappings too: isolation may never be a way to publish nothing and call it success.",
       "expected_exit": 1,
       "actual_exit": 1,
@@ -333,6 +355,13 @@
       "why": "A declared attribution pointer must match the shape its validator actually writes.",
       "pointers": [
         "new_orphans[].route"
+      ]
+    },
+    {
+      "case": "mapping_resolves:promoted-route-inbound-link",
+      "why": "A declared attribution pointer must match the shape its validator actually writes.",
+      "pointers": [
+        "unlinked_promoted_routes[].route"
       ]
     },
     {

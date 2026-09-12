@@ -66,7 +66,22 @@ function verticalOf(route) {
 }
 
 function main() {
-  const apply = process.argv.includes('--apply');
+  // --in-release: the caller is scripts/release/finalize_content_release.js, running this
+  // INSIDE an open mutation scope, after promotion and after the build that puts the newly
+  // promoted routes into the sitemap. Two differences from a standalone --apply run:
+  //
+  //   1. Do not queue into pending_mutation_routes.json. That queue is consumed at the
+  //      START of a release, so a route queued there is thawed one release later - which
+  //      is exactly the lag that let a release publish a page it never linked. The
+  //      finalizer thaws these routes into the scope it already holds instead.
+  //   2. Do not exit 1 on an unplaceable orphan. The finalizer decides, and it charges
+  //      only the routes THIS release promoted; failing here would roll a release back
+  //      over a pre-existing orphan it did not create.
+  //
+  // The report is written on every path, including the empty one, because the finalizer
+  // reads it and a missing file would be indistinguishable from "nothing to do".
+  const inRelease = process.argv.includes('--in-release');
+  const apply = process.argv.includes('--apply') || inRelease;
   const graph = buildLinkGraph(ROOT);
 
   if (graph.published.length === 0) {
@@ -81,8 +96,50 @@ function main() {
 
   const orphans = findOrphans(graph).filter((o) => !quarantined.has(o.route));
   if (!orphans.length) {
+    // Write the empty report rather than returning silently. finalize_content_release.js
+    // reads this file to decide what to thaw, and an absent file cannot be told apart
+    // from a pass that never ran.
+    fs.mkdirSync(path.join(ROOT, path.dirname(OUT_REL)), { recursive: true });
+    fs.writeFileSync(path.join(ROOT, OUT_REL), `${JSON.stringify({
+      schema_version: '1.0',
+      generated_by: 'scripts/link_coverage/queue_orphan_adoption_hosts.js',
+      applied: apply,
+      in_release: inRelease,
+      published_pages_examined: graph.published.length,
+      orphan_count: 0,
+      placed_count: 0,
+      unplaceable_count: 0,
+      routes_to_thaw: [],
+      assignments: [],
+    }, null, 2)}\n`, 'utf8');
     console.log(`ORPHAN ADOPTION QUEUE: nothing to queue; all ${graph.published.length} published page(s) already have an inbound link from a served page.`);
     return;
+  }
+
+  // A HOST THAT CANNOT SURVIVE ITS OWN REBUILD IS NOT A HOST.
+  //
+  // buildLinkCoveragePlan refuses to adopt onto a route listed in
+  // frozen-content-recoverability.json: those pages render less than their accepted
+  // output holds, so thawing one to write an anchor forces a rebuild that silently
+  // drops the difference. This script ranked hosts without ever reading that report -
+  // two components keeping separate lists of where a page may go, with nothing linking
+  // them, which is the same defect shape as the one being fixed.
+  //
+  // Measured on 2026-09-11: the first in-release adoption pass placed 3 orphans onto
+  // 3 hosts, and all 3 were on the suspected list. Every one of them shrank when it was
+  // rebuilt - 855B, 410B and 81B of delivered content gone - and rendered-output-shrink-guard
+  // caught it. acceptMutationScope had accepted them because no LEDGERED marker was
+  // lost, which is a narrower question than whether the page kept its content.
+  //
+  // Preference, not prohibition: an unreachable page is worse than a page that has to
+  // host from a less safe neighbour, so if a vertical offers nothing else the unsafe
+  // candidate is still used and the choice is recorded as such rather than hidden.
+  const unsafeHosts = new Set();
+  for (const row of [
+    ...(readJson('artifacts/validation/frozen-content-recoverability.json', {}).confirmed || []),
+    ...(readJson('artifacts/validation/frozen-content-recoverability.json', {}).suspected || []),
+  ]) {
+    if (row && row.route) unsafeHosts.add(normalizeRoute(row.route));
   }
 
   // Candidate hosts: published, served, in the same vertical, ranked by token overlap.
@@ -104,7 +161,11 @@ function main() {
         return { route, overlap };
       })
       .filter((candidate) => candidate.overlap > 0)
-      .sort((a, b) => (b.overlap - a.overlap) || a.route.localeCompare(b.route));
+      // Safe hosts first, then token overlap. Sorting rather than filtering is what keeps
+      // an unsafe candidate available as a last resort instead of turning a placeable
+      // orphan into an unplaceable one.
+      .map((candidate) => ({ ...candidate, unsafe: unsafeHosts.has(normalizeRoute(candidate.route)) }))
+      .sort((a, b) => (Number(a.unsafe) - Number(b.unsafe)) || (b.overlap - a.overlap) || a.route.localeCompare(b.route));
 
     let host = ranked.find((candidate) => (load.get(candidate.route) || 0) < MAX_ADOPTIONS_PER_HOST);
     if (!host) host = ranked.sort((a, b) => (load.get(a.route) || 0) - (load.get(b.route) || 0))[0];
@@ -113,7 +174,10 @@ function main() {
       continue;
     }
     load.set(host.route, (load.get(host.route) || 0) + 1);
-    assignments.push({ orphan: orphan.route, host: host.route, overlap: host.overlap });
+    if (host.unsafe) {
+      console.warn(`ORPHAN ADOPTION QUEUE: ${orphan.route} has no recoverable same-vertical host; using ${host.route}, which frozen-content-recoverability.json lists as at risk of losing content when rebuilt. Placing the link anyway - an unreachable page is worse - and recording the choice.`);
+    }
+    assignments.push({ orphan: orphan.route, host: host.route, overlap: host.overlap, host_content_recovery_risk: Boolean(host.unsafe) });
   }
 
   const placed = assignments.filter((a) => a.host);
@@ -127,6 +191,7 @@ function main() {
     schema_version: '1.0',
     generated_by: 'scripts/link_coverage/queue_orphan_adoption_hosts.js',
     applied: apply,
+    in_release: inRelease,
     published_pages_examined: graph.published.length,
     orphan_count: orphans.length,
     placed_count: placed.length,
@@ -156,12 +221,16 @@ function main() {
       updated_at: process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10),
       assignments: merged,
     }, null, 2)}\n`, 'utf8');
-    queueMutationRoutes(routes, 'queue_orphan_adoption_hosts');
-    console.log(`ORPHAN ADOPTION QUEUE: queued ${routes.length} route(s) for the next governed release (${placed.length} adoption(s) across ${new Set(placed.map((a) => a.host)).size} host(s)). Report: ${OUT_REL}`);
+    if (inRelease) {
+      console.log(`ORPHAN ADOPTION QUEUE (in release): recorded ${placed.length} adoption(s) across ${new Set(placed.map((a) => a.host)).size} host(s); the finalizer thaws the ${routes.length} route(s) into the scope it already holds. Report: ${OUT_REL}`);
+    } else {
+      queueMutationRoutes(routes, 'queue_orphan_adoption_hosts');
+      console.log(`ORPHAN ADOPTION QUEUE: queued ${routes.length} route(s) for the next governed release (${placed.length} adoption(s) across ${new Set(placed.map((a) => a.host)).size} host(s)). Report: ${OUT_REL}`);
+    }
   } else {
     console.log(`ORPHAN ADOPTION QUEUE (dry run): ${placed.length} adoption(s) would need ${routes.length} route(s) thawed. Re-run with --apply to queue them. Report: ${OUT_REL}`);
   }
-  if (unplaceable.length) process.exit(1);
+  if (unplaceable.length && !inRelease) process.exit(1);
 }
 
 main();

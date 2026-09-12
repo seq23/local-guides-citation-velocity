@@ -142,7 +142,30 @@ if (!exists(BASELINE)) {
     const demand = exists('data/demand/measured_demand.json') ? read('data/demand/measured_demand.json') : { records: [] };
     const queries = new Set((demand.records || []).map((r) => String(r.query_normalized || r.query).toLowerCase()));
     const slugs = [...queries].map((q) => q.replace(/[^a-z0-9]+/g, '-'));
-    const ungated = added.filter((route) => !slugs.some((s) => s && normalizeRoute(route).includes(s)));
+    // A ROUTE IS DEMAND-BACKED IF THE GENERATOR WOULD MINT IT FROM A MEASURED QUERY.
+    //
+    // The substring test below asks whether the route CONTAINS the whole query slug,
+    // which is only ever true when the slug was short enough to survive the route
+    // generator's length cap. A query long enough to be capped can therefore never
+    // match its own page, and the workaround was to add a second demand record whose
+    // query text was the TRUNCATED slug - which is how
+    // "we only discovered asd through neuropsych evaluation because my child is highly
+    // functionin" came to be an owner-approved seed. Fixing the cap to trim at a word
+    // boundary moved that route and stranded the workaround, which is the honest
+    // signal that the matching, not the record, was wrong.
+    //
+    // So the route the generator ACTUALLY produces for a measured query now counts as
+    // a match, asked of scripts/lib/page_family_router.js rather than re-derived here,
+    // so the gate and the generator cannot keep two different ideas of which page a
+    // query becomes. Both the current and the legacy cap are accepted, because 254
+    // published pages still legitimately sit at the legacy one. This is additive: the
+    // substring test still stands, and a route matching neither still fails.
+    const { slugify, legacySlugify } = require('../lib/page_family_router');
+    const generated = new Set();
+    for (const q of queries) { generated.add(slugify(q)); generated.add(legacySlugify(q)); }
+    const finalSegment = (route) => normalizeRoute(route).replace(/\/$/, '').split('/').pop() || '';
+    const ungated = added.filter((route) => !slugs.some((s) => s && normalizeRoute(route).includes(s))
+      && !generated.has(finalSegment(route)));
     if (ungated.length) {
       errors.push(
         `${ungated.length} route(s) admitted after the demand gate match no query in ` +

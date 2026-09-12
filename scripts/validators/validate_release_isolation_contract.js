@@ -296,6 +296,45 @@ const MEDICAL_CASES = [
     value: [{ file: 'trt/index.html', errors: ["Expected property name or '}' in JSON at position 2 (line 1 column 3)"] }],
     measured: 'Corrupting a JSON-LD block in trt/index.html.' }
 ];
+MEASURED.push({
+  id: 'promoted-route-inbound-link',
+  label: 'promoted_route_with_no_served_inbound_link',
+  route: '/trt/guides/does-testosterone-therapy-raise-blood-pressure/',
+  measured: 'Removing both references to /trt/guides/does-testosterone-therapy-raise-blood-pressure/ from '
+    + 'trt/guides/does-insurance-cover-testosterone-replacement-therapy/index.html - its ONLY host, and the one '
+    + 'the orphan-adoption pass placed the link on - leaving the page published, indexable and reachable from '
+    + 'nothing a crawler is served. That is the exact shape of the 2026-09-11 defect, where 7 promoted routes '
+    + 'went live with no inbound link at all. The validator exited 1 having examined 28 published routes of a '
+    + '28-route subject against 2,104 published pages, and wrote one unlinked_promoted_routes row naming that '
+    + 'route. The host was restored immediately afterwards and the validator returned to PASS.\n'
+    + 'MEASURED ON A RELEASE UNIT ON PURPOSE. The first construction used a synthetic probe page '
+    + '(/zzz-promoted-unlinked-probe/) which proved the exit code and the message but is not a governed release '
+    + 'unit, so there would have been nothing for the isolator to hold. Re-measured on a real promoted route.\n'
+    + 'ordering_errors is DELIBERATELY NOT MAPPED: it names a mis-wired release lane, which is systemic and not '
+    + 'any single page\'s fault. Charging a route for it would hold a page that is itself perfectly correct.',
+  evidence: {
+    'artifacts/validation/promoted-route-inbound-link.json': {
+      schema_version: '1.0',
+      validator: 'promoted-route-inbound-link',
+      status: 'FAIL',
+      finalizer_checked: 'scripts/release/finalize_content_release.js',
+      ordering_assertions_examined: 7,
+      ordering_errors: [],
+      promotion_artifact: 'artifacts/validation/staged-content-promotion.json',
+      adoption_assignments: 'data/release/orphan_adoption_assignments.json',
+      promoted_route_count: 0,
+      adopted_route_count: 28,
+      subject_route_count: 28,
+      promoted_routes_examined: 28,
+      promoted_routes_not_published: [],
+      published_pages_in_graph: 2104,
+      unlinked_promoted_routes: [
+        { route: '/trt/guides/does-testosterone-therapy-raise-blood-pressure/', dead_inbound: [] },
+      ],
+      subject_note: 'Part B examined the 28 published route(s) of a 28-route subject: 0 promoted by the last release and 28 whose only inbound link was placed by the orphan-adoption pass.',
+    },
+  },
+});
 for (const row of MEDICAL_CASES) {
   MEASURED.push({
     id: 'medical-schema-emission',
