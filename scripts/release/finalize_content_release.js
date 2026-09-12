@@ -185,6 +185,28 @@ function main(){
      console.error(`MUTATION REJECTED ${row.route}: rebuild lost ${row.lost_marker_count} ledgered marker(s) that ${row.depended_on_by_rows} landed row(s) depend on; accepted bytes restored. See ${accepted.report_rel}.`);
    }
    restoreFrozenPages();
+   // A REJECTED ROUTE GETS ITS BYTES BACK, AND THE SITEMAP STILL DESCRIBES THE REBUILD.
+   //
+   // The sitemap, feeds and llms exports are written by the build above, which runs
+   // BEFORE acceptMutationScope decides. When acceptance rejects a route it puts the
+   // accepted bytes back on disk, but nothing rewrites the derived files, so the
+   // release ships a sitemap claiming a lastmod for content that was rolled back.
+   //
+   // 2026-09-12: /personal-injury/ was rejected for losing 1 ledgered marker that 3
+   // landed rows depend on. Its bytes reverted to the 2026-09-01 version while
+   // sitemap_core.xml, sitemap_all.xml, feed.xml and feed.json all advertised
+   // 2026-09-11, and deterministic-build caught it - a clean rebuild of the same tree
+   // produced 2026-09-01 and the two disagreed. The build is deterministic; the
+   // release was shipping a stale description of it.
+   //
+   // Only when something was actually rejected: with no rejections the derived files
+   // already describe the tree, and a third full build would be 48 seconds spent to
+   // reproduce the file it started from.
+   if((accepted.rejected||[]).length){
+     console.log(`RELEASE DERIVED OUTPUT REFRESH: ${(accepted.rejected||[]).length} route(s) were rejected and had their accepted bytes restored, so the sitemap and feeds written before that decision no longer describe the tree. Rebuilding them.`);
+     run('npm run build');
+     restoreFrozenPages();
+   }
    run('node scripts/validators/validate_page_release_law.js');
    // AFTER restoreFrozenPages, deliberately. This is the first point at which the tree on
    // disk is the tree a crawler is served: acceptMutationScope may have REJECTED a host
