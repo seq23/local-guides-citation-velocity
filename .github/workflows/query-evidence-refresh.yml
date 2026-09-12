@@ -85,6 +85,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Stamp the lane start so the last step can measure headroom
+        # One `date` call, so the final step can say how close this run came to
+        # timeout-minutes. See "Report this job's headroom" at the end of the job
+        # for why a lane that silently finishes at 29 minutes is already failing.
+        run: echo "LANE_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - run: npm ci --ignore-scripts
       - name: Install Search Console client
         run: python -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null
@@ -145,17 +150,39 @@ jobs:
         # repair touched anything outside it, so the lane can no longer validate
         # one tree and commit another.
         run: node scripts/selfheal/run_lane_selfheal.mjs
-      - name: Validate before publishing anything
-        # release, not core: workflow-data-trace requires npm run validate:release
-        # to appear before any git push in a repo-mutating workflow - release is a
-        # strict superset of core (145 validators vs 87), so this is strictly more
-        # coverage, not a narrowed check. It was `npm run validate` (core) while
-        # the push after it lived inside a third-party action the guard could not
-        # see; making the push visible (see the next step) is what surfaced that
-        # this lane had never actually been held to the same bar as every other
-        # push-capable lane.
-        run: npm run validate:release
 
+      # There is no standalone "Validate before publishing anything" step here
+      # any more. The release-profile proof lives in the commit step below,
+      # where the push is, and runs exactly once per push attempt.
+      #
+      # The lane used to run a release-profile pass HERE and then run a second
+      # one inside the commit step after the rebase. Together with the self-heal
+      # runner's preview pass, that was FOUR full validation passes in the normal
+      # path (dry core, real core, release, release-after-rebase) for a job with
+      # a 30-minute budget, and the job was cancelled at 30m00s on both
+      # 2026-09-11 (run 34571184690) and 2026-09-12 (run 34678719009) - inside
+      # the pass this step used to be.
+      #
+      # Of the two release-profile passes, THIS was the one that could go, and
+      # the repo had already said so in its own words. validate_push_after_rebase
+      # _revalidates.js exists because "a rebase that applies WITHOUT conflict is
+      # not a rebase that changes nothing: origin/main moved... so the result is
+      # a combination of two separately-validated trees, which is not itself a
+      # validated tree." By that rule, a pass taken BEFORE the fetch/rebase does
+      # not prove the tree that reaches main; the pass inside the commit step
+      # does, on every path, on the exact bytes being pushed. Keeping both means
+      # paying twice and trusting the later one anyway.
+      #
+      # So the lane still heals once (core, with repairs) and still proves once,
+      # unassisted, at release profile - it just stops proving a tree it is about
+      # to discard. workflow-data-trace is still satisfied: `npm run
+      # validate:release` appears textually before the first push to main in
+      # this file, inside the step below. That guard reads RAW text, comments
+      # included, so nothing above this line may quote the push command itself -
+      # a comment that did would become the "first push" it measures against and
+      # fail the lane for prose. lane-validation-pass-budget guards the
+      # arrangement so a future edit cannot re-add a pass whose result is thrown
+      # away.
       - name: Commit refreshed evidence, atlas and candidates
         id: commit
         # This step used to be stefanzweifel/git-auto-commit-action@v5, which
@@ -309,3 +336,40 @@ jobs:
             data/queries/evidence/evidence_queries.json
             data/authority_scale/query_atlas.json
           if-no-files-found: ignore
+
+      - name: Report this job's headroom against its timeout
+        # A lane that finishes at 29m59s under timeout-minutes: 30 is already
+        # failing and nobody can see it. This one did: it ran in 16-22 minutes
+        # for a week, then two validators landed - clock-source-independence grew
+        # from 48s to 175s a pass and uscis-authority-grounding-coverage arrived
+        # at ~50s - and because the job ran the full profile FOUR times, ~177s of
+        # new validator cost bought ~708s of new job cost. It crossed 30 minutes
+        # on 2026-09-11 with no prior signal at all.
+        #
+        # The answer is not a bigger clock. It is that the shortfall becomes
+        # visible while there is still headroom to spend. This step never fails
+        # the run - it annotates it - because a healthy publishing lane must not
+        # be stopped by its own stopwatch, and because the one thing worse than a
+        # slow run here is a run that does not reach the dispatch above.
+        #
+        # Deliberately LAST: everything that matters, above all the dispatch of
+        # Velocity Content Release, has already happened.
+        if: always()
+        run: |
+          BUDGET=$((30 * 60))
+          NOW=$(date +%s)
+          ELAPSED=$((NOW - ${LANE_STARTED_AT:-$NOW}))
+          PCT=$((ELAPSED * 100 / BUDGET))
+          echo "lane elapsed ${ELAPSED}s of ${BUDGET}s budget (${PCT}%)"
+          {
+            echo "### Query Evidence Refresh headroom"
+            echo ""
+            echo "- elapsed: **${ELAPSED}s** of a ${BUDGET}s budget (**${PCT}%**)"
+            echo "- remaining: **$((BUDGET - ELAPSED))s**"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$PCT" -ge 70 ]; then
+            echo "::warning title=Query Evidence Refresh headroom::this run used ${PCT}% of its ${BUDGET}s budget. Past 70% the lane is one validator away from being CANCELLED before it can commit. Reduce the work, do not raise timeout-minutes - lane-validation-pass-budget explains why."
+            echo "- **WARNING: past the 70% line.** The next validator added to the release profile may cancel this lane." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "headroom is healthy (under the 70% warning line)"
+          fi

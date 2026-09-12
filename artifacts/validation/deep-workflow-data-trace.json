@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-12T02:30:02.993Z",
+  "generated_at": "2026-09-12T12:36:43.948Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -384,9 +384,16 @@
     },
     {
       "workflow": "query-evidence-refresh.yml",
-      "command_count": 10,
+      "command_count": 11,
       "status": "PASS",
       "commands": [
+        {
+          "command": "echo \"LANE_STARTED_AT=$(date +%s)\" >> \"$GITHUB_ENV",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
         {
           "command": "python -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null",
           "status": "PASS",
@@ -500,28 +507,6 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "npm run validate:release",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "npm_script",
-              "name": "validate:release",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/validation/run_validation_registry.js",
-              "ok": true
-            }
-          ],
-          "direct_npm_scripts": [
-            "validate:release"
-          ],
-          "transitive_npm_scripts": [
-            "validate:release"
-          ]
-        },
-        {
           "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit add -- $file_pattern\nif git diff --cached --quiet; then echo \"changed=false\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\necho \"changed=true\" >> \"$GITHUB_OUTPUT\"\ngit commit -m \"query evidence refresh: measured GSC demand -> atlas -> release candidates\"\nfor attempt in 1 2 3; do\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\ntest -z \"${GSC_SERVICE_ACCOUNT_JSON:-}\" || python3 scripts/queries/ingest_gsc_evidence.py\nnpm run atlas:build\nnpm run queries:join-release\nnode scripts/selfheal/run_lane_selfheal.mjs\nnpm run validate:release\ngit add -- $file_pattern\nif git diff --cached --quiet; then\necho \"changed=false\" >> \"$GITHUB_OUTPUT\"\nexit 0\nfi\ngit commit -m \"query evidence refresh: measured GSC demand -> atlas -> release candidates\"\nelse\nnpm run validate:release\ngit add -- $file_pattern\ngit commit --amend --no-edit\nfi\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
@@ -587,6 +572,13 @@
               "ok": true
             }
           ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "BUDGET=$((30 * 60))\nNOW=$(date +%s)\nELAPSED=$((NOW - ${LANE_STARTED_AT:-$NOW}))\nPCT=$((ELAPSED * 100 / BUDGET))\necho \"lane elapsed ${ELAPSED}s of ${BUDGET}s budget (${PCT}%)\"\n{\necho \"### Query Evidence Refresh headroom\"\necho \"\"\necho \"- elapsed: **${ELAPSED}s** of a ${BUDGET}s budget (**${PCT}%**)\"\necho \"- remaining: **$((BUDGET - ELAPSED))s**\"\n} >> \"$GITHUB_STEP_SUMMARY\"\nif [ \"$PCT\" -ge 70 ]; then\necho \"::warning title=Query Evidence Refresh headroom::this run used ${PCT}% of its ${BUDGET}s budget. Past 70% the lane is one validator away from being CANCELLED before it can commit. Reduce the work, do not raise timeout-minutes - lane-validation-pass-budget explains why.\"\necho \"- **WARNING: past the 70% line.** The next validator added to the release profile may cancel this lane.\" >> \"$GITHUB_STEP_SUMMARY\"\nelse\necho \"headroom is healthy (under the 70% warning line)\"\nfi",
+          "status": "PASS",
+          "checks": [],
           "direct_npm_scripts": [],
           "transitive_npm_scripts": []
         }

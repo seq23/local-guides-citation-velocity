@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "8224c6f3dfa6c88d2a4f72548edefee03a807c12664d3d643643109d25448551",
+  "registry_sha256": "f7bee6f98495a2ccafc59e6607f5a96abf8294aaf64376d9c42a594b20391a28",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 205,
-    "active": 178,
+    "total": 206,
+    "active": 179,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 176,
+    "hard_fail": 177,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -132,6 +132,7 @@
         "rich-block-contract-link",
         "route-topic-quality",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "no-conflict-markers",
         "publish-gate-unblockable",
         "publish-step-bounded",
@@ -290,6 +291,7 @@
         "publish-step-bounded",
         "self-heal-repair-contract",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "workflow-contract",
         "velocity-intake-workflow"
       ]
@@ -411,6 +413,7 @@
         "search-intelligence-workflow",
         "search-quality-basics",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "no-conflict-markers",
         "publish-gate-unblockable",
         "publish-step-bounded",
@@ -642,6 +645,7 @@
         "publish-step-bounded",
         "self-heal-repair-contract",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -769,6 +773,7 @@
         "search-intelligence-workflow",
         "search-quality-basics",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "no-conflict-markers",
         "publish-gate-unblockable",
         "publish-step-bounded",
@@ -999,6 +1004,7 @@
         "publish-step-bounded",
         "self-heal-repair-contract",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -1159,6 +1165,7 @@
         "search-intelligence-workflow",
         "search-quality-basics",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "no-conflict-markers",
         "publish-gate-unblockable",
         "publish-step-bounded",
@@ -1387,6 +1394,7 @@
         "publish-step-bounded",
         "self-heal-repair-contract",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "workflow-contract",
         "velocity-intake-workflow",
         "deterministic-build",
@@ -1523,6 +1531,7 @@
         "search-intelligence-workflow",
         "search-quality-basics",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "no-conflict-markers",
         "publish-gate-unblockable",
         "publish-step-bounded",
@@ -1761,6 +1770,7 @@
         "release-batch-workflow",
         "self-heal-repair-contract",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "workflow-contract",
         "velocity-intake-workflow",
         "build-result-cache-integrity",
@@ -1952,6 +1962,7 @@
         "rendered-route-admission-parity",
         "search-quality-basics",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "no-conflict-markers",
         "publish-gate-unblockable",
         "publish-step-bounded",
@@ -2052,6 +2063,7 @@
         "publish-step-bounded",
         "self-heal-repair-contract",
         "self-heal-commit-coverage",
+        "lane-validation-pass-budget",
         "workflow-contract",
         "velocity-intake-workflow"
       ]
@@ -2833,6 +2845,14 @@
     {
       "from": "self-heal-repair-contract",
       "to": "self-heal-commit-coverage"
+    },
+    {
+      "from": "self-heal-commit-coverage",
+      "to": "lane-validation-pass-budget"
+    },
+    {
+      "from": "push-after-rebase-revalidates",
+      "to": "lane-validation-pass-budget"
     },
     {
       "from": "agent-artifact-continuity",
@@ -7213,6 +7233,47 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "The scheduled lane that runs the self-heal loop can heal a tree, validate the healed tree, then commit a different one, because the paths its repairs rewrite fall outside its commit pattern. The repair is discarded every run and the same defect is repaired forever.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "lane-validation-pass-budget",
+        "title": "Lane validation pass budget",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 7",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_lane_validation_pass_budget.js",
+        "command": "node scripts/validators/validate_lane_validation_pass_budget.js",
+        "depends_on": [
+          "self-heal-commit-coverage",
+          "push-after-rebase-revalidates"
+        ],
+        "requires_files": [
+          ".github/workflows/query-evidence-refresh.yml",
+          "scripts/selfheal/run_lane_selfheal.mjs"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/lane-validation-pass-budget.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/lane-validation-pass-budget.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "The scheduled self-heal lane runs the full validation suite more times than its 30-minute budget allows and is CANCELLED mid-pass on a perfectly healthy tree - runs 34571184690 and 34678719009 - while the extra passes prove nothing that reaches main: a dry pass repairs nothing and is read only by a log line, and a release-profile pass taken before the fetch/rebase proves a tree the lane then rebases away. The obvious response is to raise timeout-minutes, which hides a job doing four times the work it needs to.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -17078,6 +17139,47 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "The scheduled lane that runs the self-heal loop can heal a tree, validate the healed tree, then commit a different one, because the paths its repairs rewrite fall outside its commit pattern. The repair is discarded every run and the same defect is repaired forever.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "lane-validation-pass-budget",
+        "title": "Lane validation pass budget",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 7",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_lane_validation_pass_budget.js",
+        "command": "node scripts/validators/validate_lane_validation_pass_budget.js",
+        "depends_on": [
+          "self-heal-commit-coverage",
+          "push-after-rebase-revalidates"
+        ],
+        "requires_files": [
+          ".github/workflows/query-evidence-refresh.yml",
+          "scripts/selfheal/run_lane_selfheal.mjs"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/lane-validation-pass-budget.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/lane-validation-pass-budget.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "The scheduled self-heal lane runs the full validation suite more times than its 30-minute budget allows and is CANCELLED mid-pass on a perfectly healthy tree - runs 34571184690 and 34678719009 - while the extra passes prove nothing that reaches main: a dry pass repairs nothing and is read only by a log line, and a release-profile pass taken before the fetch/rebase proves a tree the lane then rebases away. The obvious response is to raise timeout-minutes, which hides a job doing four times the work it needs to.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
