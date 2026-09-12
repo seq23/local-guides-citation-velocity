@@ -121,12 +121,51 @@ for (const file of files) {
     provesOutsidePush.push({ label, count });
   }
 
+  // The edge this lane exists to close, and the reason a timeout here is not a
+  // housekeeping problem. velocity-content-release.yml has no schedule of its
+  // own - its `on:` is a push on two paths plus workflow_dispatch - and a push
+  // made with GITHUB_TOKEN raises no push event. So the ONLY unattended path
+  // from measured demand to publishing is this lane's explicit
+  // `gh workflow run velocity-content-release.yml`, which needs `actions: write`
+  // to make. Nothing asserted that line existed. A restructure that dropped it,
+  // or dropped the permission, would leave a lane that passes every check in
+  // this repo while publishing quietly stops.
+  const dispatches = (text.match(/gh\s+workflow\s+run\s+velocity-content-release\.yml/g) || []).length;
+  const hasActionsWrite = /actions:\s*write/.test(text);
+  // Cheap, and it is what turned two silent nights into a visible fact: the lane
+  // must say how much of its timeout it consumed.
+  const reportsHeadroom = /GITHUB_STEP_SUMMARY/.test(text) && /LANE_STARTED_AT/.test(text);
+
   lanes.push({
     file,
     pushing_steps: pushingSteps.length,
     release_proofs_in_pushing_step: provesInsidePush,
     release_proofs_outside_pushing_step: provesOutsidePush,
+    release_lane_dispatches: dispatches,
+    actions_write: hasActionsWrite,
+    reports_headroom: reportsHeadroom,
   });
+
+  if (!dispatches) {
+    errors.push(
+      `${file}:publishing_edge_severed: no executable \`gh workflow run velocity-content-release.yml\`. ` +
+      'That single line is the only unattended path from measured demand to publishing: the release lane has no schedule of its own, ' +
+      'and a commit pushed with GITHUB_TOKEN raises no push event to trigger it. Without the dispatch this lane refreshes evidence nobody publishes.'
+    );
+  }
+  if (dispatches && !hasActionsWrite) {
+    errors.push(
+      `${file}:dispatch_without_permission: dispatches velocity-content-release.yml but the job declares no \`actions: write\`. ` +
+      'The dispatch will fail at runtime with a permissions error, in a step whose failure is easy to read as "nothing to publish".'
+    );
+  }
+  if (!reportsHeadroom) {
+    errors.push(
+      `${file}:headroom_unreported: the lane never measures what fraction of timeout-minutes it consumed. ` +
+      'It ran in 16-22 minutes for a week and then crossed 30 with no prior signal, because nothing was watching the margin. ' +
+      'Stamp LANE_STARTED_AT early and report the elapsed percentage to GITHUB_STEP_SUMMARY at the end.'
+    );
+  }
 
   if (!pushingSteps.length) {
     errors.push(
