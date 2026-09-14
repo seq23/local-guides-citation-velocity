@@ -37,6 +37,13 @@
  * without being on the list is a NEW occurrence and fails, and a listed route that
  * climbs back must be deleted from the list.
  *
+ * Both lists have a writer for the grow-back direction: scripts/release/
+ * retire_recovered_historic_maximum.js and update_rendered_size_baseline.js
+ * --retire-stale-justifications (`npm run ratchet:shrink-guard`), registered as the
+ * repair of shrink-guard-ratchet-currency so a push lane retires the rows in the same
+ * commit that grows the page. This guard still fails on the stale rows itself - a lane
+ * that did not run the writer, or a human edit that skipped it, is still red here.
+ *
  * Rule 0: measuring zero pages is a failure. An empty loop and a clean site are
  * indistinguishable from the outside, and that is exactly how this defect hid.
  */
@@ -155,11 +162,13 @@ function main() {
   if (recoveredAboveHistoric.length) {
     console.error(`RENDERED OUTPUT SHRINK GUARD FAIL: ${recoveredAboveHistoric.length} route(s) listed as below their historic maximum have climbed back. A ratchet may only tighten - delete these from ${HISTORIC}:`);
     for (const r of recoveredAboveHistoric.slice(0, 25)) console.error(`  ${r.implementation_path}  historic max ${r.historic_max_bytes}B, page is ${r.current_bytes}B`);
+    console.error('  Writer: `npm run ratchet:shrink-guard` retires exactly these rows (shrink-guard-ratchet-currency registers it as a repair, so a push lane runs it via self-heal before its validate:release gate). Commit the result.');
     process.exit(1);
   }
   if (staleJustifications.length) {
     console.error(`RENDERED OUTPUT SHRINK GUARD FAIL: ${staleJustifications.length} justified shrink(s) no longer reproduce. A shrink licence may not outlive its shrink - delete these from ${BASELINE}:`);
     for (const s of staleJustifications) console.error(`  ${s.implementation_path}  named ${s.expected_bytes}B, page is ${s.current_bytes}B`);
+    console.error('  Writer: `npm run ratchet:shrink-guard` retires a justification whose page is back at or above its floor. A page below its floor at an unnamed size is a NEW shrink and is not retired - restore the content or name the new size with a reason.');
     process.exit(1);
   }
   if (shrunk.length) {

@@ -19,16 +19,39 @@
  *
  *   (no flags)   raise floors for pages that grew; never lower one
  *   --seed       create the file from the current rendered output (first run only)
+ *   --retire-stale-justifications
+ *                remove every justified_shrinks entry whose page is back AT OR ABOVE
+ *                its floor, and touch nothing else. The guard fails a justification
+ *                that no longer reproduces ("a shrink licence may not outlive its
+ *                shrink - delete these"), and until 2026-09-14 nothing performed that
+ *                deletion: the content release lane grew eight personal-injury routes
+ *                past the sizes their 2026-09-10 justifications named, and main went
+ *                red on a bot commit. A justification whose page is BELOW its floor
+ *                at some other size is NOT retired here - that is a new shrink and
+ *                needs the judgment the guard asks a person for. Floors are never
+ *                raised or lowered in this mode, so a fluctuating page cannot ratchet
+ *                itself into a future failure by being run through a lane.
+ *   --check      with --retire-stale-justifications: exit non-zero if any entry
+ *                WOULD be retired; write nothing
+ *
+ * Rule 0 for --retire-stale-justifications: a missing baseline, zero route floors, or
+ * zero routes measurable on disk is a hard failure. A justification list that is empty
+ * is a legitimate state and is reported as "0 examined", not treated as a pass on its
+ * own - the routes on disk are what was measured.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '../..');
+const ROOT = process.env.RENDERED_BASELINE_ROOT
+  ? path.resolve(process.env.RENDERED_BASELINE_ROOT)
+  : path.resolve(__dirname, '../..');
 const BASELINE = 'data/release/rendered_size_baseline.json';
 const REGISTRY = 'data/release/frozen_page_registry.json';
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const SEED = process.argv.includes('--seed');
+const RETIRE = process.argv.includes('--retire-stale-justifications');
+const CHECK = process.argv.includes('--check');
 
 function rel(p) { return path.join(ROOT, p); }
 function readJson(p, fallback) { try { return JSON.parse(fs.readFileSync(rel(p), 'utf8')); } catch { return fallback; } }
@@ -55,6 +78,8 @@ function main() {
   };
   baseline.routes = baseline.routes || {};
   baseline.justified_shrinks = baseline.justified_shrinks || [];
+
+  if (RETIRE) { retireStaleJustifications(baseline); return; }
 
   const justified = new Map(baseline.justified_shrinks.map((s) => [String(s.implementation_path || ''), s]));
 
@@ -89,6 +114,64 @@ function main() {
   baseline.route_count = Object.keys(baseline.routes).length;
   fs.writeFileSync(rel(BASELINE), `${JSON.stringify(baseline, null, 2)}\n`);
   console.log(`RENDERED SIZE BASELINE PASS: measured ${measured} rendered page(s); ${added} added, ${raised} floor(s) raised, ${lowered} lowered under a named justification.`);
+}
+
+function retireStaleJustifications(baseline) {
+  const floors = Object.entries(baseline.routes);
+  if (!floors.length) {
+    console.error(`RENDERED SIZE BASELINE FAIL: ${BASELINE} carries no route floors; there is nothing to measure a justification against.`);
+    process.exit(1);
+  }
+  let onDisk = 0;
+  for (const [relPath] of floors) if (fs.existsSync(rel(relPath))) onDisk += 1;
+  if (onDisk === 0) {
+    console.error(`RENDERED SIZE BASELINE FAIL: ${floors.length} route floor(s) recorded, zero measurable on disk. Nothing was checked. Build the site, then re-run.`);
+    process.exit(1);
+  }
+
+  const kept = [];
+  const retired = [];
+  const belowAtOtherSize = [];
+  for (const named of baseline.justified_shrinks) {
+    const relPath = String(named.implementation_path || '');
+    const abs = rel(relPath);
+    if (!relPath || !fs.existsSync(abs)) { kept.push(named); continue; }
+    const size = fs.statSync(abs).size;
+    const floor = Number(baseline.routes[relPath]);
+    if (size === Number(named.to_bytes)) { kept.push(named); continue; }
+    if (Number.isFinite(floor) && size >= floor) {
+      retired.push({ ...named, retired_at: DATE, recovered_to_bytes: size, floor_bytes: floor });
+      continue;
+    }
+    // Below its floor at a size the justification does not name: a NEW shrink. Left in
+    // place so the guard fails on it and a person decides; deleting it would not make
+    // the page pass and would erase the reason the earlier shrink was accepted.
+    belowAtOtherSize.push({ implementation_path: relPath, named_bytes: Number(named.to_bytes), current_bytes: size, floor_bytes: floor });
+    kept.push(named);
+  }
+
+  if (CHECK) {
+    if (retired.length) {
+      console.error(`RENDERED SIZE BASELINE FAIL (--check): ${retired.length} of ${baseline.justified_shrinks.length} justified shrink(s) name a page that is back at or above its floor and are still listed. Run \`npm run ratchet:shrink-guard\` and commit ${BASELINE}:`);
+      for (const r of retired.slice(0, 25)) console.error(`  ${r.implementation_path}  named ${r.to_bytes}B, floor ${r.floor_bytes}B, page is ${r.recovered_to_bytes}B`);
+      process.exit(1);
+    }
+    console.log(`RENDERED SIZE BASELINE PASS (--check): ${onDisk} of ${floors.length} route floor(s) on disk; ${baseline.justified_shrinks.length} justified shrink(s) examined, none moot; ${belowAtOtherSize.length} below floor at an unnamed size (left for the guard).`);
+    return;
+  }
+
+  if (!retired.length) {
+    console.log(`RENDERED SIZE BASELINE PASS: ${onDisk} of ${floors.length} route floor(s) on disk; ${baseline.justified_shrinks.length} justified shrink(s) examined, none moot, file unchanged; ${belowAtOtherSize.length} below floor at an unnamed size (left for the guard).`);
+    return;
+  }
+
+  baseline.justified_shrinks = kept;
+  baseline.retired_justifications = [...(Array.isArray(baseline.retired_justifications) ? baseline.retired_justifications : []), ...retired];
+  baseline.updated_at = DATE;
+  baseline.route_count = Object.keys(baseline.routes).length;
+  fs.writeFileSync(rel(BASELINE), `${JSON.stringify(baseline, null, 2)}\n`);
+  console.log(`RENDERED SIZE BASELINE PASS: ${onDisk} of ${floors.length} route floor(s) on disk; ${retired.length} justified shrink(s) retired because the page is back at or above its floor; ${kept.length} kept; ${belowAtOtherSize.length} below floor at an unnamed size (left for the guard). No floor was changed.`);
+  for (const r of retired.slice(0, 25)) console.log(`  retired ${r.implementation_path}  named ${r.to_bytes}B -> page ${r.recovered_to_bytes}B (floor ${r.floor_bytes}B)`);
 }
 
 main();

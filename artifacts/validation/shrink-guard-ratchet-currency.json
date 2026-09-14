@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "validator": "shrink-guard-ratchet-currency",
+  "status": "PASS",
+  "checked_at": "2026-09-14",
+  "writers": [
+    "scripts/release/retire_recovered_historic_maximum.js",
+    "scripts/release/update_rendered_size_baseline.js --retire-stale-justifications"
+  ],
+  "repair_command": "npm run ratchet:shrink-guard",
+  "routes_listed": 1393,
+  "routes_on_disk": 1393,
+  "retired_on_record": 8,
+  "climbed_back_still_listed": [],
+  "justified_shrinks_listed": 51,
+  "retired_justifications_on_record": 8,
+  "moot_justifications_still_listed": [],
+  "writer_cases": [
+    {
+      "name": "climbed_back_row_is_retired_and_recorded",
+      "pass": true,
+      "why": "The lane grew a/index.html from 800B past its 1000B ceiling. The row must leave routes, land in retired with the recovered size, and the summary counts must follow; b/index.html, still below, must be untouched.",
+      "observed": {
+        "check_before": 1,
+        "run": 0,
+        "routes": [
+          "b/index.html"
+        ],
+        "retired": [
+          "a/index.html"
+        ],
+        "counts": [
+          1,
+          0,
+          100
+        ]
+      }
+    },
+    {
+      "name": "still_below_row_is_left_alone",
+      "pass": true,
+      "why": "A ratchet may only tighten. A route still below its maximum is not touched, and a writer that rewrites an unchanged list would be a mutation with no cause.",
+      "observed": {
+        "check": 0,
+        "run": 0,
+        "unchanged": true
+      }
+    },
+    {
+      "name": "empty_list_hard_fails",
+      "pass": true,
+      "why": "An empty routes array examines nothing. Exiting 0 over it would let a truncated or never-measured list read as \"every page is at its maximum\".",
+      "observed": {
+        "check": 1,
+        "run": 1
+      }
+    },
+    {
+      "name": "nothing_on_disk_hard_fails",
+      "pass": true,
+      "why": "A list whose pages are all absent measured nothing; that is UNKNOWN, not clean, and must not be reported as \"none climbed back\".",
+      "observed": {
+        "run": 1
+      }
+    },
+    {
+      "name": "missing_list_hard_fails",
+      "pass": true,
+      "why": "No list means no ratchet. The writer must refuse rather than create an empty one.",
+      "observed": {
+        "run": 1
+      }
+    },
+    {
+      "name": "moot_justification_is_retired_floors_untouched",
+      "pass": true,
+      "why": "grew/ is back above its floor: its licence is moot and leaves. same/ still reproduces: kept. lower/ is below floor at a size the licence does not name: a NEW shrink, kept so the guard fails on it. other/ grew, and its floor must NOT rise - this mode is not the rise-only floor update.",
+      "observed": {
+        "check_before": 1,
+        "run": 0,
+        "kept": [
+          "same/index.html",
+          "lower/index.html"
+        ],
+        "retired": [
+          "grew/index.html"
+        ],
+        "routes": {
+          "grew/index.html": 900,
+          "same/index.html": 900,
+          "lower/index.html": 900,
+          "other/index.html": 500
+        }
+      }
+    },
+    {
+      "name": "baseline_with_nothing_to_measure_hard_fails",
+      "pass": true,
+      "why": "No floors, or floors with no page on disk, measured nothing; the writer must refuse rather than report \"none moot\".",
+      "observed": {
+        "empty": 1,
+        "off_disk": 1
+      }
+    }
+  ]
+}
