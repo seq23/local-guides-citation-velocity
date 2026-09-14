@@ -5500,6 +5500,51 @@
       ]
     },
     {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 600,
+      "depends_on": [],
+      "estimated_runtime_seconds": 20,
+      "id": "shrink-guard-ratchet-currency",
+      "title": "The shrink guard's allowlists are retired by a writer when a page grows back",
+      "path": "scripts/validators/validate_shrink_guard_ratchet_currency.js",
+      "command": "node scripts/validators/validate_shrink_guard_ratchet_currency.js",
+      "risk_prevented": "Prevents the content release lane from turning main red by improving a page. rendered-output-shrink-guard keeps two shrink-only allowlists - data/release/historic_page_maximum.json routes and data/release/rendered_size_baseline.json justified_shrinks - and demands a row be deleted when its page climbs back. Until 2026-09-14 nothing performed that deletion: Velocity Content Release run 34851354622 grew eight personal-injury routes past both records, self-heal found no registered repair, the repair-less failure was published under the publish-gate rule, and Validate Repo run 34858125966 went red on main on a bot commit. This validator fails on exactly the two grow-back conditions and registers `npm run ratchet:shrink-guard` as their repair, so self-heal retires the stale rows in the same commit as the growth. The writers only ever remove rows: no floor is raised or lowered, no route is added, and a justification whose page is below its floor at an unnamed size is left for the guard.",
+      "requires_files": [
+        "data/release/historic_page_maximum.json",
+        "data/release/rendered_size_baseline.json",
+        "scripts/release/retire_recovered_historic_maximum.js",
+        "scripts/release/update_rendered_size_baseline.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/shrink-guard-ratchet-currency.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/shrink-guard-ratchet-currency.json"
+      ],
+      "why_existing_checks_do_not_cover": "rendered-output-shrink-guard detects both grow-back conditions but deliberately carries no repair_command, because its third failure mode (a page below its floor) needs a human judgment and a partial repair registered against it was a proven no-op (repair-command-efficacy, run 34416882965). Splitting the two mechanical conditions into their own validator gives them a repair that is always effective against exactly what they fail on, leaves the guard's verdict untouched, and keeps a stale row that no lane retired a HARD_FAIL in Validate Repo. repair-command-efficacy proves the repair changes a file when this fails; this validator additionally proves both writers' behaviour against constructed fixtures on every run, including Rule 0 refusals on empty input.",
+      "repair_command": "npm run ratchet:shrink-guard",
+      "repair_writes": [
+        "data/release/historic_page_maximum.json",
+        "data/release/rendered_size_baseline.json"
+      ]
+    },
+    {
       "id": "rendered-programmatic-substance",
       "title": "Rendered programmatic evidence and usability gate",
       "path": "scripts/content/validate_rendered_programmatic_substance.js",
