@@ -83,6 +83,33 @@ are not valid absorbed artifacts. They must either be replaced with the real CSV
 
 Quarantine preserves the source folder for audit. It does not authorize content mutation and it does not feed release planning.
 
+## Defective Drops Are Quarantined Automatically
+
+A drop whose `agent_run_manifest.json` does not parse as a JSON object, or whose
+CSV/HTML/JSON files are not UTF-8 text, are unresolved local-fetch pointers, or (for
+`json_path`) do not parse, is a **defective drop**. It is classified in one place,
+`scripts/lib/agent_run_drop_integrity.js`, and every reader uses that classification:
+
+- `citation:prepare-velocity-intake` (the Velocity Content Release normalize step)
+  rewrites the manifest in place as `QUARANTINED` with `quarantine_reason`
+  `defective_drop: ...`, `quarantined_by`, `quarantined_at`, `defects[]`, and
+  `rejected_manifest_path`. The bytes Twin Agent delivered are moved, unchanged, to
+  `agent_run_manifest.json.rejected`; the CSV/HTML/JSON files are never rewritten.
+  The quarantine manifest is written through `writeJsonVerified`, so it cannot itself
+  be the next unparseable manifest.
+- `agent-artifact-continuity`, `agent-artifact-stranding`, `agent-run-artifact-intake`
+  and `agent-run-drop-integrity` report a defective drop inside the absorption window
+  as a NAMED pending quarantine (Validate Repo fires on the raw push before the
+  release lane has had its turn) and as a hard failure naming the file past it.
+- `count_unabsorbed_agent_runs.mjs` counts a defective drop as unabsorbed so the
+  scheduled catch-up dispatch wakes the release lane to quarantine it.
+
+Precedents: `2026-07-20/personal-injury` (byte-corrupted manifest keys and fetch
+pointers, quarantined by hand) and `2026-09-15/dentistry` (four 15-byte non-UTF-8
+blobs, quarantined by this path). Re-delivery is the same as for any quarantine:
+Twin Agent overwrites the folder with real artifacts and a `READY_FOR_ABSORPTION`
+manifest.
+
 ## Required CSV Columns
 
 Twin Agent output is treated as untrusted input evidence. CSV, HTML, JSON, and manifest fields may be incomplete, renamed, duplicated, or internally inconsistent. The repo must not let raw artifact shape leak directly into release decisions.

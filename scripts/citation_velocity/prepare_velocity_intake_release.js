@@ -11,6 +11,7 @@ const { resolveTargetPath, routeFromPath, statedFilepathFrom, canonicalizeRawTar
 const { parseManifestBundle, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
 const { auditFix } = require('../validators/validate_agent_fix_ledger_truthfulness');
 const { resolveProofPointer, routeToRenderedPath } = require('../lib/recommendation_proof_path');
+const dropIntegrity = require('../lib/agent_run_drop_integrity');
 
 const ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_TARGET = 125;
@@ -62,10 +63,12 @@ function readJson(relativePath, fallback = null) {
   if (!fs.existsSync(p)) return fallback;
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
+// Every JSON this normalizer lands in data/report_fixes or artifacts/validation is
+// read back from disk and parsed before it replaces the previous file. A manifest
+// or ledger that does not round-trip through JSON.parse never reaches the tree -
+// see scripts/lib/agent_run_drop_integrity.js for the two drops that taught this.
 function writeJson(relativePath, value) {
-  const p = rel(relativePath);
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(p, JSON.stringify(value, null, 2) + '\n');
+  dropIntegrity.writeJsonVerified(rel(relativePath), value);
 }
 function readText(relativePath) { return fs.readFileSync(rel(relativePath), 'utf8'); }
 function writeText(relativePath, value) {
@@ -153,16 +156,11 @@ function artifactErrors(manifest, manifestRel) {
     if (!manifest.quarantine_action) errors.push(`${manifestRel}:quarantined-missing-action`);
     return errors;
   }
-  for (const key of ['csv_path', 'html_path', 'json_path']) {
-    if (manifest[key] && fs.existsSync(rel(manifest[key])) && isUnresolvedLocalFetch(rel(manifest[key]))) {
-      errors.push(`${manifestRel}:unresolved-local-fetch-artifact:${manifest[key]}`);
-    }
-  }
+  // Artifact-byte defects (unresolved local-fetch pointers, non-text blobs, an
+  // unparseable json_path) are classified by dropIntegrity.inspectRunDrop in
+  // importAgentRuns. The regex that used to live here required "local://agent"
+  // while every real placeholder reads "local:/agent", so it matched nothing.
   return errors;
-}
-function isUnresolvedLocalFetch(abs) {
-  const text = fs.readFileSync(abs, 'utf8').trim();
-  return /^\{\s*"_fetchBase64"\s*:\s*"local:\/\/agent\/current\/generated\//.test(text);
 }
 function questionFromRow(row) {
   return row.Query || row.query || row['Target Query'] || row['query_target'] || row.Question || row['Recommendation Query'] || '';
@@ -435,11 +433,32 @@ function importAgentRuns() {
   const invalid = [];
   const absorbed = [];
   const skipped_by_policy = [];
+  const quarantined = [];
   for (const manifestRel of manifests) {
-    let manifest;
-    try { manifest = readJson(manifestRel); } catch (err) { invalid.push({ manifest: manifestRel, error: `invalid_json:${err.message}` }); continue; }
-    const errors = artifactErrors(manifest, manifestRel);
-    if (errors.length) { invalid.push({ manifest: manifestRel, errors }); continue; }
+    // A drop that is not a manifest, or whose artifacts are not artifacts, is not an
+    // error this lane can fix and not one it may crash on. 2026-09-15 dentistry
+    // landed four copies of a 15-byte blob; JSON.parse threw here, the lane died,
+    // and nothing could ever claim the run again because the trigger had fired.
+    // The drop is converted to a NAMED QUARANTINED manifest in place, with the
+    // delivered bytes preserved beside it, and absorption skips it by name. A
+    // manifest that parses but fails the schema below is the same writer defect
+    // and gets the same treatment; only a QUARANTINED manifest missing its own
+    // reason or action stays a hard error, because a stop must be named.
+    let inspection = dropIntegrity.inspectRunDrop(ROOT, manifestRel);
+    if (inspection.state === 'PARSED') {
+      const errors = artifactErrors(inspection.manifest, manifestRel);
+      if (errors.length && String(inspection.manifest.status) === 'QUARANTINED') { invalid.push({ manifest: manifestRel, errors }); continue; }
+      if (errors.length) inspection = { ...inspection, state: 'DEFECTIVE', defects: errors.map((e) => `manifest:schema:${e}`) };
+    }
+    if (inspection.state === 'DEFECTIVE') {
+      const result = dropIntegrity.quarantineRunDrop(ROOT, inspection, { quarantinedBy: 'scripts/citation_velocity/prepare_velocity_intake_release.js', today: DATE });
+      const row = { manifest: manifestRel, run_date: result.manifest.run_date, vertical: result.manifest.vertical, rejected_manifest_path: result.rejectedRel, defects: inspection.defects };
+      quarantined.push(row);
+      skipped_by_policy.push({ manifest: manifestRel, run_date: result.manifest.run_date, reason: 'quarantined_agent_artifacts', quarantine_reason: result.manifest.quarantine_reason });
+      console.log(`NAMED STOP: ${manifestRel} QUARANTINED as a defective drop (${inspection.defects.length} defect(s); delivered bytes kept at ${result.rejectedRel}). It is excluded from absorption until Twin Agent re-delivers real artifacts.`);
+      continue;
+    }
+    const manifest = inspection.manifest;
     if (!manifestAllowedByPolicy(manifest, policy)) {
       if (String(manifest.status) === 'QUARANTINED') skipped_by_policy.push({ manifest: manifestRel, run_date: manifest.run_date, reason: 'quarantined_agent_artifacts', quarantine_reason: manifest.quarantine_reason || '' });
       if (String(manifest.status) === 'READY_FOR_ABSORPTION') skipped_by_policy.push({ manifest: manifestRel, run_date: manifest.run_date, reason: 'before_exact_implementation_cutover' });
@@ -522,7 +541,7 @@ function importAgentRuns() {
       absorbed.push({ manifest: manifestRel, run_id: runId, record_count: records.length, normalized_path: normalizedRel, disposition: 'NORMALIZED_WITH_RAW_IMMUTABLE' });
     }
   }
-  return { manifests, normalized, invalid, absorbed, skipped_by_policy };
+  return { manifests, normalized, invalid, absorbed, skipped_by_policy, quarantined };
 }
 // Depth of the social/public backlog that is ELIGIBLE but unreleased, measured
 // independently of this run's remaining capacity.
@@ -822,7 +841,7 @@ function main() {
     '', '| Source | Operation | Vertical | Target route | Query |', '|---|---|---|---|---|',
     ...plan.selected_units.map((u) => `| ${u.source} | ${u.operation} | ${u.vertical} | ${u.target_route} | ${String(u.query).replace(/\|/g, '\\|')} |`)
   ].join('\n') + '\n');
-  writeJson('artifacts/validation/agent-run-intake.json', { schema_version: '1.1', status: 'PASS', manifests_seen: agent.manifests.length, absorbed: agent.absorbed, skipped_by_policy: agent.skipped_by_policy, blocked_count: blockedAgent.length, invalid: [], checked_at: DATE });
+  writeJson('artifacts/validation/agent-run-intake.json', { schema_version: '1.2', status: 'PASS', manifests_seen: agent.manifests.length, absorbed: agent.absorbed, skipped_by_policy: agent.skipped_by_policy, quarantined_this_run: agent.quarantined, blocked_count: blockedAgent.length, invalid: [], checked_at: DATE });
   console.log(`VELOCITY INTAKE PREP PASS: ${plan.selected_count} units (${plan.agent_selected_count} agent, ${plan.social_fallback_selected_count} social fallback, ${plan.repair_count} repairs; social_fallback_policy=${plan.social_fallback_release_policy}).`);
 }
 

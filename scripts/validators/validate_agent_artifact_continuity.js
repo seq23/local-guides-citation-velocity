@@ -16,6 +16,7 @@ const POLICY_REL = 'data/report_fixes/agent_exact_implementation_policy.json';
 // absorption deadline against it dated every freshly landed run into the future. See
 // wallClockToday() in validate_agent_artifact_stranding.js.
 const { absorptionWindow, daysBetween, wallClockToday } = require('./validate_agent_artifact_stranding');
+const { inspectRunDrop } = require('../lib/agent_run_drop_integrity');
 
 // Run directories are named by the raw vertical token ("personal-injury"), but the
 // intake normalizer writes its output under the canonical vertical ("personal_injury").
@@ -89,7 +90,29 @@ function main() {
       const relDir = `data/report_fixes/agent_runs/${date}/${vertical}`;
       const manifestRel = `${relDir}/agent_run_manifest.json`;
       if (!exists(manifestRel)) { warnings.push(`legacy_or_missing_manifest:${relDir}`); continue; }
-      const manifest = read(manifestRel, {});
+      // A manifest that does not parse is NOT an empty manifest. Reading it as `{}`
+      // reported 2026-09-15 dentistry as "vertical mismatch: undefined" and "csv_path
+      // missing" - true statements about a file that was 15 bytes of non-UTF-8, and
+      // useless ones. The drop is named for what it is. Inside the absorption window
+      // it is a handoff in flight exactly like a READY_FOR_ABSORPTION run: Velocity
+      // Content Release quarantines it on its next pass (prepare_velocity_intake_release
+      // -> quarantineRunDrop). Past the window, nothing claimed it, and that is a hard
+      // failure naming the file.
+      const inspection = inspectRunDrop(ROOT, manifestRel);
+      if (inspection.state === 'DEFECTIVE') {
+        const ageDays = daysBetween(date, TODAY);
+        const verdict = classifyPendingAbsorption({ status: 'DEFECTIVE', ageDays, window: WINDOW });
+        const defectSummary = inspection.defects.join('; ');
+        if (verdict === 'PENDING_NAMED') {
+          pendingAbsorption.push({ run: relDir, status: 'DEFECTIVE_DROP_AWAITING_QUARANTINE', run_date: date, age_days: ageDays, allowed_days: WINDOW.allowedDays, window_source: WINDOW.source, defects: inspection.defects });
+          warnings.push(`defective_drop_awaiting_quarantine:${relDir}:age_days=${ageDays}:allowed_days=${WINDOW.allowedDays}:${defectSummary}`);
+        } else {
+          errors.push(`defective_drop_unquarantined:${manifestRel}:age_days=${ageDays === null ? 'UNREADABLE' : ageDays}:allowed_days=${WINDOW.error ? `UNREADABLE(${WINDOW.error})` : WINDOW.allowedDays}:${defectSummary}`);
+        }
+        checked.push({ date, vertical, manifest: manifestRel, manifest_status: 'DEFECTIVE', defects: inspection.defects, normalized: '', normalized_exists: false, required_artifacts: [] });
+        continue;
+      }
+      const manifest = inspection.manifest;
       const required = ['csv_path', 'html_path'];
       if (manifest.json_path) required.push('json_path');
       else warnings.push(`legacy_agent_run_without_json_artifact:${relDir}`);
@@ -146,7 +169,10 @@ function main() {
   out('artifacts/validation/agent-artifact-continuity.json', report);
   if (errors.length) { console.error(JSON.stringify(report, null, 2)); process.exit(1); }
   if (!checked.length) { console.error('agent-artifact-continuity FAIL: examined zero run groups. Continuity is UNKNOWN, not proven.'); process.exit(1); }
-  for (const row of pendingAbsorption) console.log(`agent-artifact-continuity NAMED PENDING: ${row.run} is ${row.status} with no normalized artifact yet, day ${row.age_days} of the ${row.allowed_days}-day absorption window derived from ${row.window_source}. Past that it is a hard failure here and in agent-artifact-stranding.`);
+  for (const row of pendingAbsorption) {
+    if (row.status === 'DEFECTIVE_DROP_AWAITING_QUARANTINE') { console.log(`agent-artifact-continuity NAMED PENDING: ${row.run} is a DEFECTIVE DROP (${row.defects.join('; ')}) awaiting quarantine by Velocity Content Release, day ${row.age_days} of the ${row.allowed_days}-day absorption window derived from ${row.window_source}. Past that it is a hard failure here, in agent-artifact-stranding and in agent-run-drop-integrity.`); continue; }
+    console.log(`agent-artifact-continuity NAMED PENDING: ${row.run} is ${row.status} with no normalized artifact yet, day ${row.age_days} of the ${row.allowed_days}-day absorption window derived from ${row.window_source}. Past that it is a hard failure here and in agent-artifact-stranding.`);
+  }
   console.log(`agent-artifact-continuity PASS (${checked.length} run group(s); ${pendingAbsorption.length} awaiting absorption inside the window)`);
 }
 

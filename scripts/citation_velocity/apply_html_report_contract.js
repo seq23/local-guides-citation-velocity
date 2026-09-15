@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { deriveContentAtom } = require('../lib/content_atom');
+const { writeJsonVerified } = require('../lib/agent_run_drop_integrity');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
 const { parseManifestBundle, flattenRecommendation, canonicalSourceRecordId, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
@@ -39,7 +40,8 @@ function exists(p) { return fs.existsSync(rel(p)); }
 function readText(p) { return fs.readFileSync(rel(p), 'utf8'); }
 function writeText(p, value) { const out = rel(p); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, value, 'utf8'); }
 function readJson(p, fallback) { try { return JSON.parse(readText(p)); } catch { return fallback; } }
-function writeJson(p, value) { writeText(p, JSON.stringify(value, null, 2) + '\n'); }
+// Verified write: the file only replaces its predecessor once it has been read back and parsed (scripts/lib/agent_run_drop_integrity.js).
+function writeJson(p, value) { writeJsonVerified(rel(p), value); }
 function sha(value, len = 12) { return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, len); }
 function normalizeVertical(value) { const key = String(value || '').trim().toLowerCase().replace(/_/g, '-'); return verticalMap[key] || verticalMap[key.replace(/-/g, ' ')] || key; }
 function slugify(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 90) || 'citation-question'; }
@@ -495,10 +497,16 @@ function parseReports() {
   const errors = [];
   const allFixes = [];
   const allPages = [];
+  const quarantined = [];
   for (const manifestPath of manifests) {
     let manifest;
     try { manifest = readJson(manifestPath, null); } catch (err) { errors.push(`${manifestPath}:invalid_json:${err.message}`); continue; }
-    if (!manifest || !manifest.html_path) { errors.push(`${manifestPath}:missing_html_path`); continue; }
+    if (!manifest) { errors.push(`${manifestPath}:invalid_json`); continue; }
+    // A QUARANTINED run is a named stop the intake already made. Its artifacts are
+    // audit material (2026-07-20: fetch pointers; 2026-09-15: 15-byte blobs) and are
+    // not a report to parse. Skipping it is recorded by name in the report below.
+    if (String(manifest.status || '').toUpperCase() === 'QUARANTINED') { quarantined.push({ manifest_path: manifestPath, run_date: manifest.run_date || '', vertical: normalizeVertical(manifest.vertical), quarantine_reason: manifest.quarantine_reason || '' }); continue; }
+    if (!manifest.html_path) { errors.push(`${manifestPath}:missing_html_path`); continue; }
     if (!exists(manifest.html_path)) { errors.push(`${manifestPath}:html_file_missing:${manifest.html_path}`); continue; }
     const vertical = normalizeVertical(manifest.vertical);
     const context = { manifest_path: manifestPath, report_html_path: manifest.html_path, report_json_path: manifest.json_path || '', run_date: manifest.run_date, vertical };
@@ -546,7 +554,7 @@ function parseReports() {
   }
   const dedupFixes = Array.from(new Map(allFixes.map(f => [`${f.page_url}|${f.query}|${f.fix_recommendation}`, f])).values());
   const releasePages = Array.from(new Map(allPages.map(p => [`${p.vertical}|${p.query}`, p])).values());
-  return { manifests, parsed, errors, fixes: dedupFixes, pages: allPages, releasePages };
+  return { manifests, parsed, quarantined, errors, fixes: dedupFixes, pages: allPages, releasePages };
 }
 function main() {
   const discovered = parseReports();
@@ -570,6 +578,7 @@ function main() {
     generated_at: DATE,
     manifests_seen: discovered.manifests.length,
     report_summaries: discovered.parsed,
+    quarantined_manifests_skipped: discovered.quarantined,
     fixes_discovered: discovered.fixes.length,
     fixes_applied: fixed.applied,
     external_fix_records: fixed.results.filter(r => r.status === 'EXTERNAL_TARGET_RECORDED').length,
