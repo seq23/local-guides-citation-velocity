@@ -8254,6 +8254,54 @@
       "prepare_mutates_files": [],
       "enforce_no_source_mutation": true,
       "depends_on": [],
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 300,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "core",
+        "full-audit",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "agent-run-drop-integrity",
+      "title": "Every agent-run manifest and report_fixes JSON round-trips through JSON.parse; defective drops are named",
+      "path": "scripts/validators/validate_agent_run_drop_integrity.js",
+      "command": "node scripts/validators/validate_agent_run_drop_integrity.js",
+      "tags": [
+        "agent-artifact",
+        "agent-runs",
+        "citation-velocity",
+        "json-integrity",
+        "release"
+      ],
+      "risk_prevented": "On 2026-09-15 Twin Agent committed data/report_fixes/agent_runs/2026-09-15/dentistry as four copies of a 15-byte non-UTF-8 blob, one named agent_run_manifest.json. Nothing asked whether the file was a manifest before JSON.parse: prepare_velocity_intake_release.js threw and Velocity Content Release went red (run 34977580334); agent-artifact-continuity read it as {} and hard-failed Validate Repo (run 34977580273) on 'vertical mismatch: undefined'; agent-artifact-stranding skipped it in silence; count_unabsorbed_agent_runs.mjs did not count it, so no catch-up dispatch would ever retry it. 2026-07-20 personal-injury was the same writer defect (byte-corrupted keys, unresolved local-fetch pointers) and was repaired by hand three days later. This validator exercises the write-time guard (writeJsonVerified: serialize, write to a temp file, read it back, parse, rename - a failed write leaves no file and the previous file intact), checks both report_fixes JSON writers route through it, exercises the quarantine path on the real 2026-09-15 bytes and the 2026-07-20 pointer shape, classifies every landed drop (defective inside the absorption window is a NAMED pending quarantine; past it a hard failure naming the file and defects), and parses every repo-written JSON under data/report_fixes.",
+      "why_existing_checks_do_not_cover": "agent-run-artifact-intake, agent-artifact-continuity and agent-artifact-stranding each read manifests through their own JSON.parse with their own reaction to failure (crash, empty object, silent continue) and none of them examined the bytes of the artifacts a manifest names, nor any of the JSON this repo itself writes into data/report_fixes. Their unresolved-local-fetch regex also required 'local://agent' while every real placeholder reads 'local:/agent', so that guard matched nothing. Those three now classify through the shared inspector; this validator is the one that proves the inspector, the verified writer and the quarantine actually behave, and fails when it examines zero drops or zero repo-written files.",
+      "requires_files": [
+        "scripts/lib/agent_run_drop_integrity.js",
+        "scripts/citation_velocity/prepare_velocity_intake_release.js",
+        "scripts/citation_velocity/apply_html_report_contract.js",
+        "data/report_fixes/agent_runs"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-run-drop-integrity.json"
+      ],
+      "mutates_files": []
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 300,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",

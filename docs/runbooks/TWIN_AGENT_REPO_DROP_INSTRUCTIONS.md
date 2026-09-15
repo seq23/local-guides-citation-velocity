@@ -61,6 +61,16 @@ Twin Agent may write only to:
 data/report_fixes/agent_runs/**
 ```
 
+## Verify Every File Before Committing
+
+Before the commit, re-read each of the four files from disk and check:
+
+- `agent_run_manifest.json` and `<vertical>.json` parse with `JSON.parse` and are objects.
+- `<vertical>.csv` and `<vertical>.html` are UTF-8 text, and the CSV's first line is a header row.
+- None of the four files is a fetch handle, a compressed blob, or shorter than the content it is supposed to carry.
+
+If any check fails, do not commit that folder. On 2026-09-15 all four dentistry files were committed as the same 15-byte non-UTF-8 blob; on 2026-07-20 the manifest keys arrived byte-corrupted. The repo now quarantines such a drop by name and preserves the delivered bytes at `agent_run_manifest.json.rejected`, but a quarantined run is never absorbed - the measurement is lost until it is re-delivered.
+
 Twin Agent must commit the CSV, HTML, and manifest atomically in one commit. The Velocity workflow trigger is narrowed to the manifest path, so `agent_run_manifest.json` is the ready signal that tells the repo the full artifact package is present.
 
 Do not commit unresolved local-fetch placeholder files such as:
@@ -69,7 +79,7 @@ Do not commit unresolved local-fetch placeholder files such as:
 {"_fetchBase64":"local:/agent/current/generated/personal-injury.csv"}
 ```
 
-Those are pointers, not artifacts. If a run cannot include real CSV/HTML/JSON contents, mark the manifest `QUARANTINED` with `quarantine_reason` and `quarantine_action`; the repo will preserve the folder for audit and skip absorption until real artifacts are delivered.
+Those are pointers, not artifacts. If a run cannot include real CSV/HTML/JSON contents, mark the manifest `QUARANTINED` with `quarantine_reason` and `quarantine_action`; the repo will preserve the folder for audit and skip absorption until real artifacts are delivered. A drop that arrives with an unparseable manifest or non-text artifacts is quarantined by the repo itself (`quarantine_reason` starting `defective_drop:`), with the delivered manifest bytes kept beside it.
 
 Twin Agent must not edit production content, generated HTML, citation registries, page-family specs, workflow files, package files, or validation artifacts.
 

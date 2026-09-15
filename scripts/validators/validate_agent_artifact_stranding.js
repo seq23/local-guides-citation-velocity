@@ -32,6 +32,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { inspectRunDrop } = require('../lib/agent_run_drop_integrity');
 
 const ROOT = path.resolve(__dirname, '../..');
 const RUNS_REL = 'data/report_fixes/agent_runs';
@@ -157,9 +158,18 @@ function main() {
     if (!fs.statSync(dateDir).isDirectory()) continue;
     for (const vertical of fs.readdirSync(dateDir).sort()) {
       const manifestRel = `${RUNS_REL}/${date}/${vertical}/agent_run_manifest.json`;
-      let manifest;
-      try { manifest = JSON.parse(fs.readFileSync(path.join(ROOT, manifestRel), 'utf8')); } catch { continue; }
+      if (!fs.existsSync(path.join(ROOT, manifestRel))) continue;
+      // An unparseable manifest used to be `continue`d in silence - a run the writer
+      // delivered as garbage was invisible to the one guard whose job is "nothing
+      // landed goes unclaimed". It is pending like any other drop: the release lane
+      // claims it by quarantining it, and it may not sit unclaimed past the allowance.
+      const inspection = inspectRunDrop(ROOT, manifestRel);
       examined += 1;
+      if (inspection.state === 'DEFECTIVE') {
+        pending.push({ manifest: manifestRel, run_date: date, vertical, age_days: daysBetween(date, today), state: 'DEFECTIVE_DROP_AWAITING_QUARANTINE', defects: inspection.defects });
+        continue;
+      }
+      const manifest = inspection.manifest;
       if (String(manifest.status || '') !== 'READY_FOR_ABSORPTION') continue;
       // A run whose normalized artifact exists has been absorbed; the manifest status
       // is the raw drop's own word and is never rewritten in place.
@@ -169,7 +179,7 @@ function main() {
       ].some((rel) => fs.existsSync(path.join(ROOT, rel)));
       if (normalized) continue;
       const age = daysBetween(manifest.run_date || date, today);
-      pending.push({ manifest: manifestRel, run_date: manifest.run_date || date, vertical, age_days: age });
+      pending.push({ manifest: manifestRel, run_date: manifest.run_date || date, vertical, age_days: age, state: 'READY_FOR_ABSORPTION' });
     }
   }
 
@@ -196,7 +206,7 @@ function main() {
   fs.writeFileSync(path.join(ROOT, OUT_REL), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
   for (const row of stranded) {
-    console.error(`AGENT ARTIFACT STRANDING FAIL: ${row.manifest} has been READY_FOR_ABSORPTION for ${row.age_days} day(s), past the ${allowedDays}-day allowance derived from the ${cadence.days}-day schedule in ${WORKFLOW_REL}. A landed artifact is a delivery; the lane that claims it has had at least one scheduled chance and did not.`);
+    console.error(`AGENT ARTIFACT STRANDING FAIL: ${row.manifest} has been ${row.state} for ${row.age_days} day(s), past the ${allowedDays}-day allowance derived from the ${cadence.days}-day schedule in ${WORKFLOW_REL}. A landed artifact is a delivery; the lane that claims it has had at least one scheduled chance and did not.${row.defects ? ` Defects: ${row.defects.join('; ')}` : ''}`);
   }
   if (stranded.length) {
     console.error(`AGENT ARTIFACT STRANDING: FAIL - ${examined} manifest(s) examined, ${pending.length} pending, ${stranded.length} stranded. Report: ${OUT_REL}`);
