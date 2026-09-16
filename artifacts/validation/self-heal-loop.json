@@ -3,16 +3,26 @@
   "profile": "release",
   "max_attempts": 3,
   "dry_run": false,
-  "status": "NOT_CLEAN",
+  "status": "CLEAN",
   "attempts": [
     {
       "attempt": 1,
       "failed": [
+        "accepted-artifact-recovery",
         "agent-recommendation-page-application",
-        "agent-run-absorption-completeness",
-        "agent-run-delivery-coverage"
+        "agent-run-delivery-coverage",
+        "rendered-output-shrink-guard",
+        "shrink-guard-ratchet-currency"
       ],
       "repaired": [
+        {
+          "id": "accepted-artifact-recovery",
+          "cmd": "npm run recover:accepted-artifacts",
+          "code": 0,
+          "no_op": false,
+          "resolved_by_recheck": true,
+          "said": "> recover:accepted-artifacts\n> node scripts/citation_velocity/recover_accepted_page_artifacts.js\n\nACCEPTED ARTIFACT RECOVERY PASS: 2118 accepted route(s) examined; 672 route(s) carry 2507 recovered artifact(s); 0 withheld by a removal directive."
+        },
         {
           "id": "agent-recommendation-page-application",
           "cmd": "npm run recover:recommendation-page-application",
@@ -28,22 +38,26 @@
           "no_op": false,
           "resolved_by_recheck": true,
           "said": "> recover:run-delivery-coverage-ratchet\n> node scripts/validators/validate_agent_run_delivery_coverage.js --rebaseline\n\nAGENT RUN DELIVERY COVERAGE REBASELINE REFUSED: no run is unenrolled and no cap can be tightened, so this would rewrite the identical baseline and report success. Nothing to repair."
+        },
+        {
+          "id": "shrink-guard-ratchet-currency",
+          "cmd": "npm run ratchet:shrink-guard",
+          "code": 0,
+          "no_op": false,
+          "resolved_by_recheck": true,
+          "said": "> ratchet:shrink-guard\n> node scripts/release/retire_recovered_historic_maximum.js && node scripts/release/update_rendered_size_baseline.js --retire-stale-justifications\n\nHISTORIC RATCHET RETIRE PASS: 1391 of 1391 listed route(s) measured on disk; none has climbed back, so the list is unchanged.\nRENDERED SIZE BASELINE PASS: 2070 of 2070 route floor(s) on disk; 51 justified shrink(s) examined, none moot, file unchanged; 0 below floor at an unnamed size (left for the guard)."
         }
       ],
       "result": "REPAIRED_RETRYING"
     },
     {
       "attempt": 2,
-      "failed": [
-        "agent-run-absorption-completeness"
-      ],
+      "failed": [],
       "repaired": [],
-      "result": "NO_REPAIR_AVAILABLE"
+      "result": "CLEAN"
     }
   ],
   "safe_to_push": true,
   "held_gate_by": [],
-  "reported_not_blocking": [
-    "agent-run-absorption-completeness"
-  ]
+  "reported_not_blocking": []
 }
