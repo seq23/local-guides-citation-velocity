@@ -15,6 +15,7 @@
     "agent-recommendation-dist-application",
     "agent-run-absorption-completeness",
     "agent-run-delivery-coverage",
+    "agent-run-drop-integrity",
     "authority-contracts",
     "blocked-target-resolvability",
     "ci-failure-legibility",
@@ -133,6 +134,7 @@
     "agent-recommendation-dist-application",
     "agent-run-absorption-completeness",
     "agent-run-delivery-coverage",
+    "agent-run-drop-integrity",
     "authority-contracts",
     "blocked-target-resolvability",
     "ci-failure-legibility",
@@ -245,7 +247,7 @@
   "include_local": false,
   "status": "FAIL",
   "counts": {
-    "PASS": 115,
+    "PASS": 116,
     "FAIL": 1
   },
   "results": [
@@ -260,7 +262,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 68,
+      "duration_ms": 78,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -268,7 +270,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/absorption-window-agreement.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/absorption-window-agreement.log"
     },
     {
       "id": "accepted-artifact-recovery",
@@ -281,7 +283,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 494,
+      "duration_ms": 562,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -289,7 +291,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/accepted-artifact-recovery.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/accepted-artifact-recovery.log"
     },
     {
       "id": "agent-artifact-continuity",
@@ -302,7 +304,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 67,
+      "duration_ms": 145,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -310,7 +312,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-artifact-continuity.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-artifact-continuity.log"
     },
     {
       "id": "agent-artifact-stranding",
@@ -323,7 +325,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 62,
+      "duration_ms": 142,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -331,122 +333,11 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-artifact-stranding.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-artifact-stranding.log"
     },
     {
       "id": "agent-fix-ledger-truthfulness",
       "title": "A fix recorded as released is shown by its page",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 129,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-fix-ledger-truthfulness.log"
-    },
-    {
-      "id": "agent-named-target-parseability",
-      "title": "Every named repair target resolves to a page",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [
-        "agent-artifact-continuity"
-      ],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 2954,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-named-target-parseability.log"
-    },
-    {
-      "id": "agent-recommendation-page-application",
-      "title": "Every recommended page is confirmed applied by its own bytes",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 177,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-recommendation-page-application.log"
-    },
-    {
-      "id": "agent-recommendation-dist-application",
-      "title": "Every landed recommendation is still shown by the page the build PUBLISHED",
-      "status": "FAIL",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [
-        "agent-recommendation-page-application"
-      ],
-      "exit_code": 1,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 89,
-      "warning_detected": false,
-      "blocks_release": true,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": "artifacts/validation/agent-recommendation-dist-application.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-recommendation-dist-application.log"
-    },
-    {
-      "id": "agent-run-absorption-completeness",
-      "title": "Landed agent runs are absorbed, not merely wired",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [
-        "agent-artifact-continuity"
-      ],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 5494,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-run-absorption-completeness.log"
-    },
-    {
-      "id": "agent-run-delivery-coverage",
-      "title": "Per-run recommendation delivery coverage may only improve",
       "status": "PASS",
       "severity": "HARD_FAIL",
       "scope": "CONTAINER",
@@ -463,7 +354,139 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-run-delivery-coverage.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-fix-ledger-truthfulness.log"
+    },
+    {
+      "id": "agent-named-target-parseability",
+      "title": "Every named repair target resolves to a page",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [
+        "agent-artifact-continuity"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 3883,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-named-target-parseability.log"
+    },
+    {
+      "id": "agent-recommendation-page-application",
+      "title": "Every recommended page is confirmed applied by its own bytes",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 218,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-recommendation-page-application.log"
+    },
+    {
+      "id": "agent-recommendation-dist-application",
+      "title": "Every landed recommendation is still shown by the page the build PUBLISHED",
+      "status": "FAIL",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [
+        "agent-recommendation-page-application"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 109,
+      "warning_detected": false,
+      "blocks_release": true,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/agent-recommendation-dist-application.json",
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-recommendation-dist-application.log"
+    },
+    {
+      "id": "agent-run-absorption-completeness",
+      "title": "Landed agent runs are absorbed, not merely wired",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [
+        "agent-artifact-continuity"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 7295,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-run-absorption-completeness.log"
+    },
+    {
+      "id": "agent-run-delivery-coverage",
+      "title": "Per-run recommendation delivery coverage may only improve",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 183,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-run-delivery-coverage.log"
+    },
+    {
+      "id": "agent-run-drop-integrity",
+      "title": "Every agent-run manifest and report_fixes JSON round-trips through JSON.parse; defective drops are named",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 418,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-run-drop-integrity.log"
     },
     {
       "id": "authority-contracts",
@@ -476,7 +499,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 55,
+      "duration_ms": 64,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -484,7 +507,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/authority-contracts.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/authority-contracts.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/authority-contracts.log"
     },
     {
       "id": "blocked-target-resolvability",
@@ -497,7 +520,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 114,
+      "duration_ms": 133,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -505,7 +528,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/blocked-target-resolvability.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/blocked-target-resolvability.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/blocked-target-resolvability.log"
     },
     {
       "id": "ci-failure-legibility",
@@ -518,7 +541,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 57,
+      "duration_ms": 65,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -526,7 +549,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/ci-failure-legibility.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/ci-failure-legibility.log"
     },
     {
       "id": "ci-health-lane-coverage",
@@ -539,7 +562,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 55,
+      "duration_ms": 63,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -547,7 +570,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/ci-health-lane-coverage.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/ci-health-lane-coverage.log"
     },
     {
       "id": "clock-source-independence",
@@ -560,7 +583,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 111517,
+      "duration_ms": 149087,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -568,7 +591,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/clock-source-independence.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/clock-source-independence.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/clock-source-independence.log"
     },
     {
       "id": "generator-instruction-refusal",
@@ -581,7 +604,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 62,
+      "duration_ms": 76,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -589,7 +612,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/generator-instruction-refusal.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/generator-instruction-refusal.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/generator-instruction-refusal.log"
     },
     {
       "id": "historic-artifact-recovery",
@@ -602,7 +625,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 301,
+      "duration_ms": 346,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -610,7 +633,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/historic-artifact-recovery.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/historic-artifact-recovery.log"
     },
     {
       "id": "intake-plan-regeneration",
@@ -623,7 +646,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 54,
+      "duration_ms": 65,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -631,7 +654,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/intake-plan-regeneration.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/intake-plan-regeneration.log"
     },
     {
       "id": "internal-link-inbound-coverage",
@@ -644,7 +667,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 338,
+      "duration_ms": 435,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -652,478 +675,11 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/internal-link-inbound-coverage.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/internal-link-inbound-coverage.log"
     },
     {
       "id": "lane-accepted-artifact-regen-reach",
       "title": "A page-publish is followed by a repair before the next accepted-artifact-recovery check",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 59,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/lane-accepted-artifact-regen-reach.log"
-    },
-    {
-      "id": "lane-git-history-depth",
-      "title": "A lane that reads git history checks out git history",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 130,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/lane-git-history-depth.log"
-    },
-    {
-      "id": "ledger-reresolution",
-      "title": "The implementation ledger agrees with the route resolver",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 2992,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/ledger-reresolution.log"
-    },
-    {
-      "id": "llm-citation-observation-integrity",
-      "title": "LLM citation observation freshness, status and reading ratchet",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 58,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/llm-citation-observation-integrity.log"
-    },
-    {
-      "id": "main-writer-ordering",
-      "title": "The sitemap is derived after the registry it reads, and every main writer shares one lock",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 58,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": "artifacts/validation/main-writer-ordering.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/main-writer-ordering.log"
-    },
-    {
-      "id": "medical-schema-emission",
-      "title": "MedicalWebPage and PriceSpecification are emitted and match the page",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 197,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/medical-schema-emission.log"
-    },
-    {
-      "id": "mutation-scope-acceptance",
-      "title": "A thawed route may not be re-frozen having lost delivered content",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 180,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/mutation-scope-acceptance.log"
-    },
-    {
-      "id": "occupancy-control-separation",
-      "title": "Citation-occupancy control separation and open-bucket integrity",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 74,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/occupancy-control-separation.log"
-    },
-    {
-      "id": "occupancy-probe-contract",
-      "title": "Citation-occupancy probe contract",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 61,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/occupancy-probe-contract.log"
-    },
-    {
-      "id": "occupancy-reading-ratchet",
-      "title": "Occupancy measurement file may not shrink",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 84,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": "artifacts/validation/occupancy-reading-ratchet.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/occupancy-reading-ratchet.log"
-    },
-    {
-      "id": "operator-doc-currency",
-      "title": "Operator documentation still describes this repository",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 102,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/operator-doc-currency.log"
-    },
-    {
-      "id": "portfolio-kpi-truth",
-      "title": "Portfolio 100K surfacing KPI truth contract",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 57,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": "artifacts/validation/portfolio-kpi-truth.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/portfolio-kpi-truth.log"
-    },
-    {
-      "id": "promoted-route-inbound-link",
-      "title": "The release that publishes a page is the release that links it",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 348,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/promoted-route-inbound-link.log"
-    },
-    {
-      "id": "published-inventory-stability",
-      "title": "The published inventory stamp does not fight between lanes",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 125,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": "artifacts/validation/published-inventory-stability.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/published-inventory-stability.log"
-    },
-    {
-      "id": "push-after-rebase-revalidates",
-      "title": "A lane may not push a tree it did not validate",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 55,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/push-after-rebase-revalidates.log"
-    },
-    {
-      "id": "query-atlas",
-      "title": "Query atlas evidence gate",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 56,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/query-atlas.log"
-    },
-    {
-      "id": "atlas-unit-contract",
-      "title": "Query atlas demand-unit contract",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [
-        "query-atlas"
-      ],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 75,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/atlas-unit-contract.log"
-    },
-    {
-      "id": "atlas-release-join",
-      "title": "Measured demand to release-queue join",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [
-        "query-atlas",
-        "atlas-unit-contract"
-      ],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 60,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/atlas-release-join.log"
-    },
-    {
-      "id": "release-isolation-contract",
-      "title": "Per-unit release isolation never becomes suppression",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 974,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": "artifacts/validation/release-isolation-contract.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/release-isolation-contract.log"
-    },
-    {
-      "id": "release-lane-heals-before-push",
-      "title": "Every push surface in the release lane heals, then proves it unhealed",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 54,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/release-lane-heals-before-push.log"
-    },
-    {
-      "id": "removal-directive-not-published",
-      "title": "A phrase a report asked to delete is not published",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 109,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/removal-directive-not-published.log"
-    },
-    {
-      "id": "rendered-output-shrink-guard",
-      "title": "No page loses content without a named reason",
-      "status": "PASS",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "tier": "Tier 1",
-      "depends_on": [],
-      "exit_code": 0,
-      "signal": null,
-      "timed_out": false,
-      "duration_ms": 83,
-      "warning_detected": false,
-      "blocks_release": false,
-      "missing_outputs": [],
-      "source_mutations": [],
-      "forbidden_source_mutations": [],
-      "prepare_results": [],
-      "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/rendered-output-shrink-guard.log"
-    },
-    {
-      "id": "rich-block-contract-link",
-      "title": "The rich-page generator emits every block role the contract requires",
       "status": "PASS",
       "severity": "HARD_FAIL",
       "scope": "CONTAINER",
@@ -1139,8 +695,475 @@
       "source_mutations": [],
       "forbidden_source_mutations": [],
       "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/lane-accepted-artifact-regen-reach.log"
+    },
+    {
+      "id": "lane-git-history-depth",
+      "title": "A lane that reads git history checks out git history",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 141,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/lane-git-history-depth.log"
+    },
+    {
+      "id": "ledger-reresolution",
+      "title": "The implementation ledger agrees with the route resolver",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 3998,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/ledger-reresolution.log"
+    },
+    {
+      "id": "llm-citation-observation-integrity",
+      "title": "LLM citation observation freshness, status and reading ratchet",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 64,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/llm-citation-observation-integrity.log"
+    },
+    {
+      "id": "main-writer-ordering",
+      "title": "The sitemap is derived after the registry it reads, and every main writer shares one lock",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 63,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/main-writer-ordering.json",
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/main-writer-ordering.log"
+    },
+    {
+      "id": "medical-schema-emission",
+      "title": "MedicalWebPage and PriceSpecification are emitted and match the page",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 240,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/medical-schema-emission.log"
+    },
+    {
+      "id": "mutation-scope-acceptance",
+      "title": "A thawed route may not be re-frozen having lost delivered content",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 207,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/mutation-scope-acceptance.log"
+    },
+    {
+      "id": "occupancy-control-separation",
+      "title": "Citation-occupancy control separation and open-bucket integrity",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 86,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/occupancy-control-separation.log"
+    },
+    {
+      "id": "occupancy-probe-contract",
+      "title": "Citation-occupancy probe contract",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 70,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/occupancy-probe-contract.log"
+    },
+    {
+      "id": "occupancy-reading-ratchet",
+      "title": "Occupancy measurement file may not shrink",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 66,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/occupancy-reading-ratchet.json",
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/occupancy-reading-ratchet.log"
+    },
+    {
+      "id": "operator-doc-currency",
+      "title": "Operator documentation still describes this repository",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 79,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/operator-doc-currency.log"
+    },
+    {
+      "id": "portfolio-kpi-truth",
+      "title": "Portfolio 100K surfacing KPI truth contract",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 62,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/portfolio-kpi-truth.json",
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/portfolio-kpi-truth.log"
+    },
+    {
+      "id": "promoted-route-inbound-link",
+      "title": "The release that publishes a page is the release that links it",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 433,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/promoted-route-inbound-link.log"
+    },
+    {
+      "id": "published-inventory-stability",
+      "title": "The published inventory stamp does not fight between lanes",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 142,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/published-inventory-stability.json",
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/published-inventory-stability.log"
+    },
+    {
+      "id": "push-after-rebase-revalidates",
+      "title": "A lane may not push a tree it did not validate",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 64,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/push-after-rebase-revalidates.log"
+    },
+    {
+      "id": "query-atlas",
+      "title": "Query atlas evidence gate",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 64,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/query-atlas.log"
+    },
+    {
+      "id": "atlas-unit-contract",
+      "title": "Query atlas demand-unit contract",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [
+        "query-atlas"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 89,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/atlas-unit-contract.log"
+    },
+    {
+      "id": "atlas-release-join",
+      "title": "Measured demand to release-queue join",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [
+        "query-atlas",
+        "atlas-unit-contract"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 76,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/atlas-release-join.log"
+    },
+    {
+      "id": "release-isolation-contract",
+      "title": "Per-unit release isolation never becomes suppression",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 1143,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": "artifacts/validation/release-isolation-contract.json",
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/release-isolation-contract.log"
+    },
+    {
+      "id": "release-lane-heals-before-push",
+      "title": "Every push surface in the release lane heals, then proves it unhealed",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 61,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/release-lane-heals-before-push.log"
+    },
+    {
+      "id": "removal-directive-not-published",
+      "title": "A phrase a report asked to delete is not published",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 128,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/removal-directive-not-published.log"
+    },
+    {
+      "id": "rendered-output-shrink-guard",
+      "title": "No page loses content without a named reason",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 99,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
+      "evidence_file": null,
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/rendered-output-shrink-guard.log"
+    },
+    {
+      "id": "rich-block-contract-link",
+      "title": "The rich-page generator emits every block role the contract requires",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 1",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 80,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [],
       "evidence_file": "artifacts/validation/rich-block-contract-link.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/rich-block-contract-link.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/rich-block-contract-link.log"
     },
     {
       "id": "rich-new-page-contract",
@@ -1153,7 +1176,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 452,
+      "duration_ms": 496,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1161,7 +1184,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/rich-new-page-contract.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/rich-new-page-contract.log"
     },
     {
       "id": "route-topic-quality",
@@ -1174,7 +1197,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 180,
+      "duration_ms": 220,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1182,7 +1205,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/route-topic-quality.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/route-topic-quality.log"
     },
     {
       "id": "semantic-acceptance-refusal-legibility",
@@ -1195,7 +1218,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 89,
+      "duration_ms": 103,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1203,7 +1226,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/semantic-acceptance-refusal-legibility.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/semantic-acceptance-refusal-legibility.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/semantic-acceptance-refusal-legibility.log"
     },
     {
       "id": "shrink-guard-ratchet-currency",
@@ -1216,7 +1239,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 358,
+      "duration_ms": 415,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1224,7 +1247,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/shrink-guard-ratchet-currency.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/shrink-guard-ratchet-currency.log"
     },
     {
       "id": "store-clock-independence",
@@ -1237,7 +1260,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 100492,
+      "duration_ms": 132367,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1245,7 +1268,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/store-clock-independence.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/store-clock-independence.log"
     },
     {
       "id": "strategy-gate",
@@ -1258,7 +1281,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 56,
+      "duration_ms": 70,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1266,7 +1289,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/strategy-gate.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/strategy-gate.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/strategy-gate.log"
     },
     {
       "id": "local-guides-tree-hygiene",
@@ -1281,7 +1304,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 723,
+      "duration_ms": 923,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1289,7 +1312,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/local-guides-tree-hygiene.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/local-guides-tree-hygiene.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/local-guides-tree-hygiene.log"
     },
     {
       "id": "unbuilt-backlog-admission",
@@ -1304,7 +1327,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 237,
+      "duration_ms": 297,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1312,7 +1335,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/unbuilt-backlog-admission.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/unbuilt-backlog-admission.log"
     },
     {
       "id": "uscis-authority-grounding-coverage",
@@ -1325,7 +1348,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 30519,
+      "duration_ms": 40595,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1333,7 +1356,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/uscis-authority-grounding-coverage.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/uscis-authority-grounding-coverage.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/uscis-authority-grounding-coverage.log"
     },
     {
       "id": "validation-lane-repairs-nothing",
@@ -1346,7 +1369,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 772,
+      "duration_ms": 963,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1354,7 +1377,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/validation-lane-repairs-nothing.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/validation-lane-repairs-nothing.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/validation-lane-repairs-nothing.log"
     },
     {
       "id": "validation-policy",
@@ -1367,7 +1390,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 59,
+      "duration_ms": 69,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1375,7 +1398,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/validation-policy.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/validation-policy.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/validation-policy.log"
     },
     {
       "id": "validation-registry",
@@ -1388,7 +1411,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 129,
+      "duration_ms": 154,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1396,7 +1419,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/validation-registry.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/validation-registry.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/validation-registry.log"
     },
     {
       "id": "workflow-yaml-inventory",
@@ -1409,7 +1432,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 54,
+      "duration_ms": 64,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1423,7 +1446,7 @@
         }
       ],
       "evidence_file": "artifacts/validation/workflow-yaml-inventory-validation.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/workflow-yaml-inventory.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/workflow-yaml-inventory.log"
     },
     {
       "id": "workflow-topology",
@@ -1438,7 +1461,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 56,
+      "duration_ms": 68,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1446,7 +1469,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-topology.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/workflow-topology.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/workflow-topology.log"
     },
     {
       "id": "workflow-yaml-syntax",
@@ -1459,7 +1482,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 135,
+      "duration_ms": 172,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1467,7 +1490,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-yaml-syntax.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/workflow-yaml-syntax.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/workflow-yaml-syntax.log"
     },
     {
       "id": "canonical-domains",
@@ -1480,7 +1503,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 828,
+      "duration_ms": 986,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1488,7 +1511,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/canonical-domains.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/canonical-domains.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/canonical-domains.log"
     },
     {
       "id": "monitor-ledger",
@@ -1501,7 +1524,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 59,
+      "duration_ms": 74,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1509,7 +1532,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/monitor-ledger.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/monitor-ledger.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/monitor-ledger.log"
     },
     {
       "id": "no-double-vertical-slugs",
@@ -1522,7 +1545,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 476,
+      "duration_ms": 608,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1536,7 +1559,7 @@
         }
       ],
       "evidence_file": "artifacts/validation/no-double-vertical-slugs.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/no-double-vertical-slugs.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/no-double-vertical-slugs.log"
     },
     {
       "id": "vertical-keys",
@@ -1549,7 +1572,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 287,
+      "duration_ms": 369,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1557,7 +1580,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/vertical-keys.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/vertical-keys.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/vertical-keys.log"
     },
     {
       "id": "archive-schema",
@@ -1570,7 +1593,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 63,
+      "duration_ms": 77,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1578,7 +1601,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/archive-schema.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/archive-schema.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/archive-schema.log"
     },
     {
       "id": "evidence-registry",
@@ -1591,7 +1614,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 142,
+      "duration_ms": 178,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1599,7 +1622,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/evidence-registry.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/evidence-registry.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/evidence-registry.log"
     },
     {
       "id": "insights",
@@ -1612,7 +1635,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 258,
+      "duration_ms": 356,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1620,7 +1643,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/insights.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/insights.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/insights.log"
     },
     {
       "id": "live-hubs",
@@ -1633,7 +1656,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 127,
+      "duration_ms": 177,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1641,7 +1664,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/live-hubs.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/live-hubs.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/live-hubs.log"
     },
     {
       "id": "medium-articles",
@@ -1654,7 +1677,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 62,
+      "duration_ms": 74,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1662,7 +1685,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/medium-articles.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/medium-articles.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/medium-articles.log"
     },
     {
       "id": "agent-run-artifact-intake",
@@ -1675,7 +1698,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 107,
+      "duration_ms": 176,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1683,7 +1706,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-run-artifact-intake.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-run-artifact-intake.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-run-artifact-intake.log"
     },
     {
       "id": "agent-exact-implementation-plan",
@@ -1698,7 +1721,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 61,
+      "duration_ms": 68,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1706,7 +1729,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-implementation-plan.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-exact-implementation-plan.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-exact-implementation-plan.log"
     },
     {
       "id": "carried-reason-truthfulness",
@@ -1721,7 +1744,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 74,
+      "duration_ms": 90,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1729,7 +1752,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/carried-reason-truthfulness.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/carried-reason-truthfulness.log"
     },
     {
       "id": "agent-exact-implementation-trace",
@@ -1744,7 +1767,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 373,
+      "duration_ms": 453,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1752,7 +1775,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/agent-exact-implementation-trace.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/agent-exact-implementation-trace.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/agent-exact-implementation-trace.log"
     },
     {
       "id": "trace-outcome-legibility",
@@ -1767,7 +1790,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 62,
+      "duration_ms": 74,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1775,7 +1798,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/trace-outcome-legibility.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/trace-outcome-legibility.log"
     },
     {
       "id": "citation-velocity-master-plan",
@@ -1790,7 +1813,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 107,
+      "duration_ms": 135,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1798,7 +1821,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/citation-velocity.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/citation-velocity-master-plan.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/citation-velocity-master-plan.log"
     },
     {
       "id": "frozen-content-recoverability",
@@ -1811,7 +1834,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 335,
+      "duration_ms": 452,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1819,7 +1842,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/frozen-content-recoverability.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/frozen-content-recoverability.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/frozen-content-recoverability.log"
     },
     {
       "id": "homepage-request-assistance",
@@ -1832,7 +1855,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 54,
+      "duration_ms": 65,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1840,7 +1863,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/homepage-request-assistance.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/homepage-request-assistance.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/homepage-request-assistance.log"
     },
     {
       "id": "homepage-schema",
@@ -1853,7 +1876,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 60,
+      "duration_ms": 76,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1861,7 +1884,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/homepage-schema.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/homepage-schema.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/homepage-schema.log"
     },
     {
       "id": "html-report-contract",
@@ -1876,7 +1899,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 76,
+      "duration_ms": 94,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1884,7 +1907,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/html-report-contract-validation.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/html-report-contract.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/html-report-contract.log"
     },
     {
       "id": "insights-manifest",
@@ -1897,7 +1920,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 3713,
+      "duration_ms": 5204,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1905,7 +1928,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/insights-manifest.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/insights-manifest.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/insights-manifest.log"
     },
     {
       "id": "page-record-identity",
@@ -1918,7 +1941,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 185,
+      "duration_ms": 252,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1926,7 +1949,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/page-record-identity.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/page-record-identity.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/page-record-identity.log"
     },
     {
       "id": "programmatic-substance",
@@ -1939,7 +1962,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 756,
+      "duration_ms": 958,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1947,7 +1970,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/programmatic-substance.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/programmatic-substance.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/programmatic-substance.log"
     },
     {
       "id": "generated-content-gate",
@@ -1962,7 +1985,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 1492,
+      "duration_ms": 1989,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1970,7 +1993,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/generated-content-gate.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/generated-content-gate.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/generated-content-gate.log"
     },
     {
       "id": "rendered-programmatic-substance",
@@ -1985,7 +2008,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 631,
+      "duration_ms": 868,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -1993,7 +2016,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/rendered-programmatic-substance.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/rendered-programmatic-substance.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/rendered-programmatic-substance.log"
     },
     {
       "id": "admission-reachability",
@@ -2006,7 +2029,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 154,
+      "duration_ms": 189,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2014,7 +2037,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/admission-reachability.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/admission-reachability.log"
     },
     {
       "id": "canonical-routing-law",
@@ -2027,7 +2050,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 148,
+      "duration_ms": 194,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2035,7 +2058,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/canonical-routing-law.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/canonical-routing-law.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/canonical-routing-law.log"
     },
     {
       "id": "executable-bits",
@@ -2048,7 +2071,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 58,
+      "duration_ms": 74,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2056,7 +2079,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/executable-bits.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/executable-bits.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/executable-bits.log"
     },
     {
       "id": "generated-page-substance",
@@ -2069,7 +2092,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 228,
+      "duration_ms": 290,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2077,7 +2100,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/generated-page-substance.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/generated-page-substance.log"
     },
     {
       "id": "model-name-free-routes",
@@ -2090,7 +2113,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 301,
+      "duration_ms": 375,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2098,7 +2121,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/model-name-free-routes.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/model-name-free-routes.log"
     },
     {
       "id": "network-crawler-contract",
@@ -2111,7 +2134,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 140,
+      "duration_ms": 182,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2119,7 +2142,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/network-crawler-contract.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/network-crawler-contract.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/network-crawler-contract.log"
     },
     {
       "id": "promotion-candidates-feed",
@@ -2132,7 +2155,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 57,
+      "duration_ms": 66,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2140,7 +2163,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/promotion-candidates-feed.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/promotion-candidates-feed.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/promotion-candidates-feed.log"
     },
     {
       "id": "publish-inventory",
@@ -2153,7 +2176,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 111,
+      "duration_ms": 135,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2161,7 +2184,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/publish-inventory.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/publish-inventory.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/publish-inventory.log"
     },
     {
       "id": "full-scope-overhaul",
@@ -2178,7 +2201,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 246,
+      "duration_ms": 328,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2186,7 +2209,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/full-scope-overhaul.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/full-scope-overhaul.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/full-scope-overhaul.log"
     },
     {
       "id": "page-release-law",
@@ -2202,7 +2225,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 289,
+      "duration_ms": 366,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2210,7 +2233,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/page-release-law.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/page-release-law.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/page-release-law.log"
     },
     {
       "id": "content-pattern-contract",
@@ -2225,7 +2248,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 1016,
+      "duration_ms": 1298,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2233,7 +2256,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/content-pattern-contract.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/content-pattern-contract.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/content-pattern-contract.log"
     },
     {
       "id": "no-internal-instruction-leak",
@@ -2248,7 +2271,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 910,
+      "duration_ms": 1105,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2256,7 +2279,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/internal-instruction-leak.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/no-internal-instruction-leak.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/no-internal-instruction-leak.log"
     },
     {
       "id": "rendered-template-scaffolding",
@@ -2271,7 +2294,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 521,
+      "duration_ms": 632,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2279,7 +2302,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/rendered-template-scaffolding.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/rendered-template-scaffolding.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/rendered-template-scaffolding.log"
     },
     {
       "id": "frozen-output-integrity",
@@ -2294,7 +2317,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 287,
+      "duration_ms": 343,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2302,7 +2325,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/frozen-output-integrity.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/frozen-output-integrity.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/frozen-output-integrity.log"
     },
     {
       "id": "vertical-topic-admission",
@@ -2317,7 +2340,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 157,
+      "duration_ms": 197,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2325,7 +2348,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/vertical-topic-admission.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/vertical-topic-admission.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/vertical-topic-admission.log"
     },
     {
       "id": "render-integrity",
@@ -2338,7 +2361,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 366,
+      "duration_ms": 498,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2346,7 +2369,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/render-integrity.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/render-integrity.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/render-integrity.log"
     },
     {
       "id": "rendered-internal-hrefs",
@@ -2359,7 +2382,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 514,
+      "duration_ms": 615,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2367,7 +2390,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/hrefs.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/rendered-internal-hrefs.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/rendered-internal-hrefs.log"
     },
     {
       "id": "rendered-route-admission-parity",
@@ -2380,7 +2403,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 91,
+      "duration_ms": 106,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2388,7 +2411,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/rendered-route-admission-parity.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/rendered-route-admission-parity.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/rendered-route-admission-parity.log"
     },
     {
       "id": "sitemap-parity",
@@ -2401,7 +2424,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 86,
+      "duration_ms": 97,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2409,7 +2432,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/sitemap-parity.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/sitemap-parity.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/sitemap-parity.log"
     },
     {
       "id": "demand-backed-pages",
@@ -2425,7 +2448,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 199,
+      "duration_ms": 242,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2433,7 +2456,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/demand-backed-pages.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/demand-backed-pages.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/demand-backed-pages.log"
     },
     {
       "id": "unbuilt-backlog-drain",
@@ -2446,7 +2469,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 55,
+      "duration_ms": 65,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2454,7 +2477,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": null,
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/unbuilt-backlog-drain.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/unbuilt-backlog-drain.log"
     },
     {
       "id": "workflow-data-trace",
@@ -2469,7 +2492,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 56,
+      "duration_ms": 66,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2477,7 +2500,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow-data-trace.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/workflow-data-trace.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/workflow-data-trace.log"
     },
     {
       "id": "velocity-only-overhaul",
@@ -2494,7 +2517,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 620,
+      "duration_ms": 722,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2502,7 +2525,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/velocity-only-overhaul.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/velocity-only-overhaul.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/velocity-only-overhaul.log"
     },
     {
       "id": "content-safety",
@@ -2515,7 +2538,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 134,
+      "duration_ms": 165,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2523,7 +2546,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/safety.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/content-safety.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/content-safety.log"
     },
     {
       "id": "strategy-integrity-contract",
@@ -2540,7 +2563,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 1276,
+      "duration_ms": 1457,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2548,7 +2571,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/strategy-integrity-contract.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/strategy-integrity-contract.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/strategy-integrity-contract.log"
     },
     {
       "id": "browser-contract",
@@ -2561,7 +2584,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 55,
+      "duration_ms": 63,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2569,7 +2592,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/browser-contract.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/browser-contract.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/browser-contract.log"
     },
     {
       "id": "ui-test-parity",
@@ -2584,7 +2607,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 56,
+      "duration_ms": 66,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2592,7 +2615,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/ui-test-parity.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/ui-test-parity.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/ui-test-parity.log"
     },
     {
       "id": "no-conflict-markers",
@@ -2605,7 +2628,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 628,
+      "duration_ms": 777,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2613,7 +2636,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/no-conflict-markers.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/no-conflict-markers.log"
     },
     {
       "id": "publish-gate-unblockable",
@@ -2626,7 +2649,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 60,
+      "duration_ms": 73,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2634,7 +2657,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/publish-gate-unblockable.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/publish-gate-unblockable.log"
     },
     {
       "id": "publish-step-bounded",
@@ -2647,7 +2670,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 54,
+      "duration_ms": 66,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2655,7 +2678,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/publish-step-bounded.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/publish-step-bounded.log"
     },
     {
       "id": "self-heal-repair-contract",
@@ -2668,7 +2691,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 58,
+      "duration_ms": 71,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2676,7 +2699,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/self-heal-repair-contract.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/self-heal-repair-contract.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/self-heal-repair-contract.log"
     },
     {
       "id": "self-heal-commit-coverage",
@@ -2691,7 +2714,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 68,
+      "duration_ms": 82,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2699,7 +2722,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/self-heal-commit-coverage.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/self-heal-commit-coverage.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/self-heal-commit-coverage.log"
     },
     {
       "id": "lane-validation-pass-budget",
@@ -2715,7 +2738,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 55,
+      "duration_ms": 68,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2723,7 +2746,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/lane-validation-pass-budget.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/lane-validation-pass-budget.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/lane-validation-pass-budget.log"
     },
     {
       "id": "workflow-contract",
@@ -2738,7 +2761,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 58,
+      "duration_ms": 69,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2746,7 +2769,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/workflow.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/workflow-contract.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/workflow-contract.log"
     },
     {
       "id": "velocity-intake-workflow",
@@ -2761,7 +2784,7 @@
       "exit_code": 0,
       "signal": null,
       "timed_out": false,
-      "duration_ms": 56,
+      "duration_ms": 64,
       "warning_detected": false,
       "blocks_release": false,
       "missing_outputs": [],
@@ -2769,7 +2792,7 @@
       "forbidden_source_mutations": [],
       "prepare_results": [],
       "evidence_file": "artifacts/validation/velocity-intake-workflow.json",
-      "log": "artifacts/validation/runtime/2026-09-15-gh34938428027-1/velocity-intake-workflow.log"
+      "log": "artifacts/validation/runtime/2026-09-16-gh35065244541-1/velocity-intake-workflow.log"
     }
   ]
 }
