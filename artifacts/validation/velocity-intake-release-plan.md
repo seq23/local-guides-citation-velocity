@@ -1,19 +1,27 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-09-15
+Release date: 2026-09-16
 Target publish units: 164
-Selected units: 12
-Twin agent units: 12
+Selected units: 20
+Twin agent units: 20
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 152
+Social fallback suppressed: 144
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 9
+Repair units: 17
 New page units: 3
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | what is scrotal cream and is it more effective than standard trt gel |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/best-top-near-me/index.html | best TRT clinic near me |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/labs-dosing/index.html | TRT monitoring what labs matter |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/clinic-selection/index.html | can enclomiphene raise my testosterone without shutting down natural production |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/safety-red-flags/index.html | does testosterone therapy raise blood pressure |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/side-effects-monitoring/index.html | what is scrotal cream and is it more effective than standard trt gel |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/fertility-pct/index.html | trt vs enclomiphene which is better for a 30 year old with low t |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/cost-insurance/index.html | does insurance cover testosterone replacement therapy |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | how much does the i-693 medical exam cost in 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/index.html | can i go to my regular family doctor for the uscis medical exam |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | truck accident lawyer near me how to choose |
