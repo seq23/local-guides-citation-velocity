@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 'use strict';
+// The probes below are awaited (scripts/validation/probe_pool.js), so the body runs in an async scope.
+(async () => {
 /**
  * SOURCE_DATE IS NOT THE CLOCK.
  *
@@ -76,7 +78,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { runProbes, writeSetOf, defaultConcurrency, assertPoolContract } = require('../validation/probe_pool');
 
 const ROOT = path.resolve(__dirname, '../..');
 const OUT_REL = 'artifacts/validation/clock-source-independence.json';
@@ -140,7 +142,7 @@ for (const v of validators) {
     unprobed.push({ id: v.id, estimated_runtime_seconds: budget, reason: `declared runtime ${budget}s exceeds the ${PROBE_BUDGET_SECONDS}s probe budget` });
     continue;
   }
-  enrolled.push({ id: v.id, command: v.command, path: v.path });
+  enrolled.push({ id: v.id, command: v.command, path: v.path, writes: writeSetOf(v) });
 }
 
 if (!enrolled.length) {
@@ -154,17 +156,21 @@ if (!enrolled.length) {
 
 const errors = [];
 const checked = [];
-for (const item of enrolled) {
-  const wallEnv = { ...process.env, NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3072' };
-  delete wallEnv.SOURCE_DATE;
-  delete wallEnv.RELEASE_DATE;
-  const wall = spawnSync(item.command, { cwd: ROOT, shell: true, encoding: 'utf8', env: wallEnv });
-  const staged = spawnSync(item.command, {
-    cwd: ROOT,
-    shell: true,
-    encoding: 'utf8',
-    env: { ...wallEnv, SOURCE_DATE: releaseDate },
-  });
+// Items run concurrently through the probe pool (scripts/validation/probe_pool.js)
+// only when their declared write sets are disjoint; the two probes of one item stay
+// sequential. Sequential probing cost ~210s on a CI runner and set the floor under
+// every shard of the merge gate. The verdict per item is unchanged.
+const wallEnv = { ...process.env, NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3072' };
+delete wallEnv.SOURCE_DATE;
+delete wallEnv.RELEASE_DATE;
+await assertPoolContract();
+const probed = await runProbes(
+  enrolled.map((item) => ({ key: item.id, command: item.command, writes: item.writes, probes: [{ env: wallEnv }, { env: { ...wallEnv, SOURCE_DATE: releaseDate } }] })),
+  { cwd: ROOT },
+);
+for (let i = 0; i < enrolled.length; i++) {
+  const item = enrolled[i];
+  const [wall, staged] = probed[i].results;
   const wallCode = wall.status === null ? 1 : wall.status;
   const stagedCode = staged.status === null ? 1 : staged.status;
   const independent = wallCode === stagedCode;
@@ -187,6 +193,7 @@ const report = {
   enrolment_rule: 'every ACTIVE validator whose own source mentions SOURCE_DATE',
   probe: { wall_clock: 'SOURCE_DATE and RELEASE_DATE unset', source_date: releaseDate, source_of_source_date: 'readReleaseDate() in scripts/release/run_staged_release.js' },
   probe_budget_seconds: PROBE_BUDGET_SECONDS,
+  probe_concurrency: defaultConcurrency(),
   probed_count: checked.length,
   unprobed_over_budget: unprobed,
   checked,
@@ -207,3 +214,4 @@ console.log(
     ? `${unprobed.length} over the ${PROBE_BUDGET_SECONDS}s probe budget and NOT probed: ${unprobed.map((u) => `${u.id} (${u.estimated_runtime_seconds}s)`).join(', ')}.`
     : 'None were over the probe budget.'),
 );
+})().catch((error) => { console.error(error && error.stack ? error.stack : String(error)); process.exit(1); });
