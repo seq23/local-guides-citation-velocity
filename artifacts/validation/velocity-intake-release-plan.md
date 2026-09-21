@@ -1,30 +1,33 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-09-16
+Release date: 2026-09-21
 Target publish units: 164
-Selected units: 20
-Twin agent units: 20
+Selected units: 23
+Twin agent units: 23
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 144
+Social fallback suppressed: 141
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 17
+Repair units: 20
 New page units: 3
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | what is scrotal cream and is it more effective than standard trt gel |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/best-top-near-me/index.html | best TRT clinic near me |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/labs-dosing/index.html | TRT monitoring what labs matter |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/clinic-selection/index.html | can enclomiphene raise my testosterone without shutting down natural production |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/safety-red-flags/index.html | does testosterone therapy raise blood pressure |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/side-effects-monitoring/index.html | what is scrotal cream and is it more effective than standard trt gel |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/fertility-pct/index.html | trt vs enclomiphene which is better for a 30 year old with low t |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/cost-insurance/index.html | does insurance cover testosterone replacement therapy |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | do i need a lawyer after a drunk driving accident |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-047-near-me-truck-accident-lawyer-near-me.html | truck accident lawyer near me how to choose |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-q008-what-mistakes-cause-problems-with-comparative-and-contributory-fault.html | what mistakes cause problems with comparative and contributory fault in accident claims |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-medical-treatment-004-is-it-bad-if-i-waited-a-few-days-to-get-checked-after-a-crash.html | is it bad if i waited a few days to get checked by a doctor after a crash |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-065-best-workplace-injury-lawyer-near-me.html | best workplace injury lawyer near me how to find |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-030-how-to-choose-a-lawyer-for-serious-injuries.html | how to choose a lawyer for serious injuries |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-q024-how-should-i-compare-options-involving-evidence-after-an-accident.html | how should i preserve and compare evidence after an accident |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-switching-lawyers-001-dropping-my-pi-lawyer.html | can i fire or drop my personal injury lawyer if unhappy |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-cost-fees-004-how-do-case-expenses-affect-my-settlement-payout.html | how do case expenses affect my personal injury settlement payout |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-q039-how-should-i-compare-options-involving-contingency-fees-and-case-costs.html | how should i compare contingency fees and case costs for injury lawyers |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-012-will-my-case-go-to-trial.html | will my personal injury case go to trial |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /insights/personal-injury-questions-to-ask-003-what-should-i-ask-if-two-injury-lawyers-give-different-advice.html | what should i ask if two injury lawyers give different advice |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | how much does the i-693 medical exam cost in 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/index.html | can i go to my regular family doctor for the uscis medical exam |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | truck accident lawyer near me how to choose |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/early-signs-of-ms-in-women-under-40/ | early signs of ms in women under 40 |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/why-am-i-having-trouble-swallowing-with-pd/ | why am i having trouble swallowing with pd |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/cost/index.html | does health insurance cover the immigration medical exam |
