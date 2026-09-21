@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 'use strict';
+// The probes below are awaited (scripts/validation/probe_pool.js), so the body runs in an async scope.
+(async () => {
 
 // Store clock independence.
 //
@@ -55,7 +57,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { runProbes, writeSetOf, defaultConcurrency, assertPoolContract } = require('../validation/probe_pool');
 
 const ROOT = path.resolve(__dirname, '../..');
 const rel = (p) => path.join(ROOT, p);
@@ -121,7 +123,7 @@ for (const v of validators) {
   // Every day the contract's own stores stamp themselves with, plus the fixed
   // distant dates.
   const dates = [...new Set([...stamped.map((x) => asProbeDate(x.generated_at)), ...FIXED_PROBE_DATES])];
-  enrolled.push({ id: v.id, command: v.command, stores: stamped, probe_dates: dates });
+  enrolled.push({ id: v.id, command: v.command, stores: stamped, probe_dates: dates, writes: writeSetOf(v) });
 }
 
 // Rule 0. Examining nothing is a failure, not a clean bill of health: it means
@@ -151,16 +153,23 @@ const population = validators.filter(
 const errors = [];
 const checked = [];
 
-for (const item of enrolled) {
-  const verdicts = item.probe_dates.map((date) => {
-    const r = spawnSync(item.command, {
-      cwd: ROOT,
-      shell: true,
-      encoding: 'utf8',
-      env: { ...process.env, SOURCE_DATE: date, NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3072' },
-    });
-    return { date, exit_code: r.status === null ? 1 : r.status };
-  });
+// Items run concurrently through the probe pool (scripts/validation/probe_pool.js)
+// only when their declared write sets are disjoint; an item's own probe dates stay
+// sequential. Sequential probing cost ~200s on a CI runner and set the floor under
+// every shard of the merge gate. The verdict per item is unchanged.
+await assertPoolContract();
+const probed = await runProbes(
+  enrolled.map((item) => ({
+    key: item.id,
+    command: item.command,
+    writes: item.writes,
+    probes: item.probe_dates.map((date) => ({ date, env: { ...process.env, SOURCE_DATE: date, NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3072' } })),
+  })),
+  { cwd: ROOT },
+);
+for (let i = 0; i < enrolled.length; i++) {
+  const item = enrolled[i];
+  const verdicts = item.probe_dates.map((date, j) => ({ date, exit_code: probed[i].results[j].status === null ? 1 : probed[i].results[j].status }));
 
   const codes = [...new Set(verdicts.map((v) => v.exit_code))];
   const stable = codes.length === 1;
@@ -188,6 +197,7 @@ const report = {
   validator: 'store-clock-independence',
   status: errors.length ? 'FAIL' : 'PASS',
   fixed_probe_dates: FIXED_PROBE_DATES,
+  probe_concurrency: defaultConcurrency(),
   enrolment_rule: 'ACTIVE validator declaring a repair_writes OR requires_files target whose JSON carries a top-level generated_at stamp',
   stores_examined: checked.length,
   stamped_store_population: population.length,
@@ -206,3 +216,4 @@ console.log(
   `STORE CLOCK INDEPENDENCE PASS: ${checked.length} store contract(s) return the same verdict under every `
   + `probed SOURCE_DATE, including each store's own generated_at stamp; none expires on a date rollover.`,
 );
+})().catch((error) => { console.error(error && error.stack ? error.stack : String(error)); process.exit(1); });
