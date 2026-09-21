@@ -47,6 +47,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
+const { selfConsistencyErrors } = require('../lib/html_fix_rendering_contract');
 const { normalizeImplementationPath, routeToImplementationPath } = require('../lib/agent_exact_repairs');
 const { zeroExaminationVerdict } = require('../lib/zero_item_examination');
 
@@ -105,11 +106,25 @@ for (const spec of repairSpecs) {
 // 2. A named refusal must be TRUE: the manifest must carry no entry for that route.
 //    Otherwise the artifact becomes a blanket excuse for routes that were compiled.
 const manifest = readJson(MANIFEST_PATH, { entries: [] });
-const manifestPaths = new Set((manifest.entries || []).map((entry) => normalizeImplementationPath(entry && entry.implementation_path)).filter(Boolean));
-for (const key of refusedByPath.keys()) {
-  if (manifestPaths.has(key)) {
-    errors.push(`refused_route_has_a_semantic_entry:${key} - it was compiled after all, so the refusal is not true and must not excuse it from proof.`);
+const manifestByPath = new Map((manifest.entries || []).map((entry) => [normalizeImplementationPath(entry && entry.implementation_path), entry]).filter(([key]) => key));
+for (const [key, row] of refusedByPath.entries()) {
+  const entry = manifestByPath.get(key);
+  if (!entry) continue;
+  // Two refusal reasons, two truths. An ungrounded uscis refusal means NO entry was
+  // authored, so any entry proves it false. A self-consistency refusal (2026-09-21)
+  // means THIS RUN's compile was refused; the page keeps whatever durable entry an
+  // earlier run had proven - dropping it would be the content-loss defect the durable
+  // manifest exists to prevent. That refusal is true iff the surviving entry does not
+  // carry the refused rows and is itself consistent.
+  if (String(row.reason || '') === 'entry_not_self_consistent') {
+    const refusedIds = new Set([row.record_id, ...(row.record_ids || [])].filter(Boolean).map(String));
+    const carriedRefusedRows = (entry.row_requirements || []).filter((r) => r && refusedIds.has(String(r.row_id))).map((r) => r.row_id);
+    if (carriedRefusedRows.length) errors.push(`refused_rows_present_in_surviving_entry:${key}:${carriedRefusedRows.join(',')} - the compiler said it refused these rows, and wrote them anyway.`);
+    const inconsistent = selfConsistencyErrors(entry);
+    if (inconsistent.length) errors.push(`surviving_entry_not_self_consistent:${key}:${inconsistent.slice(0, 3).join(';')}`);
+    continue;
   }
+  errors.push(`refused_route_has_a_semantic_entry:${key} - it was compiled after all, so the refusal is not true and must not excuse it from proof.`);
 }
 
 // 3+4. Every excuse the trace issued must be backed by this run's evidence, and no

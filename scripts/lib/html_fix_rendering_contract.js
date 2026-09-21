@@ -84,4 +84,61 @@ function validateEntryAgainstHtml(entry, html) {
 // countRowsNearHeading is exported so the compiler can ask the SAME question this
 // contract will ask, against the same bytes, rather than keeping a second row counter
 // that agrees with this one only until one of them is edited.
-module.exports = { normalizeText, includesNormalized, countRowsNearHeading, artifactTypesFromHtml, validateEntryAgainstHtml, forbiddenScaffoldMatches };
+// IS THIS ENTRY A PROMISE ITS OWN ARTIFACTS CAN KEEP?
+//
+// Every row requirement names a block by (type, heading_exact) and, for a table,
+// by columns_exact. The renderer only ever writes the entry's `artifacts`, so a row
+// whose block matches no artifact by type AND heading is unsatisfiable by
+// construction - no build, thaw or refreeze can clear it. Likewise a column the
+// row demands that its own artifact's headers do not carry.
+//
+// This is the check validate_agent_exact_acceptance_manifest.js used to keep
+// privately as compiledArtifactErrors(). The compiler never asked it, so on
+// 2026-09-21 it wrote an entry for insights/personal-injury-q008-* whose rows
+// demanded a protocol, a callout and a comparison_table under one heading while
+// its artifacts carried only agent_directives under that heading (the carried-entry
+// clean had rebuilt all five same-titled artifacts from the FIRST row that shared
+// the title), and the release lane went red one validator later on a manifest it
+// had just written itself. One function, asked by the compiler before it writes
+// (an inconsistent fresh entry is REFUSED by name, not written) and by the validator
+// after (a durable entry that has become inconsistent still fails).
+function normalizedKey(value) { return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+//
+// A block is satisfiable when ANY artifact of its (type, heading) carries every
+// column it names. The compiler now merges same-key artifacts on a fresh compile
+// (html_fix_acceptance_parser.mergeCollidingArtifact), but four carried entries were
+// compiled before that and still hold two same-titled tables with different headers;
+// on those pages the row's columns live on the second copy, and the page renders
+// both. Keying to the first copy alone called them unsatisfiable when they are not.
+function selfConsistencyErrors(entry) {
+  const errors = [];
+  const artifacts = Array.isArray(entry && entry.artifacts) ? entry.artifacts : [];
+  const byKey = new Map();
+  for (const artifact of artifacts) {
+    if (!artifact) continue;
+    const key = `${normalizedKey(artifact.type)}|${normalizedKey(artifact.title)}`;
+    if (!byKey.has(key)) byKey.set(key, []);
+    byKey.get(key).push(artifact);
+  }
+  for (const row of (entry && entry.row_requirements) || []) {
+    for (const block of (row && row.required_blocks) || []) {
+      if (!block || !block.heading_exact) continue;
+      const candidates = byKey.get(`${normalizedKey(block.type)}|${normalizedKey(block.heading_exact)}`) || [];
+      if (!candidates.length) { errors.push(`row:${row.row_id}:compiled_artifact_missing:${block.heading_exact}`); continue; }
+      const wanted = (block.columns_exact || []).map((column) => [column, normalizedKey(column)]);
+      if (!wanted.length) continue;
+      // The candidate that answers the most of this block's columns is the one the
+      // block is measured against, so the report names exactly what is missing.
+      const best = candidates
+        .map((artifact) => {
+          const headers = new Set((artifact.headers || []).map(normalizedKey));
+          return { lacking: wanted.filter(([, key]) => !headers.has(key)).map(([column]) => column) };
+        })
+        .sort((a, b) => a.lacking.length - b.lacking.length)[0];
+      for (const column of best.lacking) errors.push(`row:${row.row_id}:compiled_artifact_lacks_column:${column}`);
+    }
+  }
+  return errors;
+}
+
+module.exports = { normalizeText, includesNormalized, countRowsNearHeading, artifactTypesFromHtml, validateEntryAgainstHtml, forbiddenScaffoldMatches, selfConsistencyErrors };

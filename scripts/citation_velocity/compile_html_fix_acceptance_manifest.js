@@ -4,13 +4,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { compileEntryFromSpec, artifactFromFix, phrasesTheFixAsksToRemove, normalizeForbidden } = require('../lib/html_fix_acceptance_parser');
+const { compileEntryFromSpec } = require('../lib/html_fix_acceptance_parser');
 const { authorityGroundedEntryForSpec } = require('../lib/authority_grounded_repairs');
 const { releaseUnitPathsFromPlan, resolveRecommendationProof, PROOF_STATES } = require('../lib/recommendation_proof_path');
-const { mergeAcceptedArtifacts } = require('../lib/accepted_artifacts');
-const { stripTemplateScaffoldingFromArtifacts, withoutTemplateScaffolding } = require('../lib/template_scaffolding');
-const { countRowsNearHeading, includesNormalized } = require('../lib/html_fix_rendering_contract');
-const { acceptedHtmlForRoute, normalizeRoute, mutableRouteSet } = require('../lib/frozen_pages');
+const { cleanCarried, screenTemplateScaffolding, renderedStringsPass, selfConsistencyErrors } = require('../lib/html_fix_acceptance_compile');
 const ROOT = path.resolve(__dirname, '../..');
 const DATE = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
 const PLAN_PATH = 'artifacts/validation/agent-exact-implementation-plan.json';
@@ -96,7 +93,59 @@ function main() {
     }
     return compileEntryFromSpec(spec);
   };
-  const compiled = specs.map(compile).filter(Boolean);
+  // Promise only what will render - scripts/lib/html_fix_acceptance_compile.js
+  // (renderedStringsPass) for the frozen-route reasoning. Built once, used for the
+  // self-consistency question below and for the durable manifest at the end.
+  const renderedStrings = renderedStringsPass();
+  // FAIL BEFORE WRITE, PART TWO: NEVER EMIT AN ENTRY WHOSE OWN ARTIFACTS CANNOT KEEP
+  // ITS OWN ROW REQUIREMENTS.
+  //
+  // agent-exact-acceptance-manifest checks every entry with selfConsistencyErrors():
+  // each row's required block must match a compiled artifact by type and heading,
+  // and each required column must be one of that artifact's headers. An entry that
+  // fails this is unsatisfiable by construction - the renderer writes exactly
+  // `artifacts`, so no build can produce the block the row demands - and the
+  // validator is guaranteed to reject it. Yet this compiler never asked the question
+  // before writing. On 2026-09-21 the carried-entry clean rebuilt five same-titled
+  // artifacts of insights/personal-injury-q008-* from the wrong row and wrote three
+  // rows that matched nothing; the release lane went red one validator later, on a
+  // file it had just written itself (run 35608255777), as it had on 2026-09-11 (x2)
+  // and 2026-09-15 for the same shape with different rows.
+  //
+  // The question is asked here, on the entry in its FINAL form (cleaned, screened,
+  // trimmed to what will render - the same passes the durable manifest gets). An
+  // inconsistent fresh entry is REFUSED through the same channel as an ungrounded
+  // uscis spec: named in semantic-acceptance-refusals.json with the exact rows and
+  // blocks that could not be satisfied, reported downstream as
+  // REFUSED_BY_ACCEPTANCE_COMPILER (carried, never proven, never silent), and the
+  // page keeps whatever durable entry it already had. Nothing is retired; the rows
+  // stay selectable and compile on the run after the compiler is repaired - and
+  // scripts/validators/validate_agent_run_compile_preview.js asks this same question
+  // of every landed run at absorption, so the answer is known when the drop lands.
+  const inconsistent = [];
+  const compiled = [];
+  for (const spec of specs) {
+    const entry = compile(spec);
+    if (!entry) continue;
+    const finalForm = renderedStrings(screenTemplateScaffolding(cleanCarried(entry)));
+    const errors = selfConsistencyErrors(finalForm);
+    if (!errors.length) { compiled.push(entry); continue; }
+    inconsistent.push({
+      implementation_path: String(entry.implementation_path || ''),
+      record_id: spec.record_id || '',
+      record_ids: [...new Set([spec.record_id, ...(spec.record_ids || [])].filter(Boolean))],
+      run_date: spec.run_date || '',
+      reason: 'entry_not_self_consistent',
+      detail: `The compiled entry's row requirements name blocks its own artifacts do not provide (${errors.length}): ${errors.slice(0, 6).join('; ')}${errors.length > 6 ? '; ...' : ''}. The acceptance validator would reject this entry as written, so it is not written.`,
+      errors,
+      unblocked_by: 'Repair the compile path in scripts/lib/html_fix_acceptance_parser.js / html_fix_acceptance_compile.js so every row requirement is answered by an artifact of the same type and heading with the required columns; the rows are re-attempted on every run.'
+    });
+  }
+  const refusedRows = [...ungroundedUscis, ...inconsistent];
+  if (inconsistent.length) {
+    console.warn(`HTML FIX ACCEPTANCE COMPILER: refused ${inconsistent.length} spec(s) whose compiled entry could not satisfy its own row requirements. Refused by name rather than written, because agent-exact-acceptance-manifest would reject the entry as written:`);
+    for (const row of inconsistent) console.warn(`  - ${row.implementation_path} (records ${row.record_ids.join(',') || 'unknown'}, run ${row.run_date || 'unknown'}): ${row.errors.slice(0, 3).join('; ')}`);
+  }
   // Written unconditionally - an empty `refused` list is the evidence that this run
   // refused nothing, and is not the same as a missing file.
   writeJson('artifacts/validation/semantic-acceptance-refusals.json', {
@@ -107,9 +156,11 @@ function main() {
     generated_at: DATE,
     source_plan: PLAN_PATH,
     planned_repair_specs: specs.length,
-    refused_count: ungroundedUscis.length,
-    policy: 'A route named here had no semantic acceptance entry authored this run, so nothing could carry its ledger marker into the rendered page. trace_agent_exact_implementation.js records such a spec as REFUSED_BY_ACCEPTANCE_COMPILER: carried, never proven, never counted as landed work. The row stays eligible for selection and must be released by authoring its grounded entry - it is never retired.',
-    refused: ungroundedUscis
+    refused_count: refusedRows.length,
+    refused_ungrounded_uscis: ungroundedUscis.length,
+    refused_not_self_consistent: inconsistent.length,
+    policy: 'A route named here had no semantic acceptance entry authored this run, so nothing could carry its ledger marker into the rendered page. trace_agent_exact_implementation.js records such a spec as REFUSED_BY_ACCEPTANCE_COMPILER: carried, never proven, never counted as landed work. The row stays eligible for selection - it is never retired. reason=no_authority_grounded_entry is released by authoring the grounded entry; reason=entry_not_self_consistent is released by repairing the compile path, and is re-attempted on every run.',
+    refused: refusedRows
   });
   if (ungroundedUscis.length) {
     console.warn(`HTML FIX ACCEPTANCE COMPILER: refused ${ungroundedUscis.length} uscis-medical spec(s) with no authority-grounded entry in scripts/lib/authority_grounded_repairs.js. They are NOT compiled, because an ungrounded uscis entry is one the acceptance validator is guaranteed to reject. Author a grounded entry for each route to release it:`);
@@ -143,54 +194,6 @@ function main() {
     const key = String(entry && entry.implementation_path || '');
     if (key) byPath.set(key, entry);
   }
-  // A carried entry was compiled before requiredStringsForArtifact learned to refuse
-  // a phrase its own fix asked to delete, so it can still be asserting one. The
-  // recommendation that proves it is stored on the entry as row_requirements[].source_fix,
-  // so the same filter is re-applied here rather than trusting an old compile.
-  //
-  // 2026-09-01: dropping it from the required_strings was only half the repair. The
-  // same quoted span had also been chosen as the artifact TITLE, which renders as the
-  // visible <h2> and is copied into required_blocks[].heading_exact - so
-  // /dentistry/choosing-a-dentist/ went on publishing a heading reading "Use the same
-  // questions with every lawyer on your shortlist" while asserting nothing about it.
-  // A carried artifact whose title is a phrase its own fix asked to delete is now
-  // RECOMPILED from that same source_fix through the repaired parser, rather than
-  // merely un-asserted, and its row's heading_exact is re-pointed at the new title.
-  const cleanCarried = (entry) => {
-    const forbidden = new Set();
-    for (const row of entry.row_requirements || []) {
-      for (const phrase of phrasesTheFixAsksToRemove(row.source_fix || '')) forbidden.add(phrase);
-    }
-    if (!forbidden.size) return entry;
-    const isForbidden = (value) => forbidden.has(normalizeForbidden(value));
-    const drop = (list) => (list || []).filter((value) => !isForbidden(value));
-    const rowForTitle = (title) => (entry.row_requirements || [])
-      .find((row) => (row.required_blocks || []).some((block) => block && block.heading_exact === title));
-    const retitled = new Map();
-    const artifacts = (entry.artifacts || []).map((artifact) => {
-      if (!artifact || !isForbidden(artifact.title)) return artifact;
-      const row = rowForTitle(artifact.title);
-      if (!row) return null; // Nothing to recompile from: refuse to publish it at all.
-      const rebuilt = artifactFromFix({ recommendation: row.source_fix, query: row.query, recordId: row.row_id, index: 0 });
-      retitled.set(artifact.title, rebuilt.title);
-      return { ...rebuilt, id: artifact.id, marker: artifact.marker };
-    }).filter(Boolean);
-    return {
-      ...entry,
-      title: isForbidden(entry.title) ? (retitled.get(entry.title) || artifacts[0]?.title || entry.title) : entry.title,
-      artifacts,
-      required_strings: drop(entry.required_strings),
-      checklist: drop(entry.checklist),
-      row_requirements: (entry.row_requirements || []).map((row) => ({
-        ...row,
-        required_blocks: (row.required_blocks || []).map((block) => (block && isForbidden(block.heading_exact)
-          ? { ...block, heading_exact: retitled.get(block.heading_exact) || block.heading_exact, heading_source: 'derived' }
-          : block)),
-        required_strings: drop(row.required_strings)
-      }))
-    };
-  };
-
   let carried = 0;
   for (const key of [...byPath.keys()]) {
     if (compiled.some((e) => String(e.implementation_path || '') === key)) continue;
@@ -217,142 +220,10 @@ function main() {
     const key = String(entry && entry.implementation_path || '');
     if (key) byPath.set(key, cleanCarried(entry));
   }
-  // THE MANIFEST IS PART OF THE PAGE, SO IT GETS THE SAME SCREEN THE PAGE GETS.
-  //
-  // scripts/lib/template_scaffolding.js stopped the emitters padding a table up to a
-  // requested row count with `Concrete verification point <n>` / `Requirement <n>`,
-  // and screens the two durable artifact stores on load. This compiler was never
-  // told. So the manifest went on ASSERTING the padding as required_strings, and went
-  // on carrying min_rows counts that only added up while the padded rows existed - and
-  // the rendering contract dutifully reported the pages as broken:
-  //
-  //   dentistry/anxiety-trust/index.html:missing_required_string:Concrete verification point 3
-  //   dentistry/choosing-a-dentist/index.html:row:agent_62c166acdc8b1f94:min_rows_not_met:1<3
-  //
-  // Two components, each keeping its own idea of what a page contains, with no link
-  // between them - which is why this screens through the SAME module the emitters and
-  // the stores use rather than restating the patterns here. There is no fourth copy of
-  // the list.
-  //
-  // The entry's own `artifacts` are screened too, not just its strings: the block
-  // below derives what "will actually render" from mergeAcceptedArtifacts(path,
-  // entry.artifacts), and an unscreened carried artifact put the padded rows straight
-  // back into that answer - which is exactly how a string like "Concrete verification
-  // point 3" survived a filter whose whole job was to drop strings the page does not
-  // publish.
-  //
-  // OMIT, NEVER PAD: the padded rows are not restored to make the count add up. The
-  // count falls to the rows that genuinely survive.
-  const screenTemplateScaffolding = (entry) => {
-    if (!entry || typeof entry !== 'object') return entry;
-    return {
-      ...entry,
-      artifacts: stripTemplateScaffoldingFromArtifacts(entry.artifacts || []),
-      required_strings: withoutTemplateScaffolding(entry.required_strings),
-      checklist: withoutTemplateScaffolding(entry.checklist),
-      row_requirements: (entry.row_requirements || []).map((row) => ({
-        ...row,
-        required_strings: withoutTemplateScaffolding(row.required_strings)
-      }))
-    };
-  };
+  // Screened through the same module the emitters and stores use - see
+  // scripts/lib/html_fix_acceptance_compile.js (screenTemplateScaffolding).
   for (const key of [...byPath.keys()]) byPath.set(key, screenTemplateScaffolding(byPath.get(key)));
 
-  // A CARRIED entry's promises are re-tested against what will actually render.
-  //
-  // Carrying an entry forward carried its required_strings with it, including strings
-  // that were true of the compiler's copy of an artifact and never true of the
-  // delivered one. personal-injury/index.html asserted "Truck accident lawyer near me
-  // how to choose?" for a checklist whose accepted copy lists a different question -
-  // an unsatisfiable promise, held across every recompile because the entry was never
-  // recompiled. Fresh entries already derive their strings through
-  // mergeAcceptedArtifacts (see html_fix_acceptance_parser.js); carried entries are
-  // put through the same question here rather than being trusted.
-  //
-  // Only strings the merged artifacts do not contain are dropped, so nothing a page
-  // genuinely publishes stops being asserted, and an entry that loses every string
-  // keeps its row requirements and headings - the substantive part of the contract.
-  //
-  // min_rows is re-derived here for the same reason and from the same source. It was
-  // written once at compile time as `built.rows.length` and never revisited, so a block
-  // still demanded the row count the artifact had BEFORE its padding was screened off.
-  // The delivered artifact is the authority on how many rows exist, so the count is
-  // taken from it. It is only ever LOWERED: raising it would assert rows nothing has
-  // shown the page to have, which is the same mistake one column over.
-  //
-  // ON A FROZEN ROUTE THE ACCEPTED BYTES ARE THE ANSWER, NOT THE COMPILER'S ARTIFACTS.
-  //
-  // build_site.js ends with restoreFrozenPages(), which puts 1,879 of 2,069 routes back
-  // byte-for-byte from the accepted store. For those routes recompiling the manifest
-  // cannot change one character of what a reader or a crawler sees, so a promise
-  // derived from this run's artifacts is not a statement about the page at all.
-  //
-  // That is the whole of the residual failure after the scaffolding screen above.
-  // /trt/ is frozen; its accepted HTML carries three rows under "Before starting TRT if
-  // fertility matters", the freshly compiled artifact carries four, and the manifest
-  // asserted four:
-  //
-  //   trt/index.html:row:agent_216e7290b4e17f8d:min_rows_not_met:3<4
-  //   trt/community-questions/how-long-until-trt-works/index.html:missing_required_string:Body composition
-  //
-  // Neither is satisfiable by any amount of rebuilding, and neither describes a
-  // defect - the manifest was simply measuring the wrong artifact.
-  //
-  // So a frozen route is measured against its own delivered bytes, with the SAME
-  // functions the rendering contract will use on them (countRowsNearHeading,
-  // includesNormalized, imported, not restated). A mutable route keeps being measured
-  // against the artifacts, because there the page really is rebuilt to match them.
-  //
-  // This does not make the check inert. min_rows is still a floor and required_strings
-  // is still a set of promises; what changes is that the floor is now the number of
-  // rows the page has TODAY. A later build that drops a row, unfreezes into something
-  // shorter, or re-accepts a thinner block still fails - which is the shrink guard the
-  // accepted store exists for, and the same bargain renderedStrings already strikes
-  // for strings one line down.
-  const mutable = mutableRouteSet();
-  const deliveredFrozenHtml = (implementationPath) => {
-    const route = normalizeRoute(String(implementationPath || ''));
-    if (!route || (mutable && mutable.has && mutable.has(route))) return null;
-    try { return acceptedHtmlForRoute(route) || null; } catch { return null; }
-  };
-  const blockKey = (value) => String(value === undefined || value === null ? '' : value).replace(/\s+/g, ' ').trim().toLowerCase();
-  const renderedStrings = (entry) => {
-    const merged = mergeAcceptedArtifacts(entry.implementation_path, entry.artifacts || []);
-    const rendered = JSON.stringify(merged);
-    const frozenHtml = deliveredFrozenHtml(entry.implementation_path);
-    const keep = (value) => rendered.includes(JSON.stringify(String(value)).slice(1, -1))
-      && (!frozenHtml || includesNormalized(frozenHtml, value));
-    const deliveredRowCount = new Map();
-    for (const artifact of merged || []) {
-      if (!artifact || !artifact.title) continue;
-      const count = Array.isArray(artifact.rows) ? artifact.rows.length : (artifact.items || artifact.lines || []).length;
-      deliveredRowCount.set(blockKey(artifact.title), count);
-    }
-    const trimBlock = (block) => {
-      if (!block || !block.min_rows) return block;
-      const candidates = [];
-      const fromArtifact = deliveredRowCount.get(blockKey(block.heading_exact));
-      if (fromArtifact !== undefined) candidates.push({ count: fromArtifact, source: 'delivered_artifact' });
-      if (frozenHtml) {
-        // 0 means the heading is not on the frozen page at all. The contract skips
-        // min_rows entirely in that case, so there is no count to take from it.
-        const fromPage = countRowsNearHeading(frozenHtml, block.heading_exact || '');
-        if (fromPage > 0) candidates.push({ count: fromPage, source: 'frozen_accepted_page' });
-      }
-      const lowest = candidates.sort((a, b) => a.count - b.count)[0];
-      if (!lowest || lowest.count >= Number(block.min_rows)) return block;
-      return { ...block, min_rows: lowest.count, min_rows_source: lowest.source };
-    };
-    return {
-      ...entry,
-      required_strings: (entry.required_strings || []).filter(keep),
-      row_requirements: (entry.row_requirements || []).map((row) => ({
-        ...row,
-        required_blocks: (row.required_blocks || []).map(trimBlock),
-        required_strings: (row.required_strings || []).filter(keep)
-      }))
-    };
-  };
   // WHERE DOES THIS ENTRY'S PROOF LIVE, AND DOES THAT PAGE EXIST YET?
   //
   // Resolved through scripts/lib/recommendation_proof_path.js - the same module the
@@ -396,7 +267,12 @@ function main() {
   writeJson(CURRENT_MANIFEST_PATH, manifest);
 
   const grouped = new Map();
+  const refusedRecordIds = new Set(refusedRows.flatMap((row) => [row.record_id, ...(row.record_ids || [])]).filter(Boolean).map(String));
   for (const spec of specs) {
+    // A refused spec is not written to the per-run manifest either: a second copy of
+    // an entry the durable manifest declined would be the same promise one directory
+    // over, and scripts/search_intelligence/lib.js reads this directory.
+    if (refusedRecordIds.has(String(spec.record_id || '')) || (spec.record_ids || []).some((id) => refusedRecordIds.has(String(id)))) continue;
     const k = `${spec.run_date || DATE}_${inferVertical(spec)}`;
     if (!grouped.has(k)) grouped.set(k, []);
     // Put through BOTH passes on the way in, exactly as the durable manifest is:

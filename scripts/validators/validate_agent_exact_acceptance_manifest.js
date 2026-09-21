@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { validateEntryAgainstHtml } = require('../lib/html_fix_rendering_contract');
+const { validateEntryAgainstHtml, selfConsistencyErrors } = require('../lib/html_fix_rendering_contract');
 const ROOT = path.resolve(__dirname, '../..');
 const MANIFEST_PATH = 'data/report_fixes/agent_exact_semantic_acceptance_manifest.json';
 const PLAN_PATH = 'artifacts/validation/agent-exact-implementation-plan.json';
@@ -25,23 +25,8 @@ function plannedPathSet(plan) {
   }
   return out;
 }
-function normalizedString(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
-}
-function compiledArtifactErrors(entry) {
-  const errors = [];
-  const artifacts = Array.isArray(entry.artifacts) ? entry.artifacts : [];
-  const artifactKeys = new Set(artifacts.map((artifact) => `${normalizedString(artifact.type)}|${normalizedString(artifact.title)}`));
-  for (const row of entry.row_requirements || []) {
-    for (const block of row.required_blocks || []) {
-      const key = `${normalizedString(block.type)}|${normalizedString(block.heading_exact)}`;
-      if (block.heading_exact && !artifactKeys.has(key)) {
-        errors.push(`row:${row.row_id}:compiled_artifact_missing:${block.heading_exact}`);
-      }
-    }
-  }
-  return errors;
-}
+// The manifest-internal check lives in html_fix_rendering_contract.selfConsistencyErrors,
+// shared with the compiler that writes the manifest: see the note there.
 const { zeroExaminationVerdict } = require('../lib/zero_item_examination');
 function main() {
   const errors = [];
@@ -59,7 +44,7 @@ function main() {
     const implementationPath = normalizePath(entry.implementation_path);
     manifestPaths.add(implementationPath);
     const html = fileText(implementationPath);
-    const compileErrors = compiledArtifactErrors(entry);
+    const compileErrors = selfConsistencyErrors(entry);
     const renderErrors = [...compileErrors, ...validateEntryAgainstHtml(entry, html)];
     if (!html) renderErrors.push('missing_rendered_html');
     // The manifest is durable, not a per-run snapshot, so "in this run's plan" is the

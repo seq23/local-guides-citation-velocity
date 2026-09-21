@@ -47,7 +47,37 @@ function quotedPhrases(value) {
 // name, publishing neither fix's actual content. Filtered at the source: a title
 // candidate immediately preceded by a placement preposition is never usable as a
 // title, independent of whether it also happens to be forbidden.
-const POSITIONAL_QUOTE_PREFIX = /(?:after|before|following|beneath|above|under|below|near|inside|within|beside)\s*[:,]?\s*['“"]$/i;
+//
+// 2026-09-21: THE QUOTE CAN ALSO NAME THE HEADING THE EDIT IS *ABOUT*.
+//
+// The 2026-09-21 personal-injury run carried eleven rows for
+// insights/personal-injury-q008-*. Ten of them named the page's existing H2
+// "Mistakes that can increase a fault dispute" as the thing to work ON:
+//
+//   "Under H2 'Mistakes that can increase a fault dispute' replace the placeholder..."
+//   "Under the H2 “Mistakes that can increase a fault dispute,” add a two-column..."
+//   "Expand “Mistakes that can increase a fault dispute” into three subsections..."
+//   "revise “Mistakes that can increase a fault dispute” into a source-linked..."
+//
+// and exactly one asked for it as a NEW heading ("add an H2 titled “Mistakes that
+// can increase a fault dispute”"). The prefix above saw only "under '" - not
+// "under H2 '", not "under the H2 '", not "expand '" - so every one of those rows
+// authored its own artifact titled with the page's H2, one section per row. The
+// served page already carried SIX H2s reading "Mistakes that can increase a fault
+// dispute" from earlier compiles of the same shape; the 09-21 run's eleventh row then
+// asked, reasonably, to "delete the three duplicate 'Mistakes ...' sub-headings",
+// and the compiler answered by authoring five more.
+//
+// A locative preposition may be followed by the noun it governs ("the H2", "the
+// existing section", "this heading") before the quote. And a verb that MODIFIES a
+// thing ("expand", "revise", "rework", "retitle", "convert") takes an existing
+// heading as its object: the quote names what exists, and the new content goes
+// under it. Neither is a title to author. What remains a title: "titled 'X'",
+// "add an h2 section on X", "add a callout: X".
+const LOCATIVE = '(?:after|before|following|beneath|above|under|underneath|below|near|inside|within|beside|alongside|next to|adjacent to)';
+const MODIFY_VERB = '(?:expand|expanding|revise|revising|rework|reworking|rewrite|rewriting|retitle|retitling|rename|renaming|restructure|restructuring|reorganize|reorganise|convert|converting|split|splitting|tighten|tightening|improve|improving|strengthen|strengthening|deepen|deepening|flesh out|build out|fill in|fill out|upgrade|upgrading|turn|turning|elevate|elevating|refine|refining|enrich|enriching)';
+const HEADING_NOUN = '(?:the\\s+|this\\s+|that\\s+|its\\s+|each\\s+)?(?:(?:existing|current|present|generic|duplicated?|first|second|last|final|new)\\s+)?(?:h[1-6]s?|headings?|sub-?headings?|sections?|blocks?|cards?|tables?|lists?|panels?|paragraphs?)?';
+const POSITIONAL_QUOTE_PREFIX = new RegExp(`(?:${LOCATIVE}|${MODIFY_VERB})\\s+${HEADING_NOUN}\\s*[:,]?\\s*['“"]$`, 'i');
 function isPositionalQuoteReference(edit, phrase) {
   const text = String(edit || '');
   const escaped = String(phrase || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -210,6 +240,11 @@ function asHeadingCopy(value) {
       out = out.slice(marker.length, out.length - marker.length).trim();
     }
   }
+  // A quote lifted from prose keeps the comma the sentence put inside the closing
+  // quote (“Mistakes that can increase a fault dispute,” add a ...). Two of the six
+  // duplicate H2s on the served q008 page ended in that comma. A heading never ends
+  // in one.
+  out = out.replace(/[\s,;:]+$/, '');
   return normalizeSpace(out);
 }
 function titleFromFix(edit, query, index = 0, type = 'agent_directive', fallbackSeq = null, forbidden = new Set()) {
@@ -222,8 +257,25 @@ function titleFromFix(edit, query, index = 0, type = 'agent_directive', fallback
   if (hTitle) return { title: asHeadingCopy(hTitle), source: 'derived' };
   const h2On = String(edit || '').match(/\badd\s+(?:a\s+|an\s+)?h[23]\s+section\s+on\s+([^.;]{8,90})/i);
   if (h2On && usableAsCopy(h2On[1]) && allowed(h2On[1])) return { title: sentenceCase(asHeadingCopy(h2On[1])), source: 'named' };
-  const afterAdd = edit.match(/(?:add|insert|create|open with|replace with)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:h2|h3|section|block|callout|table|checklist|script|scorecard|matrix)[^:.]*[:.]?\s*([^.;]{10,90})/i);
-  if (afterAdd && usableAsCopy(afterAdd[1]) && allowed(afterAdd[1])) return { title: sentenceCase(asHeadingCopy(afterAdd[1])), source: 'named' };
+  // LAST RESORT, AND IT MUST START AT A WORD.
+  //
+  // This branch used to read `...(?:h2|table|...)[^:.]*[:.]?\s*([^.;]{10,90})`. The
+  // separator was optional and `[^:.]*` was greedy, so on an edit with no colon the
+  // engine consumed the whole sentence and then backtracked just far enough for the
+  // capture to take its minimum ten characters before the final period - the LAST
+  // ten characters of the sentence, cut mid-word. "...across the three existing
+  // context bullets." became the heading "Xt bullets" on personal-injury-q008
+  // (2026-09-21); across the plan on disk the same branch offered "ric answer",
+  // "nting away", "ning signs", "rification" - 183 garbage candidates out of 206
+  // matches. A heading is now taken only from text that FOLLOWS a separator: a
+  // colon, or a connector word ("add a table comparing ..."), with at most six plain
+  // words between the noun and that separator and no quote inside the capture (a
+  // quoted span is the quoted-phrase branch's business, above).
+  const afterAdd = edit.match(/(?:add|insert|create|open with|replace with)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:h2|h3|section|block|callout|table|checklist|script|scorecard|matrix)(?:\s+[a-z-]+){0,6}?\s*(?::|\b(?:on|for|about|called|named|headed|comparing|covering|showing|listing|explaining|of))\s+([A-Za-z][^.;'"“”]{9,89})/i);
+  // The capture runs to the end of the clause; a heading stops at the first clause
+  // boundary ("the contributory-negligence states, and expand ..." names the states).
+  const afterAddTitle = afterAdd ? normalizeSpace(afterAdd[1].split(/,|;|:|\s[—–-]\s|\s(?:with|that|which|so that|including|where|and then)\s/i)[0]) : '';
+  if (afterAddTitle.length >= 10 && usableAsCopy(afterAddTitle) && allowed(afterAddTitle)) return { title: sentenceCase(asHeadingCopy(afterAddTitle)), source: 'named' };
   return { title: fallbackTitle(query, type, fallbackSeq), source: 'derived' };
 }
 function typeFromFix(edit) {
@@ -285,7 +337,14 @@ function headersFromFix(edit, type) {
       .filter((cell) => cell.length && cell.length <= 60);
     if (cells.length >= 2 && cells.length <= 6) explicit.push(...cells);
   }
-  return unique(explicit).length >= 2 ? unique(explicit).slice(0, 6) : (DEFAULT_HEADERS[type] || []);
+  // A column name lifted from prose keeps the comma the sentence put inside the
+  // closing quote: columns “Ask each lawyer,” “Why it changes your net,” and “Answer
+  // from Firm A/Firm B,” (2026-09-21, personal-injury-q039). The rendered <th> then
+  // read "Ask each lawyer," and the row's columns_exact promised the comma too. A
+  // header never ends in punctuation, so it is stripped here at the one source,
+  // the same rule asHeadingCopy applies to a heading.
+  const cleaned = unique(explicit.map((cell) => normalizeSpace(String(cell || '').replace(/[\s,;:]+$/, ''))));
+  return cleaned.length >= 2 ? cleaned.slice(0, 6) : (DEFAULT_HEADERS[type] || []);
 }
 function requirementsFromFix(edit, query, count) {
   const text = normalizeSpace(edit);
@@ -393,13 +452,17 @@ function scriptLinesFromFix(edit, query, count) {
   ];
   return itemsFromFix(edit, query, count).slice(0, Math.max(0, count - base.length)).concat(base).slice(0, Math.max(count, 4));
 }
-function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null }) {
+// `alsoForbidden`: phrases OTHER recommendations on the same page ask to remove. The
+// compiler's carried-entry clean passes the whole entry's set here so a rebuilt
+// artifact cannot be retitled straight back onto the phrase that got it rebuilt.
+function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null, alsoForbidden = null }) {
   const edit = stripPrefixes(recommendation);
   const type = typeFromFix(edit);
   // Every string this artifact can put on a public page is screened against the
   // phrases THIS recommendation asks to remove - title, column headers, table cells,
   // list items and script lines - not just the required_strings the trace enforces.
   const forbidden = phrasesTheFixAsksToRemove(recommendation);
+  for (const phrase of alsoForbidden || []) forbidden.add(phrase);
   const dropForbidden = (value) => !forbidden.has(normalizeForbidden(value));
   const { title, source: titleSource } = titleFromFix(edit, query, index, type, fallbackSeq, forbidden);
   const minRows = rowCountFromFix(edit, type);
@@ -410,6 +473,10 @@ function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackS
     type,
     title,
     title_source: titleSource,
+    // The row this artifact answers. Every row requirement points at its own
+    // artifact by (type, heading); when a page has several rows naming one heading
+    // this is the only link that says WHICH row an artifact was compiled for.
+    record_id: recordId || '',
     intro: readerIntroForArtifact(title, query, type)
   };
   if (type === 'agent_directive') {
@@ -534,6 +601,7 @@ function normalizeForbidden(value) {
 // being read as a deletion order.
 const REMOVAL_VERB = '(?:remove|delete|strip|drop|eliminate)';
 const SWAP_VERB = '(?:replace|replacing|swap|swapping|substitute|substituting)';
+const DEDUPE_GAP = /\b(?:duplicate[sd]?|duplicated|redundant|repeated|repeating|extra|surplus|second|third|fourth)\b/i;
 const LOCATIVE_GAP = /\b(?:under|underneath|beneath|below|above|after|following|preceding|before|within|inside|in|at|near|next to|adjacent to|alongside)\s*$/i;
 function phrasesTheFixAsksToRemove(recommendation) {
   const text = String(recommendation || '');
@@ -550,6 +618,11 @@ function phrasesTheFixAsksToRemove(recommendation) {
       // The quote names WHERE, not WHAT: the object of the verb is what the gap
       // describes, and the quoted heading is only the address it sits under.
       if (LOCATIVE_GAP.test(String(m[gap] || ''))) continue;
+      // "delete the three duplicate 'X' sub-headings" asks for ONE X, not for no X.
+      // The object of the verb is the surplus copies; the phrase itself is meant to
+      // stay. Reading it as a ban on X made the compiler forbid the very heading
+      // the same run asked it to add once (2026-09-21, personal-injury-q008).
+      if (DEDUPE_GAP.test(String(m[gap] || ''))) continue;
       const phrase = normalizeForbidden(m[phraseIndex]);
       if (phrase) out.add(phrase);
     }
@@ -581,6 +654,60 @@ function rowRequirementFromFix({ recommendation, query, recordId, implementation
 function mergeArtifacts(artifacts) {
   return (artifacts || []).filter((artifact) => artifact && artifact.type && artifact.title && !containsInternalInstruction(artifact));
 }
+// TWO ROWS THAT NAME ONE SECTION ARE ONE SECTION.
+//
+// The validator (html_fix_rendering_contract.selfConsistencyErrors) and the renderer
+// both address an artifact by (type, heading). When several rows of one page compiled
+// to the same key, the compiler emitted one artifact PER ROW: the page grew a
+// duplicate H2 for every row that mentioned the heading, and only the FIRST artifact
+// could ever answer a row's block, so a later row whose columns differed was
+// "compiled_artifact_lacks_column" against its own artifact. On 2026-09-21
+// insights/personal-injury-q039-* carried four rows about "Compare Two Contingency
+// Agreements Line by Line" - one naming its columns, two asking to replace the
+// placeholder rows beneath it, one asking to collapse the five duplicate H2s the
+// earlier compiles had already published - and the compiler answered with four more
+// copies. The same key is therefore ONE artifact: named headers beat the type's
+// default headers, rows and items are unioned, and every contributing row is recorded.
+function artifactCollisionKey(artifact) {
+  return `${normalizeForbidden(artifact && artifact.type)}|${normalizeForbidden(artifact && artifact.title)}`;
+}
+function headersAreNamed(artifact) {
+  if (!artifact || !Array.isArray(artifact.headers) || !artifact.headers.length) return false;
+  return JSON.stringify(artifact.headers) !== JSON.stringify(DEFAULT_HEADERS[artifact.type] || []);
+}
+function unionByText(...lists) {
+  const seen = new Set();
+  const out = [];
+  for (const list of lists) {
+    for (const value of list || []) {
+      const key = normalizeForbidden(Array.isArray(value) ? value.join(' | ') : value);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(value);
+    }
+  }
+  return out;
+}
+function mergeCollidingArtifact(target, incoming) {
+  target.merged_record_ids = unique([...(target.merged_record_ids || [target.record_id]), incoming.record_id]);
+  if (incoming.title_source === 'named') target.title_source = 'named';
+  if (Array.isArray(target.headers) || Array.isArray(incoming.headers)) {
+    const adoptIncoming = headersAreNamed(incoming) && !headersAreNamed(target);
+    const headers = adoptIncoming ? [...incoming.headers] : [...(target.headers || incoming.headers || [])];
+    const reshape = (row) => [...(row || []), ...new Array(headers.length).fill('')].slice(0, headers.length);
+    const first = adoptIncoming ? incoming.rows : target.rows;
+    const second = adoptIncoming ? target.rows : incoming.rows;
+    target.headers = headers;
+    target.rows = unionByText((first || []).map(reshape), (second || []).map(reshape))
+      .filter((row) => row.some((cell) => String(cell || '').trim()));
+  }
+  if (Array.isArray(target.items) || Array.isArray(incoming.items)) target.items = unionByText(target.items, incoming.items);
+  if (Array.isArray(target.lines) || Array.isArray(incoming.lines)) target.lines = unionByText(target.lines, incoming.lines);
+  if (Array.isArray(target.extracted_requirements) || Array.isArray(incoming.extracted_requirements)) {
+    target.extracted_requirements = unionByText(target.extracted_requirements, incoming.extracted_requirements);
+  }
+  return target;
+}
 function compileEntryFromSpec(spec) {
   const implementationPath = spec.implementation_path || spec.intended_winner_path || '';
   const recommendations = unique(spec.fix_recommendations || spec.recommendations || [spec.recommendation]);
@@ -591,13 +718,29 @@ function compileEntryFromSpec(spec) {
   // One counter for the whole page, so colliding fallback headings are numbered
   // 1..n across its recommendations rather than restarting per recommendation.
   const fallbackSeq = new Map();
+  // ONE ARTIFACT PER (type, heading) ON A PAGE. Rows that land on the same key are
+  // MERGED into it, never emitted beside it - see mergeCollidingArtifact.
+  const byKey = new Map();
   recommendations.forEach((recommendation, index) => {
     const query = queries[index] || queries[0] || spec.query || '';
     const recordId = rowIds[index] || rowIds[0] || spec.record_id || `${implementationPath}:${index}`;
-    const artifact = artifactFromFix({ recommendation, query, recordId, index, fallbackSeq });
-    artifacts.push(artifact);
+    const built = artifactFromFix({ recommendation, query, recordId, index, fallbackSeq });
+    const key = artifactCollisionKey(built);
+    const existing = byKey.get(key);
+    const artifact = existing ? mergeCollidingArtifact(existing, built) : built;
+    if (!existing) { byKey.set(key, artifact); artifacts.push(artifact); }
     rowRequirements.push(rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index, artifact }));
   });
+  // A row compiled BEFORE a later row merged into its artifact still describes the
+  // artifact as it was then. The artifact is the authority on its own headers, so
+  // every row's block is re-pointed at the final shape. min_rows is a floor and a
+  // merge only adds rows, so the earlier, smaller floor stays valid and is kept.
+  for (const row of rowRequirements) {
+    for (const block of row.required_blocks || []) {
+      const artifact = byKey.get(`${normalizeForbidden(block.type)}|${normalizeForbidden(block.heading_exact)}`);
+      if (artifact) block.columns_exact = Array.isArray(artifact.headers) ? [...artifact.headers] : [];
+    }
+  }
   const mergedArtifacts = mergeArtifacts(artifacts);
   // EVERY QUERY THE SPEC CARRIES MUST REACH THE PAGE, NOT JUST queries[0].
   //
