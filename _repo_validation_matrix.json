@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "a95302617490491b71f370d5531994731bbaa34d9ad170829d8390a6961cd8b3",
+  "registry_sha256": "2f851d0d502908c4d67929bb0787640733a72f4c57c6d3aa8cdfc0fb412e78f2",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 208,
-    "active": 181,
+    "total": 209,
+    "active": 182,
     "on_demand": 10,
     "retired": 17,
     "local_only": 1,
-    "hard_fail": 179,
+    "hard_fail": 180,
     "strong_warning": 12,
     "soft_warning": 2,
     "info": 15
@@ -88,6 +88,7 @@
         "executable-bits",
         "frozen-content-recoverability",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "full-scope-overhaul",
         "generated-content-gate",
         "generated-page-substance",
@@ -277,6 +278,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -353,6 +355,7 @@
         "firehose-source-contract",
         "frozen-content-recoverability",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "full-scope-overhaul",
         "generated-content-finalization-contract",
         "generated-content-gate",
@@ -626,6 +629,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -718,6 +722,7 @@
         "firehose-source-contract",
         "frozen-content-recoverability",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "full-scope-overhaul",
         "generated-content-finalization-contract",
         "generated-content-gate",
@@ -991,6 +996,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -1115,6 +1121,7 @@
         "firehose-source-contract",
         "frozen-content-recoverability",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "full-scope-overhaul",
         "generated-content-finalization-contract",
         "generated-content-gate",
@@ -1387,6 +1394,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -1481,6 +1489,7 @@
         "firehose-source-contract",
         "frozen-content-recoverability",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "full-scope-overhaul",
         "generated-content-finalization-contract",
         "generated-content-gate",
@@ -1763,6 +1772,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -1952,6 +1962,7 @@
         "executable-bits",
         "frozen-content-recoverability",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "full-scope-overhaul",
         "generated-content-gate",
         "generated-page-substance",
@@ -2066,6 +2077,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "vertical-topic-admission",
         "render-integrity",
         "rendered-internal-hrefs",
@@ -2109,6 +2121,7 @@
         "dynamic-page-contract-cross-vertical",
         "frozen-content-recoverability",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "generated-content-finalization-contract",
         "generated-content-gate",
         "generated-page-substance",
@@ -2239,6 +2252,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "frozen-output-integrity",
+        "frozen-lastmod-currency",
         "vertical-topic-admission",
         "workflow-data-trace",
         "content-safety",
@@ -2783,6 +2797,10 @@
     {
       "from": "page-release-law",
       "to": "frozen-output-integrity"
+    },
+    {
+      "from": "frozen-output-integrity",
+      "to": "frozen-lastmod-currency"
     },
     {
       "from": "generated-content-gate",
@@ -4951,6 +4969,48 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Rendered HTML can drift from the accepted bytes recorded in data/release/frozen_page_registry.json without any validator noticing. A hand edit to rendered output passes the rest of the chain, is silently reverted by the frozen guard at the end of the next build, and never reaches production - so CI reports green while the deployed site is unchanged. This was observed: 1,130 rendered pages were edited, the full core profile returned 42/42 PASS, and the change was inert on the live site.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "frozen-lastmod-currency",
+        "title": "A frozen route’s sitemap date is never older than the date the page itself declares",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_frozen_lastmod_currency.js",
+        "command": "node scripts/validators/validate_frozen_lastmod_currency.js",
+        "depends_on": [
+          "frozen-output-integrity"
+        ],
+        "requires_files": [
+          "data/release/frozen_page_registry.json",
+          "sitemaps/sitemap_all.xml",
+          "docs/PAGE_RELEASE_LAW.md"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/frozen-lastmod-currency.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/frozen-lastmod-currency.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "accepted_lastmod in data/release/frozen_page_registry.json is what build_site.js publishes as <lastmod> for every FROZEN route. Until 2026-09-21 every refreeze copied it from the admission registry, which is rebuilt from published_urls.json, which is written from the sitemap the freeze had just overridden - a closed loop no content change could move. The 2026-08-26 answer-shape pass rewrote the direct answer on ~1,800 accepted pages and stamped Last reviewed: 2026-08-26 and dateModified on each, and every sitemap date stayed at its admission date (2026-06-19 for 1,113 of them). 91 days later (2026-09-18) the cadence gate counted 1,147 current pages as stale, refresh_debt hit 54% against a 20% tolerance, and Validate Repo was red on every push to main, worn by whichever agent-artifact drop landed first. This proves, per frozen route, that the sitemap date is at least the newest date the accepted bytes declare and that the committed sitemap carries exactly the registry date; and it proves the freeze rule in scripts/lib/frozen_pages.js on the outage input positively and negatively so the loop cannot be reintroduced.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -15689,6 +15749,48 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Rendered HTML can drift from the accepted bytes recorded in data/release/frozen_page_registry.json without any validator noticing. A hand edit to rendered output passes the rest of the chain, is silently reverted by the frozen guard at the end of the next build, and never reaches production - so CI reports green while the deployed site is unchanged. This was observed: 1,130 rendered pages were edited, the full core profile returned 42/42 PASS, and the change was inert on the live site.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "frozen-lastmod-currency",
+        "title": "A frozen route’s sitemap date is never older than the date the page itself declares",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_frozen_lastmod_currency.js",
+        "command": "node scripts/validators/validate_frozen_lastmod_currency.js",
+        "depends_on": [
+          "frozen-output-integrity"
+        ],
+        "requires_files": [
+          "data/release/frozen_page_registry.json",
+          "sitemaps/sitemap_all.xml",
+          "docs/PAGE_RELEASE_LAW.md"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/frozen-lastmod-currency.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/frozen-lastmod-currency.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "accepted_lastmod in data/release/frozen_page_registry.json is what build_site.js publishes as <lastmod> for every FROZEN route. Until 2026-09-21 every refreeze copied it from the admission registry, which is rebuilt from published_urls.json, which is written from the sitemap the freeze had just overridden - a closed loop no content change could move. The 2026-08-26 answer-shape pass rewrote the direct answer on ~1,800 accepted pages and stamped Last reviewed: 2026-08-26 and dateModified on each, and every sitemap date stayed at its admission date (2026-06-19 for 1,113 of them). 91 days later (2026-09-18) the cadence gate counted 1,147 current pages as stale, refresh_debt hit 54% against a 20% tolerance, and Validate Repo was red on every push to main, worn by whichever agent-artifact drop landed first. This proves, per frozen route, that the sitemap date is at least the newest date the accepted bytes declare and that the committed sitemap carries exactly the registry date; and it proves the freeze rule in scripts/lib/frozen_pages.js on the outage input positively and negatively so the loop cannot be reintroduced.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
