@@ -176,6 +176,35 @@ if (dated.length && fresh30 === 0) {
   warnings.push('no_recent_refresh: nothing has been updated in the last 30 days, where recency correlates most strongly with citation');
 }
 
+// The fuse. refresh_debt is a stock: it moves only when pages age past the window
+// or get refreshed, so the day it crosses tolerance is computable today from the
+// lastmod distribution alone. On 2026-09-18 it crossed with no warning because
+// nothing ever said when it would - the whole 2026-06-19 baseline cohort aged out
+// together and the first commits after the rollover (agent-artifact drops) wore
+// the red. This names the date, the cohort that will cause it, and how many of
+// those pages the refresh lane must touch first, so the crossing is a scheduled
+// piece of work rather than a surprise on somebody else's commit.
+const forecast = (() => {
+  if (!dated.length) return null;
+  const byDate = [...dated].map(([, d]) => d).sort();          // oldest first
+  const allowedStale = Math.floor((policy.stale_tolerance_pct / 100) * dated.length);
+  if (allowedStale >= byDate.length) return null;
+  const trigger = byDate[allowedStale];                         // the (allowed+1)-th oldest lastmod
+  const crossing = new Date(new Date(trigger).getTime() + (policy.refresh_window_days + 1) * 86400000);
+  const cohort = byDate.filter((d) => d <= trigger).length;
+  const mustRefresh = cohort - allowedStale;
+  return {
+    crosses_on: crossing.toISOString().slice(0, 10),
+    days_until: Math.floor((crossing - today) / 86400000),
+    trigger_lastmod: trigger,
+    cohort_at_or_before_trigger: cohort,
+    pages_to_refresh_before_then: mustRefresh,
+  };
+})();
+if (forecast && forecast.days_until <= 28) {
+  warnings.push(`refresh_debt_forecast: at zero further refreshes the stale share crosses ${policy.stale_tolerance_pct}% on ${forecast.crosses_on} (${forecast.days_until} days): ${forecast.cohort_at_or_before_trigger} pages carry a lastmod of ${forecast.trigger_lastmod} or older, and ${forecast.pages_to_refresh_before_then} of them must be substantively refreshed before then`);
+}
+
 function report_date() { return today.toISOString().slice(0, 10); }
 const report = {
   generated_at: today.toISOString().slice(0, 10),
@@ -190,6 +219,7 @@ const report = {
   new_since_last_run: ledgerExists ? newUrls.length : null,
   ledger_initialised: ledgerExists,
   maintainable_ceiling: ceiling,
+  refresh_debt_forecast: forecast,
   policy: { ...policy, _source: undefined },
   blocking,
   warnings,

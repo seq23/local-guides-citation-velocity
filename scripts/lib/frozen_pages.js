@@ -79,6 +79,46 @@ function writeCache(buffer) {
   }
   return { htmlHash, rel, cacheHash: sha256(fs.readFileSync(abs)) };
 }
+/**
+ * The dates a rendered page DECLARES about itself: the visible "Last reviewed"
+ * stamp and the JSON-LD dateModified. These are what a crawler or an answer
+ * engine reads on the page, so the sitemap may never claim an older date than
+ * either of them. Returned sorted ascending, YYYY-MM-DD, deduplicated.
+ */
+function declaredDatesInHtml(html) {
+  const text = String(html || '');
+  const out = new Set();
+  for (const m of text.matchAll(/data-review-date="true"[^<]*<time datetime="(\d{4}-\d{2}-\d{2})/g)) out.add(m[1]);
+  for (const m of text.matchAll(/"dateModified"\s*:\s*"(\d{4}-\d{2}-\d{2})/g)) out.add(m[1]);
+  return [...out].sort();
+}
+/**
+ * The sitemap lastmod a frozen route carries, and the ONLY place it is decided.
+ *
+ * accepted_lastmod is what build_site.js publishes as <lastmod> for every FROZEN
+ * route, overriding the build's own content-hash date. Until 2026-09-21 it was
+ * `page.lastmod || previous.accepted_lastmod`, and page.lastmod comes from the
+ * admission registry, which is rebuilt from published_urls.json, which is
+ * written from the sitemap entries this value just overrode. That is a closed
+ * loop: a route admitted on 2026-06-19 kept a 2026-06-19 lastmod through every
+ * refreeze, including the 2026-08-26 answer-shape pass that rewrote its direct
+ * answer and stamped "Last reviewed: 2026-08-26" on the page itself. 1,918 of
+ * 2,118 frozen routes ended up advertising a sitemap date older than the date
+ * printed on the page, and 91 days after the admission date (2026-09-18) the
+ * cadence gate read the whole baseline as stale and turned Validate Repo red on
+ * every push. The pages were not stale. The signal was.
+ *
+ * The rule now: the date never goes backwards, never claims older than the page
+ * itself does, and advances to the freeze date whenever the accepted bytes
+ * change. Unchanged bytes keep their date, so a no-op refreeze is not a bump.
+ */
+function acceptedLastmodFor({ pageLastmod = '', previousLastmod = '', previousHash = '', nextHash = '', declaredDates = [], freezeDate = '' }) {
+  const day = (v) => String(v || '').slice(0, 10);
+  const candidates = [day(pageLastmod), day(previousLastmod), ...(declaredDates || []).map(day)];
+  const bytesChanged = !previousHash || previousHash !== nextHash;
+  if (bytesChanged) candidates.push(day(freezeDate));
+  return candidates.filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort().at(-1) || '';
+}
 function recordForPage(page, previous = null) {
   const route = normalizeRoute(page.path);
   const renderedRel = routeToRenderedRel(route);
@@ -93,7 +133,14 @@ function recordForPage(page, previous = null) {
     accepted_html_sha256: cache.htmlHash,
     cache_file: cache.rel,
     cache_sha256: cache.cacheHash,
-    accepted_lastmod: String(page.lastmod || previous?.accepted_lastmod || '').slice(0, 10),
+    accepted_lastmod: acceptedLastmodFor({
+      pageLastmod: page.lastmod,
+      previousLastmod: previous?.accepted_lastmod,
+      previousHash: previous?.accepted_html_sha256,
+      nextHash: cache.htmlHash,
+      declaredDates: declaredDatesInHtml(buffer.toString('utf8')),
+      freezeDate: stableNow()
+    }),
     admission_basis: page.admission_basis || previous?.admission_basis || '',
     source_owner: page.source_owner || previous?.source_owner || '',
     source_file: page.source_file || previous?.source_file || '',
@@ -473,6 +520,7 @@ function ensureFrozenInventoryEntries(entries, siteBase) {
 }
 
 module.exports = {
+  declaredDatesInHtml, acceptedLastmodFor,
   ROOT, REGISTRY_REL, ACTIVE_SCOPE_REL, PENDING_SCOPE_REL,
   normalizeRoute, implementationPathToRoute, routeToRenderedRel,
   loadRegistry, saveRegistry, seedAcceptedPages, freezeRoute, freezeNewAdmitted,

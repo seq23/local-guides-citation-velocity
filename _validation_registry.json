@@ -2890,6 +2890,56 @@
       "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided."
     },
     {
+      "id": "frozen-lastmod-currency",
+      "title": "A frozen route’s sitemap date is never older than the date the page itself declares",
+      "path": "scripts/validators/validate_frozen_lastmod_currency.js",
+      "command": "node scripts/validators/validate_frozen_lastmod_currency.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "frozen-output",
+        "page-release",
+        "cadence",
+        "sitemap",
+        "freshness"
+      ],
+      "risk_prevented": "accepted_lastmod in data/release/frozen_page_registry.json is what build_site.js publishes as <lastmod> for every FROZEN route. Until 2026-09-21 every refreeze copied it from the admission registry, which is rebuilt from published_urls.json, which is written from the sitemap the freeze had just overridden - a closed loop no content change could move. The 2026-08-26 answer-shape pass rewrote the direct answer on ~1,800 accepted pages and stamped Last reviewed: 2026-08-26 and dateModified on each, and every sitemap date stayed at its admission date (2026-06-19 for 1,113 of them). 91 days later (2026-09-18) the cadence gate counted 1,147 current pages as stale, refresh_debt hit 54% against a 20% tolerance, and Validate Repo was red on every push to main, worn by whichever agent-artifact drop landed first. This proves, per frozen route, that the sitemap date is at least the newest date the accepted bytes declare and that the committed sitemap carries exactly the registry date; and it proves the freeze rule in scripts/lib/frozen_pages.js on the outage input positively and negatively so the loop cannot be reintroduced.",
+      "why_existing_checks_do_not_cover": "frozen-output-integrity proves the bytes match the registry hash and says nothing about dates. page-release-law proves each route appears in a sitemap, not what date it carries. The cadence gate reads the sitemap date and has no idea what the page itself says, so it graded a frozen signal as a stale library. Nothing compared the three dates a page publishes - sitemap, visible review stamp, JSON-LD dateModified - with each other.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/frozen-lastmod-currency.json",
+      "failure_action": "run node scripts/release/reconcile_frozen_lastmod.js to advance every stale registry date to what the page declares, then npm run build so the sitemaps are regenerated from the registry; if the freeze_rule case fails, scripts/lib/frozen_pages.js acceptedLastmodFor has regressed and must be repaired, never the case",
+      "depends_on": [
+        "frozen-output-integrity"
+      ],
+      "requires_files": [
+        "data/release/frozen_page_registry.json",
+        "sitemaps/sitemap_all.xml",
+        "docs/PAGE_RELEASE_LAW.md"
+      ],
+      "produces_files": [
+        "artifacts/validation/frozen-lastmod-currency.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/frozen-lastmod-currency.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": []
+    },
+    {
       "id": "full-scope-overhaul",
       "title": "Velocity-only full-scope counts and regression",
       "path": "scripts/validators/validate_full_scope_overhaul.js",

@@ -3017,13 +3017,18 @@ ${m}`;
   writeUtf8(OUT_LLMS_FULL, llmsFull.join('\n') + '\n');
 
   // sitemaps (split for crawl clarity) + canonical published inventory
-  const mediumPublished = mediumItems.map((item) => ({
+  // Medium articles are appended here, after applyFrozenMetadataToEntries(written)
+  // ran above, so until 2026-09-21 the frozen override never reached them: every
+  // build stamped the 14 accepted medium routes with the BUILD date, the one date
+  // bump pattern the cadence gate exists to see through, and the sitemap disagreed
+  // with the registry on all of them. Same override, same rule, applied here too.
+  const mediumPublished = applyFrozenMetadataToEntries(mediumItems.map((item) => ({
     loc: siteBase + publicPath(item.publish_path),
     lastmod: String(item.lastmod || item.date_published || item.published_at || nowISODate()).slice(0, 10),
     slug: item.publish_path,
     surface: 'medium-article',
     canonical_domain: item.canonical_domain
-  }));
+  })));
   const publicUrlCandidates = publicWritten.map(p=>({loc:publicUrl(p.url), lastmod: p.lastmod || nowISODate(), slug:p.slug, surface: p.surface || 'page', canonical_domain: p.canonical_domain || 'theindustryguides.com'}))
     .concat(mediumPublished.filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug))));
   const publicUrlMap = new Map();
