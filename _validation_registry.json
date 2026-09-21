@@ -9027,6 +9027,55 @@
       "failure_action": "stop release and repair"
     },
     {
+      "id": "agent-run-compile-preview",
+      "title": "Every landed agent run compiles into a semantic acceptance manifest its own validator accepts",
+      "path": "scripts/validators/validate_agent_run_compile_preview.js",
+      "command": "node scripts/validators/validate_agent_run_compile_preview.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "agent-run",
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "validation",
+        "agent-runs",
+        "release",
+        "acceptance"
+      ],
+      "risk_prevented": "An agent run lands on main as raw artifacts and is normalized and pushed by the placement step WITHOUT ever being compiled. The first compile happened one job later inside Velocity Content Release, where compile_html_fix_acceptance_manifest.js wrote an entry whose row requirements named blocks its own artifacts did not provide, and agent-exact-acceptance-manifest rejected the file the lane had just written: 2026-09-11 (x2), 2026-09-15 and 2026-09-21 (run 35608255777: insights/personal-injury-q008-* compiled_artifact_missing x3, missing_column \"Why it matters\"). The compiler and the validator each kept their own definition of a satisfiable entry. Now one function - html_fix_rendering_contract.selfConsistencyErrors - is asked by the compiler before it writes (an inconsistent entry is refused by name) and by the validator after. This guard asks it of EVERY normalized run on disk, grouped per page exactly as the planner groups them and compiled through the same passes the durable manifest gets, so a parser change that would make any landed run uncompilable fails on the PR that introduces it and not on the next agent drop. It also proves, once per run, that the predicate can still say no and that the 2026-09-21 q039 shape (four rows naming one heading, one naming its columns) compiles to exactly one artifact carrying those columns.",
+      "why_existing_checks_do_not_cover": "html-fix-acceptance-compiler and agent-exact-acceptance-manifest validate the durable manifest the compiler already wrote, on the release profile, one job after the drop; neither can see a run before it is planned. semantic-acceptance-refusal-legibility proves a refusal was recorded, not that no refusal was necessary. agent-run-artifact-intake proves the raw drop is well-formed, not that it compiles. Nothing on the core profile compiled a landed run at all.",
+      "estimated_runtime_seconds": 60,
+      "timeout_seconds": 600,
+      "evidence_file": "artifacts/validation/agent-run-compile-preview.json",
+      "failure_action": "The compile path is broken for a row shape that is on disk: repair scripts/lib/html_fix_acceptance_parser.js (titleFromFix, headersFromFix, mergeCollidingArtifact) or scripts/lib/html_fix_acceptance_compile.js so the named entry is answered by an artifact of the same type and heading with the required columns. Never edit the run to make it compile.",
+      "depends_on": [],
+      "requires_files": [
+        "data/report_fixes/normalized_agent_runs",
+        "scripts/lib/html_fix_acceptance_compile.js",
+        "scripts/lib/html_fix_rendering_contract.js",
+        "scripts/lib/html_fix_acceptance_parser.js"
+      ],
+      "produces_files": [
+        "artifacts/validation/agent-run-compile-preview.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/agent-run-compile-preview.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": []
+    },
+    {
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "tier": "Tier 1",
