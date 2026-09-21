@@ -11,15 +11,28 @@ permissions:
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
+  # The release profile is ~180 validators and 7-11 minutes on one runner; two of
+  # them (the clock-independence pair) are more than half of that. This is the
+  # merge gate, so it runs as SHARD_COUNT parallel slices balanced by measured
+  # duration (run_validation_registry.js --shard) and one aggregate job that proves
+  # every validator was assigned exactly once and passed
+  # (merge_validation_shards.js). Change the count here AND in the matrix below.
+  SHARD_COUNT: "4"
 
 concurrency:
   group: validate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate:
+  shard:
+    name: shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Normal is ~6 minutes (setup + build + a ~3.5-minute slice); 2x that.
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -36,7 +49,77 @@ jobs:
         run: |
           npm run strategy:gate
           npm run release:daily-citation-intelligence:preview
-      - name: Build and validate exact artifact in bounded stages
+      - name: Build and validate this shard of the release profile
+        env:
+          VALIDATION_SHARD: ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
+        run: npm run release:ci-validate
+      - name: Upload shard evidence
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-shard-${{ matrix.shard }}-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 3
+          path: |
+            artifacts/validation/**
+            !artifacts/validation/runtime/**
+            !artifacts/validation/release-pipeline-checkpoint.json
+            !artifacts/validation/release-pipeline-report.json
+      - name: Upload shard diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: velocity-validation-diagnostics-shard-${{ matrix.shard }}-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            logs/**
+            artifacts/validation/**
+            reports/**
+
+  validate:
+    needs: shard
+    runs-on: ubuntu-latest
+    # Normal is ~3 minutes (setup + build + merge + attestation + upload); 2x that.
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Setup Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Build strategy gate and daily citation preview
+        run: |
+          npm run strategy:gate
+          npm run release:daily-citation-intelligence:preview
+      - name: Download shard evidence
+        uses: actions/download-artifact@v7
+        with:
+          pattern: validation-shard-*-${{ github.run_id }}
+          path: ${{ runner.temp }}/shards
+      - name: Overlay shard evidence
+        # Every shard's evidence files land in artifacts/validation so the
+        # evidence, manifest and attestation stages see the whole profile.
+        # The per-shard summaries are what merge_validation_shards.js reads.
+        run: |
+          set -euo pipefail
+          n=0
+          for d in "${RUNNER_TEMP}"/shards/validation-shard-*; do
+            [ -d "$d" ] || continue
+            cp -R "$d"/. artifacts/validation/
+            n=$((n + 1))
+          done
+          echo "overlaid $n shard(s)"
+          [ "$n" = "$SHARD_COUNT" ] || { echo "::error::expected $SHARD_COUNT shard artifact(s), found $n"; exit 1; }
+          ls artifacts/validation/validation-summary-shard-*.json
+      - name: Build, merge the shards and validate exact artifact in bounded stages
+        env:
+          VALIDATION_MERGE_SHARDS: ${{ env.SHARD_COUNT }}
         run: npm run release:ci-validate
       - name: Upload exact validated artifact
         if: success()

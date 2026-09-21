@@ -21,6 +21,38 @@ for (const f of files) {
   if (!versions.length || versions.some((v) => !/^24(?:\.|$)/.test(v))) errors.push(`${f}:node-version`);
   if (/create-pull-request|LKG_REPO|LKG_TOKEN|lkg:candidates/i.test(text)) errors.push(`${f}:cross-repo-lkg-surface`);
   if (!/NODE_OPTIONS:\s*--max-old-space-size=3072/.test(text)) errors.push(`${f}:node-options`);
+  // EVERY JOB CARRIES ITS OWN CEILING. A job with no timeout-minutes inherits the
+  // platform's 360, so a hung step is watched for six hours instead of being
+  // cancelled at ~2x its normal duration and investigated (the standing CI shape,
+  // 21 Sep 2026). Jobs are the two-space-indented keys under `jobs:`.
+  const jobsBlock = text.split(/^jobs:\s*$/m)[1] || '';
+  const jobNames = [...jobsBlock.matchAll(/^  ([A-Za-z_][\w-]*):\s*$/gm)].map((m) => m[1]);
+  if (!jobNames.length) errors.push(`${f}:no-jobs-parsed`);
+  for (const job of jobNames) {
+    const body = jobsBlock.split(new RegExp(`^  ${job}:\\s*$`, 'm'))[1]?.split(/^  [A-Za-z_][\w-]*:\s*$/m)[0] || '';
+    if (!/^    timeout-minutes:\s*\d+/m.test(body)) errors.push(`${f}:job-without-timeout:${job}`);
+  }
+}
+// THE MERGE GATE IS SHARDED, AND THE COUNT IS ONE NUMBER. validate-repo.yml declares
+// SHARD_COUNT once and a matrix that must be exactly [0..N-1]; each shard job passes
+// VALIDATION_SHARD=<i>/<N> and the aggregate passes VALIDATION_MERGE_SHARDS=<N> into
+// release:ci-validate. A matrix that drifts from the count is a slice of the release
+// profile that never runs (merge_validation_shards.js would fail the aggregate, but
+// this names it on the workflow edit itself).
+{
+  const validateText = fs.readFileSync(path.join(dir, 'validate-repo.yml'), 'utf8');
+  const count = Number((validateText.match(/^\s*SHARD_COUNT:\s*["']?(\d+)["']?\s*$/m) || [])[1]);
+  const matrix = (validateText.match(/^\s*shard:\s*\[([^\]]*)\]/m) || [])[1];
+  if (!(count >= 2)) errors.push('validate-repo:shard-count-missing-or-below-2');
+  else {
+    const expected = Array.from({ length: count }, (_, i) => String(i)).join(',');
+    const found = String(matrix || '').split(',').map((v) => v.trim()).filter(Boolean).join(',');
+    if (found !== expected) errors.push(`validate-repo:shard-matrix-mismatch:expected [${expected}] found [${found}]`);
+  }
+  if (!/VALIDATION_SHARD:\s*\$\{\{\s*matrix\.shard\s*\}\}\/\$\{\{\s*env\.SHARD_COUNT\s*\}\}/.test(validateText)) errors.push('validate-repo:shard-env-not-wired');
+  if (!/VALIDATION_MERGE_SHARDS:\s*\$\{\{\s*env\.SHARD_COUNT\s*\}\}/.test(validateText)) errors.push('validate-repo:merge-env-not-wired');
+  if (!/needs:\s*shard/.test(validateText)) errors.push('validate-repo:aggregate-does-not-need-shards');
+  if (!/pattern:\s*validation-shard-\*-\$\{\{\s*github\.run_id\s*\}\}/.test(validateText)) errors.push('validate-repo:aggregate-does-not-download-this-runs-shards');
 }
 for (const f of required) if (!files.includes(f)) errors.push(`missing:${f}`);
 // postdeploy-public-audit.yml joined this list on 2026-08-29: the postdeploy
