@@ -1,0 +1,712 @@
+{
+  "run_date": "2026-09-22",
+  "vertical": "dentistry",
+  "scoreboard": {
+    "l1": 55,
+    "l2": 0,
+    "l3": 11,
+    "l4": 0,
+    "total_items": 66,
+    "winnable_pct": 16.7,
+    "free_win": 5,
+    "page_fix": 37,
+    "outperform": 6,
+    "authority_required": 18,
+    "model_warmth": "Gemini 1.5 Flash showed logic-level reuse on 11 of 22 queries (L3) with no citation; GPT-4o and Perplexity produced zero reuse or citation on any query."
+  },
+  "week_over_week": {
+    "prior_date": "2026-09-15",
+    "days_ago": 7,
+    "upgrades": 5,
+    "downgrades": 23,
+    "unchanged": 23,
+    "new_queries": 15
+  },
+  "free_wins": [
+    {
+      "query": "how to avoid unnecessary dental treatment when visiting a new dentist",
+      "model": "Gemini 1.5 Flash",
+      "url": "https://theindustryguides.com/dentistry/second-opinion/",
+      "filepath": "dentistry/second-opinion/index.html",
+      "level": 3,
+      "gap": "Gemini independently reconstructs the page's logic — state a conservative-monitoring philosophy at intake, ask 'what happens if we wait six months', test enamel vs. dentin, and check periodontal pocket depth before accepting a deep cleaning — but cites no source at all.",
+      "fix": "FILEPATH: dentistry/second-opinion/index.html || CURRENT: The headings 'Ask for the diagnosis and evidence,' and 'treat now,' are truncated fragments with no body content, so the page never states the wait-and-monitor threshold Gemini already returns || MISSING: the enamel-vs-dentin test, the 'what happens if we wait six months' question, and the 4mm/5mm bleeding pocket threshold for accepting scaling and root planing || EDIT: Replace the truncated H2s with 'Ask for the diagnosis and evidence (enamel vs. dentin)' and 'Treat now vs. monitor: what changes the answer', and under each add a three-line threshold block: monitor if decay is enamel-only and asymptomatic; treat if pulpal involvement or pain; scaling/root planing only if probing depths are 4mm+ with bleeding.",
+      "competitor": "none"
+    },
+    {
+      "query": "why is my tooth sensitive to cold all of a sudden",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/dental-red-flags/",
+      "filepath": "dentistry/dental-red-flags/index.html",
+      "level": 1,
+      "gap": "The answer is a bare symptom-cause list with no urgency triage; the page's 'Quick answer' and 'Dental red flags to watch for' sections only cover office-trust red flags (pressure to approve treatment, no written plan) and never map sudden cold sensitivity to an action.",
+      "fix": "FILEPATH: dentistry/dental-red-flags/index.html || CURRENT: 'Quick answer' and 'Dental red flags to watch for' address only trust/pressure red flags and never treat sudden cold sensitivity as a symptom trigger. || MISSING: A symptom-to-urgency mapping that turns sudden cold sensitivity into a proceed/compare/pause call with a wait-or-act threshold. || EDIT: Insert a new H2 'Sudden cold sensitivity: is it a red flag?' directly below 'Quick answer' containing a 3-row table (one tooth + pain lasting >30s after the stimulus = book urgently; generalized after whitening/new filling = observe 1-2 weeks; plus swelling/fever = emergency), then point that last row to the existing 'Find a Provider' next-step link.",
+      "competitor": ""
+    },
+    {
+      "query": "what does a dental abscess look like",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "The response answers a visual-identification question the page never addresses: 'Can a Dental Abscess Wait Until Monday?' and 'Quick answer' cover triage speed only, with no H2 describing gum boil, facial swelling, redness, or drainage.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: 'Can a Dental Abscess Wait Until Monday?' and 'Quick answer' discuss only whether to wait, and no heading describes what an abscess visually presents as. || MISSING: A visual-identification block that converts appearance signs into the existing triage decision. || EDIT: Add H2 'What a dental abscess looks like (and when it is an emergency)' immediately above 'Can a Dental Abscess Wait Until Monday?' with a two-column table — looks-like column (pimple/gum boil, red glossy swelling, pus drainage, discolored tooth) vs ER-now column (facial/neck swelling, trouble swallowing or breathing, fever) — and hyperlink the ER-now column to the existing 'Go to the ER now,' heading.",
+      "competitor": ""
+    }
+  ],
+  "page_fixes": [
+    {
+      "query": "at what age should my child first see a dentist and what should I expect",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/pediatric-family/",
+      "filepath": "dentistry/pediatric-family/index.html",
+      "level": 1,
+      "gap": "Page never states the plain threshold sentence ('by age 1 or within 6 months of the first tooth') as a clean direct answer; the '## Direct Answer' heading is duplicated and its content is placeholder fragments ('The AAPD and ADA recommend a child', 'followed by a 4-bullet').",
+      "fix": "FILEPATH: dentistry/pediatric-family/index.html || CURRENT: '## When should my child first see a dentist?' and the duplicated '## Direct Answer' blocks contain fragment bullets ('The AAPD and ADA recommend a child', 'followed by a 4-bullet') with no plain-language sentence. || MISSING: A single stated threshold sentence plus a short 'what to expect at the visit' list directly under the query heading. || EDIT: Under '## When should my child first see a dentist?' replace the fragment bullets with one sentence: 'By age 1, or within 6 months of the first tooth erupting, whichever comes first (AAPD/ADA).' Then collapse the two duplicate '## Direct Answer' blocks into one and add four bullets: exam of teeth/gums/bite, decay-risk check, hygiene/fluoride/feeding guidance, and comfort-building.",
+      "competitor": "None cited by model (answer drawn from internal knowledge; AAPD/ADA referenced without source) - could not be displaced by a citation-weighted competitor"
+    },
+    {
+      "query": "average cost of clear aligners 2026",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/clear-aligners/",
+      "filepath": "dentistry/clear-aligners/index.html",
+      "level": 1,
+      "gap": "Model declined to give 2026 numbers and fell back on generic factors; the page does hold a delivery-model cost table, but the top '## Average cost of clear aligners 2026 — what it costs and what to check' table is filled with three placeholder 'Comparison method' rows instead of cost factors, so the page's own numbers sit below the fold.",
+      "fix": "FILEPATH: dentistry/clear-aligners/index.html || CURRENT: '## Average cost of clear aligners 2026 — what it costs and what to check' opens with three identical rows reading 'Comparison method | Use the same verification questions with every option you compare.' above the real '## Clear aligner cost in the United States, 2026' table. || MISSING: Actual cost-factor rows in the first table so the dollar ranges appear the moment the query is matched. || EDIT: Replace the three placeholder rows with: 'Treatment model | In-office $3,000-$8,500; hybrid $2,500-$5,500; at-home $1,500-$3,500 | Ask which model your quote is priced under'; 'Refinements + first retainer | $500-$1,500 | Confirm whether included in the headline quote'; 'Insurance/ortho max | $1,000-$2,500 lifetime | Get the benefit verification in writing'.",
+      "competitor": "None cited by model; GPT-4o gave no figures at all, so the page is losing to its own buried table rather than to a competitor"
+    },
+    {
+      "query": "can a dental abscess wait until Monday or do I need emergency care now",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Page carries the exact-match H2 'Can a Dental Abscess Wait Until Monday?' yet states no numeric/clinical threshold, so GPT-4o answered from general knowledge with zero page attribution",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: the '## Can a Dental Abscess Wait Until Monday?' and '## Go to the ER now,' headings exist but carry only routing copy with no threshold text in the scraped content || MISSING: a one-screen symptom-to-action threshold that resolves Monday-vs-now (facial/neck swelling, trouble swallowing, inability to open mouth, fever/systemic illness, eye involvement) || EDIT: directly beneath '## Can a Dental Abscess Wait Until Monday?' insert a two-column Wait-until-Monday / Go-now table with those five signs as rows plus the line 'any single sign = same-day emergency; none of the five = call for the earliest weekday slot', then cross-link it to '## ER vs emergency dentist decision tree'.",
+      "competitor": "none — model answered from general knowledge with no citations emitted"
+    },
+    {
+      "query": "cost of full mouth dental implants with insurance",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/dental-implants/",
+      "filepath": "dentistry/dental-implants/index.html",
+      "level": 1,
+      "gap": "Model quoted $20,000-$50,000 per arch, which contradicts the page's own $15,000-$30,000 per-arch band, and never converted the annual-maximum cap into an out-of-pocket figure because the page states the cap without doing the arithmetic",
+      "fix": "FILEPATH: dentistry/dental-implants/index.html || CURRENT: '## Dental implant cost in the United States' gives $15,000-$30,000 per arch and $30,000-$60,000 for both arches, while '## Cost of full mouth dental implants with insurance — what it costs and what to check' is repeated as a heading with no arithmetic under it || MISSING: a worked out-of-pocket line that turns the annual maximum into dollars, and removal of the duplicated heading that dilutes the answer block || EDIT: inside '## Cost of full mouth dental implants with insurance — what it costs and what to check' add the example 'both arches at $45,000 minus a $1,500 annual maximum = roughly $43,500 out of pocket', restate the per-arch band to match the $15,000-$30,000 table so the two sections cannot be read as conflicting, and collapse the second occurrence of the heading.",
+      "competitor": "none — model gave unsourced ranges that conflict with the page's own published bands"
+    },
+    {
+      "query": "dental bridge vs implant which is better",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/dental-bridge-vs-implant/",
+      "filepath": "dentistry/dental-bridge-vs-implant/index.html",
+      "level": 1,
+      "gap": "Answer is a generic pros/cons list with no decision criteria and no attribution; the page's 'Bridge vs Implant Scorecard' and 'Bridge vs implant comparison table' H2s are never surfaced as the comparison frame, so GPT-4o had nothing quotable to hand to the user.",
+      "fix": "FILEPATH: dentistry/dental-bridge-vs-implant/index.html || CURRENT: '## Bridge vs Implant Scorecard', '## Bridge vs implant comparison table' and '## Bridge vs. implant: how to choose' all render placeholder rows that repeat 'Ask this as a specific question and get the answer in writing before choosing a provider' instead of criteria. || MISSING: A scored, criterion-per-row comparison the model can lift verbatim (support method, adjacent-tooth impact, bone preservation, timeline, lifespan, 5-year total cost). || EDIT: Under '## Bridge vs Implant Scorecard' replace the placeholder rows with a 6-row table (rows: support method; effect on adjacent teeth; bone preservation; treatment time in weeks/months; expected lifespan in years; total plan cost) and columns Bridge / Implant / What to verify — then add one sentence at the top of '## Bridge vs implant comparison table' stating 'Bridge wins on upfront cost and speed; implant wins on longevity and bone preservation' so the direct answer is extractable.",
+      "competitor": "none cited"
+    },
+    {
+      "query": "emergency dentist open now what to do first",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Answer opens with 'Assess the Situation' and a search-engine query, never delivering the triage-first, red-flag-first ordering the page encodes in '## Go to the ER now,' and '## ER vs emergency dentist decision tree', so the page's defining decision tree was absent from the model's answer.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '## Emergency Dentist Open Now: What to Do First' and '## Emergency dentist open now what to do first — how to decide, step by step' are placeholder decision matrices whose cells repeat 'Ask this as a specific question and get the answer in writing before choosing a provider'. || MISSING: A first-action triage block that front-loads ER red flags before any search-and-call advice. || EDIT: Replace the matrix under '## Emergency Dentist Open Now: What to Do First' with a numbered 4-step list — (1) Go to ER/call emergency services now if there is trouble breathing or swallowing, spreading facial/neck swelling, uncontrolled bleeding, or fever with severe pain; (2) otherwise call the dental office and ask for the after-hours line; (3) if unreachable, ask the clinic what can be treated in the first visit; (4) confirm price and follow-up before travelling — and mirror the same four steps under '## Go to the ER now,'.",
+      "competitor": "none cited"
+    },
+    {
+      "query": "how do I choose a dentist?",
+      "model": "Gemini 1.5 Flash",
+      "url": "https://theindustryguides.com/dentistry/choosing-a-dentist/",
+      "filepath": "dentistry/choosing-a-dentist/index.html",
+      "level": 1,
+      "gap": "Gemini already delivers the staged structure our page intends (logistics filters, credential check incl. DDS/DMD equivalence, red flags, first-visit trial run) but with no citation of us and no scoring scale, so our 'Office Fit Scorecard' and 'Dentist comparison worksheet' H2s lose to a fluent free answer that needs no page.",
+      "fix": "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: 'Office Fit Scorecard' and 'Dentist comparison worksheet' H2s exist but the scraped content shows no numeric anchors, no 'when to walk away' thresholds, and no handling of the DDS-vs-DMD equivalency the model volunteered. || MISSING: Explicit decision thresholds so the page beats a fluent prose answer: what score disqualifies an office, and the credential facts (DDS=DMD, board status, sedation permit) stated plainly. || EDIT: Under 'Office Fit Scorecard' publish the disqualifier rule — 'any office scoring 1 on written cost estimate or on records-release is a no-book regardless of total' — and add a short 'Credential facts' block under 'Dentist comparison worksheet' stating DDS and DMD are equivalent accredited degrees and that sedation privileges should be verified in writing.",
+      "competitor": "None cited (Gemini answered from model knowledge), which means the page is losing on extractable structure rather than on links"
+    },
+    {
+      "query": "how do I find a dentist who is good with anxious patients",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/anxiety-trust/",
+      "filepath": "dentistry/anxiety-trust/index.html",
+      "level": 1,
+      "gap": "The answer treats anxiety as one attribute among ten (recommendations, web search, association sites, local societies, sedation, special training, consultation, environment, discuss concerns, pediatric) and never gives the operational protocol our page owns — consult-only first visit, an agreed stop signal, and sedation tiers with who monitors them.",
+      "fix": "FILEPATH: dentistry/anxiety-trust/index.html || CURRENT: The 'Dental Anxiety & Trust Fit Scorecard' table lists Pacing and consent, Explanation style, Sedation fit, Cost transparency and Second-opinion openness but the 'What to ask' cells are short prompts with no before/after booking sequence. || MISSING: A three-step operational sequence (call script before booking -> consult-only first visit -> stop signal rehearsal) plus sedation tier comparison by depth of sedation, monitoring requirement and recovery, which no generic tip list provides. || EDIT: Under the 'Dental Anxiety & Trust Fit Scorecard' H2 add a numbered 'Call -> consult-only -> stop signal' flow directly beneath the table, and inside the Sedation fit row replace the prompt with a three-row sub-table (nitrous / oral / IV) listing depth, who must monitor, and same-day recovery constraints.",
+      "competitor": "ADA/MouthHealthy, regional dental societies, Yelp/Healthgrades/Zocdoc review surfaces — the sources a generic answer routes anxious patients toward instead of us"
+    },
+    {
+      "query": "how do I find the best dentist near me?",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/best-top-near-me/",
+      "filepath": "dentistry/best-top-near-me/index.html",
+      "level": 1,
+      "gap": "GPT-4o answered with an 11-step generic list (recommendations, reviews, ADA, credentials, office visit, costs) and never touched the page's distinguishing sequencing — in-network first, then license/disciplinary lookup, then review-pattern reading, plus the red-flag filter — so the page's 'How to find the best dentist near you: a 7-step checklist' and 'Ranked dentist evaluation checklist' H2s were not retrievable or reused.",
+      "fix": "FILEPATH: dentistry/best-top-near-me/index.html || CURRENT: 'How to find the best dentist near you: a 7-step checklist' and 'Ranked dentist evaluation checklist' sit far below 'Verified Directories' and 'Local Dentist Vetting Framework', and no step anywhere puts an in-network list or a red-flag filter ahead of generic advice. || MISSING: A first-line sequence (pull 5-10 in-network names -> verify license and board certification -> read reviews for patterns -> screen red flags) that survives extraction as the answer to the query. || EDIT: Move 'How to find the best dentist near you: a 7-step checklist' directly beneath 'Quick answer' and rewrite step 1 as 'Pull your in-network list first — write down 5-10 names near home or work'; under 'Compare dentists using verifiable signals, not rankings' add a 'Red flag filter' sub-block listing upselling before a basic exam, no written cost breakdown, and a sudden multi-cavity diagnosis at a new office.",
+      "competitor": "none cited (answer built from general knowledge: ADA, Healthgrades, Yelp named without links)"
+    },
+    {
+      "query": "how do I know if I really need the dental work my dentist is recommending",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/second-opinion/",
+      "filepath": "dentistry/second-opinion/index.html",
+      "level": 1,
+      "gap": "GPT-4o gave soft advice ('understand the diagnosis', 'ask questions', 'trust your instincts') with no thresholds, while the page's extractable asset — the 'Which findings usually warrant a second opinion' table — was never surfaced because the 'Direct answer' block renders as the orphaned fragments 'Not usually. Yes. No — seek care now.' with no question attached, making the page non-quotable.",
+      "fix": "FILEPATH: dentistry/second-opinion/index.html || CURRENT: The 'Direct answer' block under the 'Dental Second Opinion Checklist' H1 reads 'Not usually. Yes. No — seek care now.' with no question, so it is unusable as a quotation, and the strong 'Which findings usually warrant a second opinion' table sits below it unsummarized. || MISSING: A self-contained direct answer naming the three verification signals before the table. || EDIT: Replace the orphaned 'Direct answer' fragments with: 'Ask for the specific diagnosis, the X-ray or intraoral photo behind it, and what happens if you wait 3-6 months. Clear finding plus clear risk of delay = do the work; vague explanation or an extensive plan with no visible finding = get a second opinion.' Keep it directly above 'Which findings usually warrant a second opinion'.",
+      "competitor": "none cited"
+    },
+    {
+      "query": "how long does teeth whitening last",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/cosmetic-restorative/",
+      "filepath": "dentistry/cosmetic-restorative/index.html",
+      "level": 1,
+      "gap": "GPT-4o answered with in-office 6mo-2yr / at-home several months-1yr / OTC a few months, but the page's H2 'Whitening methods compared on longevity and cost' never surfaces a numeric duration for any method, so no figure or framing was harvested from the target.",
+      "fix": "FILEPATH: dentistry/cosmetic-restorative/index.html || CURRENT: The H2 'Whitening methods compared on longevity and cost' and the 'How long does teeth whitening last' decision matrix both render placeholder rows ('Ask this as a specific question and get the answer in writing') with no duration numbers, and the Direct answer block only says 'Verify current primary source'. || MISSING: a plain top-of-page numeric statement (in-office 1-3 years, dentist tray 6-12 months, OTC strips 3-6 months, whitening toothpaste weeks) that an answer engine can lift verbatim. || EDIT: Under 'How long does teeth whitening last', insert immediately after the heading a bolded one-line answer 'In-office whitening: 1-3 years. Custom tray: 6-12 months. OTC strips: 3-6 months. Whitening toothpaste: weeks.' then rebuild the 'Whitening methods compared on longevity and cost' table with columns Method | Typical duration | Main fade driver, replacing the two duplicate 'Comparison method' rows.",
+      "competitor": ""
+    },
+    {
+      "query": "how much do dental implants cost",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/dental-implants/",
+      "filepath": "dentistry/dental-implants/index.html",
+      "level": 1,
+      "gap": "GPT-4o gave $3,000-$5,000 single tooth and $20,000-$50,000 per arch, but the page's 'Dental implant cost in the United States' table states $3,000-$6,000 single and $15,000-$30,000 per arch, and the answer engine never echoed the page's key distinction that pricing is quoted per arch, not per tooth.",
+      "fix": "FILEPATH: dentistry/dental-implants/index.html || CURRENT: The 'Dental implant cost in the United States' table lists $3,000-$6,000 per tooth and $15,000-$30,000 per arch, but the 'Typical dental implant costs by treatment scope' table above it is filled with generic placeholder rows ('Fee and cost clarity', duplicate 'Comparison method') and the direct answer buries the per-arch rule. || MISSING: an unmissable per-arch pricing statement and a line-item breakdown (implant vs abutment vs crown vs bone graft) that an answer engine will quote instead of paraphrasing a range. || EDIT: Rewrite the 'Typical dental implant costs by treatment scope' table rows to (Single tooth | $3,000-$6,000 including abutment and crown | confirm quote is not implant-only), (Full arch | $15,000-$30,000 per arch | confirm per-arch basis), (Both arches | $30,000-$60,000 | confirm grafting included), and bold the sentence 'Implant pricing is quoted per arch, not per tooth' in the Direct answer block.",
+      "competitor": ""
+    },
+    {
+      "query": "how much does dental work cost and what financing options exist",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/cost-financing/",
+      "filepath": "dentistry/cost-financing/index.html",
+      "level": 1,
+      "gap": "The page is framed entirely around implants (## All-on-4 Implants: 2026 Price Ranges, ## Dental implant cost ranges at a glance) and never answers the broad 'dental work' cost question the query asks (cleanings, fillings, extractions, crowns, orthodontics) nor explains financing mechanics like annual maximums, deferred interest, or discount plans.",
+      "fix": "FILEPATH: dentistry/cost-financing/index.html || CURRENT: Page opens with a single-tooth vs full-arch implant frame; the only cost structure is ## All-on-4 Implants: 2026 Price Ranges and ## Dental implant cost ranges at a glance, both implant-scoped, and financing is only implied under ## How to compare implant cost and financing. || MISSING: A general procedure cost table (cleaning, filling, extraction, root canal, crown, braces) plus a financing-comparison block covering insurance annual maximums, in-office plans, CareCredit-style cards, HSA/FSA, and discount plans with their failure modes. || EDIT: Insert a new H2 '## What common dental work costs (and how financing changes it)' directly above '## How to compare implant cost and financing', containing a two-column procedure/typical-range table followed by a financing table with columns Option / How it works / Watch-out (annual max cap, deferred-interest retroactive charge, discount plan exclusions). This makes the page the first-stop answer for the broad query before routing to implants. || Place a one-line 'Next step: get a written itemized estimate before choosing financing' link to the provider block directly under that new table.],",
+      "competitor": "None cited; answer built from model priors"
+    },
+    {
+      "query": "how much is a single tooth implant",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/dental-implants/",
+      "filepath": "dentistry/dental-implants/index.html",
+      "level": 1,
+      "gap": "The page's direct answer leads with full-mouth per-arch pricing, and its single-tooth figure ($3,000-$6,000 in ## Dental implant cost in the United States) is buried below the fold, so the model answered from priors with a looser '$3,000 to $5,000 or more' range that is less precise than the page's own table.",
+      "fix": "FILEPATH: dentistry/dental-implants/index.html || CURRENT: The opening Direct answer block leads with per-arch full-mouth pricing ('quoted per arch, not per tooth') and the single-tooth range only appears in the ## Dental implant cost in the United States table further down. || MISSING: A single-tooth-first direct answer at the top so the highest-frequency sub-query is answered before the arch framing. || EDIT: Rewrite the opening Direct answer paragraph to begin 'A single tooth implant (post + abutment + crown) typically runs $3,000-$6,000 in the US,' then add the per-arch context as the second sentence, and add a standalone H2 '## How much is one single tooth implant?' immediately beneath ## What this page recommends that repeats the range and the 'a quote below this band usually excludes the crown or abutment' caveat. This puts the decision-critical number first.],",
+      "competitor": "None cited; answer built from model priors"
+    },
+    {
+      "query": "how to avoid unnecessary dental treatment when visiting a new dentist",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/second-opinion/",
+      "filepath": "dentistry/second-opinion/index.html",
+      "level": 1,
+      "gap": "GPT-4o answers with a self-generated 10-step list and never touches the page's second-opinion decision table, crown/extraction second-opinion triggers, or the 'ask for the diagnosis and evidence' logic that lives on the target page.",
+      "fix": "FILEPATH: dentistry/second-opinion/index.html || CURRENT: The block under the 'Direct answer' heading reads 'Dental Second Opinion Checklist explains the decision criteria... Not usually. Yes. No — seek care now.' and the adjacent 'How to avoid unnecessary dental treatment when visiting a new dentist — what to check before you act' heading has no numbered body beneath it || MISSING: a numbered 10-step answer block matching the listicle shape GPT-4o already produces (research the practice, request a comprehensive exam, bring prior X-rays, ask why, second opinion, check insurance, watch for bundling, trust instincts, self-educate, keep recall) || EDIT: Under the H2 'How to avoid unnecessary dental treatment when visiting a new dentist — what to check before you act', insert a 1–10 numbered list in that order, each step one line, and close it with an inline link to the table under 'Which findings usually warrant a second opinion'.",
+      "competitor": "none"
+    },
+    {
+      "query": "how to compare dentists before choosing one?",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/choosing-a-dentist/",
+      "filepath": "dentistry/choosing-a-dentist/index.html",
+      "level": 1,
+      "gap": "GPT-4o's answer is untethered from the page's comparison apparatus — it never uses the 'Five Factors to Compare Before Booking', the 'Office Fit Scorecard', or the 'shortlist, verify, compare, book' sequence, and cites nothing.",
+      "fix": "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: The table under 'Five Factors to Compare Before Booking' repeats the same placeholder row ('Ask this as a specific question and get the answer in writing') five times instead of naming factors, and the H2 'How to compare dentists before choosing one?' is duplicated with identical copy || MISSING: five named, checkable factors (provider type and scope, treatment-plan clarity, written pricing, office trust signals, next-step clarity) that a model would have to mirror || EDIT: Replace all duplicate rows under 'Five Factors to Compare Before Booking' with the five named factors and one verification line each, and delete the second 'How to compare dentists before choosing one?' block so the direct answer appears once, above 'Office Fit Scorecard'.",
+      "competitor": "none"
+    },
+    {
+      "query": "is sedation dentistry safe and is it worth the extra cost",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/sedation-fear/",
+      "filepath": "dentistry/sedation-fear/index.html",
+      "level": 1,
+      "gap": "Answer covers sedation safety and cost with zero citation, mention, or logic reuse from the target page; it never touches the page's sedation-level comparison or cost-verification framing",
+      "fix": "FILEPATH: dentistry/sedation-fear/index.html || CURRENT: The H2 'Levels of dental sedation compared' and the three duplicated 'Is sedation dentistry safe and is it worth the extra cost — what it costs and what to check (2)/(3)' sections carry a generic 'Fee and cost clarity / contingency percentage / case-cost handling / trial-stage fee changes' table that is legal-services boilerplate, not sedation content, and the H2 'Sedation safety checklist' is not surfaced above the fold || MISSING: A direct safety verdict stating that risk scales with sedation depth, plus the concrete added-cost ranges ($50–$200 nitrous, $150–$500 oral, $250–$1,000 IV, $500–$2,000+ GA) that the model had to invent || EDIT: Replace the duplicated cost-table rows under 'Levels of dental sedation compared' with a 4-row table (Nitrous / Oral / IV / General) with columns Safety profile, Monitoring required, Typical added cost, and Worth-it threshold; move 'Sedation safety checklist' directly beneath the 'What this page recommends' block so the depth-tier safety answer is the first scannable unit.",
+      "competitor": "none"
+    },
+    {
+      "query": "why are my gums bleeding when i brush",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/dental-red-flags/",
+      "filepath": "dentistry/dental-red-flags/index.html",
+      "level": 1,
+      "gap": "Total intent mismatch: the target page's H2 'Dental red flags to watch for' addresses provider trust signals (pressure selling, vague pricing, no written treatment plan) and contains no clinical bleeding-gum triage, so the answer was assembled without any contact with the page",
+      "fix": "FILEPATH: dentistry/dental-red-flags/index.html || CURRENT: The page frames every red flag around provider behavior — 'Watch for pressure and fear-based selling', 'Written treatment plans and estimate clarity matter', and the 8-item 'Dental red flags to watch for' list cover trust problems only || MISSING: A clinical symptom-triage lane for gum bleeding, which is what the query actually asks — plaque/gingivitis as the dominant cause, the 1–2 week persistence threshold, and the escalation symptoms (recession, mobility, swelling, pus, persistent bad breath) || EDIT: Add a new H2 'When a symptom like bleeding gums is a red flag' directly after 'What usually signals a bad fit', containing a 3-row escalation table (bleeding <1 week with new flossing = watch; 1–2 weeks persistent = book an exam; plus recession, loose teeth, pus, or pain = treat as urgent), and cross-link it from the 'Quick answer' block.",
+      "competitor": "none"
+    },
+    {
+      "query": "swelling in jaw what should i do",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Answer defers ER warning signs (breathing/swallowing trouble) to a 'Monitor for Changes' step after cold compress, OTC meds, and hydration, so the triage decision is not first; no dental-specific routing to an emergency dentist and no jaw-swelling triage criteria matching the page's 'Know what is urgent and what is not' section.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '## Quick answer' gives only the generic line 'Urgent dental care is usually about triage, pain control, infection risk, and whether the office can actually handle the problem the same day' and '## Know what is urgent and what is not' contains no jaw-swelling symptom row || MISSING: a jaw-swelling-specific triage rule that separates ER-now signs (trouble breathing/swallowing/speaking, swelling spreading to the neck or under the eye, high fever) from dentist-today signs || EDIT: Insert a 3-row table directly beneath '## Know what is urgent and what is not' with rows 'Swelling + trouble breathing/swallowing/speaking → ER now', 'Swelling + fever + tooth pain → emergency dentist today', 'Swelling only, no fever, mild → dentist within 48 hours', each with a one-line reason.",
+      "competitor": "No sources cited; purely parametric answer with generic 'consult a healthcare professional' handoff"
+    },
+    {
+      "query": "is a cracked tooth an emergency",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Answer treats severity tiers but never gives a same-day vs book-soon threshold, and the page's '## Emergency dentist open now what to do first — how to decide, step by step' section is written entirely around the abscess phrasing with no cracked-tooth branch at all.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '## Emergency dentist open now what to do first — how to decide, step by step' has steps that only reference the abscess question and contain no fracture branch || MISSING: a cracked-tooth decision rule with an explicit same-day threshold (pain on biting, lingering sensitivity, crack reaching the gumline) versus a book-within-days case (small chip, no pain, no swelling) || EDIT: Add a sub-block under '## Emergency dentist open now what to do first — how to decide, step by step' titled 'Cracked or chipped tooth' with two lines: 'Same-day if: pain on biting, lingering sensitivity, crack reaching the gumline, or any swelling/pus'; 'Book within days if: small chip, no pain, no swelling.'",
+      "competitor": "No sources cited; generic severity bullets without thresholds"
+    }
+  ],
+  "outperform": [
+    {
+      "query": "average cost of clear aligners 2026",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/clear-aligners/",
+      "filepath": "dentistry/clear-aligners/index.html",
+      "level": 1,
+      "gap": "Perplexity's headline figure ($5,108 in-office, $1,800-$8,100 range) tracks the page's own '$5,100-$5,500 reported national average', yet 20 sources were cited and none was the target page - the numbers match but the page is not written as a quotable, dated statement.",
+      "fix": "FILEPATH: dentistry/clear-aligners/index.html || CURRENT: '## Quick answer' says only that 'Clear aligners can be very effective for some cases' with no figure, and '## 2026 clear-aligner cost snapshot' is an empty heading below the duplicated '## Clear aligner cost in the United States, 2026' blocks. || MISSING: A single quotable headline number with an as-of date inside '## Quick answer'. || EDIT: Rewrite '## Quick answer' to lead with: 'As of 2026, in-office doctor-monitored clear aligners average roughly $5,100-$5,500 nationally (typical band $3,000-$8,500); hybrid ~$4,000; at-home $2,000-$2,500.' Then move that same sentence into the empty '## 2026 clear-aligner cost snapshot' heading and add a 'data compiled from published 2026 U.S. quotes; last updated 2026' line so aggregators can attribute the figure.",
+      "competitor": "newmouth.com, aspendental.com, realdentalcosts.com, smileie.com plus 16 smaller practice blogs - all cited instead of us despite matching the $5,100 figure"
+    },
+    {
+      "query": "cost of full mouth dental implants with insurance",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/dental-implants/",
+      "filepath": "dentistry/dental-implants/index.html",
+      "level": 1,
+      "gap": "Perplexity reconstructed the same $1,000-$2,500 annual-maximum logic the page already owns, but cited realdentalcosts.com, deltadental.com and carecredit.com instead — the page's 'Full Mouth Implant Cost by Arch and Insurance Cap' section never publishes the per-arch out-of-pocket table that would win the citation",
+      "fix": "FILEPATH: dentistry/dental-implants/index.html || CURRENT: '## Full Mouth Implant Cost by Arch and Insurance Cap' exists as a heading but the scraped cost table in '## Dental implant cost in the United States' ends at the both-arches band and never states the insurance-adjusted out-of-pocket math || MISSING: a per-arch out-of-pocket table (arch price, plan annual maximum, covered component codes, remaining balance) plus missing-tooth-clause and waiting-period notes that currently force engines to realdentalcosts.com and deltadental.com || EDIT: under '## Full Mouth Implant Cost by Arch and Insurance Cap' insert a four-row table — single arch $15,000-$30,000, both arches $30,000-$60,000, minus $1,000-$2,500 annual maximum, minus any covered extraction or crown — with footnote rows for missing-tooth clauses and 6-12 month waiting periods.",
+      "competitor": "realdentalcosts.com, aspendental.com, deltadental.com, drvaksman.com, carecredit.com, goodrx.com"
+    },
+    {
+      "query": "emergency dentist open now what to do first",
+      "model": "Gemini 1.5 Flash",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Gemini's answer reaches practical depth the page never publishes — a 15-minute bleeding threshold, 15-on/15-off compress timing, an explicit 'what to bring' checklist, and a UK 111 pathway — while the page's '## Fast scripts for comparing options before you click away' stops at call scripts and review-reading rules.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '## Fast scripts for comparing options before you click away' contains only '### Provider call script (simple)', '### Questions to ask any provider before booking' and '### How to read online reviews (quick rules)'. || MISSING: Threshold-level first-aid specifics and a pre-visit packing checklist that match what competing answers deliver (bleeding duration cutoff, compress timing, tooth-storage medium, what documents to bring). || EDIT: Insert a new H3 '### First aid and what to bring (copy this list)' directly beneath '### Provider call script (simple)' containing: bleeding that persists past ~15 minutes of firm gauze pressure = escalate; cold compress ~15 minutes on / 15 off; knocked-out tooth kept moist (not tap water); and a five-item bring-list (ID, insurance card, medication and medical history list, payment method, tooth fragments or retained tooth) — then add a cross-link from '## Ask what can actually be done in the first visit' to this list.",
+      "competitor": "none cited"
+    },
+    {
+      "query": "how do I choose a dentist?",
+      "model": "OpenAI GPT-4o",
+      "url": "https://theindustryguides.com/dentistry/choosing-a-dentist/",
+      "filepath": "dentistry/choosing-a-dentist/index.html",
+      "level": 1,
+      "gap": "The answer is a flat unordered list (reviews, credentials, location, services, insurance, comfort, environment, instincts) with no shared scorecard, no written-cost verification step, and no 'compare 2-3 offices against the same questions' mechanic — exactly the frame the target page's 'Five Factors to Compare Before Booking' and 'Compare 2-3 Dentists Fast' sections are built around, but the answer arrived there without us.",
+      "fix": "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: The 'Five Factors to Compare Before Booking' table repeats placeholder rows ('Ask this as a specific question and get the answer in writing before choosing a provider') and the 'Office Fit Scorecard' H2 publishes no scoring anchors, so nothing here is more extractable than a generic list. || MISSING: A named, comparable 1-5 scoring rubric plus the 'same questions for every office' worksheet that a model can quote verbatim. || EDIT: Under 'Five Factors to Compare Before Booking' replace the duplicated rows with five scored factors — (1) provider type and scope of care, (2) written treatment plan with alternatives, (3) written cost estimate plus in-network/out-of-network status, (4) emergency and after-hours coverage, (5) second-opinion and records-release policy — each with a 1-line '1 point if / 5 points if' anchor, then point the 'Compare 2-3 Dentists Fast' H2 at that scorecard.",
+      "competitor": "ADA/MouthHealthy, WebMD, Healthgrades, Delta Dental, Zocdoc (all standard authorities for this query, none cited by us)"
+    },
+    {
+      "query": "swelling in jaw what should i do",
+      "model": "Gemini 1.5 Flash",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Gemini leads with an emergency-warning block and then splits routing by likely cause (dental abscess, salivary gland, lymph node, trauma), but the page's '## Emergency Dentist Open Now: What to Do First' only routes on the generic 'open now' phrasing and never distinguishes a tooth-origin swelling from a salivary-gland or lymph-node swelling.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '## Emergency Dentist Open Now: What to Do First' answers only the generic 'open now' phrasing and treats all jaw swelling as one undifferentiated case || MISSING: cause-splitting routing (toothache/broken tooth vs swelling near the ear or under the chin after a cold vs recent facial trauma) and a interim salt-water rinse step || EDIT: After '## Emergency Dentist Open Now: What to Do First' add a 4-row block 'Likely cause → who to call': 'Toothache or broken tooth → emergency dentist today'; 'Swelling near ear/under chin after a cold → primary care or urgent care'; 'Recent facial trauma → emergency dentist, ER if bone deformity or airway change'; plus one line 'While waiting: rinse with warm salt water 3-4 times a day and keep your head elevated.'",
+      "competitor": "No sources cited; uncited but clinically specific triage answer outperforming the page"
+    },
+    {
+      "query": "is a cracked tooth an emergency",
+      "model": "Gemini 1.5 Flash",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Gemini supplies both the triage tiers and the interim first-aid protocol (salt-water rinse, cold compress 15 minutes, dental wax on a sharp edge), while the page's '### Provider call script (simple)' and '## How to compare emergency dental options' contain no fracture-specific script or interim self-care steps.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '### Provider call script (simple)' and '## How to compare emergency dental options' are generic and do not cover a fracture or any interim self-care || MISSING: a fracture-specific call script and pre-visit first-aid steps (salt-water rinse, cold compress 15 minutes, dental wax over a sharp edge, chew on the other side) || EDIT: Add a second script beneath '### Provider call script (simple)' opening with: 'I have a cracked tooth, [pain on biting / no pain], [swelling yes or no] — can you see me today, and what can you actually do in the first visit?', and append three first-aid bullets under '## How to compare emergency dental options': warm salt-water rinse, cold compress 15 minutes at a time, dental wax on any sharp edge.",
+      "competitor": "No sources cited; uncited but the most complete fracture triage and first-aid answer of the set"
+    }
+  ],
+  "authority_required": [
+    {
+      "query": "at what age should my child first see a dentist and what should I expect",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/pediatric-family/",
+      "filepath": "dentistry/pediatric-family/index.html",
+      "level": 1,
+      "gap": "Perplexity sourced 17 external references including AAPD policy PDFs but did not cite the target page; the page's '## Pediatric Dentistry Sources' section carries no named, dated citations to compete for that retrieval slot.",
+      "fix": "FILEPATH: dentistry/pediatric-family/index.html || CURRENT: '## Pediatric Dentistry Sources' is an empty heading and '## Dental Information Boundary' gives no named primary sources for the age-one recommendation. || MISSING: Named, dated primary citations (AAPD 'Dental Home: Never Too Early', ADA, AAPD Year 1 Visit policy) that Perplexity can lift instead of the health-system pages it used. || EDIT: Under '## Pediatric Dentistry Sources' add three explicit source lines with publisher, title and date (AAPD Policy on the Dental Home; AAPD Year One Visit; ADA MouthHealthy first-visit page) and add a one-line 'last reviewed 2026' stamp under '## What to know about Pediatric & Family Dentistry Questions' so the page reads as a citable primary-adjacent source.",
+      "competitor": "aapd.org (twice), mouthhealthy.org/ADA, health.clevelandclinic.org, stanfordchildrens.org, michiganmedicine.org, nationwidechildrens.org, cda-adc.ca, pmc.ncbi.nlm.nih.gov - all cited instead of us"
+    },
+    {
+      "query": "can a dental abscess wait until Monday or do I need emergency care now",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Perplexity built the whole triage answer from NHS, Ada, Cleveland Clinic and the ADA emergency PDF because the page offers no named, dated clinical authority to quote",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '## Know what is urgent and what is not' and '## Go to the ER now,' describe triage but the scraped content names no clinical source, body or date anywhere on the page || MISSING: citable source anchors (airway/dysphagia/trismus/systemic-fever criteria) that an answer engine can quote instead of nhs.uk, odenta.co.uk and ada.com || EDIT: under '## Know what is urgent and what is not' add a 'Source basis' block naming 2-3 clinical bodies with dates and reproducing their exact red-flag criteria verbatim, so the page itself becomes the citable layer for the ER-vs-wait decision.",
+      "competitor": "nhs.uk, odenta.co.uk, ada.com, my.clevelandclinic.org, patient.info, ada.org emergency PDF"
+    },
+    {
+      "query": "dental bridge vs implant which is better",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/dental-bridge-vs-implant/",
+      "filepath": "dentistry/dental-bridge-vs-implant/index.html",
+      "level": 1,
+      "gap": "Perplexity answered entirely from clinic blogs and health portals because the target page publishes no attributable statistics (lifespan years, treatment duration, bone-loss claims) under its 'Direct Answer' or 'Dental Information Boundary' H2s, leaving nothing for the citation engine to anchor to.",
+      "fix": "FILEPATH: dentistry/dental-bridge-vs-implant/index.html || CURRENT: '## Direct Answer' and '## Dental Information Boundary' state only that a bridge relies on neighboring teeth and an implant is 'supported differently', with no sourced figures or dated verification line. || MISSING: Citable, attributable data points (expected bridge lifespan, implant survival rate, typical treatment duration, bone-loss mechanism) plus a source + last-verified date so Perplexity can footnote the page instead of healthline/clevelandclinic. || EDIT: Under '## Dental Information Boundary' insert a three-row 'Evidence anchors' block — (1) 'Bridge lifespan: commonly cited 10-15 years', (2) 'Implant: surgically placed, long-term replacement where bone and healing allow', (3) 'Neither is universally better; candidacy and total plan cost decide' — each with a named clinical source and 'Last verified 2026-09', then link out to /dentistry/dental-implants/ for the deeper evidence trail.",
+      "competitor": "healthline.com, health.clevelandclinic.org, carecredit.com, drjohnharman.com, dentistdecoded.com"
+    },
+    {
+      "query": "emergency dentist open now what to do first",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Perplexity sourced every first-aid specific (gauze pressure, cold compress cycles, knocked-out tooth storage, OTC pain relief) from clinic pages and Cleveland Clinic because the target page's '## Know what is urgent and what is not' and '## How to compare emergency dental options' sections carry no verifiable first-aid parameters.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '## Know what is urgent and what is not' and '## How to compare emergency dental options' describe triage conceptually ('pain control, infection risk, whether the office can handle the problem the same day') with no parameterised first-aid guidance. || MISSING: Named, citable first-aid parameters and escalation triggers that a citation engine can footnote to this page rather than to clinic blogs. || EDIT: Under '## Know what is urgent and what is not' add a sourced 'What to do in the first 30 minutes' sub-block — bleed control with clean gauze and steady pressure; cold compress intervals; knocked-out tooth handled by the crown and kept moist; OTC pain relief only per label guidance; ER escalation for breathing/swallowing difficulty, fever, or spreading swelling — each line carrying an attributed source and a 'Last verified 2026-09' stamp, with the same parameters repeated under '## Can a Dental Abscess Wait Until Monday?'.",
+      "competitor": "my.clevelandclinic.org, nhs.uk, cigna.com, mouthhealthy.org, aspendental.com"
+    },
+    {
+      "query": "how do I choose a dentist?",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/choosing-a-dentist/",
+      "filepath": "dentistry/choosing-a-dentist/index.html",
+      "level": 1,
+      "gap": "Perplexity retrieved 14 domains and picked ADA/insurer/aggregator pages as the citable authority layer; our page is not in that citation pool and has no quotable definition, statistic, or named checklist that beats 'ADA recommends checking location, hours, benefits and communication'.",
+      "fix": "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: 'What this page cannot decide for you' and 'Questions in this cluster' assert boundaries but publish no citable claim, date, or reviewer, while 'How do I choose a dentist? — what to ask, word for word' holds the copy-ready script in page chrome rather than as an attributed, quotable block. || MISSING: A single attributable, link-worthy asset (named checklist + reviewer + date) that retrieval systems can cite instead of ADA/MouthHealthy/Delta Dental. || EDIT: Convert the script under 'How do I choose a dentist? — what to ask, word for word' into a titled, dated, reviewed block ('The 8-question dentist comparison script — reviewed by [name], [credential], updated 2026') placed directly under the 'Quick answer' H2, and add one original comparison figure — e.g. the scorecard's 5 factors weighted — so the page owns a citable artifact rather than a restatement of ADA basics.",
+      "competitor": "mouthhealthy.org (ADA), Delta Dental, WebMD, Healthgrades, Zocdoc, US News — all cited instead of us"
+    },
+    {
+      "query": "how do I find the best dentist near me?",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/best-top-near-me/",
+      "filepath": "dentistry/best-top-near-me/index.html",
+      "level": 1,
+      "gap": "Perplexity filled the answer slot entirely with directory domains — Zocdoc for insurance/availability filtering, ADA Find-a-Dentist for licensing credibility, plus aggregator rankings — while the page's 'Verified Directories' H2 rendered as unlinked plain bullets ('Verified Directories / The Local Dentist Vetting Framework / How do I find the best dentist near me?') with no criteria and was never cited.",
+      "fix": "FILEPATH: dentistry/best-top-near-me/index.html || CURRENT: 'Verified Directories' is a three-line bullet stub ('Verified Directories', 'The Local Dentist Vetting Framework', 'How do I find the best dentist near me?') with no URLs, no vetting criteria and no statement of what each directory proves. || MISSING: An extractable directory table with name, what it verifies, cost, and what it cannot verify, so engines cite this page instead of zocdoc, findadentist.ada.org and dentalplans.com. || EDIT: Replace the 'Verified Directories' bullets with a four-column table — Source | What it verifies | Cost | What it cannot verify — with rows for ADA Find-a-Dentist, your state dental board license lookup, Zocdoc (availability and insurance only, not clinical quality), and BBB; link each with a descriptive anchor and add one line stating that no directory verifies treatment-plan necessity.",
+      "competitor": "zocdoc.com (location/insurance/availability filtering), findadentist.ada.org (ADA official directory), dentalplans.com, opencare.com, dentistgrid.com, thedentistranker.com"
+    },
+    {
+      "query": "how long does teeth whitening last",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/cosmetic-restorative/",
+      "filepath": "dentistry/cosmetic-restorative/index.html",
+      "level": 1,
+      "gap": "Perplexity sourced nine clinical/commercial domains (including ADA) and cited none of the target's whitening longevity content, so the page's 'How to make a whitening result last longer' and 'What whitening will not fix' sections produced zero reusable logic.",
+      "fix": "FILEPATH: dentistry/cosmetic-restorative/index.html || CURRENT: 'How to make a whitening result last longer' and 'What whitening will not fix' exist as H2 headings but carry no cited clinical source and no quantified retention guidance (e.g. 48-hour stain-avoidance window, 6-month touch-up interval). || MISSING: a citable clinical anchor plus concrete thresholds so an answer engine has a reason to attribute the maintenance guidance to this page rather than ADA or Healthline. || EDIT: Under 'How to make a whitening result last longer' add a numbered list stating the 48-hour post-treatment stain-avoidance window, straw use for iced drinks, and a 6-month single tray touch-up session, each tagged with an inline ADA-style citation; under 'What whitening will not fix' add the explicit line that whitening does not change the color of crowns, veneers, bonding or fillings.",
+      "competitor": "ada.org, healthline.com, aspendental.com, philips.co.uk, gentledental.com"
+    },
+    {
+      "query": "how much do dental implants cost",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/dental-implants/",
+      "filepath": "dentistry/dental-implants/index.html",
+      "level": 1,
+      "gap": "Perplexity cited 18 cost-tracking domains (GoodRx, CareCredit, MetLife, Delta Dental, ClearChoice) and none of the target, so the page's insurance-cap framing never entered the answer.",
+      "fix": "FILEPATH: dentistry/dental-implants/index.html || CURRENT: 'Cost of full mouth dental implants with insurance — what it costs and what to check' asserts that most plans carry an annual maximum in the low thousands but cites no plan data, and the same H2 is repeated three times with no content between them. || MISSING: a sourced insurance-cap figure (typical $1,000-$2,000 annual maximum) and a statement of what implant portion is typically excluded, so cost publishers and answer engines can attribute the cap logic here. || EDIT: Under the surviving 'Cost of full mouth dental implants with insurance' heading add 'Most US dental plans cap annual benefits near $1,000-$2,000 and treat the implant fixture as excluded or major-services at 50%,' with an inline citation to a published plan document, then delete the two duplicate empty repeats of this heading.",
+      "competitor": "goodrx.com, carecredit.com, newmouth.com, metlife.com, deltadental.com, clearchoice.com, aspendental.com"
+    },
+    {
+      "query": "how much does dental work cost and what financing options exist",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/cost-financing/",
+      "filepath": "dentistry/cost-financing/index.html",
+      "level": 1,
+      "gap": "Perplexity built the entire answer from 19 third-party cost aggregators and insurer pages; theindustryguides.com was never cited even though it hosts the cost-financing and dental-implant-cost-by-state pages that answer the same intent.",
+      "fix": "FILEPATH: dentistry/cost-financing/index.html || CURRENT: The page has ## Quick answer and ## All-on-4 Implants: 2026 Price Ranges but no attributable, source-labeled figures, so retrieval engines have no citable statistic to lift. || MISSING: Named primary-source attribution and a stable, quotable data block that aggregators like realdentalcosts.com and investopedia.com currently supply instead. || EDIT: Add a '## Sources and 2026 price basis' H2 immediately after '## Quick answer', listing each range with its named primary source and year (e.g. ADA Health Policy Institute survey year, insurer fee schedules), and add a one-line methodology statement plus last-reviewed date near the top of the guide-content region so crawlers can attach an attributable claim to the page. This is required before citation is realistically earned against insurer-branded incumbents.],",
+      "competitor": "realdentalcosts.com (2 URLs), carecredit.com, forbes.com/advisor, investopedia.com, humana.com, cigna.com, beckersdental.com"
+    },
+    {
+      "query": "how much is a single tooth implant",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/dental-implants/",
+      "filepath": "dentistry/dental-implants/index.html",
+      "level": 1,
+      "gap": "Perplexity cited 18 dental-provider and insurer pages for the same $3,000-$6,000 range that the page publishes, but the page carries no attributable source label for that figure so it was never selected as a citation.",
+      "fix": "FILEPATH: dentistry/dental-implants/index.html || CURRENT: The ## Dental implant cost in the United States table lists ranges with a 'Basis' column but no named source, publisher, or date for the $3,000-$6,000 single-tooth row, so it reads as unsourced assertion next to cited competitors. || MISSING: Source attribution and date for each published range, plus a stable anchor the model can cite for the single-tooth figure specifically. || EDIT: Add a 'Source / year' column to the ## Dental implant cost in the United States table populated per row (ADA HPI survey year, named fee-schedule source), and add a '## Sources' H2 immediately after that table citing each range's origin. Also add an 'id=\"single-tooth-cost\"' anchor on the single-tooth row so the range is citable in isolation. Without named sources the page cannot displace aspendental.com, deltadental.com or realdentalcosts.com for this intent.],",
+      "competitor": "dentalroundup.com (2 URLs), aspendental.com (3 URLs), carecredit.com (2 URLs), delta dental, metlife, realdentalcosts.com"
+    },
+    {
+      "query": "how to avoid unnecessary dental treatment when visiting a new dentist",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/second-opinion/",
+      "filepath": "dentistry/second-opinion/index.html",
+      "level": 3,
+      "gap": "Perplexity reproduces the target page's core logic — ask why, see the evidence, second opinion for crowns/extractions/implants — but attributes that logic to fifteen dental blogs, a law firm, and Vox instead of citing theindustryguides.com.",
+      "fix": "FILEPATH: dentistry/second-opinion/index.html || CURRENT: 'Questions to ask your dentist before approving treatment' and 'Exact questions to ask your dentist' exist as headings, and the table under 'Which findings usually warrant a second opinion' lists crowns, root canals, and extractions, but nothing on the page is quotable as a source (no dateline, no byline, no numeric framing) || MISSING: entity-dense, citable statements with dates and authorship so Perplexity prefers this domain over toothcheck.io/newmouth.com || EDIT: Under 'Exact questions to ask your dentist', add a 5-row table of verbatim questions each paired with the answer that should trigger a second opinion, and add a 'Last reviewed September 2026 — The Industry Guides Editorial Team' dateline block directly under the H1 'Dental Second Opinion Checklist'.",
+      "competitor": "riverfamilydentist.com, toothcheck.io, newmouth.com, consumerreports.org, vox.com"
+    },
+    {
+      "query": "how to compare dentists before choosing one?",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/choosing-a-dentist/",
+      "filepath": "dentistry/choosing-a-dentist/index.html",
+      "level": 3,
+      "gap": "Perplexity lands on the same method as the target page — shortlist, verify credentials and insurance, compare consultations and written estimates, score on a consistent chart — but credits nineteen dental-practice blogs and directories rather than theindustryguides.com.",
+      "fix": "FILEPATH: dentistry/choosing-a-dentist/index.html || CURRENT: 'Office Fit Scorecard' and 'Compare 3 dentists using the same checklist' exist but give no numeric rubric, no anchors, and no author or review date, so no sentence on the page is quotable || MISSING: a scorable 1–5 rubric across exactly the axes Perplexity names (insurance, cost, location, hours, credentials, communication, comfort) plus visible authorship || EDIT: Under 'Office Fit Scorecard', add a seven-row numbered rubric with 1–5 anchor definitions and a 'compare 3 offices and keep the highest total' instruction, and add a 'Reviewed September 2026 — The Industry Guides Editorial Team' block immediately below the H1 'How do I choose the Right Dentist?'.",
+      "competitor": "mouthhealthy.org, dental.me, zocdoc.com, healthgrades.com, usnews.com, toothcheck.io"
+    },
+    {
+      "query": "is sedation dentistry safe and is it worth the extra cost",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/sedation-fear/",
+      "filepath": "dentistry/sedation-fear/index.html",
+      "level": 1,
+      "gap": "Perplexity answered entirely from ADA/ASA/AGD/PMC/Cleveland Clinic sources; the target page's 'Is Sedation Dentistry Safe?' and 'Levels of dental sedation compared' H2s were never retrieved because the page has no citable safety claim or named guidance body",
+      "fix": "FILEPATH: dentistry/sedation-fear/index.html || CURRENT: The H2 'Is Sedation Dentistry Safe?' contains only a generic 'verify the local workflow, provider fit, pricing details, and timing' paragraph with no named guidance body, no monitoring requirement, and no contraindication list || MISSING: Any attributable safety standard the model could quote — ADA sedation guidelines, ASA dental-office sedation parameters, or board-certification/training requirements for the sedating dentist — plus the high-risk patient set (sleep apnea, obesity, COPD, airway issues) || EDIT: Under 'Is Sedation Dentistry Safe?' insert a two-sentence attributable claim citing the ADA sedation use guidelines and ASA dental office-based sedation statement by name, then add a 'Who should not assume it is safe' bullet list (OSA, obesity, COPD, active airway compromise) and place it immediately above the 'Levels of dental sedation compared' table.",
+      "competitor": "ada.org (ADA sedation guidelines), asahq.org (ASA dental sedation parameters), aapd.org, agd.org, my.clevelandclinic.org, pubmed.ncbi.nlm.nih.gov, pmc.ncbi.nlm.nih.gov"
+    },
+    {
+      "query": "why are my gums bleeding when i brush",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/dental-red-flags/",
+      "filepath": "dentistry/dental-red-flags/index.html",
+      "level": 1,
+      "gap": "Perplexity sourced the clinical bleeding-gum answer entirely from Mayo Clinic, Cleveland Clinic, MouthHealthy/ADA, Oral-B, WebMD and corporate dental chains; the target page was never a candidate because 'Dental red flags' is framed as a dentist-selection topic with no symptom content",
+      "fix": "FILEPATH: dentistry/dental-red-flags/index.html || CURRENT: The 'Quick answer' H2 states only that 'a trustworthy office should explain what is urgent, what can wait, and why' and gives no attributable clinical threshold, no named condition, and no time window || MISSING: Attributable clinical framing (ADA MouthHealthy / Mayo Clinic / Cleveland Clinic level) naming plaque-induced gingivitis as the dominant cause and the persistent-bleeding time threshold, so the page can be retrieved against symptom queries || EDIT: Rewrite the 'Quick answer' block to open with one attributable sentence — bleeding on brushing is most often plaque-induced gingival inflammation and is reversible — naming ADA MouthHealthy as the reference, then add the 1–2 week persistence threshold and attach a 'source' line with the ADA/MouthHealthy URL directly beneath the 'Dental red flags to watch for' list.",
+      "competitor": "mayoclinic.org, my.clevelandclinic.org, mouthhealthy.org (ADA), oralb.com, webmd.com, aspendental.com, periodontalspecialists.com, inquirer.com"
+    },
+    {
+      "query": "swelling in jaw what should i do",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Perplexity grounded every jaw-swelling claim in high-authority medical domains and none in the target page; the page's '## Go to the ER now,' heading is a stub with no airway-sign criteria and no 'do not squeeze or drain' instruction, which is exactly the safety line the cited medical sources supply.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: heading '## Go to the ER now,' exists as a bare stub and the page never states airway red flags for facial/jaw swelling || MISSING: an explicit ER-vs-dentist split keyed on airway signs plus a 'do not squeeze, poke, or drain' safety instruction that Healthline, Cleveland Clinic, and MedlinePlus answers all carry || EDIT: Under '## Go to the ER now,' add two bullets: 'ER now: swelling with trouble breathing, swallowing, or speaking; swelling spreading down the neck or up toward the eye' and 'Do not squeeze, poke, or pop the swelling yourself — this can push infection deeper,' followed by a one-line pointer to the dentist-today path in this page.",
+      "competitor": "healthline.com, medicalnewstoday.com, clevelandclinic.org, mayoclinic.org, medlineplus.gov, healthgrades.com, buoyhealth.com, newmouth.com, 911dentist.org"
+    },
+    {
+      "query": "is a cracked tooth an emergency",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Perplexity cited dental-authority and health-system sources for fracture urgency and the 'even minor cracks worsen' rationale, while the target page's '## Can a Dental Abscess Wait Until Monday?' section answers only the abscess case and never defines what makes a fracture time-sensitive.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: '## Can a Dental Abscess Wait Until Monday?' addresses only the abscess wait-or-go question with no fracture parallel || MISSING: fracture-specific urgency triggers (loose tooth, exposed pink pulp, fever, gum/face/jaw swelling) and the reason a painless crack still should not wait || EDIT: Under '## Can a Dental Abscess Wait Until Monday?' add a parallel sub-heading 'Can a cracked tooth wait until Monday?' with three lines: 'Loose tooth or exposed pink pulp → same-day'; 'Pain on biting or hot/cold sensitivity → within 24-48 hours'; 'Painless chip → book now, do not wait, because cracks propagate and can expose the nerve.'",
+      "competitor": "clevelandclinic.org, nhs.uk, mouthhealthy.org (ADA), nhsinform.scot, 911dentist.org, aspendental.com"
+    },
+    {
+      "query": "why is my tooth sensitive to cold all of a sudden",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/dental-red-flags/",
+      "filepath": "dentistry/dental-red-flags/index.html",
+      "level": 1,
+      "gap": "Perplexity answered entirely from third-party clinical sources and never touched theindustryguides; the page's 'Dental red flags to watch for' list is 8 unsourced trust items and 'What usually signals a bad fit' is unsourced assertion, with no clinical mechanism naming (caries, recession, cracked tooth, dentin exposure) to compete.",
+      "fix": "FILEPATH: dentistry/dental-red-flags/index.html || CURRENT: 'Dental red flags to watch for' is an 8-item unsourced trust checklist and 'What usually signals a bad fit' makes unsupported assertions about pressure and vague pricing. || MISSING: Any externally sourced clinical explanation of cold-sensitivity mechanisms that can compete with Cleveland Clinic/Hopkins/Healthline citations. || EDIT: Add an H2 'What sudden cold sensitivity actually signals' beneath 'What usually signals a bad fit' naming the six mechanisms (decay, enamel erosion, gum recession, cracked tooth, recent dental work, bruxism) with inline citations to MouthHealthy (ADA) and Cleveland Clinic, and hand the swelling/fever branch to the emergency-open-now page.",
+      "competitor": "tulsadentalcenter.com, willowfamilydds.com, cotreat.ai, pickeringsmilecentre.ca, suburbanessexdental.com, uab.edu, my.clevelandclinic.org, hopkinsmedicine.org, healthline.com, dentistry.com, aspendental.com, mouthhealthy.org, deltadentalins.com"
+    },
+    {
+      "query": "what does a dental abscess look like",
+      "model": "Perplexity",
+      "url": "https://theindustryguides.com/dentistry/emergency-open-now/",
+      "filepath": "dentistry/emergency-open-now/index.html",
+      "level": 1,
+      "gap": "Perplexity grounded the appearance answer in 15 clinical citations while the page's 'How to compare emergency dental options' and 'What usually matters in urgent dental care' frame everything around provider verification only, offering zero sourced clinical description and no authority signal.",
+      "fix": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: 'How to compare emergency dental options' and 'What usually matters in urgent dental care' treat the topic purely as a provider-verification exercise with no clinical content or references. || MISSING: A sourced clinical description of abscess appearance to compete with Cleveland Clinic, WebMD, MedlinePlus, and BUPA. || EDIT: Under 'What usually matters in urgent dental care' add a 'Clinical signs (sourced)' subsection listing the gum boil, localized red swelling, and pus drainage with inline citations to Cleveland Clinic and MedlinePlus, and route the facial-swelling/fever case to the 'Go to the ER now,' heading.",
+      "competitor": "my.clevelandclinic.org, leadingimplantcenters.com, healthday.com, ada.com, webmd.com, bestpractice.bmj.com, medlineplus.gov, dentaly.org, bupa.co.uk, gentledental.com, aspendental.com, patient.info, en.wikipedia.org, uhc.com"
+    }
+  ],
+  "wins": [
+    {
+      "query": "average cost of clear aligners 2026",
+      "model": "Gemini 1.5 Flash",
+      "page": "dentistry/clear-aligners/index.html",
+      "before": 1,
+      "after": 3
+    },
+    {
+      "query": "how do I find a dentist who is good with anxious patients",
+      "model": "Gemini 1.5 Flash",
+      "page": "dentistry/anxiety-trust/index.html",
+      "before": 1,
+      "after": 3
+    },
+    {
+      "query": "how much is a single tooth implant",
+      "model": "Gemini 1.5 Flash",
+      "page": "dentistry/dental-implants/index.html",
+      "before": 1,
+      "after": 3
+    },
+    {
+      "query": "how to avoid unnecessary dental treatment when visiting a new dentist",
+      "model": "Gemini 1.5 Flash",
+      "page": "dentistry/second-opinion/index.html",
+      "before": 1,
+      "after": 3
+    },
+    {
+      "query": "how to compare dentists before choosing one?",
+      "model": "Gemini 1.5 Flash",
+      "page": "dentistry/choosing-a-dentist/index.html",
+      "before": 1,
+      "after": 3
+    }
+  ],
+  "pending": [
+    {
+      "url": "https://theindustryguides.com/dentistry/dental-bridge-vs-implant/",
+      "filepath": "dentistry/dental-bridge-vs-implant/index.html",
+      "days_since_recommended": 7,
+      "level": 1
+    },
+    {
+      "url": "https://theindustryguides.com/dentistry/choosing-a-dentist/",
+      "filepath": "dentistry/choosing-a-dentist/index.html",
+      "days_since_recommended": 7,
+      "level": 1
+    },
+    {
+      "url": "https://theindustryguides.com/dentistry/anxiety-trust/",
+      "filepath": "dentistry/anxiety-trust/index.html",
+      "days_since_recommended": 7,
+      "level": 1
+    },
+    {
+      "url": "https://theindustryguides.com/dentistry/best-top-near-me/",
+      "filepath": "dentistry/best-top-near-me/index.html",
+      "days_since_recommended": 7,
+      "level": 1
+    }
+  ],
+  "pages_to_build": [
+    {
+      "query": "why are my gums bleeding when i brush",
+      "cluster": "guide",
+      "why_worth_building": "No page in the dentistry vertical addresses gum bleeding or gingivitis as a symptom-to-action decision. The pages Perplexity returned are brand blogs (Oral-B, Aspen Dental) and clinical publishers (Mayo Clinic, Cleveland Clinic); none provide a neutral compare/verify layer with an urgency threshold. A guide mapping bleeding-on-brushing causes to a wait/observe/see-a-dentist threshold plus a gum-disease red-flag table fills an uncontested intent already adjacent to the red-flags page."
+    }
+  ],
+  "competitor_snapshot": {
+    "top_domains": [
+      {
+        "count": 6,
+        "domain": "mouthhealthy.org"
+      },
+      {
+        "count": 6,
+        "domain": "aspendental.com"
+      },
+      {
+        "count": 6,
+        "domain": "carecredit.com"
+      },
+      {
+        "count": 5,
+        "domain": "realdentalcosts.com"
+      },
+      {
+        "count": 5,
+        "domain": "deltadental.com"
+      },
+      {
+        "count": 4,
+        "domain": "newmouth.com"
+      },
+      {
+        "count": 4,
+        "domain": "my.clevelandclinic.org"
+      },
+      {
+        "count": 3,
+        "domain": "oralb.com"
+      },
+      {
+        "count": 3,
+        "domain": "pmc.ncbi.nlm.nih.gov"
+      },
+      {
+        "count": 3,
+        "domain": "goodrx.com"
+      }
+    ],
+    "landscape": "Perplexity cites 15+ distinct publisher and practice-brand domains per cost and symptom query. Authority publishers (mouthhealthy.org, clevelandclinic.org, healthline.com) dominate decision queries, while cost queries split between modelled-cost sites (realdentalcosts.com), payer pages (deltadental.com, carecredit.com) and practice-brand pages (aspendental.com, newmouth.com). No neutral orientation layer is cited on any query."
+  },
+  "seo_execution": [
+    {
+      "acceptance_checks_json": "[\"Page contains H2 'Ask for the diagnosis and evidence (enamel vs. dentin)'\",\"Page contains H2 'Treat now vs. monitor: what changes the answer'\",\"Threshold block includes enamel-only monitor, pulpal/pain treat, and 4mm+ bleeding scaling criteria\",\"FAQPage schema validates with no errors\",\"Internal link to /dentistry/dental-red-flags/ renders with anchor 'dental red flags'\"]",
+      "buyer_stage": "consideration",
+      "competitor_format_gap": "Gemini reconstructs the conservative-monitoring philosophy and threshold logic without citing any source; our page lacks the explicit enamel-vs-dentin and wait-and-monitor criteria.",
+      "competitor_url": "",
+      "exact_edit": "FILEPATH: dentistry/second-opinion/index.html || CURRENT: The headings 'Ask for the diagnosis and evidence,' and 'treat now,' are truncated fragments with no body content, so the page never states the wait-and-monitor threshold Gemini already returns. || MISSING: the enamel-vs-dentin test, the 'what happens if we wait six months' question, and the 4mm/5mm bleeding pocket threshold for accepting scaling and root planing. || EDIT: Replace the truncated H2s with 'Ask for the diagnosis and evidence (enamel vs. dentin)' and 'Treat now vs. monitor: what changes the answer', and under each add a three-line threshold block: monitor if decay is enamel-only and asymptomatic; treat if pulpal involvement or pain; scaling/root planing only if probing depths are 4mm+ with bleeding.",
+      "internal_link_actions_json": "[{\"from_url\":\"https://theindustryguides.com/dentistry/second-opinion/\",\"to_url\":\"https://theindustryguides.com/dentistry/dental-red-flags/\",\"anchor_text\":\"dental red flags\"},{\"from_url\":\"https://theindustryguides.com/dentistry/second-opinion/\",\"to_url\":\"https://theindustryguides.com/dentistry/choosing-a-dentist/\",\"anchor_text\":\"how to choose a dentist\"}]",
+      "model": "Gemini 1.5 Flash",
+      "on_page_failures_json": "[\"Truncated H2 fragments 'Ask for the diagnosis and evidence,' and 'treat now,' with no body content\",\"No enamel-vs-dentin test\",\"No 'what happens if we wait six months' threshold\",\"No 4mm/5mm bleeding pocket threshold for scaling/root planing\",\"No FAQPage schema\",\"Missing internal links to red-flags and choosing-a-dentist\"]",
+      "page_decision": "repair_existing",
+      "query": "how to avoid unnecessary dental treatment when visiting a new dentist",
+      "recommended_page_type": "evaluation_framework",
+      "schema_action": "Add FAQPage schema",
+      "search_intent": "informational",
+      "target_filepath": "dentistry/second-opinion/index.html",
+      "target_url": "https://theindustryguides.com/dentistry/second-opinion/"
+    },
+    {
+      "acceptance_checks_json": "[\"New H2 'Sudden cold sensitivity: is it a red flag?' appears directly below Quick answer\",\"Three-row symptom-to-urgency table includes >30s pain, observe 1-2 weeks, and emergency rows\",\"Table links emergency row to /dentistry/emergency-open-now/\",\"FAQPage schema validates\",\"Internal link to /dentistry/second-opinion/ renders\"]",
+      "buyer_stage": "awareness",
+      "competitor_format_gap": "GPT-4o maps sudden cold sensitivity to urgency tiers and next steps; our page only covers office-trust red flags and never treats cold sensitivity as a symptom trigger.",
+      "competitor_url": "",
+      "exact_edit": "FILEPATH: dentistry/dental-red-flags/index.html || CURRENT: 'Quick answer' and 'Dental red flags to watch for' address only trust/pressure red flags and never treat sudden cold sensitivity as a symptom trigger. || MISSING: A symptom-to-urgency mapping that turns sudden cold sensitivity into a proceed/compare/pause call with a wait-or-act threshold. || EDIT: Insert a new H2 'Sudden cold sensitivity: is it a red flag?' directly below 'Quick answer' containing a 3-row table (one tooth + pain lasting >30s after the stimulus = book urgently; generalized after whitening/new filling = observe 1-2 weeks; plus swelling/fever = emergency), then point that last row to the existing 'Find a Provider' next-step link.",
+      "internal_link_actions_json": "[{\"from_url\":\"https://theindustryguides.com/dentistry/dental-red-flags/\",\"to_url\":\"https://theindustryguides.com/dentistry/emergency-open-now/\",\"anchor_text\":\"dental emergency open now\"},{\"from_url\":\"https://theindustryguides.com/dentistry/dental-red-flags/\",\"to_url\":\"https://theindustryguides.com/dentistry/second-opinion/\",\"anchor_text\":\"dental second opinion\"}]",
+      "model": "OpenAI GPT-4o",
+      "on_page_failures_json": "[\"No H2 mapping sudden cold sensitivity to urgency\",\"No comparison table converting symptom to proceed/compare/pause\",\"No FAQPage schema\",\"Missing internal link to emergency-open-now\",\"Quick answer and red flags sections cover only office-trust red flags\"]",
+      "page_decision": "repair_existing",
+      "query": "why is my tooth sensitive to cold all of a sudden",
+      "recommended_page_type": "faq",
+      "schema_action": "Add FAQPage schema",
+      "search_intent": "informational",
+      "target_filepath": "dentistry/dental-red-flags/index.html",
+      "target_url": "https://theindustryguides.com/dentistry/dental-red-flags/"
+    },
+    {
+      "acceptance_checks_json": "[\"New H2 'What a dental abscess looks like (and when it is an emergency)' appears above 'Can a Dental Abscess Wait Until Monday?'\",\"Two-column table lists visual signs and ER-now signs\",\"ER-now column links to 'Go to the ER now,' heading\",\"FAQPage schema validates\",\"Internal link to /dentistry/dental-red-flags/ renders\"]",
+      "buyer_stage": "awareness",
+      "competitor_format_gap": "GPT-4o describes gum boil, facial swelling, redness, and drainage alongside ER-now signs; our page only triages whether an abscess can wait.",
+      "competitor_url": "",
+      "exact_edit": "FILEPATH: dentistry/emergency-open-now/index.html || CURRENT: 'Can a Dental Abscess Wait Until Monday?' and 'Quick answer' discuss only whether to wait, and no heading describes what an abscess visually presents as. || MISSING: A visual-identification block that converts appearance signs into the existing triage decision. || EDIT: Add H2 'What a dental abscess looks like (and when it is an emergency)' immediately above 'Can a Dental Abscess Wait Until Monday?' with a two-column table — looks-like column (pimple/gum boil, red glossy swelling, pus drainage, discolored tooth) vs ER-now column (facial/neck swelling, trouble swallowing or breathing, fever) — and hyperlink the ER-now column to the existing 'Go to the ER now,' heading.",
+      "internal_link_actions_json": "[{\"from_url\":\"https://theindustryguides.com/dentistry/emergency-open-now/\",\"to_url\":\"https://theindustryguides.com/dentistry/dental-red-flags/\",\"anchor_text\":\"dental red flags\"},{\"from_url\":\"https://theindustryguides.com/dentistry/emergency-open-now/\",\"to_url\":\"https://theindustryguides.com/dentistry/second-opinion/\",\"anchor_text\":\"second opinion before treatment\"}]",
+      "model": "OpenAI GPT-4o",
+      "on_page_failures_json": "[\"No H2 describing visual abscess appearance\",\"No two-column table for looks-like vs ER-now symptoms\",\"No FAQPage schema\",\"Missing internal link to red-flags\",\"Visual-identification question unanswered by existing headings\"]",
+      "page_decision": "repair_existing",
+      "query": "what does a dental abscess look like",
+      "recommended_page_type": "faq",
+      "schema_action": "Add FAQPage schema",
+      "search_intent": "informational",
+      "target_filepath": "dentistry/emergency-open-now/index.html",
+      "target_url": "https://theindustryguides.com/dentistry/emergency-open-now/"
+    },
+    {
+      "acceptance_checks_json": "[\"Page includes search strings: sedation dentist [city], gentle dentistry [city], dental phobia dentist [city]\",\"Page includes review keywords: anxious, nervous, gentle, patient, phobia, judgement-free\",\"Green-flag row includes no-shame opener\",\"FAQPage schema validates\",\"Internal link to /dentistry/choosing-a-dentist/ renders\"]",
+      "buyer_stage": "consideration",
+      "competitor_format_gap": "Gemini supplies concrete search strings and review keywords plus the no-shame opener; our page only states qualitative green flags and is out-detailed from model memory.",
+      "competitor_url": "",
+      "exact_edit": "FILEPATH: dentistry/anxiety-trust/index.html || CURRENT: 'Green Flags When Evaluating an Anxiety-Friendly Dentist' and 'How to find a dentist who is good with anxious patients' state flags qualitatively (calmer, clearer, less sales-driven) without the review-search keywords or the exact search strings a model can lift. || MISSING: Operational search-and-read instructions — the specific query patterns and the words to grep inside reviews — plus the no-shame/'I'm glad you're here now' behavioral marker. || EDIT: Under 'Green Flags When Evaluating an Anxiety-Friendly Dentist' append a two-column block: 'Search strings that work: sedation dentist [city], gentle dentistry [city], dental phobia dentist [city]' and 'Words to search inside reviews: anxious, nervous, gentle, patient, phobia, judgement-free', then add a green-flag row for the no-shame opener ('I'm just glad you're here now') so the page owns the marker Gemini volunteered.",
+      "internal_link_actions_json": "[{\"from_url\":\"https://theindustryguides.com/dentistry/anxiety-trust/\",\"to_url\":\"https://theindustryguides.com/dentistry/choosing-a-dentist/\",\"anchor_text\":\"how to choose a dentist\"},{\"from_url\":\"https://theindustryguides.com/dentistry/anxiety-trust/\",\"to_url\":\"https://theindustryguides.com/dentistry/second-opinion/\",\"anchor_text\":\"dental second opinion\"}]",
+      "model": "Gemini 1.5 Flash",
+      "on_page_failures_json": "[\"Green flags stated qualitatively without review-search keywords\",\"No exact search strings for sedation/gentle dentistry\",\"No no-shame opener marker\",\"No comparison table of flags\",\"No FAQPage schema\",\"Missing internal link to choosing-a-dentist\"]",
+      "page_decision": "repair_existing",
+      "query": "how do I find a dentist who is good with anxious patients",
+      "recommended_page_type": "evaluation_framework",
+      "schema_action": "Add FAQPage schema",
+      "search_intent": "commercial",
+      "target_filepath": "dentistry/anxiety-trust/index.html",
+      "target_url": "https://theindustryguides.com/dentistry/anxiety-trust/"
+    },
+    {
+      "acceptance_checks_json": "[\"Only one H2 'Cost of full mouth dental implants with insurance' exists\",\"Worked out-of-pocket example shows $45,000 - $1,500 = roughly $43,500\",\"Per-arch band matches the $15,000-$30,000 table\",\"FAQPage schema validates\",\"Internal link to /dentistry/dental-bridge-vs-implant/ renders\"]}]} = ",
+      "buyer_stage": "consideration",
+      "competitor_format_gap": "Realdentalcosts publishes a state-scaled estimator and confidence-scored data blocks; our page states bands and an annual maximum without doing the out-of-pocket arithmetic or showing a state/provider comparison.",
+      "competitor_url": "https://realdentalcosts.com/",
+      "exact_edit": "FILEPATH: dentistry/dental-implants/index.html || CURRENT: '## Dental implant cost in the United States' gives $15,000-$30,000 per arch and $30,000-$60,000 for both arches, while '## Cost of full mouth dental implants with insurance — what it costs and what to check' is repeated as a heading with no arithmetic under it. || MISSING: a worked out-of-pocket line that turns the annual maximum into dollars, and removal of the duplicated heading that dilutes the answer block. || EDIT: inside '## Cost of full mouth dental implants with insurance — what it costs and what to check' add the example 'both arches at $45,000 minus a $1,500 annual maximum = roughly $43,500 out of pocket', restate the per-arch band to match the $15,000-$30,000 table so the two sections cannot be read as conflicting, and collapse the second occurrence of the heading.",
+      "internal_link_actions_json": "[{\"from_url\":\"https://theindustryguides.com/dentistry/dental-implants/\",\"to_url\":\"https://theindustryguides.com/dentistry/dental-bridge-vs-implant/\",\"anchor_text\":\"dental bridge vs implant\"},{\"from_url\":\"https://theindustryguides.com/dentistry/dental-implants/\",\"to_url\":\"https://theindustryguides.com/dentistry/second-opinion/\",\"anchor_text\":\"dental second opinion\"},{\"from_url\":\"https://theindustryguides.com/dentistry/dental-implants/\",\"to_url\":\"https://theindustryguides.com/dentistry/choosing-a-dentist/\",\"anchor_text\":\"choosing a dentist\"}]",
+      "model": "OpenAI GPT-4o",
+      "on_page_failures_json": "[\"Duplicated heading 'Cost of full mouth dental implants with insurance — what it costs and what to check'\",\"No worked out-of-pocket arithmetic converting annual maximum\",\"Conflicting $15k-$30k per arch vs model's $20k-$50k\",\"No insurance cap arithmetic example\",\"Missing internal links\",\"No FAQPage schema\"]",
+      "page_decision": "repair_existing",
+      "query": "cost of full mouth dental implants with insurance",
+      "recommended_page_type": "guide",
+      "schema_action": "Add FAQPage schema",
+      "search_intent": "commercial",
+      "target_filepath": "dentistry/dental-implants/index.html",
+      "target_url": "https://theindustryguides.com/dentistry/dental-implants/"
+    }
+  ],
+  "site_health": null,
+  "data_sources": {
+    "queries": 22,
+    "models": 3,
+    "graded_items": 66,
+    "ai_overviews": "skipped (first-week-of-month only)"
+  }
+}
