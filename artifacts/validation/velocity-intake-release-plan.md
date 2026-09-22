@@ -1,13 +1,13 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-09-21
-Target publish units: 164
+Release date: 2026-09-22
+Target publish units: 215
 Selected units: 23
 Twin agent units: 23
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 141
+Social fallback suppressed: 192
 Social fallback backlog depth (eligible, unreleased): 389
 Repair units: 20
 New page units: 3

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-09-21T13:52:40.264Z",
+  "generated_at": "2026-09-22T00:44:28.275Z",
   "workflow_count": 9,
   "workflows": [
     {
@@ -260,6 +260,21 @@
         "data/strategy/**"
       ],
       "required_artifacts": [
+        "artifacts/validation/**",
+        "!artifacts/validation/runtime/**",
+        "!artifacts/validation/release-pipeline-checkpoint.json",
+        "!artifacts/validation/release-pipeline-report.json",
+        "-",
+        "logs/**",
+        "artifacts/validation/**",
+        "reports/**",
+        "validate:",
+        "needs: shard",
+        "runs-on: ubuntu-latest",
+        "# Normal is ~3 minutes (setup + build + merge + attestation + upload); 2x that.",
+        "timeout-minutes: 10",
+        "steps:",
+        "-",
         ".",
         "!.git/**",
         "!node_modules/**",

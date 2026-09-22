@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-21T14:27:32.428Z",
+  "generated_at": "2026-09-22T01:02:04.836Z",
   "status": "PASS",
   "workflow_count": 9,
   "errors": [],
@@ -637,7 +637,7 @@
     },
     {
       "workflow": "validate-repo.yml",
-      "command_count": 4,
+      "command_count": 5,
       "status": "PASS",
       "commands": [
         {
@@ -721,6 +721,13 @@
           "transitive_npm_scripts": [
             "release:ci-validate"
           ]
+        },
+        {
+          "command": "set -euo pipefail\nn=0\nfor d in \"${RUNNER_TEMP}\"/shards/validation-shard-*; do\n[ -d \"$d\" ] || continue\ncp -R \"$d\"/. artifacts/validation/\nn=$((n + 1))\ndone\necho \"overlaid $n shard(s)\"\n[ \"$n\" = \"$SHARD_COUNT\" ] || { echo \"::error::expected $SHARD_COUNT shard artifact(s), found $n\"; exit 1; }\nls artifacts/validation/validation-summary-shard-*.json",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         },
         {
           "command": "npm run cadence:gate\nnpm run cadence:template-share",
