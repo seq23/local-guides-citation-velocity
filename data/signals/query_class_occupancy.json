@@ -1,7 +1,7 @@
 {
   "$schema": "lkg-citation-occupancy-probe-v4",
-  "measured_on": "2026-09-21",
-  "measured_at": "2026-09-21T07:02:20.378Z",
+  "measured_on": "2026-09-22",
+  "measured_at": "2026-09-22T06:51:45.175Z",
   "purpose": "Measure who holds the citation slots an answer engine builds its answer from, per query. A page can only win an open slot, so unbranded_share is the winnability signal the query atlas and the page release join consume.",
   "method": {
     "channel": "OpenRouter chat/completions, model openai/gpt-4o-mini, plugins:[{id:'web', engine: WEB_ENGINE, mode: WEB_MODE,max_results:10}]. Cited hosts are read from message.annotations[].url_citation.url in the order returned.",
@@ -19,7 +19,7 @@
     "published": false,
     "reason": "CONTROL_PAIR_DOES_NOT_SEPARATE",
     "note": "citation_occupancy is WITHHELD. NOT SEPARATED: the known-open and known-closed controls measured the same. The instrument cannot tell the two known classes apart, so it is not measuring openness on this channel. known_open=0, known_closed=0, required margin 0.1. Every probe therefore carries citation_occupancy: null, scripts/atlas/build_query_atlas.mjs records winnability_basis \"unmeasured_neutral\" for every query, and scripts/queries/join_atlas_to_release_queue.mjs admits no candidate on this signal. The observation is NOT withheld: cited_hosts_in_order, host_classification and every bucket share are recorded in full and are re-derivable with --rescore-only. What is refused is publishing a winnability number the controls say is not measuring winnability.",
-    "what_this_channel_shows": "Across 216 queries and 1918 citation slots, 6 slot(s) are held by nothing durable. On the answer-engine citation channel a slot is held by an incumbent service provider, by an institution, or by a host we cannot identify - and none of those are ground a new page takes by finding them empty. \"Who currently holds the slot\" is therefore not a measure of whether a page can win it, which is what this metric was being read as.",
+    "what_this_channel_shows": "Across 216 queries and 1915 citation slots, 5 slot(s) are held by nothing durable. On the answer-engine citation channel a slot is held by an incumbent service provider, by an institution, or by a host we cannot identify - and none of those are ground a new page takes by finding them empty. \"Who currently holds the slot\" is therefore not a measure of whether a page can win it, which is what this metric was being read as.",
     "what_would_lift_it": "Either a control pair whose two classes are known to differ ON THIS CHANNEL (the current priors were taken on Bing SERP top-10, a different population, which the file already records as comparable_to_prior: false), or a winnability measure that is not \"is the slot empty\" - for example whether this portfolio has been observed taking a slot from the class of holder that occupies it."
   },
   "control_check": {
@@ -30,30 +30,12 @@
         "query": "civil surgeon near me",
         "role": "control_known_open",
         "measured_open_share": 0,
-        "slots_read": 6,
+        "slots_read": 5,
         "host_classification": [
           {
             "host": "uat-my.uscis.dhs.gov",
             "kind": "institutional",
             "why": "GOVERNMENT_OR_ACADEMIC",
-            "open": false
-          },
-          {
-            "host": "uscisphysician.com",
-            "kind": "incumbent",
-            "why": "SERVICE_PROVIDER_GOVERNED_TERM:uscis",
-            "open": false
-          },
-          {
-            "host": "uscis.gov",
-            "kind": "institutional",
-            "why": "GOVERNMENT_OR_ACADEMIC",
-            "open": false
-          },
-          {
-            "host": "texasmedclinic.com",
-            "kind": "incumbent",
-            "why": "SERVICE_PROVIDER_GOVERNED_TERM:clinic",
             "open": false
           },
           {
@@ -63,9 +45,21 @@
             "open": false
           },
           {
-            "host": "siliconvalleymedicalclinic.com",
+            "host": "uscisphysician.com",
             "kind": "incumbent",
-            "why": "SERVICE_PROVIDER_GOVERNED_TERM:clinic",
+            "why": "SERVICE_PROVIDER_GOVERNED_TERM:uscis",
+            "open": false
+          },
+          {
+            "host": "gmbhealthcare.org",
+            "kind": "incumbent",
+            "why": "SERVICE_PROVIDER_MARKER:healthcare",
+            "open": false
+          },
+          {
+            "host": "i693medical.com",
+            "kind": "incumbent",
+            "why": "SERVICE_PROVIDER_GOVERNED_TERM:i-693",
             "open": false
           }
         ],
@@ -85,21 +79,9 @@
             "open": false
           },
           {
-            "host": "advanceddentallakewood.com",
-            "kind": "incumbent",
-            "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-            "open": false
-          },
-          {
             "host": "galaxiadentalhouston.com",
             "kind": "incumbent",
             "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-            "open": false
-          },
-          {
-            "host": "dentonsmilesdentistry.com",
-            "kind": "incumbent",
-            "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
             "open": false
           },
           {
@@ -121,19 +103,31 @@
             "open": false
           },
           {
-            "host": "spencerdentalgroup.com",
+            "host": "mightysmilesdfw.com",
             "kind": "incumbent",
-            "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-            "open": false
-          },
-          {
-            "host": "cinemadental.com",
-            "kind": "incumbent",
-            "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+            "why": "SERVICE_PROVIDER_MARKER:smiles",
             "open": false
           },
           {
             "host": "blissdentalcenter.com",
+            "kind": "incumbent",
+            "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+            "open": false
+          },
+          {
+            "host": "starbrightdentalcare.com",
+            "kind": "incumbent",
+            "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+            "open": false
+          },
+          {
+            "host": "lunadental.com",
+            "kind": "incumbent",
+            "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+            "open": false
+          },
+          {
+            "host": "oaktreedentaljax.com",
             "kind": "incumbent",
             "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
             "open": false
@@ -167,18 +161,18 @@
     "blue_ocean_refused": 37,
     "control_separation_ok": false,
     "citation_occupancy_published": false,
-    "slots_read_total": 1918,
+    "slots_read_total": 1915,
     "slots_by_kind": {
       "owned": 0,
       "social": 0,
-      "incumbent": 882,
-      "institutional": 352,
-      "open_unheld": 6,
-      "unclassifiable": 678
+      "incumbent": 883,
+      "institutional": 354,
+      "open_unheld": 5,
+      "unclassifiable": 673
     },
-    "unclassifiable_slots": 678,
-    "unclassifiable_slot_share": 0.353,
-    "open_slots": 6,
+    "unclassifiable_slots": 673,
+    "unclassifiable_slot_share": 0.351,
+    "open_slots": 5,
     "mean_open_share": 0.003,
     "mean_citation_occupancy": null
   },
@@ -190,36 +184,17 @@
       "prior_unbranded_share": 0.7,
       "cited_hosts_in_order": [
         "uat-my.uscis.dhs.gov",
-        "uscisphysician.com",
-        "uscis.gov",
-        "texasmedclinic.com",
         "civilsurgeonfinder.com",
-        "siliconvalleymedicalclinic.com"
+        "uscisphysician.com",
+        "gmbhealthcare.org",
+        "i693medical.com"
       ],
-      "slots_read": 6,
+      "slots_read": 5,
       "host_classification": [
         {
           "host": "uat-my.uscis.dhs.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "uscisphysician.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:uscis",
-          "open": false
-        },
-        {
-          "host": "uscis.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "texasmedclinic.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:clinic",
           "open": false
         },
         {
@@ -229,22 +204,34 @@
           "open": false
         },
         {
-          "host": "siliconvalleymedicalclinic.com",
+          "host": "uscisphysician.com",
           "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:clinic",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:uscis",
+          "open": false
+        },
+        {
+          "host": "gmbhealthcare.org",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:healthcare",
+          "open": false
+        },
+        {
+          "host": "i693medical.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:i-693",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "incumbent_slots": 4,
-      "institutional_slots": 2,
+      "institutional_slots": 1,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 0,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.67,
-      "institutional_share": 0.33,
+      "incumbent_share": 0.8,
+      "institutional_share": 0.2,
       "open_unheld_share": 0,
       "unclassifiable_share": 0,
       "social_by_surface": {},
@@ -265,15 +252,15 @@
       "prior_unbranded_share": 0,
       "cited_hosts_in_order": [
         "centrevilledentalgroup.com",
-        "advanceddentallakewood.com",
         "galaxiadentalhouston.com",
-        "dentonsmilesdentistry.com",
         "health.ny.gov",
         "dutchessny.gov",
         "aventuradentalhoustonvmd.com",
-        "spencerdentalgroup.com",
-        "cinemadental.com",
-        "blissdentalcenter.com"
+        "mightysmilesdfw.com",
+        "blissdentalcenter.com",
+        "starbrightdentalcare.com",
+        "lunadental.com",
+        "oaktreedentaljax.com"
       ],
       "slots_read": 10,
       "host_classification": [
@@ -284,21 +271,9 @@
           "open": false
         },
         {
-          "host": "advanceddentallakewood.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-          "open": false
-        },
-        {
           "host": "galaxiadentalhouston.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-          "open": false
-        },
-        {
-          "host": "dentonsmilesdentistry.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
           "open": false
         },
         {
@@ -320,19 +295,31 @@
           "open": false
         },
         {
-          "host": "spencerdentalgroup.com",
+          "host": "mightysmilesdfw.com",
           "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-          "open": false
-        },
-        {
-          "host": "cinemadental.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "why": "SERVICE_PROVIDER_MARKER:smiles",
           "open": false
         },
         {
           "host": "blissdentalcenter.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "starbrightdentalcare.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "lunadental.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "oaktreedentaljax.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
@@ -369,13 +356,13 @@
       "cited_hosts_in_order": [
         "zoom.com",
         "eventsx.com",
-        "globalmeet.com",
-        "cvent.com",
-        "nunify.com",
         "eventmobi.com",
-        "bravuratechnologies.com",
+        "globalmeet.com",
         "socio.events",
-        "invitario.com"
+        "eventogy.com",
+        "bravuratechnologies.com",
+        "virtualdays.com",
+        "eventfinity.co"
       ],
       "slots_read": 9,
       "host_classification": [
@@ -392,31 +379,13 @@
           "open": false
         },
         {
-          "host": "globalmeet.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "cvent.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "nunify.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "eventmobi.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
         },
         {
-          "host": "bravuratechnologies.com",
+          "host": "globalmeet.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -428,7 +397,25 @@
           "open": false
         },
         {
-          "host": "invitario.com",
+          "host": "eventogy.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "bravuratechnologies.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "virtualdays.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "eventfinity.co",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -463,31 +450,19 @@
       "role": "measured",
       "property": "virtualagency-os.com",
       "cited_hosts_in_order": [
-        "dceproductions.com",
-        "tallen-inc.com",
         "corporateeventsinc.net",
         "virtualvenues.com",
         "virtualentertainmentproductions.com",
         "avmediainc.com",
         "afpcproductions.com",
-        "hblive.com",
+        "theoneupgroup.com",
         "revolutioneventproduction.com",
-        "theoneupgroup.com"
+        "gpj.com",
+        "itagroup.com",
+        "atd-av.com"
       ],
       "slots_read": 10,
       "host_classification": [
-        {
-          "host": "dceproductions.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "tallen-inc.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
         {
           "host": "corporateeventsinc.net",
           "kind": "unclassifiable",
@@ -519,7 +494,7 @@
           "open": false
         },
         {
-          "host": "hblive.com",
+          "host": "theoneupgroup.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -531,7 +506,19 @@
           "open": false
         },
         {
-          "host": "theoneupgroup.com",
+          "host": "gpj.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "itagroup.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "atd-av.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -570,14 +557,15 @@
         "acfdga.com",
         "agd.org",
         "my.clevelandclinic.org",
-        "colgate.com",
         "cosdent.com",
-        "kenwoodcosmeticdentistry.com",
         "gpdentalteam.com",
+        "kenwoodcosmeticdentistry.com",
         "nwdentalmed.com",
-        "drstonedds.com"
+        "austincosmetic.com",
+        "drstonedds.com",
+        "tncdentalcare.com"
       ],
-      "slots_read": 9,
+      "slots_read": 10,
       "host_classification": [
         {
           "host": "acfdga.com",
@@ -598,21 +586,9 @@
           "open": false
         },
         {
-          "host": "colgate.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "cosdent.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "kenwoodcosmeticdentistry.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
           "open": false
         },
         {
@@ -622,9 +598,21 @@
           "open": false
         },
         {
+          "host": "kenwoodcosmeticdentistry.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
+          "open": false
+        },
+        {
           "host": "nwdentalmed.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "austincosmetic.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
           "open": false
         },
         {
@@ -632,20 +620,26 @@
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_MARKER:dds",
           "open": false
+        },
+        {
+          "host": "tncdentalcare.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 4,
+      "incumbent_slots": 5,
       "institutional_slots": 1,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 4,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.44,
-      "institutional_share": 0.11,
+      "incumbent_share": 0.5,
+      "institutional_share": 0.1,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.44,
+      "unclassifiable_share": 0.4,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -667,12 +661,12 @@
         "thespfc.org",
         "cvillefreeclinic.org",
         "news9.com",
+        "healthlinkdental.org",
         "louisvilledentalsociety.org",
         "bridgesclinic.org",
-        "healthlinkdental.org",
         "bethesdafreeclinicgc.com",
         "gennesaret.org",
-        "freedentalcare.us"
+        "the-community-free-dental-clinic.square.site"
       ],
       "slots_read": 10,
       "host_classification": [
@@ -701,6 +695,12 @@
           "open": false
         },
         {
+          "host": "healthlinkdental.org",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
           "host": "louisvilledentalsociety.org",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
@@ -710,12 +710,6 @@
           "host": "bridgesclinic.org",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:clinic",
-          "open": false
-        },
-        {
-          "host": "healthlinkdental.org",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
         },
         {
@@ -731,9 +725,9 @@
           "open": false
         },
         {
-          "host": "freedentalcare.us",
+          "host": "the-community-free-dental-clinic.square.site",
           "kind": "incumbent",
-          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
         }
       ],
@@ -768,14 +762,14 @@
       "cited_hosts_in_order": [
         "sweetjames.com",
         "hbsslaw.com",
-        "uptonhatfield.com",
-        "jacobyandmeyers.com",
         "gravesmclain.com",
         "joelbieber.com",
-        "mayfieldlawfirm.com",
         "markhurtlawfirm.com",
+        "omalleyandperry.com",
         "bpinjury.com",
-        "omalleyandperry.com"
+        "newyorkseriousinjuryattorneys.com",
+        "justinmintonlaw.com",
+        "glennhammondlawoffice.com"
       ],
       "slots_read": 10,
       "host_classification": [
@@ -792,18 +786,6 @@
           "open": false
         },
         {
-          "host": "uptonhatfield.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "jacobyandmeyers.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "gravesmclain.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
@@ -816,15 +798,15 @@
           "open": false
         },
         {
-          "host": "mayfieldlawfirm.com",
+          "host": "markhurtlawfirm.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_MARKER:lawfirm",
           "open": false
         },
         {
-          "host": "markhurtlawfirm.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:lawfirm",
+          "host": "omalleyandperry.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
           "open": false
         },
         {
@@ -834,24 +816,36 @@
           "open": false
         },
         {
-          "host": "omalleyandperry.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
+          "host": "newyorkseriousinjuryattorneys.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:injury",
+          "open": false
+        },
+        {
+          "host": "justinmintonlaw.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:law",
+          "open": false
+        },
+        {
+          "host": "glennhammondlawoffice.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:law",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 4,
+      "incumbent_slots": 6,
       "institutional_slots": 0,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 6,
+      "unclassifiable_slots": 4,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.4,
+      "incumbent_share": 0.6,
       "institutional_share": 0,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.6,
+      "unclassifiable_share": 0.4,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -869,49 +863,17 @@
       "property": "billionairehighperformancecoach.com",
       "gsc_impressions_90d": 190,
       "cited_hosts_in_order": [
-        "buddypro.ai",
-        "coachello.ai",
-        "coachvox.ai",
         "coachtoolkit.ai",
-        "coachingfederation.org",
-        "aceup.com",
         "saner.ai",
-        "schoolai.com"
+        "coachingfederation.org",
+        "wundamental.ai",
+        "rocky.ai",
+        "irisconnect.com"
       ],
-      "slots_read": 8,
+      "slots_read": 6,
       "host_classification": [
         {
-          "host": "buddypro.ai",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "coachello.ai",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "coachvox.ai",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "coachtoolkit.ai",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "coachingfederation.org",
-          "kind": "institutional",
-          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
-          "open": false
-        },
-        {
-          "host": "aceup.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -923,7 +885,25 @@
           "open": false
         },
         {
-          "host": "schoolai.com",
+          "host": "coachingfederation.org",
+          "kind": "institutional",
+          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
+          "open": false
+        },
+        {
+          "host": "wundamental.ai",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "rocky.ai",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "irisconnect.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -934,13 +914,13 @@
       "incumbent_slots": 0,
       "institutional_slots": 1,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 7,
+      "unclassifiable_slots": 5,
       "owned_share": 0,
       "social_share": 0,
       "incumbent_share": 0,
-      "institutional_share": 0.13,
+      "institutional_share": 0.17,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.88,
+      "unclassifiable_share": 0.83,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -961,13 +941,13 @@
       "cited_hosts_in_order": [
         "albme.gov",
         "trt-nc.com",
-        "hims.com",
-        "trtuk.co.uk",
         "va.gov",
-        "nextleveltrt.com",
         "vitalitytestosterone.com",
-        "mytrt.com",
-        "trtaustralia.com"
+        "trtaustralia.com",
+        "clinicaltrials.gov",
+        "testosteroneclinicnyc.com",
+        "gamedaymenshealth.com",
+        "health.harvard.edu"
       ],
       "slots_read": 9,
       "host_classification": [
@@ -984,27 +964,9 @@
           "open": false
         },
         {
-          "host": "hims.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "trtuk.co.uk",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:trt",
-          "open": false
-        },
-        {
           "host": "va.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "nextleveltrt.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:trt",
           "open": false
         },
         {
@@ -1014,30 +976,48 @@
           "open": false
         },
         {
-          "host": "mytrt.com",
+          "host": "trtaustralia.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_MARKER:trt",
           "open": false
         },
         {
-          "host": "trtaustralia.com",
+          "host": "clinicaltrials.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "testosteroneclinicnyc.com",
           "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:trt",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:testosterone",
+          "open": false
+        },
+        {
+          "host": "gamedaymenshealth.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:health",
+          "open": false
+        },
+        {
+          "host": "health.harvard.edu",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 6,
-      "institutional_slots": 2,
+      "incumbent_slots": 5,
+      "institutional_slots": 4,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 1,
+      "unclassifiable_slots": 0,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.67,
-      "institutional_share": 0.22,
+      "incumbent_share": 0.56,
+      "institutional_share": 0.44,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.11,
+      "unclassifiable_share": 0,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -1058,11 +1038,11 @@
         "chicagoneurodevelopmentalcenter.org",
         "psychiatry.uchicago.edu",
         "chicagoneuro.org",
-        "pubmed.ncbi.nlm.nih.gov",
         "family-institute.org",
         "wellmanpsychology.com",
-        "piecebypieceneurobehavioralservices.com",
-        "chicagolandneuropsychology.com"
+        "chicagolandneuropsychology.com",
+        "cns-center.com",
+        "nspt4kids.com"
       ],
       "slots_read": 8,
       "host_classification": [
@@ -1085,12 +1065,6 @@
           "open": false
         },
         {
-          "host": "pubmed.ncbi.nlm.nih.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
           "host": "family-institute.org",
           "kind": "institutional",
           "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
@@ -1103,30 +1077,36 @@
           "open": false
         },
         {
-          "host": "piecebypieceneurobehavioralservices.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:neuro",
-          "open": false
-        },
-        {
           "host": "chicagolandneuropsychology.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:neuropsych",
+          "open": false
+        },
+        {
+          "host": "cns-center.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "nspt4kids.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 5,
-      "institutional_slots": 3,
+      "incumbent_slots": 4,
+      "institutional_slots": 2,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 0,
+      "unclassifiable_slots": 2,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.63,
-      "institutional_share": 0.38,
+      "incumbent_share": 0.5,
+      "institutional_share": 0.25,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0,
+      "unclassifiable_share": 0.25,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -1236,12 +1216,12 @@
         "pnc.com",
         "dfi.wa.gov",
         "usmortgage.com",
-        "churchillmortgage.com",
-        "unitedmortgage.com",
         "money.usnews.com",
         "bia.gov",
         "dpfcu.org",
-        "purduefed.com"
+        "purduefed.com",
+        "aacreditunion.org",
+        "mortgagedepot.com"
       ],
       "slots_read": 9,
       "host_classification": [
@@ -1261,18 +1241,6 @@
           "host": "usmortgage.com",
           "kind": "incumbent",
           "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
-          "open": false
-        },
-        {
-          "host": "churchillmortgage.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:mortgage",
-          "open": false
-        },
-        {
-          "host": "unitedmortgage.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:mortgage",
           "open": false
         },
         {
@@ -1298,20 +1266,32 @@
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
+        },
+        {
+          "host": "aacreditunion.org",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "mortgagedepot.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:mortgage",
+          "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 3,
+      "incumbent_slots": 2,
       "institutional_slots": 2,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 4,
+      "unclassifiable_slots": 5,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.33,
+      "incumbent_share": 0.22,
       "institutional_share": 0.22,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.44,
+      "unclassifiable_share": 0.56,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -1330,15 +1310,15 @@
       "property": "approvalprep.com",
       "cited_hosts_in_order": [
         "experian.com",
-        "inhp.org",
+        "mortgage.nationwidelicensingsystem.org",
         "money.usnews.com",
         "chase.com",
         "citizensbank.com",
-        "merriam-webster.com",
         "habitathillsborough.org",
-        "mortgage.nationwidelicensingsystem.org",
+        "gomortgage.com",
         "sofi.com",
-        "gomortgage.com"
+        "bnm.gov.my",
+        "rocketmortgage.com"
       ],
       "slots_read": 10,
       "host_classification": [
@@ -1349,9 +1329,9 @@
           "open": false
         },
         {
-          "host": "inhp.org",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
+          "host": "mortgage.nationwidelicensingsystem.org",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:mortgage",
           "open": false
         },
         {
@@ -1373,19 +1353,13 @@
           "open": false
         },
         {
-          "host": "merriam-webster.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "habitathillsborough.org",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
         },
         {
-          "host": "mortgage.nationwidelicensingsystem.org",
+          "host": "gomortgage.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_MARKER:mortgage",
           "open": false
@@ -1397,24 +1371,30 @@
           "open": false
         },
         {
-          "host": "gomortgage.com",
+          "host": "bnm.gov.my",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "rocketmortgage.com",
           "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:mortgage",
+          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 4,
-      "institutional_slots": 0,
+      "incumbent_slots": 5,
+      "institutional_slots": 1,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 6,
+      "unclassifiable_slots": 4,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.4,
-      "institutional_share": 0,
+      "incumbent_share": 0.5,
+      "institutional_share": 0.1,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.6,
+      "unclassifiable_share": 0.4,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -1436,14 +1416,15 @@
         "forbes.com",
         "collegelifemadeeasy.com",
         "togetherandco.com",
-        "kentuckyliving.com",
         "graduationattire.com",
         "evite.com",
         "herffjones.com",
         "peartree.com",
-        "peerspace.com"
+        "thcenter.org",
+        "fastweb.com",
+        "kirkbrae.com"
       ],
-      "slots_read": 9,
+      "slots_read": 10,
       "host_classification": [
         {
           "host": "forbes.com",
@@ -1459,12 +1440,6 @@
         },
         {
           "host": "togetherandco.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "kentuckyliving.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -1494,7 +1469,19 @@
           "open": false
         },
         {
-          "host": "peerspace.com",
+          "host": "thcenter.org",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "fastweb.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "kirkbrae.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -1505,13 +1492,13 @@
       "incumbent_slots": 3,
       "institutional_slots": 0,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 6,
+      "unclassifiable_slots": 7,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.33,
+      "incumbent_share": 0.3,
       "institutional_share": 0,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.67,
+      "unclassifiable_share": 0.7,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -1531,15 +1518,14 @@
       "cited_hosts_in_order": [
         "bmhv.org",
         "digitalcommons.memphis.edu",
-        "findblacktherapist.com",
         "downtownmemphis.com",
         "therapyden.com",
+        "findblacktherapist.com",
         "anthonyblack629.dr-leonardo.com",
-        "mymemphistherapist.com",
         "psychologytoday.com",
         "hicksconsulting.org"
       ],
-      "slots_read": 9,
+      "slots_read": 8,
       "host_classification": [
         {
           "host": "bmhv.org",
@@ -1551,12 +1537,6 @@
           "host": "digitalcommons.memphis.edu",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "findblacktherapist.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:therapist",
           "open": false
         },
         {
@@ -1572,15 +1552,15 @@
           "open": false
         },
         {
-          "host": "anthonyblack629.dr-leonardo.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
+          "host": "findblacktherapist.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:therapist",
           "open": false
         },
         {
-          "host": "mymemphistherapist.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:therapist",
+          "host": "anthonyblack629.dr-leonardo.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
           "open": false
         },
         {
@@ -1598,16 +1578,16 @@
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 4,
+      "incumbent_slots": 3,
       "institutional_slots": 1,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 4,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.44,
-      "institutional_share": 0.11,
+      "incumbent_share": 0.38,
+      "institutional_share": 0.13,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.44,
+      "unclassifiable_share": 0.5,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -1628,8 +1608,8 @@
         "uscis.gov",
         "immigration-medical-exam.com",
         "ircc.com",
-        "jcsimmigration.com",
-        "panelphysician.ca"
+        "panelphysician.ca",
+        "bellissimolawgroup.com"
       ],
       "slots_read": 6,
       "host_classification": [
@@ -1658,30 +1638,30 @@
           "open": false
         },
         {
-          "host": "jcsimmigration.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "panelphysician.ca",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_MARKER:physician",
+          "open": false
+        },
+        {
+          "host": "bellissimolawgroup.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:law",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 2,
+      "incumbent_slots": 3,
       "institutional_slots": 2,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 2,
+      "unclassifiable_slots": 1,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.33,
+      "incumbent_share": 0.5,
       "institutional_share": 0.33,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.33,
+      "unclassifiable_share": 0.17,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -1699,23 +1679,23 @@
       "property": "theindustryguides.com",
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
-        "tarrantcountytx.gov",
+        "macgillivraylaw.com",
         "jacobslaw.com",
         "lifelaw.com",
         "dsslaw.com",
-        "mixonlawgroup.com",
         "judicialcouncil.ie",
         "gotinjury.net",
         "wallacewason.com",
         "ulg.law",
-        "forbes.com"
+        "forbes.com",
+        "njslaw.co.uk"
       ],
       "slots_read": 10,
       "host_classification": [
         {
-          "host": "tarrantcountytx.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
+          "host": "macgillivraylaw.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:law",
           "open": false
         },
         {
@@ -1732,12 +1712,6 @@
         },
         {
           "host": "dsslaw.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:law",
-          "open": false
-        },
-        {
-          "host": "mixonlawgroup.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_MARKER:law",
           "open": false
@@ -1771,18 +1745,24 @@
           "kind": "incumbent",
           "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
           "open": false
+        },
+        {
+          "host": "njslaw.co.uk",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:law",
+          "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 7,
-      "institutional_slots": 1,
+      "incumbent_slots": 8,
+      "institutional_slots": 0,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 2,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.7,
-      "institutional_share": 0.1,
+      "incumbent_share": 0.8,
+      "institutional_share": 0,
       "open_unheld_share": 0,
       "unclassifiable_share": 0.2,
       "social_by_surface": {},
@@ -1807,10 +1787,9 @@
         "uchicagomedicine.org",
         "chicagoneurodevelopmentalcenter.org",
         "chihealth.com",
-        "neurowellnesschicago.com",
         "chicagolandcognitive.com"
       ],
-      "slots_read": 7,
+      "slots_read": 6,
       "host_classification": [
         {
           "host": "chicagolandneuropsychology.com",
@@ -1843,12 +1822,6 @@
           "open": false
         },
         {
-          "host": "neurowellnesschicago.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:wellness",
-          "open": false
-        },
-        {
           "host": "chicagolandcognitive.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:cognitive",
@@ -1857,105 +1830,16 @@
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 6,
+      "incumbent_slots": 5,
       "institutional_slots": 1,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 0,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.86,
-      "institutional_share": 0.14,
+      "incumbent_share": 0.83,
+      "institutional_share": 0.17,
       "open_unheld_share": 0,
       "unclassifiable_share": 0,
-      "social_by_surface": {},
-      "open_slots": 0,
-      "open_share": 0,
-      "closed_share": 1,
-      "blue_ocean_eligible": {
-        "eligible": true,
-        "reason": "ANCHORED_CITATION_SET"
-      },
-      "citation_occupancy": null,
-      "citation_occupancy_withheld": "CONTROL_PAIR_DOES_NOT_SEPARATE"
-    },
-    {
-      "query": "oral surgeon evaluation guide",
-      "role": "atlas_t1",
-      "property": "theindustryguides.com",
-      "evidence_tier": "T1",
-      "cited_hosts_in_order": [
-        "ada.org",
-        "dha.gov.ae",
-        "ncbi.nlm.nih.gov",
-        "england.nhs.uk",
-        "aapd.org",
-        "aaoms.org",
-        "jada.ada.org",
-        "pocketdentistry.com"
-      ],
-      "slots_read": 8,
-      "host_classification": [
-        {
-          "host": "ada.org",
-          "kind": "institutional",
-          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
-          "open": false
-        },
-        {
-          "host": "dha.gov.ae",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "ncbi.nlm.nih.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "england.nhs.uk",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "aapd.org",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "aaoms.org",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "jada.ada.org",
-          "kind": "institutional",
-          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
-          "open": false
-        },
-        {
-          "host": "pocketdentistry.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
-          "open": false
-        }
-      ],
-      "owned_slots": 0,
-      "social_slots": 0,
-      "incumbent_slots": 1,
-      "institutional_slots": 5,
-      "open_unheld_slots": 0,
-      "unclassifiable_slots": 2,
-      "owned_share": 0,
-      "social_share": 0,
-      "incumbent_share": 0.13,
-      "institutional_share": 0.63,
-      "open_unheld_share": 0,
-      "unclassifiable_share": 0.25,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -1977,12 +1861,12 @@
         "wolterskluwer.com",
         "reginfo.gov",
         "aciworldwide.com",
-        "casa.gov.au",
-        "aicpa-cima.com",
         "preprod.tn.gov",
-        "gov.uk",
+        "guides.loc.gov",
         "cdtfa.ca.gov",
-        "guides.loc.gov"
+        "energystar.gov",
+        "bl.libguides.com",
+        "ato.gov.au"
       ],
       "slots_read": 10,
       "host_classification": [
@@ -2011,25 +1895,13 @@
           "open": false
         },
         {
-          "host": "casa.gov.au",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "aicpa-cima.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "preprod.tn.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         },
         {
-          "host": "gov.uk",
+          "host": "guides.loc.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
@@ -2041,7 +1913,19 @@
           "open": false
         },
         {
-          "host": "guides.loc.gov",
+          "host": "energystar.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "bl.libguides.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "ato.gov.au",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
@@ -2072,90 +1956,90 @@
       "citation_occupancy_withheld": "CONTROL_PAIR_DOES_NOT_SEPARATE"
     },
     {
-      "query": "local dentistry guide",
+      "query": "oral surgeon evaluation guide",
       "role": "atlas_t1",
       "property": "theindustryguides.com",
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
-        "mylocaldentists.com.au",
-        "agdfrisco.com",
-        "yourdentistryguide.com",
-        "ovid.com",
-        "dallaslocalguide.com",
-        "sunshinefamilydentistry.com",
-        "houstonheightsdentistry.com",
-        "dha.libguides.com",
-        "drsburau.com"
+        "ada.org",
+        "dha.gov.ae",
+        "england.nhs.uk",
+        "aaoms.org",
+        "jada.ada.org",
+        "pocketdentistry.com",
+        "baos.org.uk",
+        "howardcountyoms.com",
+        "pmc.ncbi.nlm.nih.gov"
       ],
       "slots_read": 9,
       "host_classification": [
         {
-          "host": "mylocaldentists.com.au",
+          "host": "ada.org",
+          "kind": "institutional",
+          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
+          "open": false
+        },
+        {
+          "host": "dha.gov.ae",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "england.nhs.uk",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "aaoms.org",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "jada.ada.org",
+          "kind": "institutional",
+          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
+          "open": false
+        },
+        {
+          "host": "pocketdentistry.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
           "open": false
         },
         {
-          "host": "agdfrisco.com",
+          "host": "baos.org.uk",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
         },
         {
-          "host": "yourdentistryguide.com",
-          "kind": "incumbent",
-          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
-          "open": false
-        },
-        {
-          "host": "ovid.com",
+          "host": "howardcountyoms.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
         },
         {
-          "host": "dallaslocalguide.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "sunshinefamilydentistry.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
-          "open": false
-        },
-        {
-          "host": "houstonheightsdentistry.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
-          "open": false
-        },
-        {
-          "host": "dha.libguides.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "drsburau.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
+          "host": "pmc.ncbi.nlm.nih.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 4,
-      "institutional_slots": 0,
+      "incumbent_slots": 1,
+      "institutional_slots": 5,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 5,
+      "unclassifiable_slots": 3,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.44,
-      "institutional_share": 0,
+      "incumbent_share": 0.11,
+      "institutional_share": 0.56,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.56,
+      "unclassifiable_share": 0.33,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -2168,80 +2052,73 @@
       "citation_occupancy_withheld": "CONTROL_PAIR_DOES_NOT_SEPARATE"
     },
     {
-      "query": "dental implants comprehensive guide",
+      "query": "local dentistry guide",
       "role": "atlas_t1",
       "property": "theindustryguides.com",
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
-        "my.clevelandclinic.org",
-        "dentalhealth.org",
-        "fdiworlddental.org",
-        "kerrvilledentistry.com",
-        "implant.ca",
-        "colgate.com",
-        "healthline.com",
-        "stloralsurgery.com",
-        "periodontalmedicine.org",
-        "smartarchesdental.com"
+        "whitmandental.com",
+        "luckdentalcare.com",
+        "yourdentistryguide.com",
+        "dhss.delaware.gov",
+        "mydental.org",
+        "deltadentalaz.com",
+        "england.nhs.uk",
+        "localdentistguide.com.htmlindex.tips",
+        "wvdental.org"
       ],
-      "slots_read": 10,
+      "slots_read": 9,
       "host_classification": [
         {
-          "host": "my.clevelandclinic.org",
-          "kind": "institutional",
-          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
-          "open": false
-        },
-        {
-          "host": "dentalhealth.org",
+          "host": "whitmandental.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
         },
         {
-          "host": "fdiworlddental.org",
+          "host": "luckdentalcare.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
         },
         {
-          "host": "kerrvilledentistry.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
-          "open": false
-        },
-        {
-          "host": "implant.ca",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:implant",
-          "open": false
-        },
-        {
-          "host": "colgate.com",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "healthline.com",
+          "host": "yourdentistryguide.com",
           "kind": "incumbent",
           "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
           "open": false
         },
         {
-          "host": "stloralsurgery.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:oralsurg",
+          "host": "dhss.delaware.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         },
         {
-          "host": "periodontalmedicine.org",
+          "host": "mydental.org",
           "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:periodont",
+          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
           "open": false
         },
         {
-          "host": "smartarchesdental.com",
+          "host": "deltadentalaz.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "england.nhs.uk",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "localdentistguide.com.htmlindex.tips",
+          "kind": "incumbent",
+          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
+          "open": false
+        },
+        {
+          "host": "wvdental.org",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
@@ -2249,16 +2126,16 @@
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 8,
-      "institutional_slots": 1,
+      "incumbent_slots": 7,
+      "institutional_slots": 2,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 1,
+      "unclassifiable_slots": 0,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.8,
-      "institutional_share": 0.1,
+      "incumbent_share": 0.78,
+      "institutional_share": 0.22,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.1,
+      "unclassifiable_share": 0,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -2354,9 +2231,10 @@
         "govinfo.gov",
         "mgaleg.maryland.gov",
         "wvlegislature.gov",
-        "legislature.maine.gov"
+        "govtrack.us",
+        "texaspolicyresearch.com"
       ],
-      "slots_read": 4,
+      "slots_read": 5,
       "host_classification": [
         {
           "host": "govinfo.gov",
@@ -2377,24 +2255,30 @@
           "open": false
         },
         {
-          "host": "legislature.maine.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
+          "host": "govtrack.us",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "texaspolicyresearch.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "incumbent_slots": 0,
-      "institutional_slots": 4,
+      "institutional_slots": 3,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 0,
+      "unclassifiable_slots": 2,
       "owned_share": 0,
       "social_share": 0,
       "incumbent_share": 0,
-      "institutional_share": 1,
+      "institutional_share": 0.6,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0,
+      "unclassifiable_share": 0.4,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -2413,43 +2297,19 @@
       "property": "theindustryguides.com",
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
-        "fixdental.com.au",
-        "urgentcaredental.co.uk",
-        "ipchealth.com.au",
-        "brite-dental.com",
         "healthinsurance.org",
         "us-uk.bookimed.com",
         "authoritydental.org",
+        "jupiterdentalcare.com",
         "whatclinic.com",
-        "citybridgedental.co.uk",
-        "selectivedentalsanjose.com"
+        "bridgecostdental.com",
+        "selectivedentalsanjose.com",
+        "aflac.com",
+        "perfectsmile-dental.com",
+        "treatcompare.com"
       ],
       "slots_read": 10,
       "host_classification": [
-        {
-          "host": "fixdental.com.au",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-          "open": false
-        },
-        {
-          "host": "urgentcaredental.co.uk",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-          "open": false
-        },
-        {
-          "host": "ipchealth.com.au",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:health",
-          "open": false
-        },
-        {
-          "host": "brite-dental.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
-          "open": false
-        },
         {
           "host": "healthinsurance.org",
           "kind": "incumbent",
@@ -2469,13 +2329,19 @@
           "open": false
         },
         {
+          "host": "jupiterdentalcare.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
           "host": "whatclinic.com",
           "kind": "incumbent",
           "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
           "open": false
         },
         {
-          "host": "citybridgedental.co.uk",
+          "host": "bridgecostdental.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
@@ -2485,20 +2351,134 @@
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
+        },
+        {
+          "host": "aflac.com",
+          "kind": "incumbent",
+          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
+          "open": false
+        },
+        {
+          "host": "perfectsmile-dental.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "treatcompare.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 9,
+      "incumbent_slots": 8,
       "institutional_slots": 0,
+      "open_unheld_slots": 0,
+      "unclassifiable_slots": 2,
+      "owned_share": 0,
+      "social_share": 0,
+      "incumbent_share": 0.8,
+      "institutional_share": 0,
+      "open_unheld_share": 0,
+      "unclassifiable_share": 0.2,
+      "social_by_surface": {},
+      "open_slots": 0,
+      "open_share": 0,
+      "closed_share": 1,
+      "blue_ocean_eligible": {
+        "eligible": true,
+        "reason": "ANCHORED_CITATION_SET"
+      },
+      "citation_occupancy": null,
+      "citation_occupancy_withheld": "CONTROL_PAIR_DOES_NOT_SEPARATE"
+    },
+    {
+      "query": "dental implants comprehensive guide",
+      "role": "atlas_t1",
+      "property": "theindustryguides.com",
+      "evidence_tier": "T1",
+      "cited_hosts_in_order": [
+        "my.clevelandclinic.org",
+        "www1.deltadentalins.com",
+        "dentalhealth.org",
+        "fdiworlddental.org",
+        "kerrvilledentistry.com",
+        "smartarchesdental.com",
+        "periodontalmedicine.org",
+        "cdeworld.com",
+        "healthline.com"
+      ],
+      "slots_read": 9,
+      "host_classification": [
+        {
+          "host": "my.clevelandclinic.org",
+          "kind": "institutional",
+          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
+          "open": false
+        },
+        {
+          "host": "www1.deltadentalins.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "dentalhealth.org",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "fdiworlddental.org",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "kerrvilledentistry.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
+          "open": false
+        },
+        {
+          "host": "smartarchesdental.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "open": false
+        },
+        {
+          "host": "periodontalmedicine.org",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:periodont",
+          "open": false
+        },
+        {
+          "host": "cdeworld.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "healthline.com",
+          "kind": "incumbent",
+          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
+          "open": false
+        }
+      ],
+      "owned_slots": 0,
+      "social_slots": 0,
+      "incumbent_slots": 7,
+      "institutional_slots": 1,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 1,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.9,
-      "institutional_share": 0,
+      "incumbent_share": 0.78,
+      "institutional_share": 0.11,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.1,
+      "unclassifiable_share": 0.11,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -2517,27 +2497,13 @@
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
         "health.ny.gov",
-        "ada.org",
-        "medicaid.gov",
         "hhs.gov",
         "emedny.org"
       ],
-      "slots_read": 5,
+      "slots_read": 3,
       "host_classification": [
         {
           "host": "health.ny.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "ada.org",
-          "kind": "institutional",
-          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
-          "open": false
-        },
-        {
-          "host": "medicaid.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
@@ -2558,15 +2524,15 @@
       "owned_slots": 0,
       "social_slots": 0,
       "incumbent_slots": 0,
-      "institutional_slots": 4,
+      "institutional_slots": 2,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 1,
       "owned_share": 0,
       "social_share": 0,
       "incumbent_share": 0,
-      "institutional_share": 0.8,
+      "institutional_share": 0.67,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.2,
+      "unclassifiable_share": 0.33,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -2584,20 +2550,15 @@
       "property": "theindustryguides.com",
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
-        "leginfo.legislature.ca.gov",
         "govinfo.gov",
         "nebraskalegislature.gov",
-        "mgaleg.maryland.gov",
-        "congress.gov"
+        "legis.state.wv.us",
+        "congress.gov",
+        "docs.legis.wisconsin.gov",
+        "uscis.gov"
       ],
-      "slots_read": 5,
+      "slots_read": 6,
       "host_classification": [
-        {
-          "host": "leginfo.legislature.ca.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
         {
           "host": "govinfo.gov",
           "kind": "institutional",
@@ -2611,13 +2572,25 @@
           "open": false
         },
         {
-          "host": "mgaleg.maryland.gov",
+          "host": "legis.state.wv.us",
+          "kind": "institutional",
+          "why": "LEGISLATURE",
+          "open": false
+        },
+        {
+          "host": "congress.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         },
         {
-          "host": "congress.gov",
+          "host": "docs.legis.wisconsin.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "uscis.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
@@ -2626,7 +2599,7 @@
       "owned_slots": 0,
       "social_slots": 0,
       "incumbent_slots": 0,
-      "institutional_slots": 5,
+      "institutional_slots": 6,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 0,
       "owned_share": 0,
@@ -2653,45 +2626,21 @@
       "property": "theindustryguides.com",
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
-        "torhoermanlaw.com",
         "hutzlerlaw.com",
-        "whitlocklawllc.com",
-        "feaganslawgroup.com",
-        "lawyers.findlaw.com",
         "marksandharrison.com",
-        "frantzlawgroup.com",
-        "jimenez-lawfirm.com"
+        "torhoermanlaw.com",
+        "mezrano.com",
+        "rhllaw.com",
+        "munley.com",
+        "panish.law",
+        "forthepeople.com"
       ],
       "slots_read": 8,
       "host_classification": [
         {
-          "host": "torhoermanlaw.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:law",
-          "open": false
-        },
-        {
           "host": "hutzlerlaw.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_MARKER:law",
-          "open": false
-        },
-        {
-          "host": "whitlocklawllc.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:law",
-          "open": false
-        },
-        {
-          "host": "feaganslawgroup.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:law",
-          "open": false
-        },
-        {
-          "host": "lawyers.findlaw.com",
-          "kind": "incumbent",
-          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
           "open": false
         },
         {
@@ -2701,30 +2650,54 @@
           "open": false
         },
         {
-          "host": "frantzlawgroup.com",
+          "host": "torhoermanlaw.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_MARKER:law",
           "open": false
         },
         {
-          "host": "jimenez-lawfirm.com",
+          "host": "mezrano.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "rhllaw.com",
           "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_MARKER:lawfirm",
+          "why": "SERVICE_PROVIDER_MARKER:law",
+          "open": false
+        },
+        {
+          "host": "munley.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "panish.law",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_MARKER:law",
+          "open": false
+        },
+        {
+          "host": "forthepeople.com",
+          "kind": "incumbent",
+          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 7,
+      "incumbent_slots": 5,
       "institutional_slots": 0,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 1,
+      "unclassifiable_slots": 3,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.88,
+      "incumbent_share": 0.63,
       "institutional_share": 0,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.13,
+      "unclassifiable_share": 0.38,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -2750,10 +2723,9 @@
         "audhdpsychiatry.co.uk",
         "add.org",
         "mdpi.com",
-        "psychcentral.com",
-        "kclpure.kcl.ac.uk"
+        "psychiatrictimes.com"
       ],
-      "slots_read": 10,
+      "slots_read": 9,
       "host_classification": [
         {
           "host": "pmc.ncbi.nlm.nih.gov",
@@ -2804,30 +2776,24 @@
           "open": false
         },
         {
-          "host": "psychcentral.com",
+          "host": "psychiatrictimes.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "kclpure.kcl.ac.uk",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "incumbent_slots": 1,
-      "institutional_slots": 4,
+      "institutional_slots": 3,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 5,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.1,
-      "institutional_share": 0.4,
+      "incumbent_share": 0.11,
+      "institutional_share": 0.33,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.5,
+      "unclassifiable_share": 0.56,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -2846,31 +2812,19 @@
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
         "ncwd.uscourts.gov",
-        "courts.alaska.gov",
-        "in.gov",
         "ncsc.org",
+        "in.gov",
         "sf.courts.ca.gov",
-        "cdn.prod.website-files.com",
         "bestcase.com",
+        "justice.gov.uk",
         "law.cornell.edu",
-        "payments.masonmunicipalcourt.org"
+        "payments.masonmunicipalcourt.org",
+        "allencountyclerk.in.gov"
       ],
       "slots_read": 9,
       "host_classification": [
         {
           "host": "ncwd.uscourts.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "courts.alaska.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "in.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
@@ -2882,21 +2836,27 @@
           "open": false
         },
         {
+          "host": "in.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
           "host": "sf.courts.ca.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         },
         {
-          "host": "cdn.prod.website-files.com",
-          "kind": "open_unheld",
-          "why": "CDN_OR_ASSET_HOST_NOT_A_PAGE",
-          "open": true
-        },
-        {
           "host": "bestcase.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "justice.gov.uk",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         },
         {
@@ -2910,24 +2870,30 @@
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
+        },
+        {
+          "host": "allencountyclerk.in.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "incumbent_slots": 0,
-      "institutional_slots": 5,
-      "open_unheld_slots": 1,
+      "institutional_slots": 6,
+      "open_unheld_slots": 0,
       "unclassifiable_slots": 3,
       "owned_share": 0,
       "social_share": 0,
       "incumbent_share": 0,
-      "institutional_share": 0.56,
-      "open_unheld_share": 0.11,
+      "institutional_share": 0.67,
+      "open_unheld_share": 0,
       "unclassifiable_share": 0.33,
       "social_by_surface": {},
-      "open_slots": 1,
-      "open_share": 0.11,
-      "closed_share": 0.89,
+      "open_slots": 0,
+      "open_share": 0,
+      "closed_share": 1,
       "blue_ocean_eligible": {
         "eligible": false,
         "reason": "NO_SERVICE_OR_LOCATION_ANCHOR",
@@ -2943,15 +2909,15 @@
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
         "ameritas.com",
+        "www1.deltadentalins.com",
         "mysierradental.com",
-        "northaustindentist.com",
         "dentistry.co.uk",
         "spadental.co.uk",
-        "prod.cda-adc.ca",
         "newportbeachdentalstudio.com",
-        "primarydental.com",
+        "prod.cda-adc.ca",
         "fullheartdentistry.com",
-        "spiritdental.com"
+        "yourdentistryguide.com",
+        "thestonehavendental.com"
       ],
       "slots_read": 10,
       "host_classification": [
@@ -2962,15 +2928,15 @@
           "open": false
         },
         {
-          "host": "mysierradental.com",
+          "host": "www1.deltadentalins.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
         },
         {
-          "host": "northaustindentist.com",
+          "host": "mysierradental.com",
           "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dentist",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
         },
         {
@@ -2986,21 +2952,15 @@
           "open": false
         },
         {
-          "host": "prod.cda-adc.ca",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "newportbeachdentalstudio.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
         },
         {
-          "host": "primarydental.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
+          "host": "prod.cda-adc.ca",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
           "open": false
         },
         {
@@ -3010,7 +2970,13 @@
           "open": false
         },
         {
-          "host": "spiritdental.com",
+          "host": "yourdentistryguide.com",
+          "kind": "incumbent",
+          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
+          "open": false
+        },
+        {
+          "host": "thestonehavendental.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:dental",
           "open": false
@@ -3046,14 +3012,14 @@
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
         "icsi.edu",
-        "links.cisi.org",
         "cbic.org",
-        "myhspa.org",
         "examsnap.com",
+        "myhspa.org",
         "edudelphi.com",
         "infosecinstitute.com",
         "certempire.com",
         "cicexam.com",
+        "certarc.com",
         "destcert.com"
       ],
       "slots_read": 10,
@@ -3065,25 +3031,19 @@
           "open": false
         },
         {
-          "host": "links.cisi.org",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "cbic.org",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
         },
         {
-          "host": "myhspa.org",
+          "host": "examsnap.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
         },
         {
-          "host": "examsnap.com",
+          "host": "myhspa.org",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -3108,6 +3068,12 @@
         },
         {
           "host": "cicexam.com",
+          "kind": "unclassifiable",
+          "why": "NOT_RECOGNISED",
+          "open": false
+        },
+        {
+          "host": "certarc.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
@@ -3151,12 +3117,13 @@
       "cited_hosts_in_order": [
         "cdc.gov",
         "reginfo.gov",
-        "uscis.gov",
         "dhs.gov",
+        "uscis.gov",
         "dhs.kerala.gov.in",
-        "pmc.ncbi.nlm.nih.gov"
+        "pmc.ncbi.nlm.nih.gov",
+        "webmd.com"
       ],
-      "slots_read": 6,
+      "slots_read": 7,
       "host_classification": [
         {
           "host": "cdc.gov",
@@ -3171,13 +3138,13 @@
           "open": false
         },
         {
-          "host": "uscis.gov",
+          "host": "dhs.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         },
         {
-          "host": "dhs.gov",
+          "host": "uscis.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
@@ -3193,18 +3160,24 @@
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
+        },
+        {
+          "host": "webmd.com",
+          "kind": "incumbent",
+          "why": "DIRECTORY_MARKETPLACE_OR_AGGREGATOR",
+          "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
-      "incumbent_slots": 0,
+      "incumbent_slots": 1,
       "institutional_slots": 6,
       "open_unheld_slots": 0,
       "unclassifiable_slots": 0,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0,
-      "institutional_share": 1,
+      "incumbent_share": 0.14,
+      "institutional_share": 0.86,
       "open_unheld_share": 0,
       "unclassifiable_share": 0,
       "social_by_surface": {},
@@ -3227,15 +3200,14 @@
         "scdhhs.gov",
         "publications.aap.org",
         "assets.publishing.service.gov.uk",
-        "uscis.gov",
-        "www2.gov.bc.ca",
         "uscismd.com",
-        "downloads.regulations.gov",
         "aila.org",
+        "downloads.regulations.gov",
         "straitstimes.com",
-        "legislation.gov.uk"
+        "sira.nsw.gov.au",
+        "moh.gov.sg"
       ],
-      "slots_read": 10,
+      "slots_read": 9,
       "host_classification": [
         {
           "host": "scdhhs.gov",
@@ -3256,27 +3228,9 @@
           "open": false
         },
         {
-          "host": "uscis.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
-        {
-          "host": "www2.gov.bc.ca",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "uscismd.com",
           "kind": "incumbent",
           "why": "SERVICE_PROVIDER_GOVERNED_TERM:uscis",
-          "open": false
-        },
-        {
-          "host": "downloads.regulations.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         },
         {
@@ -3286,13 +3240,25 @@
           "open": false
         },
         {
+          "host": "downloads.regulations.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
           "host": "straitstimes.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
         },
         {
-          "host": "legislation.gov.uk",
+          "host": "sira.nsw.gov.au",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "moh.gov.sg",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
@@ -3303,13 +3269,13 @@
       "incumbent_slots": 1,
       "institutional_slots": 5,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 4,
+      "unclassifiable_slots": 3,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.1,
-      "institutional_share": 0.5,
+      "incumbent_share": 0.11,
+      "institutional_share": 0.56,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.4,
+      "unclassifiable_share": 0.33,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
@@ -3330,9 +3296,9 @@
         "uscismd.com",
         "uscis.gov",
         "uscisclinics.com",
-        "reginfo.gov",
-        "fhfairfax.com",
-        "uscisphysician.com"
+        "uscisphysician.com",
+        "dhs.gov",
+        "easyime.com"
       ],
       "slots_read": 6,
       "host_classification": [
@@ -3355,21 +3321,21 @@
           "open": false
         },
         {
-          "host": "reginfo.gov",
+          "host": "uscisphysician.com",
+          "kind": "incumbent",
+          "why": "SERVICE_PROVIDER_GOVERNED_TERM:uscis",
+          "open": false
+        },
+        {
+          "host": "dhs.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
           "open": false
         },
         {
-          "host": "fhfairfax.com",
+          "host": "easyime.com",
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
-          "host": "uscisphysician.com",
-          "kind": "incumbent",
-          "why": "SERVICE_PROVIDER_GOVERNED_TERM:uscis",
           "open": false
         }
       ],
@@ -3402,22 +3368,17 @@
       "property": "theindustryguides.com",
       "evidence_tier": "T1",
       "cited_hosts_in_order": [
-        "bls.gov",
         "cdc.gov",
         "webmd.com",
         "pmc.ncbi.nlm.nih.gov",
-        "facs.org",
         "uscis.gov",
-        "en.wikipedia.org"
+        "en.wikipedia.org",
+        "sciencedirect.com",
+        "oig.dhs.gov",
+        "dhs.kerala.gov.in"
       ],
-      "slots_read": 7,
+      "slots_read": 8,
       "host_classification": [
-        {
-          "host": "bls.gov",
-          "kind": "institutional",
-          "why": "GOVERNMENT_OR_ACADEMIC",
-          "open": false
-        },
         {
           "host": "cdc.gov",
           "kind": "institutional",
@@ -3437,12 +3398,6 @@
           "open": false
         },
         {
-          "host": "facs.org",
-          "kind": "unclassifiable",
-          "why": "NOT_RECOGNISED",
-          "open": false
-        },
-        {
           "host": "uscis.gov",
           "kind": "institutional",
           "why": "GOVERNMENT_OR_ACADEMIC",
@@ -3453,20 +3408,38 @@
           "kind": "unclassifiable",
           "why": "NOT_RECOGNISED",
           "open": false
+        },
+        {
+          "host": "sciencedirect.com",
+          "kind": "institutional",
+          "why": "HEALTH_SERVICE_JOURNAL_OR_REFERENCE",
+          "open": false
+        },
+        {
+          "host": "oig.dhs.gov",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
+        },
+        {
+          "host": "dhs.kerala.gov.in",
+          "kind": "institutional",
+          "why": "GOVERNMENT_OR_ACADEMIC",
+          "open": false
         }
       ],
       "owned_slots": 0,
       "social_slots": 0,
       "incumbent_slots": 1,
-      "institutional_slots": 4,
+      "institutional_slots": 6,
       "open_unheld_slots": 0,
-      "unclassifiable_slots": 2,
+      "unclassifiable_slots": 1,
       "owned_share": 0,
       "social_share": 0,
-      "incumbent_share": 0.14,
-      "institutional_share": 0.57,
+      "incumbent_share": 0.13,
+      "institutional_share": 0.75,
       "open_unheld_share": 0,
-      "unclassifiable_share": 0.29,
+      "unclassifiable_share": 0.13,
       "social_by_surface": {},
       "open_slots": 0,
       "open_share": 0,
