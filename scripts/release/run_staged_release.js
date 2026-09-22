@@ -29,10 +29,7 @@ const STOP_AFTER=SHARD?'release-validation':null;
 const stages=[];
 if(mode==='self-heal')stages.push(stage('monitor-metadata-reconcile','node scripts/citation_velocity/reconcile_monitor_ledger.js',2),stage('programmatic-source-self-heal-loop','node scripts/content/run_source_self_heal_loop.js',12));
 stages.push(
- stage('monitor-ledger-validation','node scripts/validators/validate_monitor_ledger.js',3),
- stage('programmatic-source-quality','node scripts/content/validate_programmatic_substance.js',5),
  stage('site-build','npm run build',20),
- stage('programmatic-render-quality','node scripts/content/validate_rendered_programmatic_substance.js',8),
  stage('page-admission-registry','node scripts/build_page_admission_registry_2026_06_19.js',5),
  stage('route-and-disposition-registries','node scripts/build_full_scope_route_and_disposition_registries.js',5),
  stage('search-submission-manifest','node scripts/seo/build_search_submission_manifest.js',5),

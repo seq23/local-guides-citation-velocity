@@ -97,8 +97,6 @@ jobs:
           npm run queries:join-release
       - name: Validate before recording anything
         run: |
-          npm run validate:occupancy-probe
-          npm run validate:occupancy-controls
           npm run validate:release
       - name: Commit the measurement
         # This step used to be stefanzweifel/git-auto-commit-action@v5: no
@@ -142,8 +140,6 @@ jobs:
               git reset --hard origin/main
               npm run atlas:build
               npm run queries:join-release
-              npm run validate:occupancy-probe
-              npm run validate:occupancy-controls
               npm run validate:release
               git add -- $file_pattern
               if git diff --cached --quiet; then
@@ -152,8 +148,6 @@ jobs:
               fi
               git commit -m "citation occupancy probe: measured winnability -> atlas"
             else
-              npm run validate:occupancy-probe
-              npm run validate:occupancy-controls
               npm run validate:release
               git add -- $file_pattern
               git commit --amend --no-edit

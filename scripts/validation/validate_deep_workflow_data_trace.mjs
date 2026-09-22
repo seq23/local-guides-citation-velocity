@@ -105,7 +105,7 @@ const lifecycle = [
     assert(velocityWorkflow.includes('npm run release:velocity-intake'), 'consolidated Velocity intake missing');
   }),
   lifecycleCheck('velocity-intake-resolves-through-provenance-and-finalization', () => {
-    for (const name of ['validate:agent-run-intake','citation:prepare-velocity-intake','release:content-finalize','validate:velocity-intake-workflow','trace:agent-artifact-data-flow']) {
+    for (const name of ['validate:agent-run-intake','citation:prepare-velocity-intake','citation:plan-agent-exact','citation:compile-html-fix-acceptance','release:velocity-content','citation:apply-agent-exact','release:content-finalize','trace:agent-artifact-data-flow']) {
       assert(velocityClosure.scripts.includes(name), `transitive intake stage missing:${name}`);
     }
   }),
