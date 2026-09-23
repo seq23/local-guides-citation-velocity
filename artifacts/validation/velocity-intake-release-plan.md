@@ -2,31 +2,19 @@
 
 Status: **PASS**
 Release date: 2026-09-23
-Target publish units: 230
-Selected units: 24
-Twin agent units: 24
+Target publish units: 164
+Selected units: 12
+Twin agent units: 12
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 206
+Social fallback suppressed: 152
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 21
+Repair units: 9
 New page units: 3
 
 | Source | Operation | Vertical | Target route | Query |
 |---|---|---|---|---|
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/emergency-open-now/index.html | what does a dental abscess look like |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/dental-red-flags/index.html | why is my tooth sensitive to cold all of a sudden |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/second-opinion/index.html | how to avoid unnecessary dental treatment when visiting a new dentist |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/choosing-a-dentist/index.html | how do I choose a dentist? |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/dental-implants/index.html | cost of full mouth dental implants with insurance |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/clear-aligners/index.html | average cost of clear aligners 2026 |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/best-top-near-me/index.html | how do I find the best dentist near me? |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/sedation-fear/index.html | is sedation dentistry safe and is it worth the extra cost |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/dental-bridge-vs-implant/index.html | dental bridge vs implant which is better |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cosmetic-restorative/index.html | how long does teeth whitening last |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/cost-financing/index.html | how much does dental work cost and what financing options exist |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/pediatric-family/index.html | at what age should my child first see a dentist and what should I expect |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/anxiety-trust/index.html | how do I find a dentist who is good with anxious patients |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /insights/uscis-medical-009-how-much-does-the-exam-cost.html | how much does the i-693 medical exam cost in 2026 |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/index.html | can i go to my regular family doctor for the uscis medical exam |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/early-signs-of-ms-in-women-under-40/ | early signs of ms in women under 40 |
