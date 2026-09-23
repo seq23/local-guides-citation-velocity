@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 const cp=require('child_process'),fs=require('fs'),path=require('path');
+const {recordOutcomes:recordRetryOutcomes,ESCALATE_AFTER}=require('../lib/recommendation_retry_ledger');
 const {beginMutationScope,extendMutationScope,acceptMutationScope,rollbackMutationScope,consumePendingMutationRoutes,freezeNewAdmitted,restoreFrozenPages,implementationPathToRoute,loadRegistry}=require('../lib/frozen_pages');
 const ROOT=path.resolve(__dirname,'../..');
 const DATE=process.env.SOURCE_DATE||new Date().toISOString().slice(0,10);
@@ -52,11 +53,13 @@ function markersPresent(fix){
    return html.includes(raw)||decoded.includes(raw)||html.includes(encoded)||decoded.includes(encoded);
  });
 }
-function markCompletedAgentRepairs(acceptedRoutes){
+function markCompletedAgentRepairs(acceptedRoutes,rejectedRows){
  const accepted=new Set((acceptedRoutes||[]).map(implementationPathToRoute));
- const ids=new Set();
+ const rejectedWhy=new Map((rejectedRows||[]).map((row)=>[implementationPathToRoute(row.route),`route_rejected_lost_${row.lost_marker_count}_marker(s)`]));
+ const ids=new Set();const attempted=new Set();const routeOf=new Map();
  for(const spec of currentRepairSpecs()){
    const route=repairRoute(spec);
+   for(const id of [...(spec.record_ids||[spec.record_id])].filter(Boolean)){attempted.add(id);routeOf.set(id,route);}
    if(!accepted.has(route))continue;
    for(const id of [...(spec.record_ids||[spec.record_id])].filter(Boolean))ids.add(id);
  }
@@ -78,6 +81,8 @@ function markCompletedAgentRepairs(acceptedRoutes){
  }
  if(unproven)console.warn(`AGENT REPAIR COMPLETION: ${unproven} record(s) on accepted routes were NOT marked released - their required_markers are absent from the rendered page. They stay selectable so a later release can work them.`);
  ledger.updated_at=DATE;writeJson('data/report_fixes/agent_fix_ledger.json',ledger);
+ const retry=recordRetryOutcomes(ledger.fixes||[],attempted,DATE,(fix)=>ids.has(fix.id)?(fix.marker_verification||'required_markers_absent'):(rejectedWhy.get(routeOf.get(fix.id))||'route_not_accepted_this_release'));
+ console.log(`RECOMMENDATION RETRY LEDGER: ${attempted.size} attempted; ${retry.missed} still off their page (retried first next release); ${retry.cleared} cleared; ${retry.escalated} at ${ESCALATE_AFTER}+ attempts, escalated to an issue.`);
  const dispositions=readJson('data/report_fixes/agent_artifact_disposition_ledger.json',{entries:[]});
  for(const entry of dispositions.entries||[]){
    if(!ids.has(entry.id))continue;
@@ -91,7 +96,7 @@ function markCompletedAgentRepairs(acceptedRoutes){
    entry.disposition='RELEASED_VERIFIED';entry.selected_for_release=false;entry.completed_at=DATE;
  }
  dispositions.updated_at=DATE;writeJson('data/report_fixes/agent_artifact_disposition_ledger.json',dispositions);
- return {record_ids_marked:changed,record_ids_unproven:unproven};
+ return {record_ids_marked:changed,record_ids_unproven:unproven,retry_missed:retry.missed,retry_escalated:retry.escalated};
 }
 
 function run(command){console.log(`\n$ ${command}`);const r=cp.spawnSync(command,{cwd:ROOT,shell:true,stdio:'inherit',env:{...process.env,SOURCE_DATE:DATE,NODE_OPTIONS:process.env.NODE_OPTIONS||'--max-old-space-size=3072'}});if(r.status!==0)throw new Error(`command_failed:${command}:${r.status}`);}
@@ -208,7 +213,7 @@ function main(){
      restoreFrozenPages();
    }
    run('node scripts/build_pages_dist.js');
-   const completedAgentRepairs=markCompletedAgentRepairs(accepted.routes||[]);
+   const completedAgentRepairs=markCompletedAgentRepairs(accepted.routes||[],accepted.rejected||[]);
    fs.rmSync(backupDir,{recursive:true,force:true});
    console.log(JSON.stringify({status:'PASS',release_id:releaseId,refrozen_existing:accepted.accepted,rejected_existing:(accepted.rejected||[]).length,rejected_routes:(accepted.rejected||[]).map((row)=>row.route),frozen_new:frozenNew.added_count,completed_agent_repairs:completedAgentRepairs},null,2));
  }catch(err){

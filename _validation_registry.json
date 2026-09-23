@@ -5820,6 +5820,41 @@
       "hard_fail_basis": "repo_integrity"
     },
     {
+      "id": "recommendation-retry-ledger",
+      "title": "A recommendation that misses its page is retried first and escalated after three misses",
+      "path": "scripts/validators/validate_recommendation_retry_ledger.js",
+      "command": "node scripts/validators/validate_recommendation_retry_ledger.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "release"
+      ],
+      "tags": [
+        "agent-runs",
+        "self-heal"
+      ],
+      "risk_prevented": "The release lane code that decides whether a missed agent recommendation is retried, counted and escalated could break silently, leaving recommendations off their pages with nobody told. Pure-code check on constructed rows; repo content cannot change its answer.",
+      "why_existing_checks_do_not_cover": "No other check exercises scripts/lib/recommendation_retry_ledger.js; the escalation it drives is the only signal that a recommendation keeps missing.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 60,
+      "evidence_file": null,
+      "failure_action": "fix scripts/lib/recommendation_retry_ledger.js",
+      "depends_on": [],
+      "requires_files": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "hard_fail_basis": "build_integrity"
+    },
+    {
       "id": "publish-gate-unblockable",
       "title": "Only a guard that can unblock a publish may hold the gate",
       "path": "scripts/validators/validate_publish_gate_unblockable.js",
