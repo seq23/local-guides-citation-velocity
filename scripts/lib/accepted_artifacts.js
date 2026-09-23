@@ -34,6 +34,7 @@ const fs = require('fs');
 const path = require('path');
 const { artifactKey } = require('./rendered_artifact_recovery');
 const { stripTemplateScaffoldingFromArtifacts } = require('./template_scaffolding');
+const { screenCrossVerticalRows } = require('./vertical_rows');
 
 const ROOT = path.resolve(__dirname, '../..');
 const STORE_REL = 'data/release/accepted_page_artifacts.json';
@@ -96,11 +97,78 @@ function acceptedArtifactsFor(route) {
   return record && Array.isArray(record.artifacts) ? record.artifacts : [];
 }
 
+// A PAIRED BLOCK KEEPS EVERY SUBJECT EITHER COPY'S INTRO NAMED.
+//
+// The intro under an artifact heading names the query the block was compiled for
+// ("Use this table to decide what to verify before acting on <query>."), and that
+// exact lowercase query is the required_marker every ledger row declares - so on
+// many routes the intro is the ONLY place a delivered query appears. Replacing an
+// accepted block in place (below) replaced its intro with it.
+//
+// Run 35801431518 (2026-09-23) is what that cost. The compiler pairs a page's
+// recommendations with its queries BY LIST INDEX (html_fix_acceptance_parser.js,
+// compileEntryFromSpec: `queries[index] || queries[0]`), and the two lists are
+// deduplicated independently, so when the 2026-09-22 dentistry run added a new query
+// at the head of dentistry/cost-financing/'s list, every block past index 6 was
+// recompiled naming the new query instead of "all-on-4 dental implants price 2026".
+// Six accepted cost_table blocks were that marker's only carriers; each was replaced
+// by a same-titled block naming the new query, acceptMutationScope refused the
+// rebuild (12 landed rows depend on the marker), and the new run's three repairs
+// could never land - on any release. insights/uscis-medical-009-* lost "... (Gemini
+// 1.5 Flash)" the same way, and that query is not in the plan at all, so no fix to
+// the compiler's pairing alone could have kept it.
+//
+// So the merged block's intro is the DELIVERED intro, verbatim, plus any subject the
+// other copy named that it does not already contain - appended in the same "It also
+// answers: a; b." form compileEntryFromSpec already uses for surplus queries. Both
+// directions: a replacement never erases the delivered subject, and an accepted copy
+// that wins on weight never swallows the new query. It is idempotent - a rebuild of
+// the page it produced adds nothing - so the page is stable across rebuilds.
+const INTRO_SUBJECT_TEMPLATES = [
+  /^(?:Use this table to decide what to verify before acting on|Compare each option against the same concrete criteria before acting on) (.+)\.$/,
+  /^Use this section to answer (.+) with concrete checks, evidence, and limits\.$/,
+  /^Use this section to turn (.+) into a concrete next step\.$/
+];
+const ALSO_ANSWERS = ' It also answers: ';
+function splitIntro(intro) {
+  const text = String(intro || '').replace(/\s+/g, ' ').trim();
+  const at = text.indexOf(ALSO_ANSWERS);
+  if (at < 0) return { lead: text, also: [] };
+  const also = text.slice(at + ALSO_ANSWERS.length).replace(/\.$/, '').split('; ').map((s) => s.trim()).filter(Boolean);
+  return { lead: text.slice(0, at), also };
+}
+function introSubjects(intro) {
+  const { lead, also } = splitIntro(intro);
+  if (!lead) return also;
+  const template = INTRO_SUBJECT_TEMPLATES.map((re) => lead.match(re)).find(Boolean);
+  return [template ? template[1] : lead.replace(/\.$/, ''), ...also];
+}
+function unionIntro(deliveredIntro, otherIntro) {
+  const delivered = String(deliveredIntro || '').replace(/\s+/g, ' ').trim();
+  if (!delivered) return otherIntro;
+  const missing = [...new Set(introSubjects(otherIntro))].filter((subject) => subject && !delivered.includes(subject));
+  if (!missing.length) return deliveredIntro;
+  const { lead, also } = splitIntro(delivered);
+  return `${lead}${ALSO_ANSWERS}${[...also, ...missing].join('; ')}.`;
+}
+function withUnionIntro(winner, delivered, other) {
+  if (!winner || !delivered) return winner;
+  const intro = unionIntro(delivered.intro, other && other.intro);
+  return intro === winner.intro ? winner : { ...winner, intro };
+}
+
 /**
  * Accepted artifacts first, in the order they were delivered, then anything the
  * current build produces that the accepted output did not carry.
+ *
+ * Every page render site goes through here, so this is also where lawyer row copy
+ * is kept off non-personal-injury routes (scripts/lib/vertical_rows.js) - whichever
+ * store the block came from.
  */
 function mergeAcceptedArtifacts(route, current) {
+  return screenCrossVerticalRows(mergeAcceptedArtifactsUnscreened(route, current), route);
+}
+function mergeAcceptedArtifactsUnscreened(route, current) {
   const accepted = acceptedArtifactsFor(route);
   if (!accepted.length) return Array.isArray(current) ? current : [];
   // The accepted list is emitted VERBATIM, duplicates included.
@@ -181,7 +249,8 @@ function mergeAcceptedArtifacts(route, current) {
     if (replacement) {
       consumed.add(replacement);
       const carriesFreshMarker = Boolean(replacement.marker) && replacement.marker !== artifact.marker;
-      out.push(carriesFreshMarker || weight(replacement) >= weight(artifact) ? replacement : artifact);
+      const winner = carriesFreshMarker || weight(replacement) >= weight(artifact) ? replacement : artifact;
+      out.push(withUnionIntro(winner, artifact, replacement));
     } else out.push(artifact);
   }
   for (const artifact of Array.isArray(current) ? current : []) {
@@ -192,4 +261,4 @@ function mergeAcceptedArtifacts(route, current) {
   return out;
 }
 
-module.exports = { STORE_REL, HISTORIC_REL, acceptedArtifactsFor, mergeAcceptedArtifacts, renderedRelFor, resetCache };
+module.exports = { STORE_REL, HISTORIC_REL, acceptedArtifactsFor, mergeAcceptedArtifacts, renderedRelFor, resetCache, unionIntro, introSubjects };
