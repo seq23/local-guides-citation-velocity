@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { DEFAULT_HEADERS, canonicalBlockType } = require('./html_fix_block_schema');
 const { isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt } = require('./internal_instruction_text');
 const { isTemplateScaffolding, stripTemplateScaffolding, READER_FACING_VERIFICATION_CELL } = require('./template_scaffolding');
+const { NEUTRAL_WHY_CELL, isPersonalInjuryRoute, personalInjuryRowFor } = require('./vertical_rows');
 
 function normalizeSpace(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 function compact(value, max = 220) {
@@ -346,7 +347,10 @@ function headersFromFix(edit, type) {
   const cleaned = unique(explicit.map((cell) => normalizeSpace(String(cell || '').replace(/[\s,;:]+$/, ''))));
   return cleaned.length >= 2 ? cleaned.slice(0, 6) : (DEFAULT_HEADERS[type] || []);
 }
-function requirementsFromFix(edit, query, count) {
+// `route` is the page the requirements are for. The six personal-injury factors below
+// are lawyer-shopping criteria; they are offered on a personal-injury route only - see
+// scripts/lib/vertical_rows.js for what they did on 30 dental and TRT pages.
+function requirementsFromFix(edit, query, count, route = '') {
   const text = normalizeSpace(edit);
   const out = [];
   const quoted = quotedPhrases(text)
@@ -355,7 +359,7 @@ function requirementsFromFix(edit, query, count) {
   out.push(...quoted);
   const colonList = text.match(/covering\s*:\s*([^.;]+)/i) || text.match(/covering\s+([^.;]+)/i);
   if (colonList) out.push(...colonList[1].split(/,|;|\band\b/i).map(sentenceCase));
-  if (/accident attorneys?|personal injury lawyers?|injury lawyer|slogans/i.test(`${query} ${text}`)) {
+  if (isPersonalInjuryRoute(route) && /accident attorneys?|personal injury lawyers?|injury lawyer|slogans/i.test(`${query} ${text}`)) {
     out.push(
       'Accident type fit',
       'Plaintiff-side injury focus',
@@ -381,22 +385,25 @@ function requirementsFromFix(edit, query, count) {
   // downstream renderer already omits an empty block rather than announcing a gap.
   return unique(out).slice(0, Math.max(count, 4));
 }
-function itemsFromFix(edit, query, count) {
+function itemsFromFix(edit, query, count, route = '') {
   const paren = [...String(edit || '').matchAll(/\((\d+)\s*[-–—:]?\s*([^)]+)\)/g)].map((m) => normalizeSpace(m[2])).filter((item) => !isWorkflowInstruction(item));
   // asHeadingCopy here covers every reader-facing surface fed from the agent's
   // markdown: these seeds become checklist items, callout bullets AND the first cell
   // of every generated comparison-table row. Stripping only at titleFromFix left 16
   // table cells on trt/index.html reading "### best TRT clinic near me".
-  return unique([...paren, ...requirementsFromFix(edit, query, count)].map(asHeadingCopy).filter(Boolean)).filter((item) => !isWorkflowInstruction(item)).slice(0, Math.max(count, 4));
+  return unique([...paren, ...requirementsFromFix(edit, query, count, route)].map(asHeadingCopy).filter(Boolean)).filter((item) => !isWorkflowInstruction(item)).slice(0, Math.max(count, 4));
 }
-function tableRowForRequirement(requirement, query, index) {
+function tableRowForRequirement(requirement, query, index, route = '') {
   const r = asHeadingCopy(requirement);
-  if (/accident type fit/i.test(r)) return ['Accident type fit', 'Ask whether the attorney routinely handles your exact accident type, not just personal injury generally.', 'Car, truck, workplace, slip-and-fall, rideshare, and hit-and-run claims have different evidence, insurance, and deadline issues.'];
-  if (/plaintiff-side/i.test(r)) return ['Plaintiff-side injury focus', 'Confirm the lawyer represents injured people and can explain the claim from the victim side.', 'A general litigator or defense-heavy practice may not be built for settlement pressure, medical proof, and insurer negotiation.'];
-  if (/fee|cost/i.test(r)) return ['Fee and cost clarity', 'Get the contingency percentage, case-cost handling, and any trial-stage fee changes in writing.', 'Slogan-heavy firms often hide the real economic terms until after intake.'];
-  if (/staffing|communication/i.test(r)) return ['Case staffing and communication', 'Ask who handles the file day to day and how often you will receive updates.', 'The lawyer on the ad may not be the person managing evidence, treatment records, negotiations, or settlement decisions.'];
-  if (/trial readiness|pressure/i.test(r)) return ['Trial readiness and pressure tactics', 'Ask what happens if the insurer will not make a fair offer, and pause if the firm pressures you to sign immediately.', 'Real leverage comes from preparation and clear options, not urgency language or “best lawyer” claims.'];
-  if (/written next steps/i.test(r)) return ['Written next steps', 'Ask for the next three steps, expected documents, and near-term timeline before signing.', 'A clear written process is easier to compare than reviews, awards, badges, or vague promises.'];
+  // LAWYER COPY ON A LAWYER PAGE ONLY. These rows matched on /fee|cost/, /pressure/,
+  // /communication/ - words every vertical uses - so "Get the contingency percentage"
+  // was published in the "What to verify" column of 30 dental, TRT, neuro and USCIS
+  // pages. Off a personal-injury route the requirement falls through to the honest
+  // row at the bottom: its own text in cell one, the vertical-neutral guidance after.
+  if (isPersonalInjuryRoute(route)) {
+    const personalInjury = personalInjuryRowFor(r);
+    if (personalInjury) return personalInjury;
+  }
   if (/same criteria|specifics/i.test(r)) return ['Comparison method', 'Use the same verification questions with every option you compare.', 'A consistent comparison makes differences in scope, evidence, timing, cost, and next steps easier to verify.'];
   // Was a generic `else` row whose middle cell - the "What to verify" column, the
   // one cell a reader actually reads for the answer - said:
@@ -423,10 +430,10 @@ function tableRowForRequirement(requirement, query, index) {
   // quotes the query back at the reader as a task. A row with no requirement at all
   // is still dropped - that is the "Requirement <n>" case, which carries no marker.
   if (!r) return null;
-  return [r, READER_FACING_VERIFICATION_CELL, 'Specific, written answers are more reliable than broad marketing claims.'];
+  return [r, READER_FACING_VERIFICATION_CELL, NEUTRAL_WHY_CELL];
 }
-function rowsFromFix(edit, query, headers, count) {
-  const seeds = itemsFromFix(edit, query, count);
+function rowsFromFix(edit, query, headers, count, route = '') {
+  const seeds = itemsFromFix(edit, query, count, route);
   const rows = [];
   // Was `for (let i = 0; i < Math.max(count, 3); i++)` with `seeds[i] ||
   // \`Requirement ${i + 1}\``, which manufactured rows for seeds that did not
@@ -434,7 +441,7 @@ function rowsFromFix(edit, query, headers, count) {
   // cell. Iterate the seeds we have; a null row from tableRowForRequirement is a
   // requirement with no verification content and is dropped.
   for (let i = 0; i < seeds.length; i++) {
-    const base = tableRowForRequirement(seeds[i], query, i);
+    const base = tableRowForRequirement(seeds[i], query, i, route);
     if (!base) continue;
     if (headers.length >= 4) rows.push([...base, 'Ask for this in plain English before signing.'].slice(0, headers.length));
     else if (headers.length === 3) rows.push(base);
@@ -443,19 +450,21 @@ function rowsFromFix(edit, query, headers, count) {
   }
   return rows;
 }
-function scriptLinesFromFix(edit, query, count) {
+function scriptLinesFromFix(edit, query, count, route = '') {
   const base = [
     query ? `I am trying to answer: ${query}.` : 'I am trying to make a clear decision.',
     'Can you explain what is included, what is excluded, and what I should verify before committing?',
     'Can you send the scope, timing, costs, and next steps in writing?',
     'Are there any limitations, red flags, or cases where this option is not the right fit?'
   ];
-  return itemsFromFix(edit, query, count).slice(0, Math.max(0, count - base.length)).concat(base).slice(0, Math.max(count, 4));
+  return itemsFromFix(edit, query, count, route).slice(0, Math.max(0, count - base.length)).concat(base).slice(0, Math.max(count, 4));
 }
 // `alsoForbidden`: phrases OTHER recommendations on the same page ask to remove. The
 // compiler's carried-entry clean passes the whole entry's set here so a rebuilt
 // artifact cannot be retitled straight back onto the phrase that got it rebuilt.
-function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null, alsoForbidden = null }) {
+// `implementationPath`: the page this artifact is for. It decides whether the
+// personal-injury row copy may be used at all (scripts/lib/vertical_rows.js).
+function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackSeq = null, alsoForbidden = null, implementationPath = '' }) {
   const edit = stripPrefixes(recommendation);
   const type = typeFromFix(edit);
   // Every string this artifact can put on a public page is screened against the
@@ -492,13 +501,17 @@ function artifactFromFix({ recommendation, query, recordId, index = 0, fallbackS
     ]).filter(usableAsCopy).slice(0, Math.max(minRows, 4));
   } else if (['comparison_table','decision_matrix','cost_table','timeline_table','scorecard','worksheet','severity_matrix'].includes(type)) {
     artifact.headers = headers.filter(dropForbidden);
-    artifact.rows = rowsFromFix(edit, query, artifact.headers, minRows)
+    artifact.rows = rowsFromFix(edit, query, artifact.headers, minRows, implementationPath)
+      // A row whose SUBJECT is the phrase this fix asks to remove is that phrase's row:
+      // blanking only the cell published a row reading "Not stated" in the column that
+      // names what the row is about. Any other forbidden cell is still blanked.
+      .filter((row) => dropForbidden(row[0]))
       .map((row) => row.map((cell) => (dropForbidden(cell) ? cell : '')))
       .filter((row) => row.some((cell) => String(cell || '').trim()));
   } else if (type === 'script') {
-    artifact.lines = scriptLinesFromFix(edit, query, minRows).filter(dropForbidden);
+    artifact.lines = scriptLinesFromFix(edit, query, minRows, implementationPath).filter(dropForbidden);
   } else {
-    artifact.items = itemsFromFix(edit, query, minRows).filter(dropForbidden);
+    artifact.items = itemsFromFix(edit, query, minRows, implementationPath).filter(dropForbidden);
   }
   if (Array.isArray(artifact.items)) artifact.items = artifact.items.filter(dropForbidden);
   // Belt and braces on top of the three call sites above. The producers were fixed at
@@ -602,6 +615,7 @@ function normalizeForbidden(value) {
 const REMOVAL_VERB = '(?:remove|delete|strip|drop|eliminate)';
 const SWAP_VERB = '(?:replace|replacing|swap|swapping|substitute|substituting)';
 const DEDUPE_GAP = /\b(?:duplicate[sd]?|duplicated|redundant|repeated|repeating|extra|surplus|second|third|fourth)\b/i;
+const ALL_COPIES_GAP = /\b(?:both|all|every|each)\b/i;
 const LOCATIVE_GAP = /\b(?:under|underneath|beneath|below|above|after|following|preceding|before|within|inside|in|at|near|next to|adjacent to|alongside)\s*$/i;
 function phrasesTheFixAsksToRemove(recommendation) {
   const text = String(recommendation || '');
@@ -622,7 +636,14 @@ function phrasesTheFixAsksToRemove(recommendation) {
       // The object of the verb is the surplus copies; the phrase itself is meant to
       // stay. Reading it as a ban on X made the compiler forbid the very heading
       // the same run asked it to add once (2026-09-21, personal-injury-q008).
-      if (DEDUPE_GAP.test(String(m[gap] || ''))) continue;
+      //
+      // UNLESS THE GAP SAYS ALL OF THEM. "Delete BOTH duplicated 'Fee and cost
+      // clarity/contingency percentage' rows ... and replace with a single accurate
+      // row" (2026-07-14 dentistry, dentistry/cost-financing/) asks for none: it names
+      // every copy. Reading it as a dedupe left the lawyer phrase free to become the
+      // artifact's own <h2>, and the page published "Fee and cost clarity/contingency
+      // percentage" as a heading on a dental cost page for two months.
+      if (DEDUPE_GAP.test(String(m[gap] || '')) && !ALL_COPIES_GAP.test(String(m[gap] || ''))) continue;
       const phrase = normalizeForbidden(m[phraseIndex]);
       if (phrase) out.add(phrase);
     }
@@ -633,7 +654,7 @@ function phrasesTheFixAsksToRemove(recommendation) {
 // it twice would advance the shared fallback-heading counter twice and number the
 // page's headings 2, 4, 6.
 function rowRequirementFromFix({ recommendation, query, recordId, implementationPath, index = 0, artifact = null }) {
-  const built = artifact || artifactFromFix({ recommendation, query, recordId, index });
+  const built = artifact || artifactFromFix({ recommendation, query, recordId, index, implementationPath });
   return {
     row_id: recordId || '',
     query: query || '',
@@ -724,7 +745,7 @@ function compileEntryFromSpec(spec) {
   recommendations.forEach((recommendation, index) => {
     const query = queries[index] || queries[0] || spec.query || '';
     const recordId = rowIds[index] || rowIds[0] || spec.record_id || `${implementationPath}:${index}`;
-    const built = artifactFromFix({ recommendation, query, recordId, index, fallbackSeq });
+    const built = artifactFromFix({ recommendation, query, recordId, index, fallbackSeq, implementationPath });
     const key = artifactCollisionKey(built);
     const existing = byKey.get(key);
     const artifact = existing ? mergeCollidingArtifact(existing, built) : built;

@@ -74,7 +74,7 @@ function cleanCarried(entry) {
     if (!artifact || !isForbidden(artifact.title)) return artifact;
     const row = rowFor(artifact);
     if (!row) return null; // Nothing to recompile from: refuse to publish it at all.
-    const rebuilt = artifactFromFix({ recommendation: row.source_fix, query: row.query, recordId: row.row_id, index: 0, alsoForbidden: forbidden });
+    const rebuilt = artifactFromFix({ recommendation: row.source_fix, query: row.query, recordId: row.row_id, index: 0, alsoForbidden: forbidden, implementationPath: entry.implementation_path || '' });
     retitledByRow.set(String(row.row_id), { from: artifact.title, to: rebuilt.title, type: rebuilt.type });
     return { ...rebuilt, id: artifact.id, marker: artifact.marker };
   }).filter(Boolean);

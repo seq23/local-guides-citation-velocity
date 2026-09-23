@@ -85,6 +85,21 @@ const SHAPES = [
   }
 })();
 
+// LAWYER COPY OFF A LAWYER PAGE is the same class one step removed: a row the
+// compiler filled from the wrong vertical's template. tableRowForRequirement matched
+// /fee|cost/ and /pressure/ and wrote "Get the contingency percentage ..." into the
+// "What to verify" column of 30 dental, TRT, neuro and USCIS pages (2026-09-23). The
+// cells come from scripts/lib/vertical_rows.js - the SAME list the compiler offers
+// only on personal-injury routes and the render-time screen rewrites everywhere else -
+// so this gate cannot drift from the producers. Escaped exactly as the renderer does.
+const { PERSONAL_INJURY_GUIDANCE_CELLS, isPersonalInjuryRoute } = require('../lib/vertical_rows');
+const escapeHtml = (value) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const LAWYER_CELLS = PERSONAL_INJURY_GUIDANCE_CELLS.map(escapeHtml);
+if (!LAWYER_CELLS.length) {
+  console.error('RENDERED TEMPLATE SCAFFOLDING GATE: scripts/lib/vertical_rows.js exports no personal-injury guidance cells, so the cross-vertical check would pass blind.');
+  process.exit(2);
+}
+
 const deferredDoc = fs.existsSync(DEFERRED) ? JSON.parse(fs.readFileSync(DEFERRED, 'utf8')) : { routes: [] };
 const deferred = new Map((deferredDoc.routes || []).map((r) => [String(r.path), r]));
 
@@ -105,9 +120,13 @@ let scanned = 0;
     if (!entry.name.endsWith('.html')) continue;
     scanned += 1;
     const html = fs.readFileSync(abs, 'utf8');
-    const hits = SHAPES.filter(([re]) => re.test(html));
+    const hits = SHAPES.filter(([re]) => re.test(html)).map(([, reason, id]) => [reason, id]);
+    const sourceRoute = rel.startsWith('dist/') ? rel.slice(5) : rel;
+    if (!isPersonalInjuryRoute(sourceRoute) && LAWYER_CELLS.some((cell) => html.includes(cell))) {
+      hits.push(['personal-injury row copy (contingency fees, insurer offers, case staffing) on a page outside personal-injury', 'personal-injury-row-off-vertical']);
+    }
     if (!hits.length) continue;
-    const record = { path: rel, reason: hits[0][1], shapes: hits.map(([, , id]) => id) };
+    const record = { path: rel, reason: hits[0][0], shapes: hits.map(([, id]) => id) };
     // A dist/ mirror is the same page; defer it with its source route.
     const sourceRel = rel.startsWith('dist/') ? rel.slice(5) : rel;
     if (deferred.has(sourceRel)) deferredHits.push({ ...record, deferred_as: sourceRel });

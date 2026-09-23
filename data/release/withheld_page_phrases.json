@@ -19,6 +19,14 @@
       "source_fix": "FILEPATH: dentistry/choosing-a-dentist/index.html || ... || EDIT: Fix the table artifact: replace 'Use the same questions with every lawyer on your shortlist' with dentist-specific language throughout.",
       "source_run": "data/report_fixes/agent_runs/2026-09-01/dentistry/",
       "named_at": "2026-09-01"
+    },
+    {
+      "implementation_path": "dentistry/cost-financing/index.html",
+      "phrase": "Fee and cost clarity/contingency percentage",
+      "reason": "Personal-injury fee copy that leaked into a dental cost page. The 2026-07-14 dentistry citation run asked for BOTH duplicated rows under this heading to be deleted and replaced with a dentistry-specific row; phrasesTheFixAsksToRemove read \"delete both duplicated X\" as a dedupe request (keep one X), so titleFromFix lifted the quoted phrase into the artifact title and the page published it as an <h2>. The compiler defect is fixed in scripts/lib/html_fix_acceptance_parser.js (ALL_COPIES_GAP: a gap naming both/all/every copy is a full removal); this entry removes the delivered block from the accepted store so the rebuilt page stops carrying it.",
+      "source_fix": "FILEPATH: /dentistry/cost-financing/ || CURRENT: The 'Dental implant cost ranges at a glance' table contains duplicated, irrelevant rows referencing 'contingency percentage' and 'trial-stage fee changes' (apparently copied from an unrelated legal/injury-claim template) and never states an actual full-mouth-with-insurance dollar figure. || MISSING: A correct, dentistry-specific cost-with-insurance breakdown (e.g., full arch $25k-$50k out-of-pocket range, typical annual insurance maximum $1,000-$2,000, expected post-benefit cost) with the legal-fee content removed entirely. || EDIT: Delete both duplicated 'Fee and cost clarity/contingency percentage' rows from the comparison table and replace with a single accurate row: 'Full mouth implants with insurance | $20,000-$45,000 typical out-of-pocket after a $1,000-$2,000 annual maximum applies | Confirm annual maximum, waiting periods, and whether implants are classified as major or excluded.'",
+      "source_run": "2026-07-14 dentistry (agent_b19f5bd8be890788)",
+      "named_at": "2026-09-23"
     }
   ]
 }
