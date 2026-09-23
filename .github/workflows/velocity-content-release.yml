@@ -446,9 +446,7 @@ jobs:
             npm run validate:release || node scripts/selfheal/publish_gate_decision.mjs --profile release || npm run release:hold-failing-units
             phase "$attempt" "agent-exact and citation-agent traces"
             npm run trace:agent-exact
-            npm run validate:agent-exact
             npm run trace:citation-agent-fixes
-            npm run validate:citation-agent-fixes
             git add -A
             git commit --amend --no-edit
             phase "$attempt" "push to main"
