@@ -10,6 +10,9 @@ const { routeShape, renderedPathForRoute } = require('../lib/page_family_authori
 const { resolveTargetPath, routeFromPath, statedFilepathFrom, canonicalizeRawTarget } = require('../lib/citation_route_resolver');
 const { parseManifestBundle, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
 const { auditFix } = require('../validators/validate_agent_fix_ledger_truthfulness');
+const retryLedger = require('../lib/recommendation_retry_ledger');
+// Done means the markers are on the page NOW; a verified row whose content later vanished is work again.
+const stillDone = (fix) => ['RELEASED_VERIFIED','APPLIED_VERIFIED'].includes(String(fix.implementation_status || '')) && !auditFix(fix).reason;
 const { resolveProofPointer, routeToRenderedPath } = require('../lib/recommendation_proof_path');
 const dropIntegrity = require('../lib/agent_run_drop_integrity');
 
@@ -673,7 +676,7 @@ function updateLedger(agentRecords, plan) {
   for (const record of agentRecords) {
     const selectedForRelease = selected.has(record.id);
     const prior = byId.get(record.id) || {};
-    const completed = ['RELEASED_VERIFIED','APPLIED_VERIFIED'].includes(String(prior.implementation_status || ''));
+    const completed = stillDone(prior);
     const computedRendered = record.renderedPath || routeToRenderedPath(record.target_route);
     const proof = resolveProofPath(prior, record, computedRendered);
     byId.set(record.id, {
@@ -769,8 +772,11 @@ function main() {
   const existingRoutes = existingRouteSet();
   const blockedAgent = agent.normalized.filter((r) => String(r.status || '').startsWith('BLOCKED_'));
   const existingFixLedger = readJson(LEDGER_PATH, { fixes: [] });
-  const completedIds = new Set((existingFixLedger.fixes || []).filter((fix) => ['RELEASED_VERIFIED','APPLIED_VERIFIED'].includes(String(fix.implementation_status || ''))).map((fix) => fix.id));
-  const orderedAgent = agent.normalized.filter((r) => r.status === 'READY_TO_RELEASE' && !completedIds.has(r.id)).sort((a, b) => String(b.run_date || '').localeCompare(String(a.run_date || '')) || b.priority_score - a.priority_score || String(a.id).localeCompare(String(b.id)));
+  const completedIds = new Set((existingFixLedger.fixes || []).filter(stillDone).map((fix) => fix.id));
+  // A row a release already worked and missed goes first, so newer drops cannot starve it.
+  const retries = retryLedger.read().entries;
+  const retryAttempts = (r) => (retries[r.id] ? retries[r.id].attempts : 0);
+  const orderedAgent = agent.normalized.filter((r) => r.status === 'READY_TO_RELEASE' && !completedIds.has(r.id)).sort((a, b) => retryAttempts(b) - retryAttempts(a) || String(b.run_date || '').localeCompare(String(a.run_date || '')) || b.priority_score - a.priority_score || String(a.id).localeCompare(String(b.id)));
   for (const record of orderedAgent) {
     if (selected.length >= TARGET) break;
     if (record.operation === 'CREATE_NEW_TARGET_PAGE' && existingTitles.has(String(record.query || '').trim().toLowerCase())) {

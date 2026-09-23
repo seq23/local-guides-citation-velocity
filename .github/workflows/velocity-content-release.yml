@@ -36,6 +36,8 @@ permissions:
   # workflow lands can never re-run the validator that governs them; an explicit
   # workflow_dispatch is the one documented exception to that rule.
   actions: write
+  # Opens, updates and closes one issue per page whose recommendations keep missing.
+  issues: write
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
@@ -461,6 +463,13 @@ jobs:
           # makes the next attempt possible, by a human or by the next scheduled run.
           echo "::error::PUBLISH DID NOT CONVERGE: three rebase-rebuild-revalidate-push attempts all failed to land on main. The last attempt's phase banners above name where it stopped. Nothing was published; the absorption committed by the earlier step is already on main and will be retried by the next run."
           exit 1
+      - name: Escalate recommendations that keep missing their page
+        # The release retries a missed recommendation first; after three misses retrying
+        # has stopped working, so a person gets one issue per page. Closes itself on landing.
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/citation_velocity/escalate_unapplied_recommendations.js
       - name: Re-validate main after this workflow pushes
         # The daily agent run lands on main as raw artifacts plus a manifest already
         # marked READY_FOR_ABSORPTION. The normalized artifact that satisfies
