@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "4b6be0ef53ce89eb269d361af92e252554650dc39078765658a2389536744bb3",
+  "registry_sha256": "0066aec2bde08dc94e10520a2a6a2ae79459744c2a6747dd17bd33f9c8afd271",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,13 +53,13 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 211,
-    "active": 38,
+    "total": 212,
+    "active": 39,
     "on_demand": 10,
     "retired": 163,
     "local_only": 1,
     "hard_fail": 49,
-    "strong_warning": 1,
+    "strong_warning": 2,
     "soft_warning": 0,
     "info": 161
   },
@@ -82,6 +82,7 @@
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "occupancy-reading-ratchet",
         "page-record-identity",
         "publish-inventory",
@@ -115,6 +116,7 @@
         "live-hubs",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
         "executable-bits",
@@ -150,6 +152,7 @@
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "occupancy-reading-ratchet",
         "page-record-identity",
         "provider-evidence",
@@ -197,6 +200,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "agent-run-artifact-intake",
+        "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
         "executable-bits",
@@ -236,6 +240,7 @@
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "occupancy-reading-ratchet",
         "page-record-identity",
         "provider-evidence",
@@ -281,6 +286,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "agent-run-artifact-intake",
+        "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
         "executable-bits",
@@ -328,6 +334,7 @@
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "occupancy-reading-ratchet",
         "page-record-identity",
         "provider-evidence",
@@ -373,6 +380,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "agent-run-artifact-intake",
+        "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
         "executable-bits",
@@ -414,6 +422,7 @@
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "occupancy-reading-ratchet",
         "page-record-identity",
         "provider-evidence",
@@ -463,6 +472,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "agent-run-artifact-intake",
+        "copy-hygiene",
         "homepage-schema",
         "llm-exports",
         "answer-blocks",
@@ -609,6 +619,7 @@
         "no-double-vertical-slugs",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "page-record-identity",
         "publish-inventory",
         "rendered-internal-hrefs",
@@ -636,6 +647,7 @@
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
         "agent-run-artifact-intake",
+        "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
         "executable-bits",
@@ -658,6 +670,7 @@
         "medical-schema-emission",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "occupancy-reading-ratchet",
         "page-record-identity",
         "provider-evidence",
@@ -673,6 +686,7 @@
         "provider-evidence",
         "no-internal-instruction-leak",
         "rendered-template-scaffolding",
+        "copy-hygiene",
         "page-record-identity",
         "content-safety",
         "no-conflict-markers"
@@ -2010,7 +2024,7 @@
       },
       {
         "id": "rendered-template-scaffolding",
-        "title": "No rendered page publishes template scaffolding, or another vertical's row copy, as content",
+        "title": "No rendered page publishes template scaffolding as content",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 3",
@@ -2041,7 +2055,7 @@
           "artifacts/validation/rendered-template-scaffolding.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited. Same class, one step removed (2026-09-23): tableRowForRequirement answered any requirement mentioning a fee, cost or \"pressure\" with personal-injury lawyer copy, so 30 dental, TRT, neuro and USCIS pages published \"Get the contingency percentage ...\" and \"Slogan-heavy firms often hide the real economic terms\" as the answer to a dental or TRT cost question - a false public claim about what the reader should verify. The lawyer cells come from scripts/lib/vertical_rows.js, the same list the compiler and the render-time screen use; any non-personal-injury page carrying one fails.",
+        "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -2943,6 +2957,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Primary landing pages could lose required structured data.",
+        "default_behavior": "WARN_CONTINUE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "copy-hygiene",
+        "title": "Reader-facing copy carries no answer-engine label and no off-vertical lawyer row (warning only)",
+        "status": "ACTIVE",
+        "severity": "STRONG_WARNING",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_copy_hygiene.js",
+        "command": "node scripts/validators/validate_copy_hygiene.js",
+        "depends_on": [],
+        "requires_files": [
+          "sitemap.xml",
+          "index.html"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/copy-hygiene.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/copy-hygiene.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Pages printed an answer-panel label as part of the copy: insights/uscis-medical-009-how-much-does-the-exam-cost.html showed \"how much does the i-693 medical exam cost in 2026 (Gemini 1.5 Flash)\", and on 2026-09-22 44 of 2,425 rendered pages carried \"(Perplexity)\", \"(OpenAI GPT-4o)\", \"Gemini 1.5 Flash\" or \"OpenAI GPT-4o\". The label entered through the agent's query field, which the fix ledger copies into required_markers. Separately, personal-injury \"What to verify\" rows (\"Get the contingency percentage ...\") were compiled onto dental, TRT, neuro and USCIS pages. Both are cosmetic copy defects: reported on every run, never blocking, by owner decision 2026-09-22.",
         "default_behavior": "WARN_CONTINUE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -12356,6 +12409,45 @@
         "retirement_reason": null
       },
       {
+        "id": "copy-hygiene",
+        "title": "Reader-facing copy carries no answer-engine label and no off-vertical lawyer row (warning only)",
+        "status": "ACTIVE",
+        "severity": "STRONG_WARNING",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_copy_hygiene.js",
+        "command": "node scripts/validators/validate_copy_hygiene.js",
+        "depends_on": [],
+        "requires_files": [
+          "sitemap.xml",
+          "index.html"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/copy-hygiene.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/copy-hygiene.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Pages printed an answer-panel label as part of the copy: insights/uscis-medical-009-how-much-does-the-exam-cost.html showed \"how much does the i-693 medical exam cost in 2026 (Gemini 1.5 Flash)\", and on 2026-09-22 44 of 2,425 rendered pages carried \"(Perplexity)\", \"(OpenAI GPT-4o)\", \"Gemini 1.5 Flash\" or \"OpenAI GPT-4o\". The label entered through the agent's query field, which the fix ledger copies into required_markers. Separately, personal-injury \"What to verify\" rows (\"Get the contingency percentage ...\") were compiled onto dental, TRT, neuro and USCIS pages. Both are cosmetic copy defects: reported on every run, never blocking, by owner decision 2026-09-22.",
+        "default_behavior": "WARN_CONTINUE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
         "id": "page-record-identity",
         "title": "Page record identity contract",
         "status": "ACTIVE",
@@ -13400,7 +13492,7 @@
       },
       {
         "id": "rendered-template-scaffolding",
-        "title": "No rendered page publishes template scaffolding, or another vertical's row copy, as content",
+        "title": "No rendered page publishes template scaffolding as content",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 3",
@@ -13431,7 +13523,7 @@
           "artifacts/validation/rendered-template-scaffolding.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited. Same class, one step removed (2026-09-23): tableRowForRequirement answered any requirement mentioning a fee, cost or \"pressure\" with personal-injury lawyer copy, so 30 dental, TRT, neuro and USCIS pages published \"Get the contingency percentage ...\" and \"Slogan-heavy firms often hide the real economic terms\" as the answer to a dental or TRT cost question - a false public claim about what the reader should verify. The lawyer cells come from scripts/lib/vertical_rows.js, the same list the compiler and the render-time screen use; any non-personal-injury page carrying one fails.",
+        "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

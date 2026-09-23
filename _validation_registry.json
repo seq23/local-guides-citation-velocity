@@ -4078,7 +4078,7 @@
     },
     {
       "id": "rendered-template-scaffolding",
-      "title": "No rendered page publishes template scaffolding, or another vertical's row copy, as content",
+      "title": "No rendered page publishes template scaffolding as content",
       "path": "scripts/validators/validate_rendered_template_scaffolding.js",
       "command": "node scripts/validators/validate_rendered_template_scaffolding.js",
       "status": "ACTIVE",
@@ -4099,7 +4099,7 @@
         "agent-artifacts",
         "extraction"
       ],
-      "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited. Same class, one step removed (2026-09-23): tableRowForRequirement answered any requirement mentioning a fee, cost or \"pressure\" with personal-injury lawyer copy, so 30 dental, TRT, neuro and USCIS pages published \"Get the contingency percentage ...\" and \"Slogan-heavy firms often hide the real economic terms\" as the answer to a dental or TRT cost question - a false public claim about what the reader should verify. The lawyer cells come from scripts/lib/vertical_rows.js, the same list the compiler and the render-time screen use; any non-personal-injury page carrying one fails.",
+      "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited.",
       "why_existing_checks_do_not_cover": "no-internal-instruction-leak catches BUILD VOCABULARY on a page - FILEPATH:, Directly answer:, a validator's own failure message. It has no pattern for an unfilled template slot or for an instruction phrased as reader advice, so a numbered placeholder and a \"Translate ... into a question\" cell both counted as content. Substance and extraction validators count blocks, not whether a cell holds an answer.",
       "estimated_runtime_seconds": 10,
       "timeout_seconds": 180,
@@ -4121,6 +4121,51 @@
       ],
       "enforce_no_source_mutation": true,
       "hard_fail_basis": "user_safety_or_false_public_claim"
+    },
+    {
+      "id": "copy-hygiene",
+      "title": "Reader-facing copy carries no answer-engine label and no off-vertical lawyer row (warning only)",
+      "path": "scripts/validators/validate_copy_hygiene.js",
+      "command": "node scripts/validators/validate_copy_hygiene.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "copy"
+      ],
+      "risk_prevented": "Pages printed an answer-panel label as part of the copy: insights/uscis-medical-009-how-much-does-the-exam-cost.html showed \"how much does the i-693 medical exam cost in 2026 (Gemini 1.5 Flash)\", and on 2026-09-22 44 of 2,425 rendered pages carried \"(Perplexity)\", \"(OpenAI GPT-4o)\", \"Gemini 1.5 Flash\" or \"OpenAI GPT-4o\". The label entered through the agent's query field, which the fix ledger copies into required_markers. Separately, personal-injury \"What to verify\" rows (\"Get the contingency percentage ...\") were compiled onto dental, TRT, neuro and USCIS pages. Both are cosmetic copy defects: reported on every run, never blocking, by owner decision 2026-09-22.",
+      "why_existing_checks_do_not_cover": "model-name-free-routes (retired 2026-09-22) only read URLs and titles, never body copy. rendered-template-scaffolding is a blocker for unfilled template slots and authoring instructions; the lawyer-row check it briefly carried (#146) was moved here so a copy defect cannot turn main red. no-internal-instruction-leak looks for build vocabulary, not a vendor name or another vertical's row.",
+      "estimated_runtime_seconds": 10,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/copy-hygiene.json",
+      "failure_action": "record finding and continue. Fix at the source, never on the page: the answer-engine strip is questionFrom in scripts/lib/agent_artifact_source_parser.js (the intake reads CSV rows through it); the personal-injury rows live in scripts/lib/vertical_rows.js.",
+      "depends_on": [],
+      "requires_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/copy-hygiene.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/copy-hygiene.json"
+      ],
+      "enforce_no_source_mutation": true
     },
     {
       "status": "RETIRED",

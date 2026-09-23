@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
 const { resolveTargetPath, routeFromPath, statedFilepathFrom, canonicalizeRawTarget } = require('../lib/citation_route_resolver');
-const { parseManifestBundle, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
+const { parseManifestBundle, canonicalDedupeKey, questionFrom } = require('../lib/agent_artifact_source_parser');
 const { auditFix } = require('../validators/validate_agent_fix_ledger_truthfulness');
 const retryLedger = require('../lib/recommendation_retry_ledger');
 // Done means the markers are on the page NOW; a verified row whose content later vanished is work again.
@@ -165,8 +165,13 @@ function artifactErrors(manifest, manifestRel) {
   // while every real placeholder reads "local:/agent", so it matched nothing.
   return errors;
 }
+// One definition of "the query of record", shared with the source parser. This used
+// to be a second field list with no answer-engine strip, so a CSV row whose Query cell
+// carried a panel label ("... cost in 2026 (Gemini 1.5 Flash)") wrote the label into
+// the ledger's query and required_markers, and the rebuild was then obliged to keep
+// printing it on the page.
 function questionFromRow(row) {
-  return row.Query || row.query || row['Target Query'] || row['query_target'] || row.Question || row['Recommendation Query'] || '';
+  return questionFrom(row);
 }
 function desiredPageFromRow(row) {
   const repoFilePath = row['Repo File Path'] || row.repo_file_path || row['File Path'] || row.file_path || '';
