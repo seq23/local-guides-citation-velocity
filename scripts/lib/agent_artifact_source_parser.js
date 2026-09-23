@@ -69,12 +69,32 @@ function flattenRecommendation(value) {
 // Only a known answer-engine vocabulary is stripped, so a question that legitimately
 // ends in parentheses keeps them.
 const ENGINE_SUFFIX = /\s*\((?:openai|open ai|gpt[\s-]?[0-9a-z.]*|chatgpt|perplexity|claude|anthropic|gemini|google(?:\s+ai)?(?:\s+overviews?)?|bing|copilot|grok|llama|mistral|deepseek|you\.com|meta\s+ai)[^()]*\)\s*$/i;
+// The same label also arrives WITHOUT parentheses: "can i sue for pain and suffering
+// after a car accident Gemini 1.5 Flash", "... first after an accident OpenAI GPT-4o"
+// (five fix-ledger rows as of 2026-09-22). Bare, only the vendor-and-version shapes a
+// panel emits plus the vendor names no editorial query in these verticals ends on, so
+// a question that merely mentions a model mid-sentence keeps it.
+const VERSIONED_ENGINE = String.raw`(?:open\s?ai\s+)?gpt[\s-]?[0-9][0-9a-z.]*(?:[\s-]?(?:mini|turbo))?|chatgpt[\s-]?[0-9][0-9a-z.]*|gemini\s+[0-9][0-9.]*(?:\s+(?:flash|pro|ultra|nano)(?:[\s-]?lite)?)?|claude\s+(?:[0-9][0-9.]*\s*)?(?:opus|sonnet|haiku)(?:\s+[0-9][0-9.]*)?|llama[\s-]?[0-9][0-9a-z.]*`;
+const BARE_VENDOR = String.raw`open\s?ai|chatgpt|perplexity(?:\s+(?:sonar|pro))?|gemini|claude|copilot`;
+// Versioned shapes may follow the question directly; a bare vendor name only after a
+// separator (" - Perplexity"), so "what is chatgpt" stays a question.
+const BARE_ENGINE_SUFFIX = new RegExp(String.raw`(?:\s+(?:${VERSIONED_ENGINE})|\s*[-–—|:]\s*(?:${VERSIONED_ENGINE}|${BARE_VENDOR}))\s*$`, 'i');
+// The same vocabulary, unanchored, for finding a panel label anywhere in reader-facing
+// copy: "(Gemini 1.5 Flash)", "(OpenAI GPT-4o)", or a versioned name standing alone.
+// Search engines and map listings ("(Google Maps)", "(Bing)") are left out on purpose;
+// pages cite them as sources. Read by scripts/validators/validate_copy_hygiene.js.
+const ENGINE_LABEL_IN_COPY = new RegExp(String.raw`\((?:open\s?ai|gpt[\s-]?[0-9][0-9a-z.]*|chatgpt|perplexity|claude|anthropic|gemini|copilot|grok|llama|mistral|deepseek)\b[^()]*\)|\b(?:${VERSIONED_ENGINE})\b`, 'gi');
 function splitEngineSuffix(value) {
   const text = normalizeSpace(value);
-  const match = text.match(ENGINE_SUFFIX);
+  const match = text.match(ENGINE_SUFFIX) || text.match(BARE_ENGINE_SUFFIX);
   if (!match) return { query: text, engine: '' };
-  return { query: normalizeSpace(text.slice(0, match.index)), engine: normalizeSpace(match[0]).replace(/^\(|\)$/g, '') };
+  return { query: normalizeSpace(text.slice(0, match.index)), engine: normalizeSpace(match[0]).replace(/^[-–—|:\s]*\(?|\)$/g, '') };
 }
+// The one place an agent row's query becomes the query of record. The fix ledger
+// copies it verbatim into required_markers (prepare_velocity_intake_release.js
+// updateLedger), so a label left on here becomes a marker, and a marker is copy the
+// rebuild is then required to keep printing. prepare_velocity_intake_release.js
+// reads CSV rows through this function rather than keeping its own field list.
 function questionFrom(row) {
   const raw = normalizeSpace(row.Query || row.query || row['Target Query'] || row.query_target || row.Question || row['Recommendation Query'] || row.prompt || '');
   const { query } = splitEngineSuffix(raw);
@@ -236,4 +256,4 @@ function parseManifestBundle({ manifestPath, root }) {
   if (!manifest) return { manifest_path: manifestPath, records: [], errors: [`${manifestPath}:invalid_json`], duplicate_groups: [] };
   return parseAgentRunBundle({ root, manifest, manifestPath });
 }
-module.exports = { parseAgentRunBundle, parseManifestBundle, parseCsvRecords, parseJsonRecords, parseHtmlRecords, flattenRecommendation, normalizeSourceRecord, canonicalSourceRecordId, canonicalDedupeKey, canonicalNewPageKey, canonicalPageFixKey, classifyRecommendationType, duplicateGroups, normalizeSpace, questionFrom, modelFrom, splitEngineSuffix, slugify };
+module.exports = { parseAgentRunBundle, parseManifestBundle, parseCsvRecords, parseJsonRecords, parseHtmlRecords, flattenRecommendation, normalizeSourceRecord, canonicalSourceRecordId, canonicalDedupeKey, canonicalNewPageKey, canonicalPageFixKey, classifyRecommendationType, duplicateGroups, normalizeSpace, questionFrom, modelFrom, splitEngineSuffix, slugify, ENGINE_LABEL_IN_COPY };
