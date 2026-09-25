@@ -68,11 +68,31 @@ function activeRepairWrites(root = ROOT) {
 //
 // Derived from the registry for the same reason repair_writes is: a declared
 // write widens the surface with it and cannot drift out of sync.
+//
+// What a prepare command writes is a fact about the COMMAND, not about which
+// validator happens to be listing it. This used to collect writes only from
+// ACTIVE validators, so retiring one validator silently shrank the surface of a
+// command other ACTIVE validators still run. The 2026-09-22 cull (#144) retired
+// promotion-candidates-feed - the entry that declared `npm run build` writes
+// feeds/promotion-candidates.json - while no-double-vertical-slugs (ACTIVE, core)
+// kept running the same `npm run build`. The build still rewrote the feed, the
+// surface no longer admitted it, and the lane hard-stopped on every day the
+// evidence moved: runs 35966145307 (09-24) and 36104493181 (09-25). 09-23 was
+// green only because that day's rebuild happened to be byte-identical.
+//
+// So: for every prepare command an ACTIVE validator runs, the surface takes what
+// ANY registry entry declares that command writes, whatever that entry's status.
 function activePrepareWrites(root = ROOT) {
   const registry = JSON.parse(fs.readFileSync(path.join(root, '_validation_registry.json'), 'utf8'));
+  const validators = registry.validators || [];
+  const activeCommands = new Set();
+  for (const v of validators) {
+    if (v.status !== 'ACTIVE') continue;
+    for (const c of v.prepare_commands || []) activeCommands.add(c);
+  }
   const out = new Set();
-  for (const v of registry.validators || []) {
-    if (v.status !== 'ACTIVE' || !(v.prepare_commands || []).length) continue;
+  for (const v of validators) {
+    if (!(v.prepare_commands || []).some((c) => activeCommands.has(c))) continue;
     for (const w of [...(v.prepare_produces_files || []), ...(v.prepare_mutates_files || [])]) out.add(w);
   }
   return [...out].sort();
