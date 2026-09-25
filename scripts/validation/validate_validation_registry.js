@@ -65,4 +65,35 @@ try {
   errors.push(`registry:unreachable-prepare-check-failed:${e.message}`);
 }
 
+// ------------------------------------------------- lane commit surface vs prepares
+// query-evidence-refresh.yml runs the core profile, so every prepare command an
+// ACTIVE validator declares runs inside that lane and rewrites the workspace. Its
+// commit surface (scripts/selfheal/lane_commit_contract.js) must admit every
+// tracked path ANY registry entry declares that command writes; otherwise
+// run_lane_selfheal.mjs hard-stops the lane on a file it cannot commit. Retiring
+// promotion-candidates-feed on 2026-09-22 dropped feeds/promotion-candidates.json
+// from the surface while `npm run build` kept writing it, and the lane went red
+// on 09-24 and 09-25. This is a registry edit breaking a scheduled workflow, so
+// it is checked where registry edits are checked.
+try {
+  const contract = require(path.join(ROOT, 'scripts/selfheal/lane_commit_contract.js'));
+  const vs = (reg && reg.validators) || [];
+  const activeCommands = new Set(vs.filter(v => v.status === 'ACTIVE').flatMap(v => v.prepare_commands || []));
+  if (!activeCommands.size) {
+    errors.push('registry:lane-surface-examined-nothing: no ACTIVE validator declares a prepare command, so there is no prepare write to hold the query-evidence-refresh commit surface to; refusing to pass on an empty set');
+  } else {
+    const declared = [...new Set(vs.filter(v => (v.prepare_commands || []).some(c => activeCommands.has(c)))
+      .flatMap(v => [...(v.prepare_produces_files || []), ...(v.prepare_mutates_files || [])]))];
+    // gitignored outputs (dist/, .build/) cannot be committed by anyone and are not owed a place in the surface
+    const committableDeclared = contract.withoutIgnored(declared, ROOT);
+    if (!committableDeclared.length) errors.push(`registry:lane-surface-examined-nothing: ACTIVE prepare commands ${JSON.stringify([...activeCommands])} declare no tracked write; nothing was checked`);
+    const surface = contract.committablePatterns(ROOT);
+    for (const w of committableDeclared) {
+      if (!contract.isCommittable(w, surface)) errors.push(`registry:prepare-write-outside-lane-commit-surface:${w}: an ACTIVE validator runs a prepare command that some registry entry declares writes ${w}, but query-evidence-refresh.yml's commit surface cannot commit it, so the lane hard-stops ("repaired path(s) are outside this lane's commit surface") on any day that file changes. Fix activePrepareWrites in scripts/selfheal/lane_commit_contract.js, not the declaration.`);
+    }
+  }
+} catch (e) {
+  errors.push(`registry:lane-surface-check-failed:${e.message}`);
+}
+
 if(errors.length){console.error(errors.join('\n'));process.exit(1);}console.log(`VALIDATION REGISTRY PASS (${report.registered_count} registered; ${report.dependency_edges} dependency edges; ${report.preparers} prerequisite builders)`);
