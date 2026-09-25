@@ -55,6 +55,7 @@ const { isMedicalHubRoute, medicalWebPageNode, costSpecificationTable, pageRoute
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
+const { fitTitle, fitDescription, factsFromBody } = require('./lib/search_snippet');
 const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute, mutableRouteSet, acceptedHtmlForRoute, loadRegistry: loadFrozenRegistry } = require('./lib/frozen_pages');
 const { shows: acceptedShowsMarker, decode: decodeMarkerHtml } = require('./lib/route_marker_preservation');
 const { isPubliclyAdmitted, isEvidenceOnly, admittedRoutes, renderedButNotPublic } = require('./lib/page_admission');
@@ -231,9 +232,14 @@ function loadAgentExactLedger(){
 function renderLayout({title, description, absUrl, bodyHtml, jsonld}){
   const tpl = readUtf8(LAYOUT);
   const schema = mergeSchema(jsonld);
+  // The head values a search result shows are held to the snippet floors here,
+  // the one place every build_site page passes through; see scripts/lib/search_snippet.js.
+  // A short description is lengthened from the page's own accordion questions.
+  const headTitle = fitTitle(title);
+  const headDescription = fitDescription(description, { facts: factsFromBody(bodyHtml), subject: title });
   return tpl
-    .replaceAll('{{TITLE}}', htmlEscape(title))
-    .replaceAll('{{DESCRIPTION}}', htmlEscape(description))
+    .replaceAll('{{TITLE}}', htmlEscape(headTitle))
+    .replaceAll('{{DESCRIPTION}}', htmlEscape(headDescription))
     // Single choke point for the shared layout's canonical tag. Pages serves
     // `foo.html` at `/foo`, so the `.html` form is a 308 and must not be the
     // canonical.
@@ -447,6 +453,27 @@ function tokenizeForSimilarity(value){
  * the least-loaded relevant page takes it, because an imperfect placement still
  * beats an unreachable page.
  */
+/**
+ * Every route that is a source line in _redirects. Such a route answers 301 (or
+ * 308): its file can still be on disk, because retirement is not deletion, but no
+ * crawler is ever served it. Bing Webmaster, 2026-09-25: 79 internal links on 164
+ * live pages pointed at retired community-question slugs and bounced readers to the
+ * vertical hub - the related-link ranking still held the retired pages as candidates.
+ * A redirect source is therefore never a link target and never a link host.
+ */
+function loadRedirectSourceRoutes() {
+  const out = new Set();
+  try {
+    for (const line of fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const from = trimmed.split(/\s+/)[0];
+      if (from) out.add(normalizeRoute(from));
+    }
+  } catch { /* no redirect map: nothing is redirected away */ }
+  return out;
+}
+
 function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
   const pages = (allPages || []).filter((p) => p && p.slug);
   // Some routes render less than their accepted output holds - their source no
@@ -495,15 +522,7 @@ function buildLinkCoveragePlan(allPages, limit = 6, maxAdoptionsPerHost = 3) {
   // Refusing both here makes the plan's count mean links rather than intentions.
   // scripts/link_coverage/queue_orphan_adoption_hosts.js is the other half: it names
   // the hosts a release must thaw so this filter has somewhere to place the orphans.
-  const undeliverableHosts = new Set();
-  try {
-    for (const line of fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8').split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const from = trimmed.split(/\s+/)[0];
-      if (from) undeliverableHosts.add(normalizeRoute(from));
-    }
-  } catch { /* no redirect map: nothing is redirected away */ }
+  const undeliverableHosts = loadRedirectSourceRoutes();
   try {
     const mutable = mutableRouteSet();
     const registry = loadJson(path.join(ROOT, 'data/release/frozen_page_registry.json'));
@@ -790,7 +809,9 @@ function livePageRecordByPath(routePath) {
 
 function renderClusterKnowledgeBlock(page, registryEntry, atlasConfig, insightItems, clusterPages) {
   if (!page || !page.cluster || !registryEntry) return '';
-  const items = (insightItems || []).filter((item) => item.vertical === page.vertical && item.cluster === page.cluster);
+  const retired = loadRedirectSourceRoutes();
+  const items = (insightItems || []).filter((item) => item.vertical === page.vertical && item.cluster === page.cluster
+    && !retired.has(normalizeRoute(publicPath(item.publish_path))));
   const siblingPages = (clusterPages || []).filter((candidate) => candidate.vertical === page.vertical && candidate.cluster && candidate.cluster !== page.cluster).slice(0, 6);
   const questionList = items.map((item) => `<li><a href="${htmlEscape(publicPath(item.publish_path))}">${htmlEscape(item.title)}</a></li>`).join('');
   const siblingList = siblingPages.map((candidate) => `<li><a href="${htmlEscape(candidate.slug)}">${htmlEscape(candidate.title)}</a></li>`).join('');
@@ -1788,6 +1809,7 @@ if (!item.cluster_path) {
     items: insightItems
   });
 
+  const redirectSourceRoutes = loadRedirectSourceRoutes();
   const archives = [
     {
       slug: '/medium/',
@@ -1813,7 +1835,9 @@ if (!item.cluster_path) {
         title: 'Insights',
         description: 'Browse published insights and route to the official local guides for current workflows, provider questions, and next steps.',
         archivePath: '/insights/',
-        items: insightItems,
+        // An insight whose public URL is a _redirects source (a duplicate aliased to
+        // its survivor) still renders, but the archive links only what is served.
+        items: insightItems.filter((item) => !redirectSourceRoutes.has(normalizeRoute(publicPath(item.publish_path)))),
         itemHref: (item) => item.publish_path
       }),
       surface: 'archive',
@@ -2268,7 +2292,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
   // Index + scaffolding
   pages.push(...buildVelocityOnlyProgrammaticPages(siteBase));
 
-  pages.push(buildScaffoldPage('/about.html','About','About The Industry Guides, its editorial ownership, evidence standards, and provider-routing boundaries.',
+  pages.push(buildScaffoldPage('/about.html','About The Industry Guides and Its Editorial Team','About The Industry Guides: who publishes it, its editorial ownership, the evidence standards it holds to, and its provider-routing boundaries.',
     `<h1 class="h1">About</h1>
      <p class="muted">The Industry Guides is an independent editorial publisher. It publishes source-backed decision guides, state pages, comparison pages, and direct answers across five regulated service categories.</p>
      <section class="card" data-editorial-identity="true"><div class="badge">Who creates the content</div>
@@ -2291,7 +2315,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
        <li><a href="https://uscisexam.com/">uscisexam.com</a></li>
      </ul></section>`, siteBase));
 
-  pages.push(buildScaffoldPage('/methodology.html','Methodology','How The Industry Guides researches, generates, reviews, updates, and routes source-backed editorial pages.',
+  pages.push(buildScaffoldPage('/methodology.html','Editorial Methodology and Update Policy','How The Industry Guides researches, generates, reviews, updates, and routes source-backed editorial pages, and when a page is rechecked.',
     `<h1 class="h1">Methodology</h1>
      <p class="muted">The Industry Guides uses a four-layer publication system: verified evidence substrate, canonical answer pages, truthful authority signals, and crawlable distribution. Provider discovery remains on the registered canonical destination for each vertical.</p>
      <section class="card" data-methodology-layer="substrate"><div class="badge">Layer 1 — Evidence substrate</div>
@@ -2335,7 +2359,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
        </ul>
      </section>`, siteBase));
 
-  pages.push(buildScaffoldPage('/disclaimer.html','Disclaimer','Important disclaimers for The Industry Guides.',
+  pages.push(buildScaffoldPage('/disclaimer.html','Disclaimer: Not Legal, Medical or Financial Advice','The Industry Guides is general information, not legal, medical, or financial advice. Outcomes are not guaranteed; consult a licensed professional.',
     `<h1 class="h1">Disclaimer</h1>
      <section class="card"><div class="badge">Not professional advice</div>
        <p class="muted">This site is for general informational purposes only. It is not legal advice, medical advice, or financial advice. If you need professional help, use the official local guides and directories on the canonical domains and consult a licensed professional.</p>
@@ -2344,7 +2368,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
        <p class="muted">Outcomes depend on your situation, your choices, and external factors. We make no guarantees.</p>
      </section>`, siteBase));
 
-  pages.push(buildScaffoldPage('/privacy.html','Privacy','Privacy notes for this site.',
+  pages.push(buildScaffoldPage('/privacy.html','Privacy Notice for The Industry Guides','Privacy notice for The Industry Guides: reading any page needs no personal details, and analytics, where enabled, collect only aggregate usage data.',
     `<h1 class="h1">Privacy</h1>
      <p class="muted">This site does not ask for personal details to read content. If analytics are enabled, they may collect basic usage data in aggregate.</p>`, siteBase));
 
@@ -2372,7 +2396,12 @@ for (const [vertical, meta] of Object.entries(registry)) {
     .filter((page) => page && !isEvidenceOnly(page) && !(typeof page.path === 'string' && page.path.startsWith('/insights/')))
     .map((page) => applyAgentExactRepairsToPage(page, loadAgentExactLedger()));
   pagesPayload.data.pages = atlasPages;
-  const linkCoverage = buildLinkCoveragePlan(atlasPages);
+  // Retired routes still render (retirement is not deletion) but are never served,
+  // so they are removed from every pool a link is chosen from.
+  const redirectSourceRoutes = loadRedirectSourceRoutes();
+  const isServedRoute = (slug) => !redirectSourceRoutes.has(normalizeRoute(slug));
+  const linkablePages = atlasPages.filter((page) => isServedRoute(page.slug || page.path));
+  const linkCoverage = buildLinkCoveragePlan(linkablePages);
   // The frozen-output law needs the affected routes named before the rebuild
   // that changes them, so the plan is written where it can be read first.
   try {
@@ -2479,10 +2508,10 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const editorialSourceBlock = editorialSourceLinks ? `<section class="card primary-sources" data-primary-sources="true"><div class="badge">Primary sources</div><h2 class="h2" style="margin-top:8px">Verify the source before acting</h2><ul>${editorialSourceLinks}</ul></section>` : '';
     const qaHighlights = renderQaHighlights(shapedSections || []);
     const toolSpotlight = toolsPageForHub ? renderToolSpotlight(toolsPageForHub.sections || [], 'Fast scripts for comparing options before you click away') : ''; 
-    const explicitRelated = Array.isArray(p.related_links) ? p.related_links.filter((item) => item && item.slug && item.label) : [];
+    const explicitRelated = Array.isArray(p.related_links) ? p.related_links.filter((item) => item && item.slug && item.label && isServedRoute(item.slug)) : [];
     const implementationPathForPage = implementationPathForSlug(p.slug);
     const deliveredMarkers = deliveredLedgeredMarkersFor(implementationPathForPage);
-    const autoRelated = buildAutoRelatedLinks(p, atlasPages, 10, deliveredMarkers);
+    const autoRelated = buildAutoRelatedLinks(p, linkablePages, 10, deliveredMarkers);
     const relatedMap = new Map();
     [...explicitRelated, ...autoRelated].forEach((item) => {
       if (item.slug !== p.slug && !relatedMap.has(item.slug)) relatedMap.set(item.slug, item);
@@ -2571,10 +2600,25 @@ for (const [vertical, meta] of Object.entries(registry)) {
     atlasConfig: null,
     allVerticals: atlasStructures.atlas
   });
+  // Head values for the atlas pages. The body keeps its short headings; the title
+  // and description a search result shows name what the page actually maps.
+  const atlasLabels = Object.values(atlasStructures.atlas).map((meta) => meta.label).filter(Boolean);
+  const globalAtlasDescription = `Structured coverage map of every vertical, cluster, and mapped query page on The Industry Guides: ${atlasLabels.join(', ')}.`;
+  const verticalAtlasDescription = (atlasConfig) => {
+    const lead = `Coverage map for ${atlasConfig.label}: every topic cluster and mapped question page`;
+    const titles = (atlasConfig.clusters || []).map((c) => String(c.title || '').trim()).filter(Boolean);
+    let out = `${lead}.`;
+    for (let n = 1; n <= titles.length; n += 1) {
+      const trial = `${lead}, including ${titles.slice(0, n).join(', ')}.`;
+      if (trial.length > 160) break;
+      out = trial;
+    }
+    return out;
+  };
   pages.push({
     slug: '/atlas/',
-    title: 'Atlas',
-    description: 'Structured coverage declarations for every vertical, cluster, and mapped query page on the site.',
+    title: 'Atlas: Every Vertical, Cluster and Question Page',
+    description: globalAtlasDescription,
     bodyHtml: globalAtlasBody,
     jsonld: {
       '@context':'https://schema.org',
@@ -2589,8 +2633,8 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const slug = atlasConfig.atlas_path || `/atlas/${atlasConfig.base_path}/`;
     pages.push({
       slug,
-      title: `${atlasConfig.label} Atlas`,
-      description: `Full cluster and query coverage map for ${atlasConfig.label}.`,
+      title: `${atlasConfig.label} Atlas: Topic Clusters and Questions`,
+      description: verticalAtlasDescription(atlasConfig),
       bodyHtml: renderAtlasBody({ title: `${atlasConfig.label} Atlas`, description: `Full cluster and query coverage map for ${atlasConfig.label}.`, atlasConfig, allVerticals: atlasStructures.atlas }).replace(
         /(<\/main>)/i,
         (m) => {
