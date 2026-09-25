@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "0066aec2bde08dc94e10520a2a6a2ae79459744c2a6747dd17bd33f9c8afd271",
+  "registry_sha256": "6b0a5e0313d0c200c12a0bf605fcc5e85f94c59a5ebd44e5f6d554182304c57d",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,13 +53,13 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 212,
-    "active": 39,
+    "total": 213,
+    "active": 40,
     "on_demand": 10,
     "retired": 163,
     "local_only": 1,
     "hard_fail": 49,
-    "strong_warning": 2,
+    "strong_warning": 3,
     "soft_warning": 0,
     "info": 161
   },
@@ -88,6 +88,7 @@
         "publish-inventory",
         "rendered-internal-hrefs",
         "rendered-output-shrink-guard",
+        "search-snippet-floors",
         "no-conflict-markers",
         "recommendation-retry-ledger",
         "sitemap-parity",
@@ -119,6 +120,7 @@
         "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
+        "search-snippet-floors",
         "executable-bits",
         "network-crawler-contract",
         "publish-inventory",
@@ -163,6 +165,7 @@
         "search-intelligence-agent-separation",
         "search-intelligence-safety",
         "search-quality-basics",
+        "search-snippet-floors",
         "no-conflict-markers",
         "recommendation-retry-ledger",
         "sitemap-parity",
@@ -203,6 +206,7 @@
         "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
+        "search-snippet-floors",
         "executable-bits",
         "network-crawler-contract",
         "publish-inventory",
@@ -251,6 +255,7 @@
         "search-intelligence-agent-separation",
         "search-intelligence-safety",
         "search-quality-basics",
+        "search-snippet-floors",
         "no-conflict-markers",
         "sitemap-parity",
         "strategy-integrity-contract",
@@ -289,6 +294,7 @@
         "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
+        "search-snippet-floors",
         "executable-bits",
         "network-crawler-contract",
         "publish-inventory",
@@ -345,6 +351,7 @@
         "search-intelligence-agent-separation",
         "search-intelligence-safety",
         "search-quality-basics",
+        "search-snippet-floors",
         "no-conflict-markers",
         "sitemap-parity",
         "strategy-integrity-contract",
@@ -383,6 +390,7 @@
         "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
+        "search-snippet-floors",
         "executable-bits",
         "network-crawler-contract",
         "publish-inventory",
@@ -434,6 +442,7 @@
         "search-intelligence-agent-separation",
         "search-intelligence-safety",
         "search-quality-basics",
+        "search-snippet-floors",
         "no-conflict-markers",
         "recommendation-retry-ledger",
         "sitemap-parity",
@@ -479,6 +488,7 @@
         "citation-targets",
         "entity-graph",
         "page-record-identity",
+        "search-snippet-floors",
         "social-content-loop",
         "executable-bits",
         "network-crawler-contract",
@@ -624,6 +634,7 @@
         "publish-inventory",
         "rendered-internal-hrefs",
         "search-quality-basics",
+        "search-snippet-floors",
         "no-conflict-markers",
         "sitemap-parity",
         "strategy-integrity-contract",
@@ -650,6 +661,7 @@
         "copy-hygiene",
         "homepage-schema",
         "page-record-identity",
+        "search-snippet-floors",
         "executable-bits",
         "network-crawler-contract",
         "publish-inventory",
@@ -675,6 +687,7 @@
         "page-record-identity",
         "provider-evidence",
         "rendered-output-shrink-guard",
+        "search-snippet-floors",
         "no-conflict-markers",
         "velocity-commercial-pages"
       ],
@@ -688,6 +701,7 @@
         "rendered-template-scaffolding",
         "copy-hygiene",
         "page-record-identity",
+        "search-snippet-floors",
         "content-safety",
         "no-conflict-markers"
       ]
@@ -2272,7 +2286,7 @@
       },
       {
         "id": "rendered-internal-hrefs",
-        "title": "Rendered href and asset integrity",
+        "title": "Rendered href and asset integrity, and no served link into a redirect",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 5",
@@ -2299,7 +2313,7 @@
           "artifacts/validation/hrefs.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Broken internal links or assets create user and crawler failures.",
+        "risk_prevented": "Broken internal links or assets create user and crawler failures. Since 2026-09-25 it also fails a served page (a sitemap route) that links a _redirects source, the .html form of a page (Pages answers 308), or an absolute https://theindustryguides.com/ URL that does not exist. Bing Webmaster and a site crawl found 79 retired community-question slugs linked from 164 live pages, four /about.html-style links, and one 404 in a medium article's 'Originally published at' line, all of which this check passed: it skipped every absolute URL and counted a retired page's leftover file as a live target.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -2996,6 +3010,44 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Pages printed an answer-panel label as part of the copy: insights/uscis-medical-009-how-much-does-the-exam-cost.html showed \"how much does the i-693 medical exam cost in 2026 (Gemini 1.5 Flash)\", and on 2026-09-22 44 of 2,425 rendered pages carried \"(Perplexity)\", \"(OpenAI GPT-4o)\", \"Gemini 1.5 Flash\" or \"OpenAI GPT-4o\". The label entered through the agent's query field, which the fix ledger copies into required_markers. Separately, personal-injury \"What to verify\" rows (\"Get the contingency percentage ...\") were compiled onto dental, TRT, neuro and USCIS pages. Both are cosmetic copy defects: reported on every run, never blocking, by owner decision 2026-09-22.",
+        "default_behavior": "WARN_CONTINUE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "search-snippet-floors",
+        "title": "Served pages carry a title of at least 30 and a meta description of at least 110 characters (warning only)",
+        "status": "ACTIVE",
+        "severity": "STRONG_WARNING",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_search_snippet_floors.js",
+        "command": "node scripts/validators/validate_search_snippet_floors.js",
+        "depends_on": [],
+        "requires_files": [
+          "sitemap.xml"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/search-snippet-floors.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/search-snippet-floors.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Bing Webmaster, 2026-09-25: 86 titles under 30 characters (\"About\", \"Atlas\", \"USCIS: Cost\", \"Minoxidil cost | Insight\") and 43 meta descriptions under 100 on theindustryguides.com. Each came from a generator that printed a record's short label straight into the head. The generators now fit both values through scripts/lib/search_snippet.js; this proves every sitemap route agrees, reads the same constants, and refuses to pass having graded fewer than 1,500 pages. Ceilings (70/160) are counted in the report, never failed.",
         "default_behavior": "WARN_CONTINUE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -11464,7 +11516,7 @@
       },
       {
         "id": "rendered-internal-hrefs",
-        "title": "Rendered href and asset integrity",
+        "title": "Rendered href and asset integrity, and no served link into a redirect",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 5",
@@ -11491,7 +11543,7 @@
           "artifacts/validation/hrefs.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Broken internal links or assets create user and crawler failures.",
+        "risk_prevented": "Broken internal links or assets create user and crawler failures. Since 2026-09-25 it also fails a served page (a sitemap route) that links a _redirects source, the .html form of a page (Pages answers 308), or an absolute https://theindustryguides.com/ URL that does not exist. Bing Webmaster and a site crawl found 79 retired community-question slugs linked from 164 live pages, four /about.html-style links, and one 404 in a medium article's 'Originally published at' line, all of which this check passed: it skipped every absolute URL and counted a retired page's leftover file as a live target.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -12648,6 +12700,44 @@
         "strict_behavior": "RECORD_CONTINUE",
         "replacement_ids": [],
         "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion."
+      },
+      {
+        "id": "search-snippet-floors",
+        "title": "Served pages carry a title of at least 30 and a meta description of at least 110 characters (warning only)",
+        "status": "ACTIVE",
+        "severity": "STRONG_WARNING",
+        "tier": "Tier 4",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_search_snippet_floors.js",
+        "command": "node scripts/validators/validate_search_snippet_floors.js",
+        "depends_on": [],
+        "requires_files": [
+          "sitemap.xml"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/search-snippet-floors.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/search-snippet-floors.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Bing Webmaster, 2026-09-25: 86 titles under 30 characters (\"About\", \"Atlas\", \"USCIS: Cost\", \"Minoxidil cost | Insight\") and 43 meta descriptions under 100 on theindustryguides.com. Each came from a generator that printed a record's short label straight into the head. The generators now fit both values through scripts/lib/search_snippet.js; this proves every sitemap route agrees, reads the same constants, and refuses to pass having graded fewer than 1,500 pages. Ceilings (70/160) are counted in the report, never failed.",
+        "default_behavior": "WARN_CONTINUE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       },
       {
         "id": "social-content-loop",

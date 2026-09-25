@@ -38,7 +38,11 @@ const MIN_REDIRECT_SOURCES=150;
 const stops=[];
 if(!redirectText.trim())stops.push('_redirects is missing or empty, so the redirect-source checks below (redirect in sitemap, redirect source admitted) examined nothing.');
 if(!sitemapText.trim())stops.push('no sitemap XML could be read (sitemap.xml and sitemaps/ are both absent or empty), so no redirect source could be tested against a sitemap.');
-const badEncoding=/â(?:|€™|€œ|€|€˜|€")|Ã¢|Â(?=[^A-Za-z]|$)/;
+// `Ã` followed by a C1 control or Latin-1 punctuation character is UTF-8 read as
+// Latin-1 more than once. The patterns above only knew the single-pass shapes, so
+// /medium-articles/dentistry/are-dental-implants-really-worth-it/ served eleven
+// triple-encoded em dashes (Ã, U+0083, ¢, Ã, U+0082, U+0080 ...) and passed (found 2026-09-25).
+const badEncoding=/â(?:|€™|€œ|€|€˜|€")|Ã¢|Â(?=[^A-Za-z]|$)|Ã[\u0080-\u00BF]/;
 for(const abs of walk(ROOT).filter(p=>p.endsWith('.html'))){
   const rel=norm(path.relative(ROOT,abs));
   if(rel==='404.html'||rel.startsWith('templates/')||rel.startsWith('data/report_fixes/agent_runs/'))continue;

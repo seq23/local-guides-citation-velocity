@@ -1,9 +1,9 @@
 
 function ensureMetaDescription(desc, title) {
   if (!desc || desc.length < 60) {
-    return `Structured decision guide for ${title}. Compare options, costs, risks, and next steps before choosing a provider.`;
+    return require('./search_snippet').fitDescription(`Structured decision guide for ${title}. Compare options, costs, risks, and next steps before choosing a provider.`, { subject: title });
   }
-  return desc;
+  return require('./search_snippet').fitDescription(desc, { subject: title });
 }
 
 'use strict';
@@ -14,6 +14,17 @@ const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, validateConte
 const { LEDGER_PATH, applyAgentExactRepairsToInsightItem } = require('./agent_exact_repairs');
 const { headingFor } = require('./answer_shape');
 const { mergeSchema } = require('./network_schema');
+const { fitTitle, MIN_TITLE_CHARS } = require('./search_snippet');
+
+// "Wrong date | Insight" is 20 characters: an insight title is the bare query, and
+// "| Insight" says nothing about which of five verticals it belongs to. When the
+// plain form is under the floor, name the vertical in the qualifier instead.
+function insightHeadTitle(item) {
+  const plain = `${String(item.title || '').trim()} | Insight`;
+  if (plain.length >= MIN_TITLE_CHARS) return plain;
+  const label = String(item.vertical_label || '').trim();
+  return fitTitle(item.title, { qualifier: label ? `${label} Insight` : 'Insight' });
+}
 
 const fs = require('fs');
 const path = require('path');
@@ -620,7 +631,7 @@ function renderInsightPage(item) {
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>${htmlEscape(item.title)} | Insight</title>
+<title>${htmlEscape(insightHeadTitle(item))}</title>
 <meta name="description" content="${htmlEscape(ensureMetaDescription(item.description, item.title))}"/>
 <link rel="canonical" href="${pageUrl}"/>
 <link rel="stylesheet" href="/assets/site.css"/>

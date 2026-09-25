@@ -5108,7 +5108,7 @@
     },
     {
       "id": "rendered-internal-hrefs",
-      "title": "Rendered href and asset integrity",
+      "title": "Rendered href and asset integrity, and no served link into a redirect",
       "path": "scripts/validate_rendered_internal_hrefs.js",
       "command": "node scripts/validate_rendered_internal_hrefs.js",
       "status": "ACTIVE",
@@ -5127,8 +5127,8 @@
         "render",
         "links"
       ],
-      "risk_prevented": "Broken internal links or assets create user and crawler failures.",
-      "why_existing_checks_do_not_cover": "Hierarchy validation inspects only governed route relationships, not every rendered href/src.",
+      "risk_prevented": "Broken internal links or assets create user and crawler failures. Since 2026-09-25 it also fails a served page (a sitemap route) that links a _redirects source, the .html form of a page (Pages answers 308), or an absolute https://theindustryguides.com/ URL that does not exist. Bing Webmaster and a site crawl found 79 retired community-question slugs linked from 164 live pages, four /about.html-style links, and one 404 in a medium article's 'Originally published at' line, all of which this check passed: it skipped every absolute URL and counted a retired page's leftover file as a live target.",
+      "why_existing_checks_do_not_cover": "Hierarchy validation inspects only governed route relationships, not every rendered href/src. search-quality-basics checks redirect sources against sitemaps and admission, never against the links that point at them.",
       "estimated_runtime_seconds": 60,
       "timeout_seconds": 300,
       "evidence_file": "artifacts/validation/hrefs.json",
@@ -5732,6 +5732,50 @@
       ],
       "enforce_no_source_mutation": true,
       "hard_fail_basis": "aeo_seo_geo_vital"
+    },
+    {
+      "id": "search-snippet-floors",
+      "title": "Served pages carry a title of at least 30 and a meta description of at least 110 characters (warning only)",
+      "path": "scripts/validators/validate_search_snippet_floors.js",
+      "command": "node scripts/validators/validate_search_snippet_floors.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "seo",
+        "metadata",
+        "content-quality"
+      ],
+      "risk_prevented": "Bing Webmaster, 2026-09-25: 86 titles under 30 characters (\"About\", \"Atlas\", \"USCIS: Cost\", \"Minoxidil cost | Insight\") and 43 meta descriptions under 100 on theindustryguides.com. Each came from a generator that printed a record's short label straight into the head. The generators now fit both values through scripts/lib/search_snippet.js; this proves every sitemap route agrees, reads the same constants, and refuses to pass having graded fewer than 1,500 pages. Ceilings (70/160) are counted in the report, never failed.",
+      "why_existing_checks_do_not_cover": "search-quality-basics and page-release-law assert the title and description exist (page-release-law: 3 and 20 characters); neither has a floor a search engine would accept.",
+      "estimated_runtime_seconds": 5,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/search-snippet-floors.json",
+      "failure_action": "record finding and continue. Fix at the source: renderLayout in scripts/build_site.js and insightHeadTitle in scripts/lib/publish_contract.js call scripts/lib/search_snippet.js; a record whose own text is too short to fit is fixed in content/_live/pages.json, never on the rendered page.",
+      "depends_on": [],
+      "requires_files": [
+        "sitemap.xml"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/search-snippet-floors.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/search-snippet-floors.json"
+      ],
+      "enforce_no_source_mutation": true
     },
     {
       "id": "self-heal-commit-coverage",
