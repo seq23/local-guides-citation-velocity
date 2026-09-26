@@ -31,8 +31,24 @@
  *                needs the judgment the guard asks a person for. Floors are never
  *                raised or lowered in this mode, so a fluctuating page cannot ratchet
  *                itself into a future failure by being run through a lane.
+ *                It also TIGHTENS a loose licence: a page that grew above the size its
+ *                justification names but is still below its floor has lost nothing
+ *                (the guard treats to_bytes as the lowered floor), so to_bytes is
+ *                raised to the page and the old value kept as tightened_from_bytes.
+ *                A licence only ever narrows here; a later fall back to the old named
+ *                size is then a loss the guard fails on. (2026-09-26: Validate Repo
+ *                run 36225602982 went red on a uscis-medical page that grew 634B
+ *                above its licence, because nothing handled this middle case.)
+ *                WHO CALLS IT: `npm run ratchet:shrink-guard` runs in every lane that
+ *                builds and pushes pages (velocity-content-release.yml,
+ *                velocity-full-rebuild.yml), on the tree being pushed, staging its two
+ *                files by explicit pathspec. rendered-output-shrink-guard's self-proof
+ *                case every_page_publishing_lane_runs_the_ratchet fails if that wiring
+ *                is removed. It is NOT a hard-fail validator: the currency validator
+ *                that used to force it was retired 2026-09-22 (23bd31e99) because a
+ *                stale row is bookkeeping, and bookkeeping must not turn main red.
  *   --check      with --retire-stale-justifications: exit non-zero if any entry
- *                WOULD be retired; write nothing
+ *                WOULD be retired or tightened; write nothing
  *
  * Rule 0 for --retire-stale-justifications: a missing baseline, zero route floors, or
  * zero routes measurable on disk is a hard failure. A justification list that is empty
@@ -131,6 +147,7 @@ function retireStaleJustifications(baseline) {
 
   const kept = [];
   const retired = [];
+  const tightened = [];
   const belowAtOtherSize = [];
   for (const named of baseline.justified_shrinks) {
     const relPath = String(named.implementation_path || '');
@@ -143,7 +160,14 @@ function retireStaleJustifications(baseline) {
       retired.push({ ...named, retired_at: DATE, recovered_to_bytes: size, floor_bytes: floor });
       continue;
     }
-    // Below its floor at a size the justification does not name: a NEW shrink. Left in
+    if (size > Number(named.to_bytes)) {
+      // Grew above the named size, still below the floor: nothing lost, licence loose.
+      const narrowed = { ...named, to_bytes: size, tightened_from_bytes: Number(named.to_bytes), tightened_at: DATE };
+      tightened.push({ implementation_path: relPath, from_bytes: Number(named.to_bytes), to_bytes: size, floor_bytes: floor });
+      kept.push(narrowed);
+      continue;
+    }
+    // Below the size its justification names: a NEW shrink. Left in
     // place so the guard fails on it and a person decides; deleting it would not make
     // the page pass and would erase the reason the earlier shrink was accepted.
     belowAtOtherSize.push({ implementation_path: relPath, named_bytes: Number(named.to_bytes), current_bytes: size, floor_bytes: floor });
@@ -151,17 +175,18 @@ function retireStaleJustifications(baseline) {
   }
 
   if (CHECK) {
-    if (retired.length) {
-      console.error(`RENDERED SIZE BASELINE FAIL (--check): ${retired.length} of ${baseline.justified_shrinks.length} justified shrink(s) name a page that is back at or above its floor and are still listed. Run \`npm run ratchet:shrink-guard\` and commit ${BASELINE}:`);
-      for (const r of retired.slice(0, 25)) console.error(`  ${r.implementation_path}  named ${r.to_bytes}B, floor ${r.floor_bytes}B, page is ${r.recovered_to_bytes}B`);
+    if (retired.length || tightened.length) {
+      console.error(`RENDERED SIZE BASELINE FAIL (--check): of ${baseline.justified_shrinks.length} justified shrink(s), ${retired.length} name a page back at or above its floor and ${tightened.length} name a page that grew above the named size. Run \`npm run ratchet:shrink-guard\` and commit ${BASELINE}:`);
+      for (const r of retired.slice(0, 25)) console.error(`  moot ${r.implementation_path}  named ${r.to_bytes}B, floor ${r.floor_bytes}B, page is ${r.recovered_to_bytes}B`);
+      for (const t of tightened.slice(0, 25)) console.error(`  loose ${t.implementation_path}  named ${t.from_bytes}B, page is ${t.to_bytes}B, floor ${t.floor_bytes}B`);
       process.exit(1);
     }
-    console.log(`RENDERED SIZE BASELINE PASS (--check): ${onDisk} of ${floors.length} route floor(s) on disk; ${baseline.justified_shrinks.length} justified shrink(s) examined, none moot; ${belowAtOtherSize.length} below floor at an unnamed size (left for the guard).`);
+    console.log(`RENDERED SIZE BASELINE PASS (--check): ${onDisk} of ${floors.length} route floor(s) on disk; ${baseline.justified_shrinks.length} justified shrink(s) examined, none moot or loose; ${belowAtOtherSize.length} below their named size (left for the guard).`);
     return;
   }
 
-  if (!retired.length) {
-    console.log(`RENDERED SIZE BASELINE PASS: ${onDisk} of ${floors.length} route floor(s) on disk; ${baseline.justified_shrinks.length} justified shrink(s) examined, none moot, file unchanged; ${belowAtOtherSize.length} below floor at an unnamed size (left for the guard).`);
+  if (!retired.length && !tightened.length) {
+    console.log(`RENDERED SIZE BASELINE PASS: ${onDisk} of ${floors.length} route floor(s) on disk; ${baseline.justified_shrinks.length} justified shrink(s) examined, none moot or loose, file unchanged; ${belowAtOtherSize.length} below their named size (left for the guard).`);
     return;
   }
 
@@ -170,8 +195,9 @@ function retireStaleJustifications(baseline) {
   baseline.updated_at = DATE;
   baseline.route_count = Object.keys(baseline.routes).length;
   fs.writeFileSync(rel(BASELINE), `${JSON.stringify(baseline, null, 2)}\n`);
-  console.log(`RENDERED SIZE BASELINE PASS: ${onDisk} of ${floors.length} route floor(s) on disk; ${retired.length} justified shrink(s) retired because the page is back at or above its floor; ${kept.length} kept; ${belowAtOtherSize.length} below floor at an unnamed size (left for the guard). No floor was changed.`);
+  console.log(`RENDERED SIZE BASELINE PASS: ${onDisk} of ${floors.length} route floor(s) on disk; ${retired.length} justified shrink(s) retired because the page is back at or above its floor; ${tightened.length} tightened up to a page that grew; ${kept.length} kept; ${belowAtOtherSize.length} below their named size (left for the guard). No floor was changed.`);
   for (const r of retired.slice(0, 25)) console.log(`  retired ${r.implementation_path}  named ${r.to_bytes}B -> page ${r.recovered_to_bytes}B (floor ${r.floor_bytes}B)`);
+  for (const t of tightened.slice(0, 25)) console.log(`  tightened ${t.implementation_path}  named ${t.from_bytes}B -> ${t.to_bytes}B (floor ${t.floor_bytes}B)`);
 }
 
 main();

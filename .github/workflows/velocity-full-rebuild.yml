@@ -96,6 +96,17 @@ jobs:
             fi
             npm run build:cached:prune
             npm run validate:release
+            # SHRINK-GUARD RATCHET, run on the exact tree about to be pushed. This lane
+            # rebuilds every page; when one grows, rows in data/release/historic_page_maximum.json
+            # and justified_shrinks in data/release/rendered_size_baseline.json go stale
+            # or loose. shrink-guard-ratchet-currency (the validator that used to force
+            # this through self-heal) was retired 2026-09-22 (23bd31e99: bookkeeping must
+            # not turn main red), which left NO caller and let 62 stale rows pile up. The
+            # writer only narrows licences and retires moot rows; no floor moves. It
+            # exits non-zero on Rule 0 (no baseline / nothing on disk), which stops the
+            # push. rendered-output-shrink-guard's self-proof reads this wiring.
+            npm run ratchet:shrink-guard
+            git add -- data/release/historic_page_maximum.json data/release/rendered_size_baseline.json
             git add -A
             git commit --amend --no-edit
             if git push origin HEAD:main; then exit 0; fi
