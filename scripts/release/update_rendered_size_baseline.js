@@ -39,6 +39,14 @@
  *                size is then a loss the guard fails on. (2026-09-26: Validate Repo
  *                run 36225602982 went red on a uscis-medical page that grew 634B
  *                above its licence, because nothing handled this middle case.)
+ *                WHO CALLS IT: `npm run ratchet:shrink-guard` runs in every lane that
+ *                builds and pushes pages (velocity-content-release.yml,
+ *                velocity-full-rebuild.yml), on the tree being pushed, staging its two
+ *                files by explicit pathspec. rendered-output-shrink-guard's self-proof
+ *                case every_page_publishing_lane_runs_the_ratchet fails if that wiring
+ *                is removed. It is NOT a hard-fail validator: the currency validator
+ *                that used to force it was retired 2026-09-22 (23bd31e99) because a
+ *                stale row is bookkeeping, and bookkeeping must not turn main red.
  *   --check      with --retire-stale-justifications: exit non-zero if any entry
  *                WOULD be retired or tightened; write nothing
  *

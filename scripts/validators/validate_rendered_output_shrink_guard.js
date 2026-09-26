@@ -133,6 +133,42 @@ function classify(baseline, sizeOf) {
 }
 
 /**
+ * WHO RUNS THE WRITER. The ratchet writer (`npm run ratchet:shrink-guard`) must run in
+ * every lane that builds pages and pushes them, on the tree it is about to push, and
+ * stage exactly its two files by explicit pathspec. It is deliberately NOT a hard-fail
+ * validator any more: shrink-guard-ratchet-currency was retired 2026-09-22 (23bd31e99,
+ * "ratchets that failed when a page improved" turned main red on content motion), and
+ * that reason stands - a stale row is bookkeeping, not lost content. What the retirement
+ * did not do was move the writer anywhere, so nothing ran it and 62 rows went stale.
+ * This check pins the wiring instead: a workflow that builds and pushes but does not run
+ * the ratchet after its last build and before its last commit is reported by name.
+ * Returns { lanes: [names examined], missing: [names failing] }.
+ */
+const RATCHET_CMD = 'npm run ratchet:shrink-guard';
+const RATCHET_ADD = 'git add -- data/release/historic_page_maximum.json data/release/rendered_size_baseline.json';
+function ratchetWiring(workflows) {
+  const lanes = [];
+  const missing = [];
+  for (const [name, text] of Object.entries(workflows)) {
+    if (!/git push/.test(text)) continue;
+    const buildAt = Math.max(text.lastIndexOf('npm run build'), text.lastIndexOf('build:cached'), text.lastIndexOf('release:full-rebuild'));
+    if (buildAt < 0) continue;
+    lanes.push(name);
+    const commitAt = text.lastIndexOf('git commit');
+    const ratchetAt = text.lastIndexOf(RATCHET_CMD);
+    const addAt = text.lastIndexOf(RATCHET_ADD);
+    if (!(ratchetAt > buildAt && addAt > ratchetAt && commitAt > addAt)) missing.push(name);
+  }
+  return { lanes, missing };
+}
+function readWorkflows(dir) {
+  const out = {};
+  if (!fs.existsSync(dir)) return out;
+  for (const f of fs.readdirSync(dir)) if (/\.ya?ml$/.test(f)) out[f] = fs.readFileSync(path.join(dir, f), 'utf8');
+  return out;
+}
+
+/**
  * Constructed inputs, run on every invocation. Each case names the rule it pins.
  */
 function selfProofCases() {
@@ -168,6 +204,23 @@ function selfProofCases() {
     pass: none.measured === 0 && none.missing.length === 1,
     observed: { measured: none.measured }
   });
+
+  {
+    const wired = `run: |\n  npm run build:cached:prune\n  ${RATCHET_CMD}\n  ${RATCHET_ADD}\n  git commit --amend --no-edit\n  git push origin HEAD:main\n`;
+    const unwired = 'run: |\n  npm run build:cached:prune\n  git add -A\n  git commit --amend --no-edit\n  git push origin HEAD:main\n';
+    const beforeBuild = `run: |\n  ${RATCHET_CMD}\n  ${RATCHET_ADD}\n  npm run build\n  git commit -m x\n  git push\n`;
+    const readOnly = 'run: |\n  npm run build\n  npm run validate:release\n';
+    const fx = ratchetWiring({ 'wired.yml': wired, 'unwired.yml': unwired, 'before-build.yml': beforeBuild, 'read-only.yml': readOnly });
+    const live = ratchetWiring(readWorkflows(path.join(ROOT, '.github/workflows')));
+    cases.push({
+      name: 'every_page_publishing_lane_runs_the_ratchet',
+      why: 'A lane that builds and pushes pages must run the ratchet writer after its last build and stage its two files by explicit pathspec before its last commit; otherwise stale rows accumulate with no caller (62 by 2026-09-26). Fixtures: wired passes, unwired and ratchet-before-build are named, a build-only lane with no push is not a publishing lane. Live: at least one publishing lane exists and none is missing the wiring.',
+      pass: JSON.stringify(fx.lanes.sort()) === JSON.stringify(['before-build.yml', 'unwired.yml', 'wired.yml'])
+        && JSON.stringify(fx.missing.sort()) === JSON.stringify(['before-build.yml', 'unwired.yml'])
+        && live.lanes.length > 0 && live.missing.length === 0,
+      observed: { fixture_missing: fx.missing, live_lanes: live.lanes, live_missing: live.missing }
+    });
+  }
 
   // The writer tightens a loose licence up to the page, retires a moot one, keeps the
   // rest, and moves no floor - so a later fall back to the old named size is caught.
