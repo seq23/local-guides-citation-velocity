@@ -1,15 +1,15 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-09-30
+Release date: 2026-10-01
 Target publish units: 164
-Selected units: 21
-Twin agent units: 21
+Selected units: 14
+Twin agent units: 14
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 143
+Social fallback suppressed: 150
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 13
+Repair units: 6
 New page units: 8
 
 | Source | Operation | Vertical | Target route | Query |
@@ -20,13 +20,6 @@ New page units: 8
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/delays-rfe/index.html | what happens if there is a mistake on my I-693 form |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/exam-day-documents/index.html | how long does the whole uscis medical process take from start to finish |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/timeline-validity/index.html | does the i-693 medical exam still expire after two years |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | what is scrotal cream and is it more effective than standard trt gel |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/side-effects-monitoring/index.html | can TRT worsen sleep apnea symptoms |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/best-top-near-me/index.html | best TRT clinic near me |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/clinic-selection/index.html | how do I verify a TRT clinic's credentials and licensing |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/fertility-pct/index.html | trt vs enclomiphene which is better for a 30 year old with low t |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/labs-dosing/index.html | how to micro dose testosterone cypionate to avoid the need for an aromatase inhibitor |
-| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/cost-insurance/index.html | does insurance cover testosterone replacement therapy |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-to-join-the-class-action-for-social-media-addiction/ | how to join the class action for social media addiction |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/has-there-been-a-global-settlement-for-roundup-in-2026/ | has there been a global settlement for roundup in 2026 |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-much-is-the-average-payout-for-an-afff-firefighting-foam-claim/ | how much is the average payout for an afff firefighting foam claim |
