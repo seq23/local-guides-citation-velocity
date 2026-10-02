@@ -5,10 +5,23 @@
   "generated_by": "compile_html_fix_acceptance_manifest.js",
   "generated_at": "2026-10-02",
   "source_plan": "artifacts/validation/agent-exact-implementation-plan.json",
-  "planned_repair_specs": 7,
-  "refused_count": 0,
-  "refused_ungrounded_uscis": 0,
+  "planned_repair_specs": 24,
+  "refused_count": 1,
+  "refused_ungrounded_uscis": 1,
   "refused_not_self_consistent": 0,
   "policy": "A route named here had no semantic acceptance entry authored this run, so nothing could carry its ledger marker into the rendered page. trace_agent_exact_implementation.js records such a spec as REFUSED_BY_ACCEPTANCE_COMPILER: carried, never proven, never counted as landed work. The row stays eligible for selection - it is never retired. reason=no_authority_grounded_entry is released by authoring the grounded entry; reason=entry_not_self_consistent is released by repairing the compile path, and is re-attempted on every run.",
-  "refused": []
+  "refused": [
+    {
+      "implementation_path": "uscis-medical/community-questions/what-does-the-mental-health-evaluation-for-immigration-involve/index.html",
+      "record_id": "agent_3ff8012afefda486",
+      "record_ids": [
+        "agent_3ff8012afefda486",
+        "agent_bd0cecad55a34e17"
+      ],
+      "run_date": "2026-10-02",
+      "reason": "no_authority_grounded_entry",
+      "detail": "uscis-medical is a high-stakes vertical: validate_html_fix_acceptance_compiler.js requires authority_grounded/authority_source_ids/authority_urls on every entry under uscis-medical/, and only authorityGroundedEntryForSpec() can supply them. No template matched this route, so no semantic entry was authored and no artifact can carry this route's ledger marker.",
+      "unblocked_by": "Author an authority-grounded template for this route in scripts/lib/authority_grounded_repairs.js."
+    }
+  ]
 }
