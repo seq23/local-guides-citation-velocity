@@ -32,6 +32,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { repairDoubleEncodedUtf8 } = require('./text_encoding_repair');
 
 const RUNS_REL = 'data/report_fixes/agent_runs';
 const MANIFEST_NAME = 'agent_run_manifest.json';
@@ -52,6 +53,43 @@ function textDefect(buf) {
   // eslint-disable-next-line no-control-regex
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(decoded)) return 'control_bytes_in_text';
   return null;
+}
+
+/**
+ * Encoding verdict for text that already passed textDefect():
+ *   { repaired, residual, residual_count, residual_samples, text }
+ * `repaired` counts the double-encoded UTF-8 sequences decoded exactly;
+ * `residual` means mojibake survives the repair and the artifact must be refused.
+ * 2026-09-30 trt.csv arrived with 427 such sequences (em dashes and arrows stored as
+ * c3 a2 c2 80 c2 94 ...) and nothing asked until the rendered page failed release.
+ */
+function encodingVerdict(decoded) {
+  const r = repairDoubleEncodedUtf8(decoded);
+  return { repaired: r.repaired, passes: r.passes, residual: r.residual, residual_count: r.residual_count, residual_samples: r.residual_samples, samples: r.samples, text: r.text };
+}
+
+function encodingDefect(key, rel, verdict) {
+  return `${key}:double_encoded_utf8_unrepairable:${rel}:residual=${verdict.residual_count}:repaired=${verdict.repaired}:samples=${verdict.residual_samples.join('|')}`;
+}
+
+/**
+ * Read a Twin Agent artifact (CSV, HTML, JSON) as text, repairing double-encoded UTF-8
+ * exactly and refusing by name what cannot be repaired. Every reader of raw run
+ * artifacts goes through here so the derived ledgers and the rendered pages can only
+ * ever carry text that was encoded once. Pass `onRepair` to record what was decoded.
+ */
+function readArtifactText(abs, { label = abs, onRepair = null } = {}) {
+  if (!fs.existsSync(abs)) throw new Error(`readArtifactText:${label}:missing_file`);
+  const buf = fs.readFileSync(abs);
+  const text = textDefect(buf);
+  if (text) throw new Error(`readArtifactText:${label}:${text}:bytes=${buf.length}:head_hex=${hexPreview(buf)}`);
+  const verdict = encodingVerdict(buf.toString('utf8'));
+  if (verdict.residual) throw new Error(`readArtifactText:${encodingDefect('artifact', label, verdict)}`);
+  if (verdict.repaired) {
+    console.log(`REPAIRED ENCODING: ${label}: ${verdict.repaired} double-encoded UTF-8 sequence(s) decoded on read (${verdict.passes.join('+')} per pass); the delivered bytes are unchanged on disk.`);
+    if (typeof onRepair === 'function') onRepair(verdict);
+  }
+  return verdict.text;
 }
 
 /**
@@ -87,6 +125,11 @@ function artifactDefects(root, manifest) {
     if (text) { defects.push(`${key}:${text}:${rel}:bytes=${buf.length}:head_hex=${hexPreview(buf)}`); continue; }
     const decoded = buf.toString('utf8').trim();
     if (LOCAL_FETCH_RE.test(decoded)) { defects.push(`${key}:unresolved_local_fetch_artifact:${rel}`); continue; }
+    // Text that is UTF-8 but encoded twice (2026-09-30 trt.csv) is repaired exactly
+    // on read; what the repair cannot decode is a defect HERE, named, not a
+    // mojibake failure on a rendered page at release time.
+    const encoding = encodingVerdict(decoded);
+    if (encoding.residual) { defects.push(encodingDefect(key, rel, encoding)); continue; }
     if (key === 'json_path') {
       const parsed = readJsonStrict(abs);
       if (!parsed.ok) defects.push(`${key}:${parsed.defect}:${rel}:${parsed.detail}`);
@@ -216,4 +259,4 @@ function walkRunFolders(root, runsRel = RUNS_REL) {
   return out;
 }
 
-module.exports = { RUNS_REL, MANIFEST_NAME, REJECTED_SUFFIX, QUARANTINE_REASON_PREFIX, readJsonStrict, textDefect, artifactDefects, inspectRunDrop, writeJsonVerified, quarantineRunDrop, walkRunFolders };
+module.exports = { RUNS_REL, MANIFEST_NAME, REJECTED_SUFFIX, QUARANTINE_REASON_PREFIX, readJsonStrict, textDefect, encodingVerdict, readArtifactText, artifactDefects, inspectRunDrop, writeJsonVerified, quarantineRunDrop, walkRunFolders };

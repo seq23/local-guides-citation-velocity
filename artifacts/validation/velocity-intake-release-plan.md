@@ -3,13 +3,13 @@
 Status: **PASS**
 Release date: 2026-10-02
 Target publish units: 164
-Selected units: 14
-Twin agent units: 14
+Selected units: 15
+Twin agent units: 15
 Social fallback units: 0
-Social fallback allowed: false
-Social fallback suppressed: 150
+Social fallback allowed: true
+Social fallback suppressed: 0
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 6
+Repair units: 7
 New page units: 8
 
 | Source | Operation | Vertical | Target route | Query |
@@ -20,6 +20,7 @@ New page units: 8
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/delays-rfe/index.html | what happens if there is a mistake on my I-693 form |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/exam-day-documents/index.html | how long does the whole uscis medical process take from start to finish |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/timeline-validity/index.html | does the i-693 medical exam still expire after two years |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | TRT injections vs gel — how to decide |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-to-join-the-class-action-for-social-media-addiction/ | how to join the class action for social media addiction |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/has-there-been-a-global-settlement-for-roundup-in-2026/ | has there been a global settlement for roundup in 2026 |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-much-is-the-average-payout-for-an-afff-firefighting-foam-claim/ | how much is the average payout for an afff firefighting foam claim |

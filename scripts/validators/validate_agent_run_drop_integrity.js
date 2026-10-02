@@ -31,9 +31,23 @@
  *     is a NAMED pending handoff (the release lane quarantines it on its next pass).
  *     Past the window it is a hard failure naming the file and its defects. A
  *     QUARANTINED manifest that points at rejected bytes must still have them.
- *  4. EVERY REPO-WRITTEN JSON UNDER data/report_fixes PARSES. Normalized runs, source
- *     ledgers, fix and disposition ledgers - everything outside agent_runs/ is written
- *     by this repo, and a truncated or corrupted one fails here by name.
+ *  4. EVERY REPO-WRITTEN JSON UNDER data/report_fixes PARSES AND IS ENCODED ONCE.
+ *     Normalized runs, source ledgers, fix and disposition ledgers - everything
+ *     outside agent_runs/ is written by this repo, and a truncated or corrupted one
+ *     fails here by name. So does one carrying double-encoded UTF-8: the ledgers
+ *     copied 2026-09-30 trt.csv's mojibake and the first thing to say so was a
+ *     rendered page at release (repair: npm run citation:repair-run-encoding).
+ *  5. DOUBLE-ENCODED UTF-8 IS REPAIRED EXACTLY OR REFUSED BY NAME. 2026-09-30 trt.csv
+ *     arrived with 427 em dashes and arrows stored as c3 a2 c2 80 c2 94 (UTF-8 read as
+ *     Latin-1 and encoded again) beside 282 correctly encoded characters. Intake
+ *     copied the bytes into every derived ledger and into trt/index.html, where
+ *     search-quality-basics refused `trt/index.html:mojibake` and blocked every
+ *     release from 30 Sep. A scratch drop in that exact shape must read back as the
+ *     intended text through readArtifactText and classify PARSED; a drop whose
+ *     mojibake cannot be decoded exactly must classify DEFECTIVE with a
+ *     double_encoded_utf8_unrepairable defect naming the artifact, and the reader
+ *     must throw the same name. The three raw-artifact readers are then checked to
+ *     route through readArtifactText - a repair nothing invokes is not a repair.
  *
  * Rule 0: zero run folders, or zero repo-written JSON files, is a FAILURE - nothing
  * examined is nothing proven. AGENT_RUN_DROP_ROOT and REPORT_FIXES_ROOT exist so that
@@ -123,6 +137,67 @@ for (const writerRel of GUARDED_WRITERS) {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
+// 5. Double-encoded UTF-8, exercised in the exact 2026-09-30 trt shape.
+{
+  const dir = scratch();
+  const manifestFor = (runRel, vertical) => JSON.stringify({ source: 'twin_agent', run_date: '2026-09-30', vertical, csv_path: `${runRel}/${vertical}.csv`, html_path: `${runRel}/${vertical}.html`, json_path: `${runRel}/${vertical}.json`, status: 'READY_FOR_ABSORPTION' });
+  const header = 'Query,Patch Needed (Y/N),Fix Recommendation\n';
+  // The intended text, with characters that were already correct in the delivered file
+  // ("→", "“fine”") so a whole-file re-decode would corrupt them and be caught here.
+  const intended = `${header}"TRT injections vs gel — how to decide",Y,"Lead with a ≥ 300 ng/dL threshold … then dose → “fine”"\n`;
+  // Encode once, read as Latin-1, encode again - ONLY the first row's "—", "≥", "…"
+  // are doubled, exactly as 2026-09-30 trt.csv mixed doubled and correct characters.
+  const doubled = (s) => Buffer.from(s, 'utf8').toString('latin1');
+  const delivered = `${header}"TRT injections vs gel ${doubled('—')} how to decide",Y,"Lead with a ${doubled('≥')} 300 ng/dL threshold ${doubled('…')} then dose → “fine”"\n`;
+  const runRel = 'data/report_fixes/agent_runs/2026-09-30/trt';
+  fs.mkdirSync(path.join(dir, runRel), { recursive: true });
+  fs.writeFileSync(path.join(dir, `${runRel}/trt.csv`), delivered, 'utf8');
+  fs.writeFileSync(path.join(dir, `${runRel}/trt.html`), '<html><body><p>TRT injections vs gel — how to decide</p></body></html>', 'utf8');
+  fs.writeFileSync(path.join(dir, `${runRel}/trt.json`), JSON.stringify({ page_fixes: [] }), 'utf8');
+  fs.writeFileSync(path.join(dir, `${runRel}/agent_run_manifest.json`), manifestFor(runRel, 'trt'));
+  const deliveredBytes = fs.readFileSync(path.join(dir, `${runRel}/trt.csv`));
+  record('double_encoded_fixture_is_mojibake_before_repair', /â/.test(delivered) && delivered !== intended, 'the fixture must reproduce the delivered shape or the test proves nothing');
+  const repairable = integrity.inspectRunDrop(dir, `${runRel}/agent_run_manifest.json`);
+  record('double_encoded_drop_is_not_refused', repairable.state === 'PARSED', repairable.state === 'PARSED' ? 'ok' : repairable.defects.join('; '));
+  let repaired = { repaired: 0 };
+  let text = '';
+  try { text = integrity.readArtifactText(path.join(dir, `${runRel}/trt.csv`), { label: `${runRel}/trt.csv`, onRepair: (v) => { repaired = v; } }); } catch (err) { text = `THREW:${err.message}`; }
+  record('double_encoded_csv_reads_back_as_intended_text', text === intended, text === intended ? 'ok' : `read ${JSON.stringify(text)} expected ${JSON.stringify(intended)}`);
+  record('repair_count_is_exact', repaired.repaired === 3, `repaired=${repaired.repaired} expected 3 ("—", "≥", "…"); correct "→" and quotes untouched`);
+  record('repair_leaves_delivered_bytes_untouched', fs.readFileSync(path.join(dir, `${runRel}/trt.csv`)).equals(deliveredBytes), 'readArtifactText must never rewrite the artifact it reads');
+  // Unrepairable: an em dash whose continuation bytes were lost ("â€" + space) cannot
+  // decode to any code point. It must be a NAMED defect at intake, not a page failure.
+  const run2Rel = 'data/report_fixes/agent_runs/2026-09-30/neuro';
+  const broken = `${header}"ADHD evaluation â€ what to expect",Y,"fix"\n`;
+  fs.mkdirSync(path.join(dir, run2Rel), { recursive: true });
+  fs.writeFileSync(path.join(dir, `${run2Rel}/neuro.csv`), broken, 'utf8');
+  fs.writeFileSync(path.join(dir, `${run2Rel}/neuro.html`), '<html><body><p>ok</p></body></html>', 'utf8');
+  fs.writeFileSync(path.join(dir, `${run2Rel}/neuro.json`), JSON.stringify({ page_fixes: [] }), 'utf8');
+  fs.writeFileSync(path.join(dir, `${run2Rel}/agent_run_manifest.json`), manifestFor(run2Rel, 'neuro'));
+  const unrepairable = integrity.inspectRunDrop(dir, `${run2Rel}/agent_run_manifest.json`);
+  const namedDefect = unrepairable.state === 'DEFECTIVE' && unrepairable.defects.some((d) => d.startsWith('csv_path:double_encoded_utf8_unrepairable:') && d.includes('neuro.csv'));
+  record('unrepairable_mojibake_drop_is_refused_by_name', namedDefect, namedDefect ? 'ok' : `state=${unrepairable.state} defects=${(unrepairable.defects || []).join('; ')}`);
+  let readerThrew = '';
+  try { integrity.readArtifactText(path.join(dir, `${run2Rel}/neuro.csv`), { label: `${run2Rel}/neuro.csv` }); } catch (err) { readerThrew = err.message; }
+  const readerNamed = /double_encoded_utf8_unrepairable/.test(readerThrew) && readerThrew.includes('neuro.csv');
+  record('unrepairable_mojibake_read_throws_by_name', readerNamed, readerNamed ? 'ok' : (readerThrew || 'readArtifactText returned mojibake instead of throwing'));
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+// The readers of raw run artifacts must go through the repairing reader - a repair nothing invokes is not a repair.
+for (const readerRel of ['scripts/lib/agent_artifact_source_parser.js', 'scripts/citation_velocity/prepare_velocity_intake_release.js', 'scripts/citation_velocity/apply_html_report_contract.js']) {
+  const abs = path.join(ROOT, readerRel);
+  if (!fs.existsSync(abs)) { errors.push(`artifact_reader_missing:${readerRel}`); continue; }
+  const src = fs.readFileSync(abs, 'utf8');
+  const routed = /readArtifactText\s*\(/.test(src);
+  record(`reader_routes_through_repairing_reader:${readerRel}`, routed, routed ? 'ok' : 'raw artifact text is read without readArtifactText');
+}
+// The release-side mojibake definition and the intake-side one must be the same object.
+{
+  const sqb = fs.readFileSync(path.join(ROOT, 'scripts/validators/validate_search_quality_basics.js'), 'utf8');
+  const shared = /badEncoding\s*=\s*require\((["'])\.\.\/lib\/text_encoding_repair\1\)\.MOJIBAKE_RE/.test(sqb);
+  record('release_mojibake_definition_is_the_intake_definition', shared, shared ? 'ok' : 'validate_search_quality_basics.js keeps its own mojibake regex; intake and release could disagree');
+}
+
 // 3. Every landed drop.
 const WINDOW = absorptionWindow();
 const TODAY = wallClockToday();
@@ -161,7 +236,15 @@ let repoJsonExamined = 0;
     if (!ent.name.endsWith('.json')) continue;
     repoJsonExamined += 1;
     const read = integrity.readJsonStrict(p);
-    if (!read.ok) errors.push(`repo_written_json_does_not_parse:${rel}:${read.defect}:${read.detail}`);
+    if (!read.ok) { errors.push(`repo_written_json_does_not_parse:${rel}:${read.defect}:${read.detail}`); continue; }
+    // A ledger this repo wrote must carry text encoded ONCE. On 2026-09-30 the
+    // normalized run, the source ledger, the fix ledger, the implementation ledger
+    // and the acceptance manifest all copied trt.csv's double-encoded em dashes and
+    // the first thing to say so was a rendered page at release. This is the lock at
+    // the absorption checkpoint: repair at source (citation:repair-run-encoding) and
+    // re-run intake; never patch the ledger by hand.
+    const mojibake = integrity.encodingVerdict(fs.readFileSync(p, 'utf8'));
+    if (mojibake.repaired || mojibake.residual) errors.push(`repo_written_json_carries_mojibake:${rel}:double_encoded=${mojibake.repaired}:unrepairable=${mojibake.residual_count}:samples=${Object.keys(mojibake.samples).slice(0, 3).concat(mojibake.residual_samples).join('|')}`);
   }
 })(path.resolve(ROOT, REPORT_FIXES_REL));
 if (!repoJsonExamined) errors.push(`examined_zero_repo_written_json:${REPORT_FIXES_REL}:a validator that examines nothing has not passed`);
