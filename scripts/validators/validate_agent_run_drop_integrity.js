@@ -31,6 +31,12 @@
  *     is a NAMED pending handoff (the release lane quarantines it on its next pass).
  *     Past the window it is a hard failure naming the file and its defects. A
  *     QUARANTINED manifest that points at rejected bytes must still have them.
+ *     Every drop that is NOT defective must also go through the release lane's own
+ *     parser (parseManifestBundle) without throwing, and a QUARANTINED one must yield
+ *     zero records with none of its artifacts read. On 2 Oct 2026 the strict reader
+ *     landed green here and Velocity Content Release then threw on the quarantined
+ *     2026-09-15 dentistry.csv (run 37018057649): Validate Repo never ran the parser
+ *     over the landed drops, so the first thing to say so was the release.
  *  4. EVERY REPO-WRITTEN JSON UNDER data/report_fixes PARSES AND IS ENCODED ONCE.
  *     Normalized runs, source ledgers, fix and disposition ledgers - everything
  *     outside agent_runs/ is written by this repo, and a truncated or corrupted one
@@ -57,6 +63,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const integrity = require('../lib/agent_run_drop_integrity');
+const sourceParser = require('../lib/agent_artifact_source_parser');
 const { absorptionWindow, daysBetween, wallClockToday } = require('./validate_agent_artifact_stranding');
 const { classifyPendingAbsorption } = require('./validate_agent_artifact_continuity');
 
@@ -126,6 +133,15 @@ for (const writerRel of GUARDED_WRITERS) {
     record('quarantine_produces_parseable_named_manifest', after.state === 'PARSED' && after.manifest.status === 'QUARANTINED' && String(after.manifest.quarantine_reason).startsWith(integrity.QUARANTINE_REASON_PREFIX) && Boolean(after.manifest.quarantine_action), after.state === 'PARSED' ? JSON.stringify({ status: after.manifest.status }) : after.defects.join('; '));
     record('quarantine_preserves_delivered_bytes', rejected.equals(BLOB_2026_09_15), rejected.equals(BLOB_2026_09_15) ? 'ok' : 'rejected bytes differ from the delivered manifest');
     record('quarantine_keeps_artifacts_untouched', fs.readFileSync(path.join(runAbs, 'dentistry.csv')).equals(BLOB_2026_09_15), 'artifacts are audit material and are never rewritten');
+    // The release parser must not READ a quarantined run's artifacts (2 Oct 2026, run 37018057649).
+    let bundle = null; let bundleErr = '';
+    try { bundle = sourceParser.parseManifestBundle({ manifestPath: manifestRel, root: dir }); } catch (err) { bundleErr = err.message; }
+    record('quarantined_run_parses_to_zero_records_without_reading_its_artifacts', Boolean(bundle) && bundle.quarantined === true && bundle.records.length === 0 && String(bundle.quarantine_reason).startsWith(integrity.QUARANTINE_REASON_PREFIX), bundle ? `quarantined=${bundle.quarantined} records=${bundle.records.length}` : `the parser threw on a QUARANTINED run: ${bundleErr}`);
+    // ...and the door is the STATUS, not leniency: the same blobs under a manifest that claims to be ready are still refused by name.
+    const liveManifest = { ...JSON.parse(fs.readFileSync(path.join(dir, manifestRel), 'utf8')), status: 'READY_FOR_ABSORPTION' };
+    let liveErr = '';
+    try { sourceParser.parseAgentRunBundle({ root: dir, manifest: liveManifest, manifestPath: manifestRel }); } catch (err) { liveErr = err.message; }
+    record('blob_artifacts_under_a_ready_manifest_are_still_refused_by_name', /^readArtifactText:.*dentistry\.csv:not_utf8_text/.test(liveErr), liveErr || 'blob artifacts were read as source records');
   } catch (err) { record('quarantine_produces_parseable_named_manifest', false, err.message); }
   // A parsed manifest whose artifacts are unresolved local-fetch pointers (the 2026-07-20 shape) must also be DEFECTIVE.
   const run2Rel = 'data/report_fixes/agent_runs/2026-07-20/personal-injury';
@@ -203,6 +219,8 @@ const WINDOW = absorptionWindow();
 const TODAY = wallClockToday();
 const folders = integrity.walkRunFolders(ROOT, RUNS_REL);
 let dropsExamined = 0;
+let dropsParsed = 0;
+let quarantinedDrops = 0;
 for (const folder of folders) {
   if (!folder.manifestExists) { warnings.push(`legacy_or_missing_manifest:${folder.dirRel}`); continue; }
   dropsExamined += 1;
@@ -222,8 +240,20 @@ for (const folder of folders) {
   if (String(m.status).toUpperCase() === 'QUARANTINED' && m.rejected_manifest_path && !fs.existsSync(path.join(ROOT, m.rejected_manifest_path))) {
     errors.push(`quarantine_lost_rejected_bytes:${folder.manifestRel}:${m.rejected_manifest_path}`);
   }
+  // The release lane parses this drop with parseManifestBundle; so does this, here, before merge.
+  dropsParsed += 1;
+  try {
+    const bundle = sourceParser.parseManifestBundle({ manifestPath: folder.manifestRel, root: ROOT });
+    if (String(m.status).toUpperCase() === 'QUARANTINED') {
+      quarantinedDrops += 1;
+      if (!bundle.quarantined || bundle.records.length) errors.push(`quarantined_drop_yields_source_records:${folder.manifestRel}:quarantined=${bundle.quarantined}:records=${bundle.records.length}`);
+    }
+  } catch (err) {
+    errors.push(`landed_drop_unreadable_by_the_release_parser:${folder.manifestRel}:${err.message}`);
+  }
 }
 if (!dropsExamined) errors.push(`examined_zero_drops:${RUNS_REL}:a validator that examines nothing has not passed`);
+if (dropsExamined && !dropsParsed) errors.push(`parsed_zero_drops:${RUNS_REL}:no landed drop reached the release parser, so its readability is unproven`);
 
 // 4. Every repo-written JSON under data/report_fixes outside agent_runs/.
 let repoJsonExamined = 0;
@@ -249,7 +279,7 @@ let repoJsonExamined = 0;
 })(path.resolve(ROOT, REPORT_FIXES_REL));
 if (!repoJsonExamined) errors.push(`examined_zero_repo_written_json:${REPORT_FIXES_REL}:a validator that examines nothing has not passed`);
 
-const report = { schema_version: '1.0', validator: 'agent-run-drop-integrity', status: errors.length ? 'FAIL' : 'PASS', checked_at: TODAY, drops_examined: dropsExamined, repo_written_json_examined: repoJsonExamined, absorption_window: WINDOW, self_test_cases: cases, named_pending, errors, warnings };
+const report = { schema_version: '1.0', validator: 'agent-run-drop-integrity', status: errors.length ? 'FAIL' : 'PASS', checked_at: TODAY, drops_examined: dropsExamined, drops_read_through_release_parser: dropsParsed, quarantined_drops: quarantinedDrops, repo_written_json_examined: repoJsonExamined, absorption_window: WINDOW, self_test_cases: cases, named_pending, errors, warnings };
 fs.mkdirSync(path.join(ROOT, path.dirname(OUT_REL)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, OUT_REL), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 if (errors.length) {
@@ -257,4 +287,4 @@ if (errors.length) {
   for (const e of errors) console.error(`- ${e}`);
   process.exit(1);
 }
-console.log(`AGENT RUN DROP INTEGRITY PASS: ${cases.length} guard self-test(s), ${dropsExamined} drop(s), ${repoJsonExamined} repo-written JSON file(s); ${named_pending.length} defective drop(s) named pending quarantine.`);
+console.log(`AGENT RUN DROP INTEGRITY PASS: ${cases.length} guard self-test(s), ${dropsExamined} drop(s) (${dropsParsed} read through the release parser, ${quarantinedDrops} quarantined and unread), ${repoJsonExamined} repo-written JSON file(s); ${named_pending.length} defective drop(s) named pending quarantine.`);

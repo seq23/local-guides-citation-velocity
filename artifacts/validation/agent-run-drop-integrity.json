@@ -4,6 +4,8 @@
   "status": "PASS",
   "checked_at": "2026-10-02",
   "drops_examined": 69,
+  "drops_read_through_release_parser": 69,
+  "quarantined_drops": 3,
   "repo_written_json_examined": 220,
   "absorption_window": {
     "cadenceDays": 1,
@@ -66,6 +68,16 @@
       "name": "quarantine_keeps_artifacts_untouched",
       "ok": true,
       "detail": "artifacts are audit material and are never rewritten"
+    },
+    {
+      "name": "quarantined_run_parses_to_zero_records_without_reading_its_artifacts",
+      "ok": true,
+      "detail": "quarantined=true records=0"
+    },
+    {
+      "name": "blob_artifacts_under_a_ready_manifest_are_still_refused_by_name",
+      "ok": true,
+      "detail": "readArtifactText:data/report_fixes/agent_runs/2026-09-15/dentistry/dentistry.csv:not_utf8_text:bytes=15:head_hex=6e 5a 1b a5 ac a5 a1 a7 6c dd ca 27 b5 e9 ed"
     },
     {
       "name": "local_fetch_pointer_artifacts_are_defective",
