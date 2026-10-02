@@ -2,12 +2,12 @@
 
 Status: **PASS**
 Release date: 2026-10-02
-Target publish units: 164
+Target publish units: 262
 Selected units: 34
 Twin agent units: 34
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 130
+Social fallback suppressed: 228
 Social fallback backlog depth (eligible, unreleased): 389
 Repair units: 24
 New page units: 10
