@@ -246,8 +246,20 @@ function duplicateGroups(records) {
   }
   return [...by.entries()].filter(([, ids]) => ids.length > 1).map(([canonical_key, source_record_ids]) => ({ canonical_key, source_record_ids, source_record_count: source_record_ids.length }));
 }
+// A QUARANTINED run is a named stop the intake already made: its artifacts are audit
+// material, never source records, and they are NOT READ here. Three callers each made
+// this check for themselves before calling the parser and one path did not
+// (trace_agent_artifact_data_flow.js parsed every manifest eagerly). While readText was
+// a bare readFileSync the 2026-09-15 dentistry blobs came back as garbage and zero
+// records; once every raw read went through readArtifactText (PR #163) that path threw
+// `not_utf8_text` and Velocity Content Release went red on 2 Oct 2026 (run 37018057649).
+// The rule lives at this one door so no caller can forget it.
+function isQuarantinedManifest(manifest) { return String((manifest && manifest.status) || '').toUpperCase() === 'QUARANTINED'; }
 function parseAgentRunBundle({ root, manifest, manifestPath }) {
   const context = { run_date: manifest.run_date || '', vertical: normalizeVertical(manifest.vertical || '') };
+  if (isQuarantinedManifest(manifest)) {
+    return { manifest_path: manifestPath || '', run_date: context.run_date, vertical: context.vertical, records: [], errors: [], duplicate_groups: [], quarantined: true, quarantine_reason: String(manifest.quarantine_reason || '') };
+  }
   const records = [
     ...parseCsvRecords(root, manifest.csv_path, context),
     ...parseJsonRecords(root, manifest.json_path, context),
@@ -260,4 +272,4 @@ function parseManifestBundle({ manifestPath, root }) {
   if (!manifest) return { manifest_path: manifestPath, records: [], errors: [`${manifestPath}:invalid_json`], duplicate_groups: [] };
   return parseAgentRunBundle({ root, manifest, manifestPath });
 }
-module.exports = { parseAgentRunBundle, parseManifestBundle, parseCsvRecords, parseJsonRecords, parseHtmlRecords, flattenRecommendation, normalizeSourceRecord, canonicalSourceRecordId, canonicalDedupeKey, canonicalNewPageKey, canonicalPageFixKey, classifyRecommendationType, duplicateGroups, normalizeSpace, questionFrom, modelFrom, splitEngineSuffix, slugify, ENGINE_LABEL_IN_COPY };
+module.exports = { parseAgentRunBundle, parseManifestBundle, isQuarantinedManifest, parseCsvRecords, parseJsonRecords, parseHtmlRecords, flattenRecommendation, normalizeSourceRecord, canonicalSourceRecordId, canonicalDedupeKey, canonicalNewPageKey, canonicalPageFixKey, classifyRecommendationType, duplicateGroups, normalizeSpace, questionFrom, modelFrom, splitEngineSuffix, slugify, ENGINE_LABEL_IN_COPY };
