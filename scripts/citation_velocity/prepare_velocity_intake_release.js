@@ -475,7 +475,11 @@ function importAgentRuns() {
     const sourceBundle = parseManifestBundle({ manifestPath: manifestRel, root: ROOT });
     const sourceLedger = writeSourceRecordLedger(manifestRel, manifest, sourceBundle);
     const sourceRecords = sourceLedger.records || [];
-    const rows = parseCsv(readText(manifest.csv_path));
+    // Double-encoded UTF-8 in the delivered CSV (2026-09-30 trt) is decoded exactly here and
+// recorded in artifact_integrity.csv.encoding_repairs; unrepairable text throws by name.
+// inspectRunDrop above already refused the unrepairable case, so this is the second lock.
+    let csvEncodingRepairs = 0;
+    const rows = parseCsv(dropIntegrity.readArtifactText(rel(manifest.csv_path), { label: manifest.csv_path, onRepair: (v) => { csvEncodingRepairs = v.repaired; } }));
     const vertical = normalizeVertical(manifest.vertical);
     const runId = `${manifest.run_date}_${vertical}_${sha(manifest.csv_path)}`;
     const records = [];
@@ -539,7 +543,7 @@ function importAgentRuns() {
       const normalizedRel = `${NORMALIZED_ROOT}/${manifest.run_date}_${vertical}.json`;
       const artifact_integrity = {
         manifest: artifactIntegrity(manifestRel),
-        csv: artifactIntegrity(manifest.csv_path),
+        csv: csvEncodingRepairs ? { ...artifactIntegrity(manifest.csv_path), encoding_repairs: csvEncodingRepairs } : artifactIntegrity(manifest.csv_path),
         html: artifactIntegrity(manifest.html_path),
         json: artifactIntegrity(manifest.json_path || '')
       };

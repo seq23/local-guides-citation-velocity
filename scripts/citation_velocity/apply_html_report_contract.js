@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { deriveContentAtom } = require('../lib/content_atom');
-const { writeJsonVerified } = require('../lib/agent_run_drop_integrity');
+const { writeJsonVerified, readArtifactText } = require('../lib/agent_run_drop_integrity');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
 const { parseManifestBundle, flattenRecommendation, canonicalSourceRecordId, canonicalDedupeKey } = require('../lib/agent_artifact_source_parser');
@@ -521,7 +521,9 @@ function parseReports() {
       pages = jsonPagesToBuild(payload, context).filter(p => SUPPORTED_VERTICALS.has(p.vertical));
       parser = 'json';
     } else {
-      const html = readText(manifest.html_path);
+      // Decoded through the drop-integrity reader: double-encoded UTF-8 is repaired exactly,
+      // unrepairable mojibake throws by name instead of reaching html_report_contract.generated.json.
+      const html = readArtifactText(rel(manifest.html_path), { label: manifest.html_path });
       const newFixText = htmlToText(extractSection(html, 'New Fixes'));
       const pendingText = htmlToText(extractSection(html, 'Pending Your Action'));
       const pagesText = htmlToText(extractSection(html, 'Pages to Build'));

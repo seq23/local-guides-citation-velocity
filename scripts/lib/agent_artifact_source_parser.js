@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { normalizeSeoExecution } = require('./seo_execution_contract');
+const { readArtifactText } = require('./agent_run_drop_integrity');
 
 function normalizeSpace(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 function sha(value, len = 16) { return crypto.createHash('sha256').update(String(value || '')).digest('hex').slice(0, len); }
@@ -15,7 +16,10 @@ function normalizeVertical(value) {
   return map[key] || map[key.replace(/-/g, ' ')] || key;
 }
 function relRoot(root, rel) { return path.join(root, rel); }
-function readText(root, rel) { return fs.readFileSync(relRoot(root, rel), 'utf8'); }
+// Raw Twin Agent artifacts are read through the drop-integrity reader: double-encoded
+// UTF-8 is decoded exactly on read and unrepairable mojibake is refused by name
+// (2026-09-30 trt.csv). See scripts/lib/text_encoding_repair.js.
+function readText(root, rel) { return readArtifactText(relRoot(root, rel), { label: rel }); }
 function readJson(root, rel, fallback = null) { try { return JSON.parse(readText(root, rel)); } catch { return fallback; } }
 function htmlToText(html) {
   return String(html || '')
