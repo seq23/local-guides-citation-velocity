@@ -3,13 +3,13 @@
 Status: **PASS**
 Release date: 2026-10-07
 Target publish units: 171
-Selected units: 22
-Twin agent units: 22
+Selected units: 29
+Twin agent units: 29
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 149
+Social fallback suppressed: 142
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 7
+Repair units: 14
 New page units: 15
 
 | Source | Operation | Vertical | Target route | Query |
@@ -21,6 +21,13 @@ New page units: 15
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/exam-day-documents/index.html | how long does the whole uscis medical process take from start to finish |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/timeline-validity/index.html | does the i-693 medical exam still expire after two years |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/community-questions/what-does-the-mental-health-evaluation-for-immigration-involve/index.html | will a history of depression or therapy affect my immigration medical |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/best-top-near-me/index.html | best way to compare TRT clinics in 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/fertility-pct/index.html | can enclomiphene raise my testosterone without shutting down natural production |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/side-effects-monitoring/index.html | can low testosterone cause sudden anxiety and panic attacks |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/labs-dosing/index.html | how to micro dose testosterone cypionate to avoid the need for an aromatase inhibitor |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | what is scrotal cream and is it more effective than standard trt gel |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/clinic-selection/index.html | how do I verify a TRT clinic's credentials and licensing |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/cost-insurance/index.html | does insurance cover testosterone replacement therapy |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/what-injuries-pay-the-most/ | what injuries pay the most |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/do-i-pay-taxes-on-personal-injury-settlement-money/ | do i pay taxes on personal injury settlement money |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-much-of-a-100k-settlement-will-i-get/ | how much of a 100k settlement will i get |
