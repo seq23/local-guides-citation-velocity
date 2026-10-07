@@ -135,6 +135,30 @@ if (!sep) {
   fail(`${SIGNAL} records no control_check.separation, so nothing states whether the two known classes separate.`);
 }
 
+// ------------------------------------ (5) the two arms are disjoint and single
+// A control is only a control if it is measured once, in its own arm. A control
+// query that also sits in the treatment panel (any non-control role), a duplicate
+// row, or two rows claiming the same control role would let one reading count on
+// both sides of the comparison - the separation would then measure nothing.
+{
+  const seen = new Map();
+  for (const p of probes) {
+    const key = String((p && p.query) || '').trim().toLowerCase();
+    if (!key) continue;
+    if (seen.has(key)) fail(`ARMS OVERLAP: "${p.query}" is measured twice (roles ${seen.get(key)} and ${p.role || 'none'}). One reading must sit in exactly one arm.`);
+    else seen.set(key, p.role || 'none');
+  }
+  for (const role of ['control_known_open', 'control_known_closed']) {
+    const n = controlRows.filter((c) => c.role === role).length;
+    if (n > 1) fail(`ARMS OVERLAP: ${n} probes claim ${role}; the pair must be exactly one known-open and one known-closed query.`);
+  }
+  const unknownControl = controlRows.filter((c) => !['control_known_open', 'control_known_closed'].includes(c.role));
+  if (unknownControl.length) fail(`ARMS OVERLAP: undeclared control role(s) ${[...new Set(unknownControl.map((c) => c.role))].join(', ')}.`);
+  if (openCtl && closedCtl && String(openCtl.query).trim().toLowerCase() === String(closedCtl.query).trim().toLowerCase()) {
+    fail(`ARMS OVERLAP: the known-open and known-closed controls are the same query ("${openCtl.query}").`);
+  }
+}
+
 let separated = null;
 if (openCtl && closedCtl && sep) {
   const known_open = openCtl.open_share;
@@ -202,6 +226,26 @@ if (typeof summary.unclassifiable_slot_share !== 'number') {
 }
 
 // -------------------------------------------------------------------- verdict
+// ------------------------- (6) the flag consumers read is the separation measured
+if (doc && doc.summary && separated !== null && doc.summary.control_separation_ok !== separated) {
+  fail(`summary.control_separation_ok=${doc.summary.control_separation_ok} but the control pair, recomputed from its probes, ${separated ? 'separates' : 'does not separate'}. Consumers read the summary flag, so it must be the measured one.`);
+}
+
+// --------------- (7) no consumer acts on a signal the controls say is not working
+// The atlas admits a query on occupancy only under winnability_basis
+// measured_answer_engine_citation_occupancy. While the pair does not separate, no
+// atlas row may carry that basis or a numeric citation_occupancy. This is the harm
+// the gate exists for: pages selected for release by a number that measures nothing.
+const ATLAS = 'data/authority_scale/query_atlas.json';
+if (separated === false && fs.existsSync(path.join(ROOT, ATLAS))) {
+  const atlas = readJson(ATLAS);
+  const acting = ((atlas && atlas.queries) || []).filter((q) => q.winnability_basis === 'measured_answer_engine_citation_occupancy' || typeof q.citation_occupancy === 'number');
+  if (acting.length) fail(`${ATLAS}: ${acting.length} row(s) carry a measured citation_occupancy while the control pair does not separate, e.g. "${acting[0].query}" (${acting[0].winnability_basis}, ${acting[0].citation_occupancy}). Rebuild the atlas: npm run atlas:build.`);
+}
+if (separated === false) {
+  notes.push(`NAMED STOP ${(status && status.reason) || 'CONTROL_PAIR_DOES_NOT_SEPARATE'}: known_open=${sep.known_open} known_closed=${sep.known_closed} (margin ${sep.margin} < ${sep.minimum_separation}). citation_occupancy is withheld and nothing downstream reads it; this is the instrument reporting itself, not a failure.`);
+}
+
 if (problems.length) {
   console.error('OCCUPANCY CONTROL SEPARATION FAIL:');
   for (const p of problems) console.error(`  - ${p}`);

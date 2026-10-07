@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-const fs=require('fs');const path=require('path');const L=require('./lib');
+const fs=require('fs');const path=require('path');const L=require('./lib');const {cleanQueryText}=require('../lib/model_name_guard');
 const {ROOT,readJson,writeJson,sha256,stableDate,stableTimestamp,normalizeQuery,routeToFile,exists,textFromHtml,loadContract,candidateStatusFromDiagnosis,verifyExternalObservation,verifyCitationEvent,addDays,safeJsonPatch,isProtected,protectedAgentSnapshot,assertProtectedAgentSnapshotUnchanged}=L;
 function pickTargets(){
   const contract=loadContract();const admission=readJson('data/content/page_admission_registry.json');
@@ -13,7 +13,7 @@ function pickTargets(){
 }
 function buildAgentBridge(){
   const contract=loadContract();const dir=path.join(ROOT,'data/report_fixes/normalized_agent_runs');const files=fs.readdirSync(dir).filter(f=>f.endsWith('.json')).sort().reverse();const seen=new Set(),signals=[];
-  for(const f of files){const d=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));for(const r of d.records||[]){const key=r.source_record_canonical_key||r.source_record_id||r.id;if(!key||seen.has(key))continue;seen.add(key);signals.push({signal_id:r.id||key,source_record_id:r.source_record_id||null,source_record_canonical_key:r.source_record_canonical_key||null,source_file:`data/report_fixes/normalized_agent_runs/${f}`,run_date:r.run_date||f.slice(0,10),vertical:r.vertical||null,query:r.query||null,normalized_query:normalizeQuery(r.query),intended_winner_path:r.intended_winner_path||r.intended_winner_page||null,fix_type:r.fix_type||null,action_tier:r.action_tier||null,recommendation:r.recommendation||r.recommendation_fields?.raw||null,read_only:true});if(signals.length>=contract.agent_signal_limit)break;}if(signals.length>=contract.agent_signal_limit)break;}
+  for(const f of files){const d=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));for(const r of d.records||[]){const key=r.source_record_canonical_key||r.source_record_id||r.id;if(!key||seen.has(key))continue;seen.add(key);signals.push({signal_id:r.id||key,source_record_id:r.source_record_id||null,source_record_canonical_key:r.source_record_canonical_key||null,source_file:`data/report_fixes/normalized_agent_runs/${f}`,run_date:r.run_date||f.slice(0,10),vertical:r.vertical||null,query:r.query?cleanQueryText(r.query):null,normalized_query:normalizeQuery(cleanQueryText(r.query||'')),intended_winner_path:r.intended_winner_path||r.intended_winner_page||null,fix_type:r.fix_type||null,action_tier:r.action_tier||null,recommendation:r.recommendation||r.recommendation_fields?.raw||null,read_only:true});if(signals.length>=contract.agent_signal_limit)break;}if(signals.length>=contract.agent_signal_limit)break;}
   const out={schema_version:'1.0',generated_at:stableTimestamp(),count:signals.length,source_mode:'READ_ONLY_AGENT_OUTPUTS',mutation_authority:false,signals};writeJson('data/search_intelligence/agent_signal_bridge.json',out);return out;
 }
 function buildProviderTruth(){
