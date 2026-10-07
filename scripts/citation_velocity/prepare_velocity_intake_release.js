@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { routePage, routeForFamily } = require('../lib/page_family_router');
+const { cleanQueryText } = require('../lib/model_name_guard');
 const { routeShape, renderedPathForRoute } = require('../lib/page_family_authority');
 const { resolveTargetPath, routeFromPath, statedFilepathFrom, canonicalizeRawTarget } = require('../lib/citation_route_resolver');
 const { parseManifestBundle, canonicalDedupeKey, questionFrom } = require('../lib/agent_artifact_source_parser');
@@ -718,6 +719,15 @@ function updateLedger(agentRecords, plan) {
       before_hash: proof.renderedPath ? fileHash(proof.renderedPath) : null,
       required_markers: [record.query]
     });
+  }
+  // Rows this run did not re-process are carried forward by `...prior` above, so a
+  // label that entered before the intake strip (2026-09-22) - "best TRT clinic near
+  // me (Perplexity)" - stayed the query of record and a required marker forever, and
+  // agent-run coverage reported the page as missing a marker it was right to omit.
+  // Every row is cleaned on every write; the engine is provenance, not the query.
+  for (const fix of byId.values()) {
+    if (typeof fix.query === 'string') fix.query = cleanQueryText(fix.query);
+    if (Array.isArray(fix.required_markers)) fix.required_markers = [...new Set(fix.required_markers.map(cleanQueryText))];
   }
   current.updated_at = DATE;
   current.fix_count = byId.size;

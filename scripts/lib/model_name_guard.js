@@ -38,6 +38,10 @@
 // Ordered longest-first so "openai gpt 4o" is stripped whole rather than
 // leaving "openai" behind after "gpt 4o" matches.
 const MODEL_NAME_PATTERNS = [
+  // A parenthesised bare vendor is always a panel label, never a question:
+  // "(Gemini)", "(Claude)". Bare, those two words stay (see above).
+  /\(\s*(?:gemini|claude)\b[^()]*\)/gi,
+  /\bchatgpt(?:[\s._-]*[0-9][a-z0-9.]*)?\b/gi,
   /\bopen\s*ai[\s._-]*gpt[\s._-]*[0-9][a-z0-9.\s_-]*\b/gi,
   /\bgpt[\s._-]*[0-9][a-z0-9.\s_-]*\b/gi,
   /\bgemini[\s._-]*[0-9][a-z0-9.\s_-]*\b/gi,
@@ -91,4 +95,45 @@ function stripModelNames(value) {
     .trim();
 }
 
-module.exports = { MODEL_NAME_PATTERNS, containsModelName, modelNamesIn, stripModelNames };
+/**
+ * The query of record: the reader's search text with any answer-engine label
+ * removed. The engine is provenance and lives in its own field (`model`,
+ * `engine`, `surface`); it is never part of what a person typed.
+ *
+ * Every store that carries a query forward from an earlier run (the fix ledger's
+ * `...prior`, the implementation ledger's union of `queries`, an insights card's
+ * checklist union) passes it through here on write. Without that, a label that
+ * entered before the intake strip of 2026-09-22 survives in the merge forever.
+ *
+ * Never returns empty: a value that is nothing but a model name is malformed,
+ * and blanking it would turn a bad row into an invisible one.
+ */
+function stripLabel(text) {
+  return stripModelNames(text).replace(/\s+([?.!,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+}
+function cleanQueryText(value) {
+  if (typeof value !== 'string') return value;
+  // Only a LABEL is provenance. A question about a model keeps its words.
+  if (!hasEngineLabel(value)) return value;
+  return stripLabel(value) || value;
+}
+
+/**
+ * True when the text carries an answer-engine LABEL - the provenance shape a panel
+ * glues onto a question - rather than merely mentioning a model as its topic:
+ *   - a parenthesised group that names a model: "... near me (Perplexity)?"
+ *   - a model name as the trailing tail: "... car accident Gemini 1.5 Flash",
+ *     "... blood test gemini 1 5 flash" (normalized), "... - Perplexity"
+ * "can chatgpt diagnose adhd" is a reader's question about a model, not a label,
+ * and is neither stripped by cleanQueryText nor failed by the validator.
+ */
+function hasEngineLabel(value) {
+  const text = String(value || '');
+  if (!containsModelName(text)) return false;
+  for (const m of text.matchAll(/\(([^()]*)\)/g)) if (containsModelName(`(${m[1]})`)) return true;
+  const cleaned = stripLabel(text).replace(/[?.!]+$/, '').toLowerCase();
+  const tail = text.toLowerCase().slice(cleaned.length);
+  return Boolean(cleaned) && text.toLowerCase().startsWith(cleaned) && containsModelName(tail);
+}
+
+module.exports = { MODEL_NAME_PATTERNS, containsModelName, modelNamesIn, stripModelNames, cleanQueryText, hasEngineLabel };

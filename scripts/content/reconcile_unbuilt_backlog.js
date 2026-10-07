@@ -53,6 +53,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 const { admittedRichRoutes, builtPredicate, allowedRouteFamilies } = require('../lib/rich_admitted_routes');
+const { cleanQueryText } = require('../lib/model_name_guard');
 const CANONICAL_BACKLOG = 'data/content/unbuilt_rich_page_backlog.json';
 
 // A self-test seam, so a validator can prove the ADMISSION half actually works
@@ -161,7 +162,7 @@ for (const route of toAdmit) {
     section: provenance.section || '',
     rich_page_type: provenance.rich_page_type || '',
     route_family: family,
-    query: provenance.query || '',
+    query: cleanQueryText(provenance.query || ''),
     reason: 'ADMITTED_FOR_BUILD_NEVER_BUILT',
     first_admitted_on: dates[0] || RUN_DATE,
     last_admitted_on: dates[dates.length - 1] || RUN_DATE,

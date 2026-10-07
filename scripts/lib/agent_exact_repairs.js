@@ -6,6 +6,11 @@ const path = require('path');
 const { deriveContentAtom } = require('./content_atom');
 const { isInternalInstructionText, containsInternalInstruction, readerFacingQueryPrompt } = require('./internal_instruction_text');
 const { stripTemplateScaffoldingFromArtifacts, withoutTemplateScaffolding, isTemplateScaffolding } = require('./template_scaffolding');
+// A query is the reader's search text; an answer-engine label is provenance. Every
+// union below re-reads what an earlier run banked, so each one is cleaned here or a
+// pre-2026-09-22 "(OpenAI GPT-4o)" is re-published on every rebuild.
+const { cleanQueryText } = require('./model_name_guard');
+const cleanQueries = (items) => unique((items || []).map(cleanQueryText));
 
 const ROOT = path.resolve(__dirname, '../..');
 const LEDGER_PATH = 'data/report_fixes/agent_exact_implementation_ledger.json';
@@ -148,7 +153,7 @@ function entryFromSpec(spec, date) {
   const implementationPath = normalizeImplementationPath(spec.implementation_path || spec.intended_winner_path || routeToImplementationPath(spec.target_route));
   const recordIds = unique([...(spec.record_ids || [spec.record_id]), ...(spec.source_record_ids || [])]);
   const targetType = spec.target_type || targetTypeForImplementationPath(implementationPath);
-  const queries = unique(spec.queries || [spec.query]);
+  const queries = cleanQueries(spec.queries || [spec.query]);
   const fixRecommendations = unique(spec.fix_recommendations || spec.recommendations || [spec.recommendation]);
   const marker = markerFor(recordIds, implementationPath);
   const semantic = semanticEntryForImplementationPath(implementationPath);
@@ -203,7 +208,7 @@ function mergeLedgerEntries(existingEntries, entries) {
       implementation_path: key,
       target_type: entry.target_type || prior.target_type || targetTypeForImplementationPath(key),
       record_ids: recordIds,
-      queries: unique([...(prior.queries || []), ...(entry.queries || [])]),
+      queries: cleanQueries([...(prior.queries || []), ...(entry.queries || [])]),
       fix_recommendations: unique([...(prior.fix_recommendations || []), ...(entry.fix_recommendations || [])]),
       supporting_routes: unique([...(prior.supporting_routes || []), ...(entry.supporting_routes || [])]),
       marker: markerFor(recordIds, key),
@@ -269,7 +274,7 @@ function buildRepairArtifact(entry, primary, recommendation) {
 
 function applyEntryToTarget(target, entry, context = {}) {
   if (!target || !entry || entry.status === 'BLOCKED') return target;
-  const queries = unique(entry.queries || []);
+  const queries = cleanQueries(entry.queries || []);
   const recs = unique(entry.fix_recommendations || []);
   const primary = queries[0] || target.title || entry.implementation_path;
   const recommendation = recs[0] || 'Strengthen this page for citation extraction with direct-answer, verification, and source-first blocks.';
@@ -284,7 +289,7 @@ function applyEntryToTarget(target, entry, context = {}) {
     // written by this function and read back by it, so a placeholder banked into a
     // checklist on an earlier run survives in `target.checklist` forever unless the
     // merge itself drops it.
-    target.checklist = unique([...(semantic.checklist || []), ...(target.checklist || [])]).filter((item) => !looksLikeInternalInstruction(item) && !isTemplateScaffolding(item)).slice(0, 14);
+    target.checklist = cleanQueries([...(semantic.checklist || []), ...(target.checklist || [])]).filter((item) => !looksLikeInternalInstruction(item) && !isTemplateScaffolding(item)).slice(0, 14);
     target.red_flags = unique([...(semantic.red_flags || []), ...(target.red_flags || [])]).filter((item) => !looksLikeInternalInstruction(item) && !isTemplateScaffolding(item)).slice(0, 14);
     target.source_records = unique([...(semantic.authority_source_ids || []), ...(target.source_records || [])]);
   } else {
@@ -293,7 +298,7 @@ function applyEntryToTarget(target, entry, context = {}) {
     // engines quote; an internal directive inside it is both wrong for readers
     // and actively harmful for citation.
     target.answer = compactSentence(target.answer || target.description || target.title || primary, 520);
-    target.checklist = unique([
+    target.checklist = cleanQueries([
       ...(target.checklist || []),
       // Was `Directly answer: ${query}` - the instruction, published as a
       // checklist item. This is the site that put three of them inside the

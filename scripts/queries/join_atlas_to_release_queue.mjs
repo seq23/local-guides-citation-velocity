@@ -55,6 +55,20 @@ const rules = contract.admission_rules || {};
 const atlas = readJson('data/authority_scale/query_atlas.json', null);
 if (!atlas || !Array.isArray(atlas.queries)) { console.error('atlas join: data/authority_scale/query_atlas.json is missing or has no queries - run npm run atlas:build first'); process.exit(1); }
 
+// The occupancy instrument's own controls decide whether its number may admit
+// anything. The atlas is supposed to mark every row unmeasured_neutral while they do
+// not separate; if any row still claims the measured basis, the join refuses rather
+// than rank release candidates by a number the controls say measures nothing.
+{
+  const occ = readJson('data/signals/query_class_occupancy.json', null);
+  const validated = occ?.signal_status?.published === true && occ?.summary?.control_separation_ok === true && occ?.control_check?.separation?.separated === true;
+  const acting = atlas.queries.filter((q) => q.winnability_basis === rules.required_winnability_basis);
+  if (!validated && acting.length) {
+    console.error(`atlas join: REFUSED - ${acting.length} atlas row(s) carry winnability_basis ${rules.required_winnability_basis} but data/signals/query_class_occupancy.json control_separation_ok is ${occ?.summary?.control_separation_ok} (signal ${occ?.signal_status?.reason || 'not published'}). Rebuild the atlas from the withheld signal: npm run atlas:build.`);
+    process.exit(1);
+  }
+}
+
 const strategy = readJson('data/strategy/page_strategy_registry.json', {});
 const admission = readJson('data/content/page_admission_registry.json', { pages: [] });
 const live = readJson('content/_live/pages.json', { pages: [] });
