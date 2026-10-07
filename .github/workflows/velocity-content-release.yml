@@ -66,7 +66,7 @@ jobs:
   release:
     if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, 'snapshot update from baseline ZIP') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 75  # was 120; ~4x median 13.6m is 55, held at 75 so the 60m publish step stays below it (validate_publish_step_bounded)
     steps:
       # REFUSE_NON_MAIN: this lane pushes HEAD:main, so a dispatch from any other
       # ref would publish that branch to main. The push target is deliberately
