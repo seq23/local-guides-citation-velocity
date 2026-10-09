@@ -80,6 +80,19 @@ for(const m of sitemapText.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)){
   sitemapPaths.add(loc);
   sitemapPaths.add(loc.endsWith('/')?loc.slice(0,-1):`${loc}/`);
 }
+// A redirect whose source is its own target's served address is not a redirect: Pages
+// serves foo.html at /foo and folds /foo/ and /foo.html onto it, so /insights/x/ ->
+// /insights/x.html sends a live page to itself and makes it a redirect source - the
+// hubs drop it while the sitemap keeps it (2026-10-09, ten uscis-medical insights).
+const servedIdentity=(r)=>{let o=String(r||'').trim().replace(/^https?:\/\/[^/]+/,'').replace(/[?#].*$/,'').replace(/\/index\.html$/i,'/').replace(/\.html$/i,'');if(o.length>1)o=o.replace(/\/+$/,'');return o||'/';};
+let redirectPairsChecked=0;
+for(const line of redirectText.split(/\r?\n/)){
+  const t=line.trim();if(!t||t.startsWith('#'))continue;
+  const [from,to]=t.split(/\s+/);if(!from||!to||!from.startsWith('/')||!to.startsWith('/'))continue;
+  redirectPairsChecked+=1;
+  if(servedIdentity(from)===servedIdentity(to))errors.push(`redirect_to_itself:${from} -> ${to}`);
+}
+if(redirectText.trim()&&redirectPairsChecked===0)stops.push('_redirects has content but no source/target pair could be read, so the redirect-to-itself check examined nothing.');
 for(const source of redirects){
   const escaped=source.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   if(sitemapPaths.has(source))errors.push(`redirect_source_in_sitemap:${source}`);
@@ -96,7 +109,7 @@ if(indexable.length<MIN_INDEXABLE_PAGES)stops.push(`only ${indexable.length} ind
 if(redirects.size<MIN_REDIRECT_SOURCES)stops.push(`only ${redirects.size} redirect source(s) read from _redirects; expected at least ${MIN_REDIRECT_SOURCES} (measured ${MEASURED_REDIRECT_SOURCES_2026_08_29} on 2026-08-29).`);
 if(stops.length){
   fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});
-  fs.writeFileSync(path.join(ROOT,'artifacts/validation/search-quality-basics.json'),JSON.stringify({validator:'search-quality-basics',ok:false,status:'UNVERIFIED_TREE_TRUNCATED',indexable_html_checked:indexable.length,redirect_sources_checked:redirects.size,expected_indexable_minimum:MIN_INDEXABLE_PAGES,stops},null,2)+'\n');
+  fs.writeFileSync(path.join(ROOT,'artifacts/validation/search-quality-basics.json'),JSON.stringify({validator:'search-quality-basics',ok:false,status:'UNVERIFIED_TREE_TRUNCATED',indexable_html_checked:indexable.length,redirect_sources_checked:redirects.size,redirect_pairs_checked:redirectPairsChecked,expected_indexable_minimum:MIN_INDEXABLE_PAGES,stops},null,2)+'\n');
   console.error('SEARCH QUALITY BASICS: STOP - the tree this ran against is not the site, so no search-quality claim can be made.');
   for(const s of stops)console.error(`- ${s}`);
   console.error('  Remedy: run against a complete checkout (and build it if the lane requires dist/), then re-run. A page that is absent is not a page that passed.');

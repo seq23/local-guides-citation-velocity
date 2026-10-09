@@ -2986,7 +2986,16 @@ ${m}`;
   // rejected candidates locally, but only ADMITTED routes may enter published_urls,
   // sitemaps, feeds, llms exports, distribution artifacts, or deployment inventory.
   const admittedPublicRoutes = admittedRoutes();
-  const publicWritten = written.filter((entry) => isPubliclyAdmitted(entry.slug));
+  // A _redirects source answers 301, so it is never advertised, whatever admission
+  // says. The hub/archive/related-link surfaces already read loadRedirectSourceRoutes();
+  // the sitemaps, feeds and llms exports read publicWritten, and kept their own idea of
+  // "public" - two lists. On 2026-10-09 ten live insights became redirect sources and
+  // the hubs dropped them while sitemap_insights.xml kept advertising them. One list now:
+  // a redirect source is excluded here, at the source every discovery surface derives from.
+  const advertisedRedirectSources = loadRedirectSourceRoutes();
+  const isRedirectSourceSlug = (slug) => advertisedRedirectSources.has(normalizeRoute(slug))
+    || advertisedRedirectSources.has(normalizeRoute(publicPath(slug)));
+  const publicWritten = written.filter((entry) => isPubliclyAdmitted(entry.slug) && !isRedirectSourceSlug(entry.slug));
   // Rendered and advertised are now decided by one function, so they cannot
   // drift. What they still disagree on is reported rather than hidden: a page
   // written to disk that no sitemap, feed or llms export names is work that

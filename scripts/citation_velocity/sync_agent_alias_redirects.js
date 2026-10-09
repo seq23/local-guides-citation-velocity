@@ -115,6 +115,26 @@ function aliasNamesSameSubject(named, target) {
   return false;
 }
 
+// The URL a reader is actually served for a route. Pages serves foo.html at /foo and
+// 308s /foo.html and /foo/ to it, so /insights/x/, /insights/x.html and /insights/x are
+// ONE address. toRoute() keeps them apart on purpose (it needs the shape), which is how
+// the 2026-10-09 uscis-medical run - naming insights/x/index.html for a page published
+// as insights/x.html - produced ten "aliases" from a live page's URL to itself. Each one
+// made the page a _redirects source: the hubs stopped linking it (two hubs shrank), the
+// sitemap still advertised it, and every internal link into it became a link into a 301.
+// An alias whose source is the target's own served address is not an alias; it is never
+// emitted, and one already on disk is removed.
+function servedIdentity(route) {
+  let out = String(route || '').trim();
+  if (!out) return '';
+  out = out.replace(/\/index\.html$/i, '/').replace(/\.html$/i, '');
+  if (out.length > 1) out = out.replace(/\/+$/, '');
+  return out || '/';
+}
+function isSelfAlias(named, target) {
+  return Boolean(named) && Boolean(target) && servedIdentity(named) === servedIdentity(target);
+}
+
 function main() {
   const ledger = readJson(LEDGER, null);
   if (!ledger || !Array.isArray(ledger.entries)) {
@@ -139,6 +159,16 @@ function main() {
     addIfOnDisk(toRoute(entry.implementation_path || ''));
     addIfOnDisk(toRoute(entry.intended_winner_page || ''));
   }
+  const realServed = new Set([...realRoutes].map(servedIdentity));
+  // Heal before emitting: an alias this producer wrote earlier whose source is its own
+  // target's served address is removed from the authority file and from _redirects.
+  const selfAliases = [];
+  const ALIAS_REASONS = [/^Agent-tested URL alias/, /^URL named and tested by a landed citation run/];
+  retirements.retirements = retirements.retirements.filter((r) => {
+    const ours = ALIAS_REASONS.some((re) => re.test(String(r.reason || '')));
+    if (ours && isSelfAlias(r.source_path, r.target_path)) { selfAliases.push(`${r.source_path} -> ${r.target_path}`); return false; }
+    return true;
+  });
   const existing = new Map(retirements.retirements.map((r) => [toRoute(r.source_path), r]));
 
   // The two surfaces are reconciled independently. Deduping on the authority file
@@ -146,7 +176,17 @@ function main() {
   // could never be repaired: the script saw "already known" and emitted nothing,
   // while the route went on 404ing. What is SERVED and what is RECORDED are checked
   // separately, so either one being behind is fixed on the next run.
-  const redirectText = fs.readFileSync(rel(REDIRECTS), 'utf8');
+  let redirectText = fs.readFileSync(rel(REDIRECTS), 'utf8');
+  let prunedServed = 0;
+  if (selfAliases.length) {
+    const doomed = new Set(selfAliases.map((line) => line.split(' -> ')[0]));
+    redirectText = redirectText.split('\n').filter((l) => {
+      const parts = l.trim().split(/\s+/);
+      if (!l.trim() || l.trim().startsWith('#') || parts.length < 2) return true;
+      if (doomed.has(parts[0]) && isSelfAlias(parts[0], parts[1])) { prunedServed += 1; return false; }
+      return true;
+    }).join('\n');
+  }
   const servedSources = new Set(
     redirectText.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
       .map((l) => toRoute(l.split(/\s+/)[0]))
@@ -156,6 +196,7 @@ function main() {
   const recorded = [];
   const rejected = [];
   let examined = 0;
+  let selfRefused = 0;
 
   // THE LEDGER IS NOT THE ONLY PLACE A TESTED URL IS RECORDED.
   //
@@ -211,11 +252,12 @@ function main() {
     for (const named of namedCandidates) {
     examined += 1;
     if (named === target) continue;
+    if (isSelfAlias(named, target)) { selfRefused += 1; continue; }
     if (!isEmittableRoute(named) || !isEmittableRoute(target)) { rejected.push(named); continue; }
     if (!aliasNamesSameSubject(named, target)) { mismatched.push(`${named} -> ${target}`); continue; }
     // Never shadow a page that genuinely exists at the named route, and never
     // point a redirect at something this repo does not publish.
-    if (realRoutes.has(named)) continue;
+    if (realRoutes.has(named) || realServed.has(servedIdentity(named))) continue;
     if (!realRoutes.has(target)) continue;
     if (!existing.has(named)) {
       const record = {
@@ -248,9 +290,10 @@ function main() {
   for (const { named, target } of runAliases) {
     examined += 1;
     if (!named || !target || named === target) continue;
+    if (isSelfAlias(named, target)) { selfRefused += 1; continue; }
     if (!isEmittableRoute(named) || !isEmittableRoute(target)) { rejected.push(named); continue; }
     if (!aliasNamesSameSubject(named, target)) { mismatched.push(`${named} -> ${target}`); continue; }
-    if (realRoutes.has(named)) continue;
+    if (realRoutes.has(named) || realServed.has(servedIdentity(named))) continue;
     if (!realRoutes.has(target)) continue;
     if (!existing.has(named)) {
       const record = {
@@ -268,49 +311,78 @@ function main() {
   }
 
   const today = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
-  if (recorded.length) {
+  if (recorded.length || selfAliases.length) {
     retirements.updated_at = today;
     fs.writeFileSync(rel(RETIREMENTS), `${JSON.stringify(retirements, null, 2)}\n`);
   }
-  if (added.length) {
+  if (added.length || prunedServed || selfAliases.length) {
     // _redirects is the file Pages actually serves; route_retirements.json is the
     // authority record beside it. Both are written, in the same shape
     // scripts/retire_offtopic_routes.js already uses, so the served behaviour and the
     // audit trail cannot disagree.
     const redirectsPath = rel(REDIRECTS);
     let text = redirectText;
+    // A dated alias header whose every rule was a self-alias now heads nothing.
+    if (prunedServed) {
+      const lines = text.split('\n');
+      const kept = [];
+      for (let i = 0; i < lines.length; i += 1) {
+        const isHeader = /^# \d{4}-\d{2}-\d{2} agent-tested URL aliases for \d+ route\(s\)/.test(lines[i])
+          && /^# Authority: /.test(lines[i + 1] || '');
+        if (isHeader) {
+          const next = (lines[i + 2] || '').trim();
+          if (!next || next.startsWith('#')) {
+            if (kept.length && kept[kept.length - 1].trim() === '') kept.pop();
+            i += 1;
+            continue;
+          }
+        }
+        kept.push(lines[i]);
+      }
+      text = kept.join('\n');
+    }
     if (!text.endsWith('\n')) text += '\n';
-    text += `\n# ${today} agent-tested URL aliases for ${added.length} route(s) an external citation run named but this repo publishes under another slug.\n`
-      + `# Authority: ${RETIREMENTS}. Derived from ${LEDGER} by scripts/citation_velocity/sync_agent_alias_redirects.js.\n`;
-    for (const line of added) {
-      const [from, to] = line.split(' -> ');
-      text += `${from} ${to} 301\n`;
+    if (added.length) {
+      text += `\n# ${today} agent-tested URL aliases for ${added.length} route(s) an external citation run named but this repo publishes under another slug.\n`
+        + `# Authority: ${RETIREMENTS}. Derived from ${LEDGER} by scripts/citation_velocity/sync_agent_alias_redirects.js.\n`;
+      for (const line of added) {
+        const [from, to] = line.split(' -> ');
+        text += `${from} ${to} 301\n`;
+      }
     }
     fs.writeFileSync(redirectsPath, text);
 
     // The overhaul contract carries approved_route_retirements as a ratchet with a
-    // dated note per raise, and full-scope-overhaul hard-fails when the ledger and
+    // dated note per change, and full-scope-overhaul hard-fails when the ledger and
     // the contract disagree. scripts/retire_offtopic_routes.js maintains it the same
     // way; a second producer of ACTIVE_301s has to maintain it too, or the first
     // alias this lane ever emits turns the build red.
     const contract = readJson(CONTRACT, null);
     if (!contract || !contract.counts) {
-      console.error(`AGENT ALIAS REDIRECT SYNC FAIL: ${CONTRACT} is missing or has no counts block, so the retirement ratchet cannot be kept in step with the ${added.length} alias(es) just written.`);
+      console.error(`AGENT ALIAS REDIRECT SYNC FAIL: ${CONTRACT} is missing or has no counts block, so the retirement ratchet cannot be kept in step with the ${added.length + selfAliases.length} alias change(s) just written.`);
       process.exit(1);
     }
     const activeCount = retirements.retirements.filter((r) => r.status === 'ACTIVE_301').length;
     const previous = contract.counts.approved_route_retirements;
     contract.counts.approved_route_retirements = activeCount;
     contract.notes = contract.notes || {};
-    contract.notes[`agent_url_aliases_${today.replace(/-/g, '_')}`] =
-      `approved_route_retirements raised from ${previous} to ${activeCount} on ${today}. `
-      + `${added.length} alias 301(s) were added for URLs an external citation-velocity run named and tested but which this repo publishes under a different slug `
-      + `(${added.join('; ')}). The mapping is not new - scripts/lib/citation_route_resolver.js already canonicalized these to apply the runs' repairs - it simply never reached _redirects, so the exact URLs the agent reported as 404s stayed 404s. `
-      + `No page is retired or removed by this: every target is a page that already exists, and effective_inventory is unchanged.`;
+    if (added.length) {
+      contract.notes[`agent_url_aliases_${today.replace(/-/g, '_')}`] =
+        `approved_route_retirements raised from ${previous} to ${activeCount} on ${today}. `
+        + `${added.length} alias 301(s) were added for URLs an external citation-velocity run named and tested but which this repo publishes under a different slug `
+        + `(${added.join('; ')}). The mapping is not new - scripts/lib/citation_route_resolver.js already canonicalized these to apply the runs' repairs - it simply never reached _redirects, so the exact URLs the agent reported as 404s stayed 404s. `
+        + `No page is retired or removed by this: every target is a page that already exists, and effective_inventory is unchanged.`;
+    }
+    if (selfAliases.length) {
+      contract.notes[`agent_self_aliases_removed_${today.replace(/-/g, '_')}`] =
+        `approved_route_retirements set to ${activeCount} on ${today} after removing ${selfAliases.length} alias 301(s) whose source was its own target's served address `
+        + `(${selfAliases.join('; ')}). Each made a live page a _redirects source. No page is retired by the removal; each page is served at its own URL again.`;
+    }
     fs.writeFileSync(rel(CONTRACT), `${JSON.stringify(contract, null, 2)}\n`);
     console.log(`  retirement ratchet: approved_route_retirements ${previous} -> ${activeCount}`);
   }
-  console.log(`AGENT ALIAS REDIRECT SYNC PASS: examined ${examined} named target(s); served ${added.length} new alias 301(s); recorded ${recorded.length} in the authority file; rejected ${rejected.length} non-route value(s); refused ${mismatched.length} alias(es) whose named and resolved routes are different subjects.`);
+  console.log(`AGENT ALIAS REDIRECT SYNC PASS: examined ${examined} named target(s); served ${added.length} new alias 301(s); recorded ${recorded.length} in the authority file; rejected ${rejected.length} non-route value(s); refused ${mismatched.length} alias(es) whose named and resolved routes are different subjects; refused ${selfRefused} self-alias(es) (named URL is the target's own served address); removed ${selfAliases.length} self-alias(es) already recorded (${prunedServed} served line(s)).`);
+  for (const line of selfAliases) console.log(`  REMOVED (self-alias): ${line}`);
   for (const line of mismatched) console.log(`  REFUSED (different subject): ${line}`);
   for (const line of rejected) console.log(`  REJECTED (not a route): ${String(line).slice(0, 120)}`);
   for (const line of added) console.log(`  ${line}`);
