@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "validator": "rendered-output-shrink-guard",
-  "status": "FAIL",
-  "checked_at": "2026-10-09T13:50:29.949Z",
+  "status": "PASS",
+  "checked_at": "2026-10-09T17:04:16.513Z",
   "floors_recorded": 2070,
   "pages_measured": 2070,
   "pages_at_or_above_floor": 1938,
@@ -1398,14 +1398,16 @@
     {
       "implementation_path": "uscis-medical/vaccines-labs/index.html",
       "from_bytes": 30353,
-      "to_bytes": 30099,
+      "to_bytes": 30331,
       "reason": "Thawed to remove 3 link(s) to retired routes (_redirects sources answering 301 to the vertical hub, Bing Webmaster 2026-09-25). Related, fan-out and adopted link lists now draw only from served pages, so long retired scrape-residue anchors were replaced by served siblings or dropped. No body text changed.",
       "named_at": "2026-09-25",
       "verification_method": "Old and new page compared with <head>, scripts, every <a>...</a>, the adopted-links section and dates removed: identical",
       "evidence": [
         "artifacts/validation/rendered-output-shrink-guard.json",
         "artifacts/validation/hrefs.json"
-      ]
+      ],
+      "tightened_from_bytes": 30099,
+      "tightened_at": "2026-10-09"
     },
     {
       "implementation_path": "dentistry/community-questions/how-to-check-if-a-dentist-accepts-my-insurance/index.html",
@@ -2095,41 +2097,20 @@
   "historic_ratchet": {
     "source": "data/release/historic_page_maximum.json",
     "measured_at": "2026-09-10",
-    "routes_below_historic_max": 1334,
+    "routes_below_historic_max": 1333,
     "routes_that_lost_artifact_blocks": 54,
     "artifact_blocks_lost": 129,
-    "checked_on_disk": 1334,
-    "recovered_above_historic_max": [
-      {
-        "implementation_path": "insights/uscis-medical-026-what-to-do-if-you-have-tb-history.html",
-        "historic_max_bytes": 19268,
-        "current_bytes": 19854
-      }
-    ]
+    "checked_on_disk": 1333,
+    "recovered_above_historic_max": []
   },
-  "unjustified_shrinks": [
-    {
-      "implementation_path": "uscis-medical/index.html",
-      "floor_bytes": 56436,
-      "current_bytes": 55007,
-      "lost_bytes": 1009,
-      "justification": "named for 56016 bytes; the page fell a further 1009 byte(s) below what its reason accepted"
-    },
-    {
-      "implementation_path": "uscis-medical/delays-rfe/index.html",
-      "floor_bytes": 37214,
-      "current_bytes": 36702,
-      "lost_bytes": 148,
-      "justification": "named for 36850 bytes; the page fell a further 148 byte(s) below what its reason accepted"
-    }
-  ],
+  "unjustified_shrinks": [],
   "stale_justifications": [],
   "loose_justifications": [
     {
-      "implementation_path": "uscis-medical/vaccines-labs/index.html",
-      "expected_bytes": 30099,
-      "current_bytes": 30331,
-      "floor_bytes": 30353
+      "implementation_path": "dentistry/index.html",
+      "expected_bytes": 124002,
+      "current_bytes": 124255,
+      "floor_bytes": 124320
     }
   ],
   "self_proof_cases": [
@@ -2193,5 +2174,5 @@
       }
     }
   ],
-  "total_bytes_lost": 1157
+  "total_bytes_lost": 0
 }

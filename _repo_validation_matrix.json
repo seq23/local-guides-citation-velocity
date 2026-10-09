@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "24d4b0df51a0fefdea2be6c5d978509c28d5c3cf59e3a31857656a104835bd97",
+  "registry_sha256": "c6b79cfcbf33cd93b1d95a8606c1b6d0931d4f4bc7f8b8159b6b530dd16b0294",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 214,
-    "active": 42,
+    "total": 215,
+    "active": 43,
     "on_demand": 10,
     "retired": 162,
     "local_only": 1,
-    "hard_fail": 49,
+    "hard_fail": 50,
     "strong_warning": 5,
     "soft_warning": 0,
     "info": 160
@@ -99,7 +99,8 @@
         "validation-registry",
         "vertical-keys",
         "workflow-yaml-syntax",
-        "agent-run-drop-integrity"
+        "agent-run-drop-integrity",
+        "velocity-canonical-anchor-links"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -112,6 +113,7 @@
         "rendered-output-shrink-guard",
         "validation-policy",
         "validation-registry",
+        "velocity-canonical-anchor-links",
         "workflow-yaml-syntax",
         "canonical-domains",
         "no-double-vertical-slugs",
@@ -181,7 +183,8 @@
         "velocity-commercial-pages",
         "vertical-keys",
         "workflow-yaml-syntax",
-        "agent-run-drop-integrity"
+        "agent-run-drop-integrity",
+        "velocity-canonical-anchor-links"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -194,6 +197,7 @@
         "rendered-output-shrink-guard",
         "validation-policy",
         "validation-registry",
+        "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
         "workflow-yaml-syntax",
@@ -274,7 +278,8 @@
         "velocity-commercial-pages",
         "vertical-keys",
         "workflow-yaml-syntax",
-        "agent-run-drop-integrity"
+        "agent-run-drop-integrity",
+        "velocity-canonical-anchor-links"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -286,6 +291,7 @@
         "rendered-output-shrink-guard",
         "validation-policy",
         "validation-registry",
+        "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
         "workflow-yaml-syntax",
@@ -374,7 +380,8 @@
         "velocity-commercial-pages",
         "vertical-keys",
         "workflow-yaml-syntax",
-        "agent-run-drop-integrity"
+        "agent-run-drop-integrity",
+        "velocity-canonical-anchor-links"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -386,6 +393,7 @@
         "rendered-output-shrink-guard",
         "validation-policy",
         "validation-registry",
+        "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
         "workflow-yaml-syntax",
@@ -471,7 +479,8 @@
         "velocity-commercial-pages",
         "vertical-keys",
         "workflow-yaml-syntax",
-        "agent-run-drop-integrity"
+        "agent-run-drop-integrity",
+        "velocity-canonical-anchor-links"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -484,6 +493,7 @@
         "rendered-output-shrink-guard",
         "validation-policy",
         "validation-registry",
+        "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
         "workflow-yaml-syntax",
@@ -664,7 +674,8 @@
         "validation-registry",
         "vertical-keys",
         "workflow-yaml-syntax",
-        "agent-run-drop-integrity"
+        "agent-run-drop-integrity",
+        "velocity-canonical-anchor-links"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -672,6 +683,7 @@
         "occupancy-control-separation",
         "validation-policy",
         "validation-registry",
+        "velocity-canonical-anchor-links",
         "workflow-yaml-syntax",
         "canonical-domains",
         "no-double-vertical-slugs",
@@ -768,13 +780,15 @@
         "search-quality-basics",
         "no-conflict-markers",
         "velocity-commercial-pages",
-        "agent-run-drop-integrity"
+        "agent-run-drop-integrity",
+        "velocity-canonical-anchor-links"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
         "medical-schema-emission",
         "occupancy-reading-ratchet",
         "rendered-output-shrink-guard",
+        "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
         "workflow-yaml-syntax",
@@ -2965,6 +2979,43 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "On 2026-09-15 Twin Agent committed data/report_fixes/agent_runs/2026-09-15/dentistry as four copies of a 15-byte non-UTF-8 blob, one named agent_run_manifest.json. Nothing asked whether the file was a manifest before JSON.parse: prepare_velocity_intake_release.js threw and Velocity Content Release went red (run 34977580334); agent-artifact-continuity read it as {} and hard-failed Validate Repo (run 34977580273) on 'vertical mismatch: undefined'; agent-artifact-stranding skipped it in silence; count_unabsorbed_agent_runs.mjs did not count it, so no catch-up dispatch would ever retry it. 2026-07-20 personal-injury was the same writer defect (byte-corrupted keys, unresolved local-fetch pointers) and was repaired by hand three days later. This validator exercises the write-time guard (writeJsonVerified: serialize, write to a temp file, read it back, parse, rename - a failed write leaves no file and the previous file intact), checks both report_fixes JSON writers route through it, exercises the quarantine path on the real 2026-09-15 bytes and the 2026-07-20 pointer shape, classifies every landed drop (defective inside the absorption window is a NAMED pending quarantine; past it a hard failure naming the file and defects), and parses every repo-written JSON under data/report_fixes. 2026-09-30 trt.csv was the third writer defect: 427 em dashes and arrows arrived double-encoded (UTF-8 read as Latin-1 and encoded again) beside correctly encoded characters, intake copied them into every derived ledger and trt/index.html, and search-quality-basics blocked every release on trt/index.html:mojibake. This validator now proves that exact shape reads back as the intended text through readArtifactText (the delivered bytes untouched), that mojibake the repair cannot decode is refused at intake as a named double_encoded_utf8_unrepairable defect, that the three raw-artifact readers route through the repairing reader, and that release and intake share one mojibake definition.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "velocity-canonical-anchor-links",
+        "title": "Velocity guides that route a local query class link to the canonical metro anchors they name",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "full-audit",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_velocity_canonical_anchor_links.js",
+        "command": "node scripts/validators/validate_velocity_canonical_anchor_links.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/page_families/velocity_page_specs.json",
+          "content/_shared/canonical_map.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/velocity-canonical-anchor-links.json"
+        ],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "2026-10-09: the dentistry safety-net guides (/dentistry/free-dental-clinics/, /dentistry/dental-school-clinics/) exist to send \"free dental clinic near me\" and \"dental school clinic near me\" demand to the verified #free-low-cost-dental-clinics and #dental-school-clinics sections dentistryguides.com published for Atlanta, Chicago, Dallas, Houston, Los Angeles and Miami (local-guides-generator #54). A guide that renders without those links, links off the vertical canonical domain, drops the #anchor or loses a metro tells the reader a verified local list exists and does not lead to it.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -11282,6 +11333,43 @@
         "strict_behavior": "RECORD_CONTINUE",
         "replacement_ids": [],
         "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion."
+      },
+      {
+        "id": "velocity-canonical-anchor-links",
+        "title": "Velocity guides that route a local query class link to the canonical metro anchors they name",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "full-audit",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_velocity_canonical_anchor_links.js",
+        "command": "node scripts/validators/validate_velocity_canonical_anchor_links.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/page_families/velocity_page_specs.json",
+          "content/_shared/canonical_map.json"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/velocity-canonical-anchor-links.json"
+        ],
+        "mutates_files": [],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "2026-10-09: the dentistry safety-net guides (/dentistry/free-dental-clinics/, /dentistry/dental-school-clinics/) exist to send \"free dental clinic near me\" and \"dental school clinic near me\" demand to the verified #free-low-cost-dental-clinics and #dental-school-clinics sections dentistryguides.com published for Atlanta, Chicago, Dallas, Houston, Los Angeles and Miami (local-guides-generator #54). A guide that renders without those links, links off the vertical canonical domain, drops the #anchor or loses a metro tells the reader a verified local list exists and does not lead to it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "Tier 5": [

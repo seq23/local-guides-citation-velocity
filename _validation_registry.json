@@ -8787,6 +8787,52 @@
       ],
       "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion.",
       "replacement_ids": []
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "depends_on": [],
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 120,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "failure_action": "stop release and repair",
+      "tier": "Tier 1",
+      "profiles": [
+        "audit",
+        "core",
+        "full-audit",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "id": "velocity-canonical-anchor-links",
+      "title": "Velocity guides that route a local query class link to the canonical metro anchors they name",
+      "path": "scripts/validators/validate_velocity_canonical_anchor_links.js",
+      "command": "node scripts/validators/validate_velocity_canonical_anchor_links.js",
+      "tags": [
+        "velocity-only",
+        "canonical-routing",
+        "rendered-links",
+        "dentistry",
+        "safety-net"
+      ],
+      "risk_prevented": "2026-10-09: the dentistry safety-net guides (/dentistry/free-dental-clinics/, /dentistry/dental-school-clinics/) exist to send \"free dental clinic near me\" and \"dental school clinic near me\" demand to the verified #free-low-cost-dental-clinics and #dental-school-clinics sections dentistryguides.com published for Atlanta, Chicago, Dallas, Houston, Los Angeles and Miami (local-guides-generator #54). A guide that renders without those links, links off the vertical canonical domain, drops the #anchor or loses a metro tells the reader a verified local list exists and does not lead to it.",
+      "why_existing_checks_do_not_cover": "canonical-routing-law checks the per-route canonical_url domain in canonical_destination_registry.json, which for every Velocity page is the /request-assistance/ lead path; nothing read the in-body canonical anchor links, the spec field that carries them, or the rendered card. This validator reads both the durable spec and the rendered page (root and dist when present), pins the two safety-net guides x six metros, and fails on zero governed pages.",
+      "requires_files": [
+        "data/page_families/velocity_page_specs.json",
+        "content/_shared/canonical_map.json"
+      ],
+      "produces_files": [
+        "artifacts/validation/velocity-canonical-anchor-links.json"
+      ],
+      "mutates_files": [],
+      "hard_fail_basis": "public_route_integrity"
     }
   ],
   "legacy_policy": {
