@@ -39,7 +39,13 @@ const REDIRECT_SOURCES=(()=>{ const s=new Set(); try{ for(const line of fs.readF
 const isRedirected=(route)=>{ const r=String(route||''); return REDIRECT_SOURCES.has(r)||REDIRECT_SOURCES.has(r.replace(/\/+$/,'/'))||REDIRECT_SOURCES.has(r.endsWith('.html')?r.slice(0,-5):`${r}.html`); };
 const isRendered=(route)=>{ const rel=String(route||'').replace(/^\/+|\/+$/g,''); if(!rel)return true; return fs.existsSync(path.join(ROOT,rel,'index.html'))||fs.existsSync(path.join(ROOT,`${rel}.html`)); };
 const publishedPaths=new Set(publishedInventory.map((x)=>x.path));
-const releasedButUnadvertised=livePages
+// The Velocity page-family source (data/page_families/velocity_page_specs.json)
+// is the other released corpus: build_site.js renders every spec page straight
+// from it, with no content/_live/pages.json record. A spec page added after the
+// baseline (2026-10-09: the dentistry safety-net guides) rendered to disk and hit
+// the same fixed point, so the same four-part rule admits it from its own source.
+const velocitySpecPages=(()=>{const rel='data/page_families/velocity_page_specs.json';if(!fs.existsSync(path.join(ROOT,rel)))throw new Error(`missing ${rel}`);return read(rel).pages||[];})();
+const releasedButUnadvertised=[...livePages,...velocitySpecPages]
   .map((p)=>({route:p.slug||p.path,page:p}))
   .filter(({route,page})=>route
     && !publishedPaths.has(route)

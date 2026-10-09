@@ -4,11 +4,11 @@ Evidence date: 2026-06-20
 
 ## Delivered
 
-- 2067 admitted Velocity routes.
-- 412 newly rendered Velocity state/support pages.
+- 2126 admitted Velocity routes.
+- 414 newly rendered Velocity state/support pages.
 - 200 literal-question source pages and 20 disambiguators.
-- 2053 eligible page-level provider-routing records.
-- 50 state-specific official government source anchors and 184 total source records.
+- 2112 eligible page-level provider-routing records.
+- 50 state-specific official government source anchors and 187 total source records.
 - 7-domain operative disavow file preserved with its source package.
 - Velocity-only release workflows with no cross-repository mutation path.
 - Find a Provider CTA architecture and editorial homepage routing.
