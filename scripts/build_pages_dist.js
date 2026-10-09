@@ -28,6 +28,29 @@ const PUBLIC_EXTENSIONS = new Set([
   '.pdf', '.png', '.svg', '.txt', '.webmanifest', '.webp', '.woff', '.woff2', '.xml'
 ]);
 
+// Cloudflare Web Analytics is auto-installed on this zone: the edge injects
+// <script src="https://static.cloudflareinsights.com/beacon.min.js"> into every
+// HTML response. Until 2026-10-08 the CSP in _headers allowed only 'self' and
+// Clarity, so the browser refused the beacon on every page and the hub recorded
+// zero pageloads for 30 days while the five canonicals recorded theirs. The
+// refusal was even classified as harmless noise (scripts/browser/
+// console_error_policy.js). Fail the build before writing dist if the CSP would
+// block the beacon again.
+function assertCspAllowsWebAnalytics() {
+  const headers = fs.readFileSync(path.join(ROOT, '_headers'), 'utf8');
+  const csp = (headers.match(/^\s*Content-Security-Policy:\s*(.+)$/m) || [])[1] || '';
+  if (!csp) return; // no CSP, nothing can block the beacon
+  const directive = (name) => ((csp.match(new RegExp(`(?:^|;)\\s*${name}\\s+([^;]*)`)) || [])[1] || '').split(/\s+/);
+  const problems = [];
+  if (!directive('script-src').includes('https://static.cloudflareinsights.com')) problems.push("script-src must allow https://static.cloudflareinsights.com");
+  if (!directive('connect-src').includes('https://cloudflareinsights.com')) problems.push("connect-src must allow https://cloudflareinsights.com");
+  if (problems.length) {
+    console.error(`build_pages_dist: _headers CSP blocks Cloudflare Web Analytics: ${problems.join('; ')}`);
+    process.exit(1);
+  }
+}
+assertCspAllowsWebAnalytics();
+
 function toRel(abs) { return path.relative(ROOT, abs).replace(/\\/g, '/'); }
 function shouldSkipDir(abs) {
   if (abs === DIST) return true;
