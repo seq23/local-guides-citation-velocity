@@ -289,7 +289,36 @@ def site_metrics(svc, site, win):
     s, e = map(iso, win["d28"])
     p28 = sorted(query(svc, site, s, e, ["page"], 25000), key=lambda r: (-r["impressions"], r["keys"][0]))
     out["top_pages_28d"] = [r["keys"][0] for r in p28[:25]]
+    out["seeds"], out["measured_queries_28d"] = discovery_seeds(query(svc, site, s, e, ["query", "page"], 25000))
     return out
+
+
+SEED_MIN_IMPRESSIONS = 2
+SEED_CAP = 40
+
+
+def discovery_seeds(rows):
+    """Seeds for free_discovery.py: every query with >= 2 impressions in the 28-day
+    window, its top landing page and position, capped at 40 by impressions. Also
+    returns every query Google measured in the window (any impressions) so discovery
+    never re-proposes something that already has an impression."""
+    agg = {}
+    for r in rows:
+        q, page = r["keys"][0], r["keys"][1]
+        a = agg.setdefault(q, {"query": q, "impressions": 0, "clicks": 0, "pages": {}, "wpos": 0.0})
+        a["impressions"] += r.get("impressions", 0)
+        a["clicks"] += r.get("clicks", 0)
+        a["wpos"] += r.get("position", 0) * r.get("impressions", 0)
+        a["pages"][page] = a["pages"].get(page, 0) + r.get("impressions", 0)
+    seeds = []
+    for a in agg.values():
+        if a["impressions"] < SEED_MIN_IMPRESSIONS:
+            continue
+        page = sorted(a["pages"].items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+        seeds.append({"query": a["query"], "page": page, "impressions": a["impressions"], "clicks": a["clicks"],
+                      "position": round(a["wpos"] / a["impressions"], 1) if a["impressions"] else 0})
+    seeds.sort(key=lambda x: (-x["impressions"], x["query"]))
+    return seeds[:SEED_CAP], sorted(agg)
 
 
 def url_status(url):
@@ -422,6 +451,7 @@ def run_report(out_dir):
         sys.exit("service account can read zero Search Console properties")
     cov_hosts, repo_notes = read_repo_files(now)
     rows = []
+    measured_queries = {}
     for site in sites:
         h = host_of(site)
         try:
@@ -432,11 +462,14 @@ def run_report(out_dir):
         cov = cov_hosts.get(h) or {"owner": None, "coverage_file": None, "share_now": None, "share_prior": None,
                                    "strengthened_this_week": 0, "candidates_pending": None}
         v, why = verdict(m, cov)
+        measured = m.pop("measured_queries_28d", [])
+        if measured:
+            measured_queries[h] = measured
         rows.append({"site": site, "host": h, "owner": cov.get("owner") or FALLBACK_OWNER.get(h), "verdict": v, "reason": why,
                      "coverage": cov, **m})
         print(f"{h}: {v} - {why}")
     counts = {k: sum(1 for r in rows if r["verdict"] == k) for k in ("GREEN", "WATCH", "RED")}
-    rep = {"schema_version": "1.0", "week": week, "generated_at": now.isoformat(timespec="seconds"),
+    rep = {"schema_version": "1.1", "week": week, "generated_at": now.isoformat(timespec="seconds"),
            "service_account": account, "property_count": len(sites), "site_count": len(rows),
            "windows": {k: [a.isoformat(), b.isoformat()] for k, (a, b) in win.items()},
            "counts": counts, "repo_notes": repo_notes, "sites": rows}
@@ -448,6 +481,12 @@ def run_report(out_dir):
         fh.write("\n")
     with open(os.path.join(out_dir, f"{week}.md"), "w") as fh:
         fh.write(md)
+    # Every query Google measured in the 28-day window, per host: free_discovery.py
+    # drops any candidate already in it. Not committed (reports/ is gitignored and
+    # the commit step adds only the .md/.json pair); discovery folds it into
+    # data/discovery/measured_targets_snapshot.json, which is.
+    with open(os.path.join(out_dir, f"{week}.gsc_queries.json"), "w") as fh:
+        json.dump({"week": week, "window": rep["windows"]["d28"], "queries_by_host": measured_queries}, fh)
     print(f"wrote {out_dir}/{week}.md and .json: {len(rows)} sites, {counts}; issues: {rep['issue_actions']}")
     gho = os.environ.get("GITHUB_OUTPUT")
     if gho:
