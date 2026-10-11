@@ -1,0 +1,30 @@
+name: GSC Portfolio Report
+
+# Dispatch-only, read-only. Lists every Search Console property the shared
+# service account can read and uploads 28-day query/page/totals JSON as an
+# artifact. Commits nothing; the run fails if the account sees zero properties.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null
+      - name: Pull Search Console report
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+        run: python3 scripts/search_console/gsc_portfolio_report.py gsc-portfolio-report
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gsc-portfolio-report-${{ github.run_id }}
+          path: gsc-portfolio-report/
+          retention-days: 14

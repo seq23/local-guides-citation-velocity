@@ -22,6 +22,7 @@ const lanes = {
   // and passed. Declaring the real write surface is what makes that check reach
   // the workflows that actually write.
   'query-evidence-refresh.yml': { lane: 'query-evidence', status: 'add', reason: 'Scheduled Search Console evidence refresh; the single allowed scheduled committer, whose commit surface is derived from the registry repair_writes.', command: 'npm run queries:join-release', mutations: committablePatterns(ROOT) },
+  'gsc-portfolio-report.yml': { lane: 'measurement', status: 'add', reason: 'Dispatch-only read-only Search Console portfolio report; uploads an artifact and commits nothing.', command: 'python3 scripts/search_console/gsc_portfolio_report.py', mutations: [] },
   'query-class-occupancy-probe.yml': { lane: 'measurement', status: 'add', reason: 'Dispatch-only citation occupancy probe that commits its measurement rather than uploading it.', command: 'node scripts/queries/probe_query_class_occupancy.mjs', mutations: ['data/signals/query_class_occupancy.json', 'data/authority_scale/query_atlas.json', 'data/queries/measured_demand_candidates.json', 'artifacts/validation/*.json'] }
 };
 const retired = [
