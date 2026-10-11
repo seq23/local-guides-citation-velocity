@@ -101,6 +101,23 @@ jobs:
           GSC_LOOKBACK_DAYS: ${{ inputs.lookback_days || '90' }}
         run: python3 scripts/queries/ingest_gsc_evidence.py
 
+      # Search Console truth for theindustryguides.com (registered in
+      # data/seo/site_hygiene_registry.json#search_intelligence): query+page
+      # analytics (rolling 28 days), sitemaps.list (submit only if none listed),
+      # URL Inspection at 150 URLs/day, 8 parallel, rotating through the sitemap;
+      # then the measured-only target set and the consolidation ledger. A missing
+      # secret is a NAMED STOP line, never a red lane. The files are copied aside
+      # so the rebase-retry path below can restore them instead of re-measuring.
+      - name: Measure Search Console truth and rebuild measured targets
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+        run: |
+          python3 scripts/search_console/gsc_portfolio_report.py --mode daily --site sc-domain:theindustryguides.com data/search_intelligence
+          node scripts/search_intelligence/search_intelligence.js targets
+          node scripts/search_intelligence/search_intelligence.js consolidation
+          mkdir -p "$RUNNER_TEMP/si"
+          cp data/search_intelligence/*.json "$RUNNER_TEMP/si/"
+
       - name: Measure citation occupancy for the panel and the measured atlas head
         # Runs BEFORE the atlas build, because the atlas consumes this file as its
         # winnability signal. Allowed to fail without killing the lane: a failed
@@ -229,7 +246,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- $file_pattern
+          git add -- $file_pattern data/search_intelligence/gsc_search_analytics_export.json data/search_intelligence/index_coverage.json data/search_intelligence/target_query_set.json data/search_intelligence/consolidation_candidates.json $(test -f data/search_intelligence/gsc_sitemaps.json && echo data/search_intelligence/gsc_sitemaps.json)
           if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
           git commit -m "query evidence refresh: measured GSC demand -> atlas -> release candidates"
@@ -238,12 +255,14 @@ jobs:
             if ! git rebase origin/main; then
               git rebase --abort || true
               git reset --hard origin/main
+              cp "$RUNNER_TEMP"/si/{gsc_search_analytics_export,index_coverage,target_query_set,consolidation_candidates}.json data/search_intelligence/ 2>/dev/null || true
+              test -f "$RUNNER_TEMP/si/gsc_sitemaps.json" && cp "$RUNNER_TEMP/si/gsc_sitemaps.json" data/search_intelligence/ || true
               test -z "${GSC_SERVICE_ACCOUNT_JSON:-}" || python3 scripts/queries/ingest_gsc_evidence.py
               npm run atlas:build
               npm run queries:join-release
               node scripts/selfheal/run_lane_selfheal.mjs
               npm run validate:release
-              git add -- $file_pattern
+              git add -- $file_pattern data/search_intelligence/gsc_search_analytics_export.json data/search_intelligence/index_coverage.json data/search_intelligence/target_query_set.json data/search_intelligence/consolidation_candidates.json $(test -f data/search_intelligence/gsc_sitemaps.json && echo data/search_intelligence/gsc_sitemaps.json)
               if git diff --cached --quiet; then
                 echo "changed=false" >> "$GITHUB_OUTPUT"
                 exit 0
@@ -251,7 +270,7 @@ jobs:
               git commit -m "query evidence refresh: measured GSC demand -> atlas -> release candidates"
             else
               npm run validate:release
-              git add -- $file_pattern
+              git add -- $file_pattern data/search_intelligence/gsc_search_analytics_export.json data/search_intelligence/index_coverage.json data/search_intelligence/target_query_set.json data/search_intelligence/consolidation_candidates.json $(test -f data/search_intelligence/gsc_sitemaps.json && echo data/search_intelligence/gsc_sitemaps.json)
               git commit --amend --no-edit
             fi
             if git push origin HEAD:main; then exit 0; fi

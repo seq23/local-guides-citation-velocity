@@ -165,7 +165,8 @@
       "modes": [
         "report",
         "sitemaps",
-        "coverage"
+        "coverage",
+        "analytics"
       ],
       "commands": [
         "python3 scripts/search_console/gsc_portfolio_report.py --mode \"$MODE\" \"gsc-$MODE\""
@@ -247,6 +248,9 @@
       "commands": [
         "npm ci --ignore-scripts",
         "python3 scripts/queries/ingest_gsc_evidence.py",
+        "python3 scripts/search_console/gsc_portfolio_report.py --mode daily --site sc-domain:theindustryguides.com data/search_intelligence",
+        "node scripts/search_intelligence/search_intelligence.js targets",
+        "node scripts/search_intelligence/search_intelligence.js consolidation",
         "npm run probe:occupancy",
         "npm run atlas:build",
         "npm run queries:join-release",
@@ -270,7 +274,12 @@
         "data/authority_scale/query_atlas.json",
         "data/signals/query_class_occupancy.json",
         "data/queries/measured_demand_candidates.json",
-        "Velocity Content Release run when measured demand produced candidates"
+        "Velocity Content Release run when measured demand produced candidates",
+        "data/search_intelligence/gsc_search_analytics_export.json",
+        "data/search_intelligence/index_coverage.json",
+        "data/search_intelligence/gsc_sitemaps.json",
+        "data/search_intelligence/target_query_set.json",
+        "data/search_intelligence/consolidation_candidates.json"
       ],
       "upstream": [],
       "downstream": [

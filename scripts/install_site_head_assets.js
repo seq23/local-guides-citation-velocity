@@ -103,7 +103,28 @@ function main() {
     if (next !== null) { fs.writeFileSync(p, next); changed += 1; }
   }
   console.log(`site-head-assets: ${host} files=${cfg.files.length} pages=${pages.length} tagged=${changed}`);
+  installRankedLinks(outDir);
+}
+
+// Publish-time homepage block linking the pages that rank (position <= 15 with
+// impressions), from data/search_intelligence/strengthened_pages.json. Same layer
+// as the head tags: the frozen accepted bytes of index.html stay untouched.
+const RANKED_MARKER = 'data-search-ranked-links="true"';
+function rankedLinksBlock(pages) {
+  return '<section class="homepage-section search-ranked-links" ' + RANKED_MARKER + '><div class="section-label">Read in search</div><h2>Guides readers find in search</h2><ul>' +
+    pages.map((p) => '<li><a href="' + escAttr(p.route) + '">' + escAttr(p.title) + '</a></li>').join('') + '</ul></section>';
+}
+function installRankedLinks(outDir) {
+  const reg = readJson('data/search_intelligence/strengthened_pages.json');
+  if (!Array.isArray(reg.pages) || !reg.pages.length) die('data/search_intelligence/strengthened_pages.json lists no page');
+  const home = path.join(outDir, 'index.html');
+  const html = fs.readFileSync(home, 'utf8');
+  if (html.includes(RANKED_MARKER)) return;
+  const at = html.search(/<\/main>/i);
+  if (at < 0) die('dist/index.html has no </main> for the ranked-links block');
+  fs.writeFileSync(home, html.slice(0, at) + rankedLinksBlock(reg.pages) + html.slice(at));
+  console.log(`site-head-assets: homepage links ${reg.pages.length} ranked page(s)`);
 }
 
 if (require.main === module) main();
-module.exports = { install, headBlock, MARKER };
+module.exports = { install, headBlock, MARKER, RANKED_MARKER, rankedLinksBlock };

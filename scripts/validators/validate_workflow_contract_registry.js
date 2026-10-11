@@ -6,7 +6,8 @@
 // nothing"). It also pins the GSC portfolio entry's contract so a later build
 // cannot silently drop it or turn it into a repo writer: the entry exists, its
 // workflow and script exist, it commits nothing, and the dispatch modes the
-// workflow offers are exactly the modes the script accepts.
+// workflow offers are modes the script accepts, and every other script mode is
+// run by a registered workflow.
 // It does not count workflows and does not fail on a new, unregistered file.
 const fs = require('fs');
 const path = require('path');
@@ -50,7 +51,15 @@ if (!gsc) {
     const opts = (yml.match(/options:\s*\[([^\]]*)\]/) || [, ''])[1].split(',').map((s) => s.trim()).filter(Boolean).sort();
     const py = read(GSC_SCRIPT);
     const modes = (py.match(/if mode not in \(([^)]*)\)/) || [, ''])[1].split(',').map((s) => s.trim().replace(/["']/g, '')).filter(Boolean).sort();
-    if (!opts.length || JSON.stringify(opts) !== JSON.stringify(modes)) errors.push(`${GSC} dispatch modes [${opts}] differ from script modes [${modes}]`);
+    // A dispatch option the script rejects fails at run time: that is the harm.
+    // A script mode the dispatch does not offer is legitimate only when another
+    // registered workflow invokes it (the daily cycle runs --mode daily), so a
+    // mode nothing invokes still fails. Exact equality was the old pin; it broke
+    // the moment the daily lane reused this script (11 Oct 2026).
+    const invokedElsewhere = (m) => entries.some((e) => e.file !== GSC && (e.commands || []).some((c) => c.includes(GSC_SCRIPT) && new RegExp(`--mode ${m}(\\s|$)`).test(c)));
+    if (!opts.length) errors.push(`${GSC} offers no dispatch modes`);
+    for (const o of opts) if (!modes.includes(o)) errors.push(`${GSC} dispatch mode ${o} is not accepted by ${GSC_SCRIPT} [${modes}]`);
+    for (const m of modes) if (!opts.includes(m) && !invokedElsewhere(m)) errors.push(`${GSC_SCRIPT} mode ${m} is neither a ${GSC} dispatch option nor run by any registered workflow`);
     if (JSON.stringify([...(gsc.modes || [])].sort()) !== JSON.stringify(opts)) errors.push(`${GSC} registry modes ${JSON.stringify(gsc.modes)} differ from workflow options [${opts}]`);
   }
 }

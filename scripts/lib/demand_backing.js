@@ -56,4 +56,30 @@ function demandBackingPredicate(rootDir = ROOT) {
   return predicate;
 }
 
-module.exports = { DEMAND_REL, demandSlugs, isDemandBacked, demandBackingPredicate };
+/**
+ * Publishing freeze (data/search_intelligence/publishing_freeze.json, 11 Oct 2026).
+ * While enabled, a NEW page may publish only when its route carries a query with a
+ * measured NUMBER: Search Console impressions in data/search_intelligence/
+ * gsc_search_analytics_export.json, or a measured_demand record with volume > 0.
+ * T3 and owner-seed rows (real phrasing, no number) back existing pages but no
+ * longer admit new ones. A held row is not consumed, so it publishes on the first
+ * release after its query is measured.
+ */
+const FREEZE_REL = 'data/search_intelligence/publishing_freeze.json';
+const GSC_EXPORT_REL = 'data/search_intelligence/gsc_search_analytics_export.json';
+function publishingFreeze(rootDir = ROOT) {
+  try { return JSON.parse(fs.readFileSync(path.join(rootDir, FREEZE_REL), 'utf8')); } catch (_) { return { enabled: false }; }
+}
+function measuredNumberPredicate(rootDir = ROOT) {
+  const demand = JSON.parse(fs.readFileSync(path.join(rootDir, DEMAND_REL), 'utf8'));
+  const qs = (demand.records || []).filter((r) => Number(r.volume) > 0).map((r) => String(r.query_normalized || r.query).toLowerCase());
+  let gsc = null;
+  try { gsc = JSON.parse(fs.readFileSync(path.join(rootDir, GSC_EXPORT_REL), 'utf8')); } catch (_) { gsc = null; }
+  for (const r of (gsc && gsc.by_query) || []) if (r.impressions > 0) qs.push(String(r.query).toLowerCase());
+  const slugs = [...new Set(qs.map((q) => q.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')).filter(Boolean))];
+  const predicate = (route) => isDemandBacked(route, slugs);
+  predicate.slugCount = slugs.length;
+  return predicate;
+}
+
+module.exports = { DEMAND_REL, FREEZE_REL, demandSlugs, isDemandBacked, demandBackingPredicate, publishingFreeze, measuredNumberPredicate };

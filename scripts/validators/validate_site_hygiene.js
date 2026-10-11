@@ -129,6 +129,44 @@ const kf = reg.indexnow_key_file;
 if (!fs.existsSync(path.join(ROOT, kf))) fail('indexnow_key', `${kf} not committed at the root`);
 else if (read(kf).trim() !== kf.replace(/\.txt$/, '')) fail('indexnow_key', `${kf} content is not its key`);
 
+
+// search intelligence (11 Oct 2026): registered files present and wired into the
+// daily cycle, Search Console truth fresh and internally consistent, every target
+// measured, the publishing freeze read by the release lane, ranked links installed.
+{
+  const si = reg.search_intelligence;
+  if (!si) fail('search_intelligence', 'block missing from the registry');
+  else {
+    for (const f of si.files) if (!fs.existsSync(path.join(ROOT, f))) fail('search_intelligence', `${f} missing`);
+    const wf = read(si.workflow);
+    for (const r of si.workflow_runs) if (!wf.includes(r)) fail('search_intelligence', `${si.workflow} no longer runs ${r}`);
+    for (const c of si.workflow_commits) if (!new RegExp(`git add -- \\$file_pattern[^\\n]*${c.replace(/[./]/g, '\\$&')}`).test(wf)) fail('search_intelligence', `${si.workflow} no longer commits ${c}`);
+    if (Object.keys(failures).includes('search_intelligence') === false) {
+      const j = (f) => JSON.parse(read(`data/search_intelligence/${f}`));
+      const cov = j('index_coverage.json'); const gsc = j('gsc_search_analytics_export.json');
+      for (const [n, at] of [['index_coverage.json', cov.collected_at], ['gsc_search_analytics_export.json', gsc.collected_at]]) {
+        if (!(Date.now() - Date.parse(at) <= si.freshness_days * 86400000)) fail('search_intelligence', `${n} is stale (collected_at ${at}, limit ${si.freshness_days} days): the daily cycle stopped measuring`);
+      }
+      if (cov.site_url !== si.site || gsc.site_url !== si.site) fail('search_intelligence', `coverage/analytics are not for ${si.site}`);
+      const sum = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
+      const n = cov.urls.length;
+      if (sum(cov.summary.by_coverage_state) !== n || sum(cov.summary.buckets) !== n || cov.inspected_total !== n) fail('search_intelligence', `index_coverage.json counts disagree with its ${n} rows`);
+      if (cov.inspected_total + cov.never_inspected !== cov.sitemap_url_count) fail('search_intelligence', 'index_coverage.json inspected + never_inspected != sitemap_url_count');
+      if (cov.inspected_this_run > si.inspect_cap_per_day) fail('search_intelligence', `index_coverage.json inspected ${cov.inspected_this_run} > ${si.inspect_cap_per_day}`);
+      const tq = j('target_query_set.json');
+      if (!tq.targets.length || tq.count !== tq.targets.length) fail('search_intelligence', `target_query_set.json has ${tq.targets.length} targets (count ${tq.count})`);
+      for (const t of tq.targets) if (!['gsc_export', 'measured_demand'].includes(t.source) || !(Number(t.measurement && t.measurement.value) > 0) || !t.owner_route) fail('search_intelligence', `target "${t.query}" has no measured number or owner`);
+      const cc = j('consolidation_candidates.json');
+      if (cc.status !== 'LEDGER_ONLY_NO_REDIRECTS' || cc.candidates.some((c) => !c.fold_into)) fail('search_intelligence', 'consolidation_candidates.json must be a ledger with fold_into per candidate');
+      if (typeof j('publishing_freeze.json').enabled !== 'boolean') fail('search_intelligence', 'publishing_freeze.json enabled must be a boolean');
+      for (const [file, needle] of Object.entries(si.freeze_readers)) if (!read(file).includes(needle)) fail('search_intelligence', `${file} no longer reads the publishing freeze (${needle})`);
+      if (!read(si.ranked_links_installer).includes('installRankedLinks(outDir)')) fail('search_intelligence', `${si.ranked_links_installer} no longer installs the ranked links`);
+      for (const p of j('strengthened_pages.json').pages) if (!fs.existsSync(path.join(ROOT, p.rendered_file))) fail('search_intelligence', `strengthened page ${p.route} has no rendered file ${p.rendered_file}`);
+      if (source === 'dist' && !home.includes('data-search-ranked-links="true"')) fail('search_intelligence', 'dist homepage lacks the ranked-links block');
+    }
+  }
+}
+
 const report = { validator: 'site-hygiene', source, pages: pages.length, definition_words: words, ok: !Object.keys(failures).length, failures };
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(report, null, 2) + '\n');
