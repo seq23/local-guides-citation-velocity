@@ -1,8 +1,8 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-10-11T14:54:11.394Z",
-  "workflow_count": 10,
+  "generated_at": "2026-10-11T15:57:35.653Z",
+  "workflow_count": 11,
   "workflows": [
     {
       "path": ".github/workflows/ci-health-recovery.yml",
@@ -246,6 +246,39 @@
         "artifacts/validation/validator-materiality-hostile.json"
       ],
       "validation_owner": "citation/search-intelligence validators"
+    },
+    {
+      "path": ".github/workflows/search-outcomes-weekly.yml",
+      "name": "Search Outcomes Weekly",
+      "trigger": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "primary_command": "python3 scripts/search_console/search_outcomes_weekly.py",
+      "repo_lane": "measurement",
+      "current_status": "add",
+      "reason": "Weekly (Mon 08:00 Chicago) portfolio search-outcome report: GSC week-over-week, committed coverage/strengthening/consolidation files, measured-URL 404s; commits the report pair, syncs RED issues, emails the owner.",
+      "allowed_runtime_mutations": [
+        "reports/search_outcomes/*.md",
+        "reports/search_outcomes/*.json"
+      ],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [
+        "artifact path declared inline or by action"
+      ],
+      "validation_owner": "validation registry and workflow topology validators"
     },
     {
       "path": ".github/workflows/validate-repo.yml",

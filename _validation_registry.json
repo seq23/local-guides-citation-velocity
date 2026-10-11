@@ -2494,7 +2494,7 @@
       "path": "scripts/validate_executable_bits.js",
       "command": "node scripts/validate_executable_bits.js",
       "status": "ACTIVE",
-      "severity": "HARD_FAIL",
+      "severity": "STRONG_WARNING",
       "tier": "Tier 5",
       "scope": "CONTAINER",
       "profiles": [
@@ -2526,7 +2526,7 @@
       ],
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "hard_fail_basis": "repo_integrity"
+      "demotion_reason": "2026-10-11: demoted from HARD_FAIL to free a blocker slot for search-outcomes-weekly-report (cap 40). Brittle: 27 of the 28 files in content/_shared/executable_files.json are run through an interpreter (node/bash/ruby), where the mode bit has no effect, so a lost +x on any of them turned main red with no user or crawler harm. The one file executed directly (distribution_scripts/deploy_distribution.sh in deploy-distribution.yml) fails loudly at that step with 'Permission denied'. It still runs in every profile and stays visible as a strong warning."
     },
     {
       "id": "fanout-warning",
@@ -8937,6 +8937,48 @@
         "schema"
       ],
       "failure_action": "Fix at the source: data/seo/site_brand_assets.json + root brand files, scripts/install_site_head_assets.js, the homepage builder in scripts/build_site.js (HOME_DEFINITION / HOME_FAQ), data/clarity_projects.json. Never edit rendered pages."
+    },
+    {
+      "id": "search-outcomes-weekly-report",
+      "title": "Weekly search-outcome report exists for the due ISO week and covers every property",
+      "path": "scripts/search_console/validate_search_outcomes_weekly_report.js",
+      "command": "node scripts/search_console/validate_search_outcomes_weekly_report.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 5",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "search-console",
+        "measurement",
+        "owner-report"
+      ],
+      "risk_prevented": "The owner's only portfolio-wide answer to 'is the search work helping' silently stops: search-outcomes-weekly.yml fails or never commits, or a report drops a property so the site going wrong is the one missing. Requires reports/search_outcomes/<ISO week of now-24h>.json and .md, with site count and markdown table rows equal to the property count the run read.",
+      "why_existing_checks_do_not_cover": "workflow-contract-registry and workflow-yaml-syntax prove the workflow is well formed, not that it ran and delivered; nothing else reads reports/search_outcomes, and a scheduled run that fails only notifies the actor, not the owner.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/search-outcomes-weekly-report.json",
+      "failure_action": "dispatch search-outcomes-weekly.yml and fix what stopped it",
+      "depends_on": [],
+      "requires_files": [],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/search-outcomes-weekly-report.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/search-outcomes-weekly-report.json"
+      ],
+      "enforce_no_source_mutation": false,
+      "hard_fail_basis": "repo_integrity"
     }
   ],
   "legacy_policy": {
