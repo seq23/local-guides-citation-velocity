@@ -65,5 +65,20 @@
       "scripts/velocity_content_release.js": "publishingFreeze(ROOT).enabled === true"
     },
     "ranked_links_installer": "scripts/install_site_head_assets.js"
+  },
+  "zero_paid_llm": {
+    "registered_on": "2026-10-11",
+    "note": "Owner policy 11 Oct 2026: \"nothing should be paid ... cut the probes and make them free.\" validate_site_hygiene.js runs scripts/lib/zero_paid_llm_check.js against this block (scheduled workflows reach no model outside the free router; config/llm_routing.json holds only $0 models, max_cost_usd 0, stale snapshot = warning; probe workflows dispatch-only behind confirm_paid) and replays its hostile fixtures every run. Folded into the site-hygiene blocker so the 40-blocker cap holds. See docs/cost/zero-paid-llm.md.",
+    "router": "scripts/lib/free_llm_router.mjs",
+    "routing_config": "config/llm_routing.json",
+    "checker": "scripts/lib/zero_paid_llm_check.js",
+    "probe_scripts": [
+      "scripts/llm_citation_probe.mjs",
+      "scripts/queries/probe_query_class_occupancy.mjs"
+    ],
+    "probe_workflows": [
+      "query-class-occupancy-probe.yml"
+    ],
+    "receipt_workflow": ".github/workflows/query-evidence-refresh.yml"
   }
 }

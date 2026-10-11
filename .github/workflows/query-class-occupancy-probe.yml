@@ -14,12 +14,23 @@ name: Query Class Occupancy Probe
 #      data/signals/ and the query atlas consumes that file as its winnability
 #      signal.
 #
-# Dispatch-only, so it is not a scheduled mutator and does not consume the
-# contract's single scheduled-commit slot. The scheduled path runs the same probe
-# inside query-evidence-refresh.yml.
+# Dispatch-only. Owner policy 11 Oct 2026: "nothing should be paid ... cut the
+# probes and make them free." Neither probe runs on any schedule any more (both
+# used to run daily in query-evidence-refresh.yml: occupancy on
+# openai/gpt-4o-mini + the billed web plugin, the citation probe grounded on the
+# same). A run here needs confirm_paid: true (default false; anything else is a
+# NAMED STOP and nothing starts), and even then every call goes through
+# scripts/lib/free_llm_router.mjs: $0 models only, web plugin refused. So under the
+# current policy occupancy stops by name and the citation probe runs in knowledge
+# mode on $0 models. scripts/lib/zero_paid_llm_check.js (site-hygiene blocker)
+# fails the build if a schedule or a paid call comes back.
 on:
   workflow_dispatch:
     inputs:
+      confirm_paid:
+        description: "Confirm a deliberate probe run (it still only reaches $0 models; false = refuse)"
+        type: boolean
+        default: false
       panel:
         description: "Panel file of queries to probe"
         required: false
@@ -45,9 +56,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  refuse:
+    if: ${{ inputs.confirm_paid != true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Refuse unless confirmed
+        run: echo "NAMED STOP - confirm_paid is not true; probe disabled by owner policy (11 Oct 2026). Nothing ran, nothing spent."
   probe:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ inputs.confirm_paid == true }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -75,7 +94,16 @@ jobs:
         # instead of reporting success over an empty result set.
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CONFIRM_PAID: ${{ inputs.confirm_paid }}
         run: node scripts/queries/probe_query_class_occupancy.mjs "${{ inputs.panel }}" data/signals/query_class_occupancy.json --atlas-top "${{ inputs.atlas_top || '0' }}" --merge
+      - name: Observe whether $0 models name us (knowledge mode)
+        # Was grounded and daily in query-evidence-refresh.yml (paid web plugin).
+        # Now knowledge mode on the $0 router models only; grounded is refused.
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CONFIRM_PAID: ${{ inputs.confirm_paid }}
+          CITATION_PROBE_MODE: knowledge
+        run: node scripts/llm_citation_probe.mjs --limit 25
       - name: Summarise
         run: |
           node -e '
@@ -126,7 +154,7 @@ jobs:
         # downstream, actually base-dependent steps (atlas build, release
         # join, validation) are re-run.
         env:
-          file_pattern: "data/signals/query_class_occupancy.json data/authority_scale/query_atlas.json data/queries/measured_demand_candidates.json artifacts/validation/*.json"
+          file_pattern: "data/signals/query_class_occupancy.json data/signals/llm_citation_observations.json data/authority_scale/query_atlas.json data/queries/measured_demand_candidates.json artifacts/validation/*.json"
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

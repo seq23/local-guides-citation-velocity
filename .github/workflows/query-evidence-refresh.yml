@@ -118,16 +118,22 @@ jobs:
           mkdir -p "$RUNNER_TEMP/si"
           cp data/search_intelligence/*.json "$RUNNER_TEMP/si/"
 
-      - name: Measure citation occupancy for the panel and the measured atlas head
-        # Runs BEFORE the atlas build, because the atlas consumes this file as its
-        # winnability signal. Allowed to fail without killing the lane: a failed
-        # measurement leaves the previous committed occupancy file in place, which
-        # is a stale reading, not a false zero. The probe itself never writes a
-        # zero for a degraded probe.
-        continue-on-error: true
+      - name: LLM cost receipt (zero-paid policy)
+        # Owner policy 11 Oct 2026: "nothing should be paid ... cut the probes and
+        # make them free." The occupancy probe (openai/gpt-4o-mini + billed web
+        # plugin, ~36 calls/day) and the grounded citation probe (25 calls/day)
+        # that ran here are removed from this schedule. Both are dispatch-only in
+        # query-class-occupancy-probe.yml behind confirm_paid and reach models only
+        # through scripts/lib/free_llm_router.mjs ($0 models, web plugin refused).
+        # The atlas below keeps reading the last committed occupancy readings -
+        # stale, never a false zero. This step proves the free router each cycle:
+        # one $0 call; a non-zero reported cost fails the run; a dead key is a
+        # NAMED STOP line, never a red lane.
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: npm run probe:occupancy -- data/signals/query_class_probe_panel.json data/signals/query_class_occupancy.json --atlas-top 20 --merge
+        run: |
+          echo "occupancy + citation probes: SKIPPED - probe disabled by owner policy (dispatch-only, query-class-occupancy-probe.yml)"
+          node scripts/lib/free_llm_router.mjs --ping
 
       - name: Rebuild the query atlas from refreshed evidence
         run: npm run atlas:build
@@ -141,16 +147,6 @@ jobs:
         # the release law downstream still decides what may actually publish.
         run: npm run queries:join-release
 
-      - name: Observe whether answer engines cite us
-        # The probe shipped in seven repos and was invoked by none, so no
-        # citation observation was ever taken. Grounded mode reads the pages
-        # the answer was actually built from; knowledge mode would only show
-        # whether a model memorised the brand, which is not a citation.
-        continue-on-error: true
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          CITATION_PROBE_MODE: grounded
-        run: node scripts/llm_citation_probe.mjs --limit 25
       - name: Apply bounded self-healing repairs
         id: selfheal
         # selfheal and selfheal:dry shipped here and no workflow invoked either,
@@ -205,7 +201,7 @@ jobs:
         # This step used to be stefanzweifel/git-auto-commit-action@v5, which
         # commits on top of whatever local `main` the job's initial checkout
         # holds and pushes once, with no fetch/rebase/retry. This job runs GSC
-        # ingestion, the occupancy probe, and the bounded self-heal loop before
+        # ingestion, the router receipt, and the bounded self-heal loop before
         # ever reaching this step - minutes during which another lane sharing
         # the local-guides-main-writer concurrency group (most often
         # velocity-content-release.yml's own absorption push) can land a commit

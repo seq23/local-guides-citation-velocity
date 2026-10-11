@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "_law": "Owner policy 11 Oct 2026, verbatim: \"nothing should be paid ... cut the probes and make them free.\" Every model call in this repo goes through scripts/lib/free_llm_router.mjs, which reads this file. max_cost_usd is a hard 0: the router refuses any model not listed here, any model whose snapshot pricing is not $0 on every field, any web plugin or :online suffix (billed per request whatever the model), and fails the run loudly if OpenRouter reports a non-zero cost. If no listed model answers, the router returns a named stop and nothing is generated - it never falls back to a paid model. scripts/lib/zero_paid_llm_check.js enforces this file.",
+  "policy": {
+    "max_cost_usd": 0,
+    "paid_fallback": false,
+    "web_plugin_allowed": false,
+    "probes_scheduled": false,
+    "probes_disabled_reason": "probe disabled by owner policy (11 Oct 2026: nothing should be paid; cut the probes and make them free)",
+    "snapshot_max_age_days": 30
+  },
+  "provider": "openrouter",
+  "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+  "selection_rule": "Fetched keyless from https://openrouter.ai/api/v1/models, filtered to pricing.prompt == \"0\" && pricing.completion == \"0\" (every other pricing field also 0), text output, >= 32k context; ordered strongest instruct model first. Refresh with: node scripts/lib/free_llm_router.mjs --refresh",
+  "snapshot_date": "2026-10-11",
+  "snapshot_source": "https://openrouter.ai/api/v1/models",
+  "snapshot_free_model_count": 19,
+  "models": [
+    {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "name": "NVIDIA: Nemotron 3 Ultra (free)",
+      "context_length": 1000000,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      }
+    },
+    {
+      "id": "google/gemma-4-31b-it:free",
+      "name": "Google: Gemma 4 31B (free)",
+      "context_length": 262144,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3-super-120b-a12b:free",
+      "name": "NVIDIA: Nemotron 3 Super (free)",
+      "context_length": 262144,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      }
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it:free",
+      "name": "Google: Gemma 4 26B A4B  (free)",
+      "context_length": 262144,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      }
+    }
+  ]
+}
