@@ -7,7 +7,7 @@ const { routeForFamily } = require('./lib/page_family_router');
 const { routeShape, renderedPathForRoute } = require('./lib/page_family_authority');
 const { classifyRichNewPage, requiresRichAuthorityPage } = require('./lib/rich_new_page_classifier');
 const { buildRichSections } = require('./lib/rich_new_page_blocks');
-const { demandBackingPredicate, DEMAND_REL } = require('./lib/demand_backing');
+const { demandBackingPredicate, DEMAND_REL, FREEZE_REL, publishingFreeze, measuredNumberPredicate } = require('./lib/demand_backing');
 const ROOT = path.resolve(__dirname, '..');
 const DATE = process.env.SOURCE_DATE || '2026-06-19';
 const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
@@ -104,7 +104,15 @@ try { demandBacked = demandBackingPredicate(ROOT); }
 catch (e) { namedStop('UNREADABLE_MEASURED_DEMAND', `${DEMAND_REL} could not be read (${e.message}). Demand backing is unknown, and unknown demand holds - it does not wave rows through. Regenerate the measured demand corpus, then re-run.`); }
 if (!demandBacked.slugCount) namedStop('EMPTY_MEASURED_DEMAND', `${DEMAND_REL} yielded zero measured queries. Every candidate would fail the demand gate, so publishing anything would be publishing against no evidence at all.`);
 const demandRejected = admittedForBuild.filter((x)=>!demandBacked(x.target_route || ''));
-const readyAll = admittedForBuild.filter((x)=>demandBacked(x.target_route || ''));
+const demandBackedRows = admittedForBuild.filter((x)=>demandBacked(x.target_route || ''));
+// Publishing freeze: while publishing_freeze.json is enabled, a row publishes only when its
+// route carries a query with a measured number (scripts/lib/demand_backing.js). Held rows
+// stay admitted and unconsumed, so the first release after their query is measured ships them.
+const freezeOn = publishingFreeze(ROOT).enabled === true;
+const measuredNumber = freezeOn ? measuredNumberPredicate(ROOT) : null;
+const frozenRows = freezeOn ? demandBackedRows.filter((x)=>!measuredNumber(x.target_route || '')) : [];
+const readyAll = freezeOn ? demandBackedRows.filter((x)=>measuredNumber(x.target_route || '')) : demandBackedRows;
+if (frozenRows.length) console.log(`NAMED STOP: publishing freeze (${FREEZE_REL}) held ${frozenRows.length} admitted row(s) whose query has no measured number; they publish once measured.`);
 // THE DAILY CEILING GOVERNS DISCOVERY, NOT DELIVERY.
 //
 // The ceiling exists to stop this repo from publishing speculative, self-generated
@@ -127,7 +135,7 @@ const discoveryReady = readyAll.filter((x) => !isAgentDirected(x));
 const discoverySelected = discoveryReady.slice(0, remainingToday);
 const discoveryHeld = discoveryReady.slice(remainingToday);
 const ready = [...agentDirectedReady, ...discoverySelected];
-const report = {schema_version:'2.1',run_date:DATE,admitted_for_build:admittedForBuild.length,demand_backed_admitted:readyAll.length,demand_rejected_admitted:demandRejected.length,selected_under_daily_new_url_ceiling:discoverySelected.length,agent_directed_exempt_from_daily_ceiling:agentDirectedReady.length,agent_directed_exempt_runs:[...new Set(agentDirectedReady.map((x)=>x.source_run_id))].sort(),agent_directed_exempt_routes:agentDirectedReady.map((x)=>x.target_route||'').sort(),daily_new_url_ceiling:dailyCeiling,already_published_today_before_run:alreadyToday,created:[],skipped:[...discoveryHeld.map((x)=>({id:x.id,reason:'daily_new_url_ceiling_reached'})),...demandRejected.map((x)=>({id:x.id,reason:'no_measured_demand_match',route:x.target_route||''}))],target:'content/_staged/pages.json'};
+const report = {schema_version:'2.1',run_date:DATE,admitted_for_build:admittedForBuild.length,demand_backed_admitted:readyAll.length,demand_rejected_admitted:demandRejected.length,selected_under_daily_new_url_ceiling:discoverySelected.length,agent_directed_exempt_from_daily_ceiling:agentDirectedReady.length,agent_directed_exempt_runs:[...new Set(agentDirectedReady.map((x)=>x.source_run_id))].sort(),agent_directed_exempt_routes:agentDirectedReady.map((x)=>x.target_route||'').sort(),daily_new_url_ceiling:dailyCeiling,already_published_today_before_run:alreadyToday,created:[],skipped:[...discoveryHeld.map((x)=>({id:x.id,reason:'daily_new_url_ceiling_reached'})),...demandRejected.map((x)=>({id:x.id,reason:'no_measured_demand_match',route:x.target_route||''})),...frozenRows.map((x)=>({id:x.id,reason:'publishing_freeze_no_measured_number',route:x.target_route||''}))],publishing_freeze:freezeOn,target:'content/_staged/pages.json'};
 if (agentDirectedReady.length) {
   console.log(`DAILY NEW-URL CEILING BYPASSED FOR DELIVERY: ${agentDirectedReady.length} agent-directed page(s) from run(s) ${report.agent_directed_exempt_runs.join(', ')} publish outside the ${dailyCeiling}/day discovery ceiling. Discovery rows remain capped: ${discoverySelected.length} selected, ${discoveryHeld.length} held.`);
 }
