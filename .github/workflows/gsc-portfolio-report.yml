@@ -1,10 +1,20 @@
 name: GSC Portfolio Report
 
-# Dispatch-only, read-only. Lists every Search Console property the shared
-# service account can read and uploads 28-day query/page/totals JSON as an
-# artifact. Commits nothing; the run fails if the account sees zero properties.
+# Dispatch-only. Commits nothing to the repo in any mode; every mode uploads an
+# artifact and prints its summary JSON in the job log.
+#   report   - 28-day query/page/totals per property (read-only).
+#   sitemaps - lists each property's sitemaps, submits live sitemaps that are
+#              unlisted or errored, re-lists (writes to Search Console only).
+#   coverage - URL Inspection on sitemap URLs under a 2,000/day portfolio budget.
+# The run fails if the account sees zero properties or a mode finds nothing.
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "report | sitemaps | coverage"
+        type: choice
+        options: [report, sitemaps, coverage]
+        default: report
 
 permissions:
   contents: read
@@ -12,19 +22,20 @@ permissions:
 jobs:
   report:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: python3 -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null
-      - name: Pull Search Console report
+      - name: Run Search Console ${{ inputs.mode }}
         env:
           GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
-        run: python3 scripts/search_console/gsc_portfolio_report.py gsc-portfolio-report
+          MODE: ${{ inputs.mode }}
+        run: python3 scripts/search_console/gsc_portfolio_report.py --mode "$MODE" "gsc-$MODE"
       - uses: actions/upload-artifact@v7
         with:
-          name: gsc-portfolio-report-${{ github.run_id }}
-          path: gsc-portfolio-report/
+          name: gsc-${{ inputs.mode }}-${{ github.run_id }}
+          path: gsc-${{ inputs.mode }}/
           retention-days: 14
