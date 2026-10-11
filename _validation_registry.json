@@ -7458,6 +7458,52 @@
       "hard_fail_basis": "build_integrity"
     },
     {
+      "id": "workflow-contract-registry",
+      "title": "Registered workflows and the scripts they run exist; GSC portfolio entry stays read-only",
+      "path": "scripts/validators/validate_workflow_contract_registry.js",
+      "command": "node scripts/validators/validate_workflow_contract_registry.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "distribution",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "workflow",
+        "registry",
+        "search-console"
+      ],
+      "risk_prevented": "A workflow registered in data/workflows/workflow_contract_registry.json, or a script one of them runs, disappears from the tree, so a dispatch or schedule runs a command pointing at nothing. Also pins the GSC portfolio workflow's registry entry (read-only on the repo, modes matching the script) so a later build cannot drop it or turn it into a repo writer.",
+      "why_existing_checks_do_not_cover": "workflow-yaml-syntax parses YAML but never reads the contract registry or checks that a command's script exists; the workflow inventory validators are retired.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/workflow-contract-registry.json",
+      "failure_action": "restore the missing workflow/script or correct its registry entry before release",
+      "depends_on": [],
+      "requires_files": [
+        "data/workflows/workflow_contract_registry.json",
+        ".github/workflows"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/workflow-contract-registry.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/workflow-contract-registry.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "hard_fail_basis": "build_integrity"
+    },
+    {
       "status": "RETIRED",
       "severity": "INFO",
       "tier": "Tier 1",

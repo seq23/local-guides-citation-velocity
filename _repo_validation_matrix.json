@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "c6b79cfcbf33cd93b1d95a8606c1b6d0931d4f4bc7f8b8159b6b530dd16b0294",
+  "registry_sha256": "ef387293f31cfe96a1dc33b3ffa27a60f86d5db4d892e3565b9d9b93c5104b05",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 215,
-    "active": 43,
+    "total": 216,
+    "active": 44,
     "on_demand": 10,
     "retired": 162,
     "local_only": 1,
-    "hard_fail": 50,
+    "hard_fail": 51,
     "strong_warning": 5,
     "soft_warning": 0,
     "info": 160
@@ -99,6 +99,7 @@
         "validation-registry",
         "vertical-keys",
         "workflow-yaml-syntax",
+        "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links"
       ],
@@ -114,6 +115,7 @@
         "validation-policy",
         "validation-registry",
         "velocity-canonical-anchor-links",
+        "workflow-contract-registry",
         "workflow-yaml-syntax",
         "canonical-domains",
         "no-double-vertical-slugs",
@@ -183,6 +185,7 @@
         "velocity-commercial-pages",
         "vertical-keys",
         "workflow-yaml-syntax",
+        "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links"
       ],
@@ -200,6 +203,7 @@
         "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
+        "workflow-contract-registry",
         "workflow-yaml-syntax",
         "canonical-data-immutability",
         "canonical-data-static-writes",
@@ -278,6 +282,7 @@
         "velocity-commercial-pages",
         "vertical-keys",
         "workflow-yaml-syntax",
+        "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links"
       ],
@@ -294,6 +299,7 @@
         "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
+        "workflow-contract-registry",
         "workflow-yaml-syntax",
         "canonical-data-immutability",
         "canonical-data-static-writes",
@@ -380,6 +386,7 @@
         "velocity-commercial-pages",
         "vertical-keys",
         "workflow-yaml-syntax",
+        "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links"
       ],
@@ -396,6 +403,7 @@
         "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
+        "workflow-contract-registry",
         "workflow-yaml-syntax",
         "canonical-data-immutability",
         "canonical-data-static-writes",
@@ -479,6 +487,7 @@
         "velocity-commercial-pages",
         "vertical-keys",
         "workflow-yaml-syntax",
+        "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links"
       ],
@@ -496,6 +505,7 @@
         "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
+        "workflow-contract-registry",
         "workflow-yaml-syntax",
         "canonical-data-immutability",
         "canonical-data-static-writes",
@@ -545,11 +555,13 @@
         "network-crawler-contract",
         "validation-policy",
         "validation-registry",
-        "workflow-yaml-syntax"
+        "workflow-yaml-syntax",
+        "workflow-contract-registry"
       ],
       "execution_order": [
         "validation-policy",
         "validation-registry",
+        "workflow-contract-registry",
         "workflow-yaml-syntax",
         "network-crawler-contract",
         "distribution-contract",
@@ -674,6 +686,7 @@
         "validation-registry",
         "vertical-keys",
         "workflow-yaml-syntax",
+        "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links"
       ],
@@ -684,6 +697,7 @@
         "validation-policy",
         "validation-registry",
         "velocity-canonical-anchor-links",
+        "workflow-contract-registry",
         "workflow-yaml-syntax",
         "canonical-domains",
         "no-double-vertical-slugs",
@@ -2937,6 +2951,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A malformed workflow file can pass token-based trace checks but fail before any GitHub Actions job starts.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "workflow-contract-registry",
+        "title": "Registered workflows and the scripts they run exist; GSC portfolio entry stays read-only",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "distribution",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_workflow_contract_registry.js",
+        "command": "node scripts/validators/validate_workflow_contract_registry.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/workflows/workflow_contract_registry.json",
+          ".github/workflows"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/workflow-contract-registry.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/workflow-contract-registry.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "A workflow registered in data/workflows/workflow_contract_registry.json, or a script one of them runs, disappears from the tree, so a dispatch or schedule runs a command pointing at nothing. Also pins the GSC portfolio workflow's registry entry (read-only on the repo, modes matching the script) so a later build cannot drop it or turn it into a repo writer.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -10442,6 +10495,45 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "A malformed workflow file can pass token-based trace checks but fail before any GitHub Actions job starts.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "workflow-contract-registry",
+        "title": "Registered workflows and the scripts they run exist; GSC portfolio entry stays read-only",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "distribution",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_workflow_contract_registry.js",
+        "command": "node scripts/validators/validate_workflow_contract_registry.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/workflows/workflow_contract_registry.json",
+          ".github/workflows"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/workflow-contract-registry.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/workflow-contract-registry.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "A workflow registered in data/workflows/workflow_contract_registry.json, or a script one of them runs, disappears from the tree, so a dispatch or schedule runs a command pointing at nothing. Also pins the GSC portfolio workflow's registry entry (read-only on the repo, modes matching the script) so a later build cannot drop it or turn it into a repo writer.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

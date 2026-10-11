@@ -150,6 +150,45 @@
       "failure_boundary": "The exact artifact commit SHA must match the validation attestation before distribution."
     },
     {
+      "file": "gsc-portfolio-report.yml",
+      "name": "GSC Portfolio Report",
+      "lane": "measurement",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": false,
+      "permissions": [
+        "contents: read"
+      ],
+      "timeout_minutes": 60,
+      "modes": [
+        "report",
+        "sitemaps",
+        "coverage"
+      ],
+      "commands": [
+        "python3 scripts/search_console/gsc_portfolio_report.py --mode \"$MODE\" \"gsc-$MODE\""
+      ],
+      "required_inputs": [
+        "mode"
+      ],
+      "required_secrets": [
+        "GSC_SERVICE_ACCOUNT_JSON"
+      ],
+      "optional_secrets": [],
+      "consumes": [
+        "Search Console API (service account gsc-bot, every property it can read)",
+        "live robots.txt and sitemap.xml of each property"
+      ],
+      "produces": [
+        "artifact gsc-<mode>-<run_id>: one JSON per property plus summary.json (also printed in the job log)"
+      ],
+      "upstream": [],
+      "downstream": [],
+      "failure_boundary": "Dispatch-only and read-only on the repo in every mode: it uploads an artifact and commits nothing. report reads 28-day search analytics; sitemaps writes only to Search Console (submits live sitemaps that are unlisted or errored, then re-lists); coverage runs URL Inspection under a 2,000/day portfolio budget. It exits non-zero when the account reads zero properties, when sitemaps finds no live sitemap anywhere, or when every inspection fails."
+    },
+    {
       "file": "query-class-occupancy-probe.yml",
       "name": "Query Class Occupancy Probe",
       "lane": "measurement",
