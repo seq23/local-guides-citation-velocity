@@ -341,7 +341,9 @@ function injectFanoutIntoHtml(html, data){
 
   if (cleaned.includes('<h1')) {
     return cleaned.replace(
-      /(<h1[^>]*>[\s\S]*?<\/h1>\s*(?:<p class="muted">[\s\S]*?<\/p>)?)/,
+      // A definition paragraph (data-site-definition) belongs directly under the
+      // H1 for answer engines, so the block goes after it, as after a muted deck.
+      /(<h1[^>]*>[\s\S]*?<\/h1>\s*(?:<p class="muted">[\s\S]*?<\/p>|<p\b[^>]*data-site-definition="true"[^>]*>[\s\S]*?<\/p>)?)/,
       `$1\n${block}`
     );
   }
