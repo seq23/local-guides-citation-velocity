@@ -5,7 +5,7 @@
     "node_version": "24",
     "node_options": "--max-old-space-size=3072",
     "maximum_workflows_on_push": 2,
-    "maximum_scheduled_mutation_workflows": 1,
+    "maximum_scheduled_mutation_workflows": 2,
     "allowed_push_workflows": [
       "validate-repo.yml",
       "velocity-content-release.yml"
@@ -29,10 +29,11 @@
       "LKG_TOKEN"
     ],
     "allowed_scheduled_mutation_workflows": [
-      "query-evidence-refresh.yml"
+      "query-evidence-refresh.yml",
+      "search-outcomes-weekly.yml"
     ],
     "scheduled_mutation_policy": "Scheduled workflows may commit to main, but only those named in allowed_scheduled_mutation_workflows, and only after the full validation chain passes in the same run. This was 0 while every change arrived through an external agent-run manifest. Content-factory lanes are now permitted to write on a timer; the allowlist keeps that an explicit decision per workflow rather than a general licence for anything scheduled to push.",
-    "scheduled_mutation_rationale": "Search Console evidence has to be refreshed on a cadence or the query atlas publishes against stale, modelled demand. This workflow commits only when the full validation chain passes in the same run. The cap of 1 is the control: any second scheduled mutator needs an explicit decision, not another file."
+    "scheduled_mutation_rationale": "Search Console evidence has to be refreshed on a cadence or the query atlas publishes against stale, modelled demand. This workflow commits only when the full validation chain passes in the same run. The cap of 1 is the control: any second scheduled mutator needs an explicit decision, not another file. 2026-10-11, owner decision: search-outcomes-weekly.yml is the second scheduled committer (cap raised 1 -> 2). It commits only reports/search_outcomes/<ISO-week>.{md,json}, once a week, after npm run validate:release passes in the same run, inside the shared local-guides-main-writer group."
   },
   "workflows": [
     {
@@ -464,6 +465,48 @@
         "deploy-distribution.yml"
       ],
       "failure_boundary": "Push only after deterministic frozen-aware rebuild and release validation pass; broad self-healing is not permitted in the rebuild workflow."
+    },
+    {
+      "file": "search-outcomes-weekly.yml",
+      "name": "Search Outcomes Weekly",
+      "lane": "measurement",
+      "triggers": [
+        "schedule:00-13-utc-monday",
+        "schedule:00-14-utc-monday",
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": true,
+      "permissions": [
+        "contents: write",
+        "issues: write"
+      ],
+      "timeout_minutes": 45,
+      "commands": [
+        "python3 scripts/search_console/search_outcomes_weekly.py --mode report reports/search_outcomes",
+        "python3 scripts/search_console/search_outcomes_weekly.py --mode email"
+      ],
+      "required_inputs": [],
+      "required_secrets": [
+        "GSC_SERVICE_ACCOUNT_JSON"
+      ],
+      "optional_secrets": [
+        "RESEND_API_KEY"
+      ],
+      "consumes": [
+        "Search Console API (service account gsc-bot, every property it can read)",
+        "committed index_coverage / strengthened_pages / consolidation_candidates files of the portfolio repos (GitHub raw, now and 7 days ago)",
+        "live HTTP status of each property's top 25 pages by 28-day impressions"
+      ],
+      "produces": [
+        "reports/search_outcomes/<ISO-week>.md and .json (committed)",
+        "artifact search-outcomes-<week>-<run_id>",
+        "one GitHub issue per RED site in this repo, closed when the site is GREEN",
+        "email to the owner via Resend"
+      ],
+      "upstream": [],
+      "downstream": [],
+      "failure_boundary": "Exits non-zero when the account reads zero properties or an issue cannot be created. Coverage files that do not exist are reported as 'no coverage file', never a failure. Without RESEND_API_KEY the email step is a NAMED STOP and exits 0; a Resend refusal fails the run. Commits only the report pair, only after validate:release passes on the rebased tree."
     }
   ]
 }

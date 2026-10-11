@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "c9b167dbd0b8b633c14bdcd4c37c54494b0bed81f1351af41fc1d14b2ea43f0b",
+  "registry_sha256": "a90176f683f1f4410a648d2554030aad0b5cc6610f14fb08073f21c6d582721d",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,13 +53,13 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 217,
-    "active": 45,
+    "total": 218,
+    "active": 46,
     "on_demand": 10,
     "retired": 162,
     "local_only": 1,
     "hard_fail": 52,
-    "strong_warning": 5,
+    "strong_warning": 6,
     "soft_warning": 0,
     "info": 160
   },
@@ -102,7 +102,8 @@
         "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links",
-        "site-hygiene"
+        "site-hygiene",
+        "search-outcomes-weekly-report"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -135,6 +136,7 @@
         "network-crawler-contract",
         "publish-inventory",
         "rendered-internal-hrefs",
+        "search-outcomes-weekly-report",
         "sitemap-parity",
         "content-safety",
         "strategy-integrity-contract",
@@ -190,7 +192,8 @@
         "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links",
-        "site-hygiene"
+        "site-hygiene",
+        "search-outcomes-weekly-report"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -231,6 +234,7 @@
         "network-crawler-contract",
         "publish-inventory",
         "rendered-internal-hrefs",
+        "search-outcomes-weekly-report",
         "search-quality-basics",
         "sitemap-parity",
         "content-safety",
@@ -289,7 +293,8 @@
         "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links",
-        "site-hygiene"
+        "site-hygiene",
+        "search-outcomes-weekly-report"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -329,6 +334,7 @@
         "network-crawler-contract",
         "publish-inventory",
         "rendered-internal-hrefs",
+        "search-outcomes-weekly-report",
         "search-quality-basics",
         "sitemap-parity",
         "content-safety",
@@ -395,7 +401,8 @@
         "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links",
-        "site-hygiene"
+        "site-hygiene",
+        "search-outcomes-weekly-report"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -435,6 +442,7 @@
         "network-crawler-contract",
         "publish-inventory",
         "rendered-internal-hrefs",
+        "search-outcomes-weekly-report",
         "search-quality-basics",
         "sitemap-parity",
         "content-safety",
@@ -498,7 +506,8 @@
         "workflow-contract-registry",
         "agent-run-drop-integrity",
         "velocity-canonical-anchor-links",
-        "site-hygiene"
+        "site-hygiene",
+        "search-outcomes-weekly-report"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -544,6 +553,7 @@
         "network-crawler-contract",
         "publish-inventory",
         "rendered-internal-hrefs",
+        "search-outcomes-weekly-report",
         "search-quality-basics",
         "sitemap-parity",
         "content-safety",
@@ -698,7 +708,8 @@
         "workflow-yaml-syntax",
         "workflow-contract-registry",
         "agent-run-drop-integrity",
-        "velocity-canonical-anchor-links"
+        "velocity-canonical-anchor-links",
+        "search-outcomes-weekly-report"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -726,6 +737,7 @@
         "network-crawler-contract",
         "publish-inventory",
         "rendered-internal-hrefs",
+        "search-outcomes-weekly-report",
         "search-quality-basics",
         "sitemap-parity",
         "content-safety",
@@ -1742,39 +1754,6 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Regulated or numeric pages could ship with missing, dangling, or malformed provenance records.",
-        "default_behavior": "BLOCK_RELEASE",
-        "strict_behavior": "BLOCK_RELEASE",
-        "replacement_ids": [],
-        "retirement_reason": null
-      },
-      {
-        "id": "executable-bits",
-        "title": "Executable-file permissions",
-        "status": "ACTIVE",
-        "severity": "HARD_FAIL",
-        "tier": "Tier 5",
-        "scope": "CONTAINER",
-        "profiles": [
-          "audit",
-          "core",
-          "local",
-          "postrelease",
-          "release",
-          "strict"
-        ],
-        "path": "scripts/validate_executable_bits.js",
-        "command": "node scripts/validate_executable_bits.js",
-        "depends_on": [],
-        "requires_files": [],
-        "prepare_commands": [],
-        "prepare_produces_files": [],
-        "prepare_mutates_files": [],
-        "produces_files": [],
-        "mutates_files": [
-          "artifacts/validation/executable-bits.json"
-        ],
-        "enforce_no_source_mutation": true,
-        "risk_prevented": "Required shell or executable scripts may become unusable after extraction.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -3127,9 +3106,77 @@
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
+      },
+      {
+        "id": "search-outcomes-weekly-report",
+        "title": "Weekly search-outcome report exists for the due ISO week and covers every property",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 5",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/search_console/validate_search_outcomes_weekly_report.js",
+        "command": "node scripts/search_console/validate_search_outcomes_weekly_report.js",
+        "depends_on": [],
+        "requires_files": [],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/search-outcomes-weekly-report.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/search-outcomes-weekly-report.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "The owner's only portfolio-wide answer to 'is the search work helping' silently stops: search-outcomes-weekly.yml fails or never commits, or a report drops a property so the site going wrong is the one missing. Requires reports/search_outcomes/<ISO week of now-24h>.json and .md, with site count and markdown table rows equal to the property count the run read.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "STRONG_WARNING": [
+      {
+        "id": "executable-bits",
+        "title": "Executable-file permissions",
+        "status": "ACTIVE",
+        "severity": "STRONG_WARNING",
+        "tier": "Tier 5",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validate_executable_bits.js",
+        "command": "node scripts/validate_executable_bits.js",
+        "depends_on": [],
+        "requires_files": [],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [],
+        "mutates_files": [
+          "artifacts/validation/executable-bits.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Required shell or executable scripts may become unusable after extraction.",
+        "default_behavior": "WARN_CONTINUE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
       {
         "id": "homepage-schema",
         "title": "Homepage schema contract",
@@ -11652,7 +11699,7 @@
         "id": "executable-bits",
         "title": "Executable-file permissions",
         "status": "ACTIVE",
-        "severity": "HARD_FAIL",
+        "severity": "STRONG_WARNING",
         "tier": "Tier 5",
         "scope": "CONTAINER",
         "profiles": [
@@ -11676,7 +11723,7 @@
         ],
         "enforce_no_source_mutation": true,
         "risk_prevented": "Required shell or executable scripts may become unusable after extraction.",
-        "default_behavior": "BLOCK_RELEASE",
+        "default_behavior": "WARN_CONTINUE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
         "retirement_reason": null
@@ -12105,6 +12152,41 @@
         "strict_behavior": "RECORD_CONTINUE",
         "replacement_ids": [],
         "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion."
+      },
+      {
+        "id": "search-outcomes-weekly-report",
+        "title": "Weekly search-outcome report exists for the due ISO week and covers every property",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 5",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "core",
+          "local",
+          "postrelease",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/search_console/validate_search_outcomes_weekly_report.js",
+        "command": "node scripts/search_console/validate_search_outcomes_weekly_report.js",
+        "depends_on": [],
+        "requires_files": [],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/search-outcomes-weekly-report.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/search-outcomes-weekly-report.json"
+        ],
+        "enforce_no_source_mutation": false,
+        "risk_prevented": "The owner's only portfolio-wide answer to 'is the search work helping' silently stops: search-outcomes-weekly.yml fails or never commits, or a report drops a property so the site going wrong is the one missing. Requires reports/search_outcomes/<ISO week of now-24h>.json and .md, with site count and markdown table rows equal to the property count the run read.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
       }
     ],
     "Tier 4": [

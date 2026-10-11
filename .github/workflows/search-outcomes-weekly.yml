@@ -1,0 +1,120 @@
+name: Search Outcomes Weekly
+
+# One place that answers "is the search work helping" across the portfolio.
+# Mondays 08:00 America/Chicago: two UTC crons (13:00 in CDT, 14:00 in CST) and
+# a guard step that lets only the one matching Chicago's current offset run.
+# Report -> RED issues opened/updated/closed -> artifact -> validated commit of
+# reports/search_outcomes/<ISO-week>.{md,json} -> email to the owner.
+# Without RESEND_API_KEY the email step is a NAMED STOP; everything else runs.
+on:
+  schedule:
+    - cron: "0 13 * * 1"
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+# Shares the single main-writer group: see query-evidence-refresh.yml.
+concurrency:
+  group: local-guides-main-writer
+  cancel-in-progress: false
+
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Guard Monday 08:00 Chicago
+        id: guard
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          offset=$(TZ=America/Chicago date +%z)
+          run=true
+          if [ "$SCHEDULE" = "0 13 * * 1" ] && [ "$offset" != "-0500" ]; then run=false; fi
+          if [ "$SCHEDULE" = "0 14 * * 1" ] && [ "$offset" != "-0600" ]; then run=false; fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "schedule='${SCHEDULE:-dispatch}' chicago_offset=$offset run=$run"
+      - uses: actions/checkout@v7
+        if: steps.guard.outputs.run == 'true'
+        with:
+          # validate:release resolves historic page bytes with git show; see
+          # query-class-occupancy-probe.yml.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        if: steps.guard.outputs.run == 'true'
+        with:
+          node-version: "24"
+      - name: Install
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          python3 -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null
+          npm ci --ignore-scripts
+      - name: Build the weekly report and sync RED issues
+        id: report
+        if: steps.guard.outputs.run == 'true'
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/search_console/search_outcomes_weekly.py --mode report reports/search_outcomes
+      - uses: actions/upload-artifact@v7
+        if: steps.guard.outputs.run == 'true'
+        with:
+          name: search-outcomes-${{ steps.report.outputs.week }}-${{ github.run_id }}
+          path: reports/search_outcomes/${{ steps.report.outputs.week }}.*
+          retention-days: 90
+      - name: Commit the report
+        # reports/ is gitignored repo-wide (repo-hygiene requires it); this one
+        # directory is the deliberate exception, so it is added with -f.
+        # Same fetch + rebase + retry shape as every other push-to-main lane,
+        # and the tree is re-validated after every rebase before it is pushed.
+        if: steps.guard.outputs.run == 'true'
+        env:
+          WEEK: ${{ steps.report.outputs.week }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp reports/search_outcomes/"$WEEK".* "$RUNNER_TEMP"/
+          npm run validate:release
+          git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json"
+          if git diff --cached --quiet; then echo "no changes to commit"; exit 0; fi
+          git commit -m "search outcomes weekly report $WEEK"
+          for attempt in 1 2 3; do
+            # validation rewrites tracked evidence files; only the report is committed
+            git reset -q --hard HEAD
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              git reset --hard origin/main
+              cp "$RUNNER_TEMP/$WEEK".* reports/search_outcomes/
+              npm run validate:release
+              git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json"
+              if git diff --cached --quiet; then
+                echo "no changes after re-deriving onto origin/main"
+                exit 0
+              fi
+              git commit -m "search outcomes weekly report $WEEK"
+            else
+              npm run validate:release
+              git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json"
+              git commit --amend --no-edit
+            fi
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt * 15))
+          done
+          exit 1
+      - name: Email the report to the owner
+        if: steps.guard.outputs.run == 'true'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          WEEK: ${{ steps.report.outputs.week }}
+        run: python3 scripts/search_console/search_outcomes_weekly.py --mode email "reports/search_outcomes/$WEEK.md"

@@ -23,6 +23,7 @@ const lanes = {
   // the workflows that actually write.
   'query-evidence-refresh.yml': { lane: 'query-evidence', status: 'add', reason: 'Scheduled Search Console evidence refresh; the single allowed scheduled committer, whose commit surface is derived from the registry repair_writes.', command: 'npm run queries:join-release', mutations: committablePatterns(ROOT) },
   'gsc-portfolio-report.yml': { lane: 'measurement', status: 'add', reason: 'Dispatch-only Search Console portfolio tooling (report, sitemaps submit, URL-inspection coverage); uploads an artifact and commits nothing to the repo.', command: 'python3 scripts/search_console/gsc_portfolio_report.py', mutations: [] },
+  'search-outcomes-weekly.yml': { lane: 'measurement', status: 'add', reason: 'Weekly (Mon 08:00 Chicago) portfolio search-outcome report: GSC week-over-week, committed coverage/strengthening/consolidation files, measured-URL 404s; commits the report pair, syncs RED issues, emails the owner.', command: 'python3 scripts/search_console/search_outcomes_weekly.py', mutations: ['reports/search_outcomes/*.md', 'reports/search_outcomes/*.json'] },
   'query-class-occupancy-probe.yml': { lane: 'measurement', status: 'add', reason: 'Dispatch-only citation occupancy probe that commits its measurement rather than uploading it.', command: 'node scripts/queries/probe_query_class_occupancy.mjs', mutations: ['data/signals/query_class_occupancy.json', 'data/authority_scale/query_atlas.json', 'data/queries/measured_demand_candidates.json', 'artifacts/validation/*.json'] }
 };
 const retired = [
