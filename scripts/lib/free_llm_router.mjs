@@ -23,7 +23,7 @@
  *
  * CLI:
  *   node scripts/lib/free_llm_router.mjs --receipt   policy receipt, no network
- *   node scripts/lib/free_llm_router.mjs --ping      one tiny call through the router (needs OPENROUTER_API_KEY)
+ *   node scripts/lib/free_llm_router.mjs --ping      key identity (label/limit/usage, never the key) + one tiny $0 call
  *   node scripts/lib/free_llm_router.mjs --refresh   re-snapshot the $0 model list (keyless)
  */
 import fs from 'node:fs';
@@ -137,6 +137,23 @@ export async function chatFree(cfg, opts = {}) {
   return { ok: false, stop: NO_FREE_MODEL_STOP, attempts };
 }
 
+/**
+ * Which key is this? GET /api/v1/auth/key with the repo secret, returning ONLY
+ * label, limit, usage, is_free_tier, limit_remaining - never the key itself. Part
+ * of every --ping receipt (key_label) so a report can show which key each repo uses.
+ */
+export async function keyInfo(key = process.env.OPENROUTER_API_KEY || '') {
+  if (!key) return { error: 'no key' };
+  try {
+    const { res, data } = await fetchJson('https://openrouter.ai/api/v1/auth/key', { headers: { authorization: `Bearer ${key}` } }, 15000);
+    if (!res.ok) return { error: `HTTP ${res.status}${data?.error?.message ? ` ${data.error.message}` : ''}`.slice(0, 160) };
+    const d = data?.data || {};
+    return { key_label: d.label ?? null, limit: d.limit ?? null, usage: d.usage ?? null, is_free_tier: d.is_free_tier ?? null, limit_remaining: d.limit_remaining ?? null };
+  } catch (e) {
+    return { error: String(e?.message || e).slice(0, 160) };
+  }
+}
+
 async function refresh(root) {
   const { data } = await fetchJson('https://openrouter.ai/api/v1/models', {}, 30000);
   const all = data?.data || [];
@@ -162,9 +179,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   if (argv.includes('--refresh')) { await refresh(root); process.exit(0); }
   const cfg = loadRouting(root);
   if (argv.includes('--ping')) {
+    const key = await keyInfo();
     const r = await chatFree(cfg, { messages: [{ role: 'user', content: 'Reply with the single word: ok' }], max_tokens: 5 });
     const outcome = r.ok ? `FREE MODEL ANSWERED: ${r.model} (reported cost ${r.cost_reported ? r.cost : 'not reported'})` : `NAMED STOP: ${r.stop}`;
-    console.log(`LLM ROUTER RECEIPT ${JSON.stringify(receipt(cfg, { outcome, attempts: r.attempts }))}`);
+    console.log(`LLM ROUTER KEY ${JSON.stringify(key)}`);
+    console.log(`LLM ROUTER RECEIPT ${JSON.stringify(receipt(cfg, { outcome, key, attempts: r.attempts }))}`);
     console.log(outcome);
     process.exit(0);
   }
