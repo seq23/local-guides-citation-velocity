@@ -26,6 +26,7 @@ import os
 import re
 import sys
 import threading
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -76,6 +77,17 @@ def site_root(site):
     if site.startswith("sc-domain:"):
         return "https://" + site.split(":", 1)[1] + "/"
     return site if site.endswith("/") else site + "/"
+
+
+def in_property(site, url):
+    """True when url belongs to the property: same domain or a subdomain for
+    sc-domain:, same prefix for URL-prefix properties. Search Console rejects
+    any other URL with 'not part of this property', so those are never sent."""
+    if site.startswith("sc-domain:"):
+        domain = site.split(":", 1)[1].lower()
+        host = urllib.parse.urlsplit(url).hostname or ""
+        return host == domain or host.endswith("." + domain)
+    return url.startswith(site_root(site))
 
 
 def fetch(url, timeout=20):
@@ -155,8 +167,11 @@ def run_sitemaps(out_dir):
             rec.update({"listed_before": sorted(before), "discovered": found, "discovery_notes": notes,
                         "sitemap_page_urls": len(pages)})
             submitted, submit_errors = [], {}
+            foreign = [u for u in found if not in_property(site, u)]
             for url in found:
                 prior = before.get(url)
+                if url in foreign:
+                    continue  # another property's sitemap (redirected host); submitting it returns 400
                 if prior is None or prior["errors"] > 0:
                     try:
                         svc.sitemaps().submit(siteUrl=site, feedpath=url).execute()
@@ -168,17 +183,19 @@ def run_sitemaps(out_dir):
             for url in sorted(set(found) | set(before) | set(after)):
                 a = after.get(url, {})
                 rows.append({"sitemap": url, "was_listed": url in before, "live": url in found,
+                             "foreign_host": url in foreign,
                              "submitted_now": url in submitted, "submit_error": submit_errors.get(url),
                              "before": before.get(url), "lastSubmitted": a.get("lastSubmitted"),
                              "errors": a.get("errors"), "warnings": a.get("warnings"),
                              "isPending": a.get("isPending"), "listed_after": url in after})
             rec.update({"rows": rows, "listed_after": sorted(after), "submitted_count": len(submitted),
+                        "foreign_sitemaps": foreign,
                         "submit_error_count": len(submit_errors)})
         except Exception as exc:
             rec["error"] = str(exc)[:500]
         write_json(out_dir, f"{slug(site)}.json", rec)
         summary["properties"].append({k: rec.get(k) for k in (
-            "site", "permission", "listed_before", "discovered", "sitemap_page_urls", "submitted_count",
+            "site", "permission", "listed_before", "discovered", "foreign_sitemaps", "sitemap_page_urls", "submitted_count",
             "submit_error_count", "listed_after", "rows", "discovery_notes", "error")})
         print(f"{site}: before={len(rec.get('listed_before') or [])} live={len(rec.get('discovered') or [])} "
               f"submitted={rec.get('submitted_count')} after={len(rec.get('listed_after') or [])} {rec.get('error','')}")
@@ -232,8 +249,11 @@ def run_coverage(out_dir):
         site = entry["siteUrl"]
         _, pages, n = discover_sitemaps(site)
         home = site_root(site)
-        ordered = [home] + [u for u in pages if u.rstrip("/") != home.rstrip("/")]
-        plans[site], notes[site] = ordered, n + [f"{len(pages)} URLs in live sitemaps"]
+        own = [u for u in pages if in_property(site, u)]
+        ordered = [home] + [u for u in own if u.rstrip("/") != home.rstrip("/")]
+        plans[site] = ordered
+        notes[site] = n + [f"{len(pages)} URLs in live sitemaps, {len(own)} inside this property"
+                           + (f"; {len(pages) - len(own)} on another host skipped" if len(own) < len(pages) else "")]
     wants = {s: min(len(u), INSPECT_CAP_PER_PROPERTY) for s, u in plans.items()}
     alloc = allocate(wants, INSPECT_DAILY_BUDGET)
     local_svc = threading.local()
@@ -272,7 +292,7 @@ def run_coverage(out_dir):
         for x in r:
             states[x.get("coverageState") or x["bucket"]] = states.get(x.get("coverageState") or x["bucket"], 0) + 1
         truncated = alloc[site] < len(plans[site])
-        rec = {"site": site, "sitemap_urls": len(plans[site]) - 1, "inspected": len(r), "allowance": alloc[site],
+        rec = {"site": site, "sitemap_urls_in_property": len(plans[site]) - 1, "inspected": len(r), "allowance": alloc[site],
                "truncated": truncated, "truncated_by": ("cap" if alloc[site] == INSPECT_CAP_PER_PROPERTY else "budget") if truncated else None,
                "counts": counts, "coverage_states": states, "notes": notes[site], "rows": r}
         if truncated:
@@ -281,8 +301,8 @@ def run_coverage(out_dir):
         for k in keys:
             summary["totals"][k] += counts[k]
         write_json(out_dir, f"{slug(site)}.json", rec)
-        summary["properties"].append({k: rec[k] for k in ("site", "sitemap_urls", "inspected", "allowance",
-                                                          "truncated", "truncated_by", "counts", "coverage_states")})
+        summary["properties"].append({k: rec[k] for k in ("site", "sitemap_urls_in_property", "inspected", "allowance",
+                                                          "truncated", "truncated_by", "counts", "coverage_states", "notes")})
         print(f"{site}: inspected={len(r)} {counts}")
     write_json(out_dir, "summary.json", summary)
     print(json.dumps(summary, indent=1))
