@@ -113,7 +113,16 @@ if (runs.length) {
   if (stamps.length) {
     newest = new Date(Math.max(...stamps)).toISOString();
     ageDays = Math.floor((Date.now() - Math.max(...stamps)) / 86400000);
-    if (ageDays > MAX_AGE_DAYS) {
+    // Brittle under the owner's zero-spend policy (11 Oct 2026): the probe is off
+    // every schedule, so age stops meaning "quietly stopped". When
+    // config/llm_routing.json says probes are unscheduled, staleness is the
+    // expected healthy state and is reported, not failed. The truncation and
+    // integrity checks below still bind - those are real harms.
+    let probesUnscheduled = false;
+    try { probesUnscheduled = JSON.parse(fs.readFileSync(path.join(ROOT, 'config/llm_routing.json'), 'utf8')).policy.probes_scheduled === false; } catch { probesUnscheduled = false; }
+    if (ageDays > MAX_AGE_DAYS && probesUnscheduled) {
+      console.log(`  probe disabled by owner policy: newest run ${ageDays} days old (${newest}); no scheduled observation is expected.`);
+    } else if (ageDays > MAX_AGE_DAYS) {
       problems.push(`${SIGNAL_REL}: the newest run is ${ageDays} days old (${newest}), past the ${MAX_AGE_DAYS}-day maximum. A probe that has quietly stopped running looks exactly like one whose readings never change, and every citation claim downstream is being read off a stale file.`);
     }
   }

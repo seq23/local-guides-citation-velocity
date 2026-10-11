@@ -97,6 +97,7 @@
  *
  * Usage: node probe_query_class_occupancy.mjs [panel.json] [out.json] [--atlas-top N] [--evidence-set ID] [--merge]
  */
+import { loadRouting, chatOnce, assertFreeRequest, receipt, CostViolation, PaidCallRefused } from '../lib/free_llm_router.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -228,29 +229,23 @@ const MODEL = process.env.OCCUPANCY_PROBE_MODEL || 'openai/gpt-4o-mini';
 const MAX_RESULTS = Number(process.env.PROBE_WEB_MAX_RESULTS || 10);
 const TIMEOUT_MS = Number(process.env.PROBE_TIMEOUT_MS || 45000);
 const orKey = process.env.OPENROUTER_API_KEY || '';
+const routing = loadRouting(process.cwd());
 
 const hostOf = (u) => { try { return new URL(u).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Every provider call goes through the free router. This measurement needs the
+// web plugin (the cited hosts ARE the measurement), and the web plugin bills per
+// request whatever the model - so under the owner's zero-spend policy
+// (11 Oct 2026: "nothing should be paid ... cut the probes and make them free")
+// the router refuses it before any request exists, and the run below ends as a
+// NAMED STOP before reaching here. --rescore-only calls no provider and still works.
+const WEB_PLUGIN = [{ id: 'web', engine: WEB_ENGINE, mode: WEB_MODE, max_results: MAX_RESULTS }];
 async function citedHosts(query) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      signal: ctrl.signal,
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${orKey}` },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0,
-        max_tokens: 400,
-        plugins: [{ id: 'web', engine: WEB_ENGINE, mode: WEB_MODE, max_results: MAX_RESULTS }],
-        messages: [{ role: 'user', content: query }],
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
-    const message = data?.choices?.[0]?.message || {};
+    const r = await chatOnce(routing, { model: MODEL, plugins: WEB_PLUGIN, messages: [{ role: 'user', content: query }], max_tokens: 400, temperature: 0, key: orKey, timeoutMs: TIMEOUT_MS });
+    if (!r.ok) return { ok: false, error: r.error };
+    const message = r.data?.choices?.[0]?.message || {};
     const hosts = [];
     const seen = new Set();
     for (const a of message.annotations || []) {
@@ -259,9 +254,8 @@ async function citedHosts(query) {
     }
     return { ok: true, hosts };
   } catch (e) {
+    if (e instanceof CostViolation || e instanceof PaidCallRefused) { console.error(`occupancy probe: ${e.message}`); process.exit(1); }
     return { ok: false, error: String(e?.message || e).slice(0, 120) };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -341,6 +335,19 @@ if (evidenceSet) {
     process.exit(1);
   }
   console.log(`occupancy probe: appended ${added} row(s) from evidence set ${evidenceSet}`);
+}
+
+// Owner policy gate (11 Oct 2026). Off every schedule; a deliberate dispatch must
+// say confirm_paid, and even then the router refuses the billed web plugin. A
+// stop here writes nothing - the committed readings stay, stale, never zero.
+if (!rescoreOnly) {
+  const stop = (reason) => {
+    console.log(`occupancy probe: NAMED STOP - ${reason}. ${targets.length} queries ready, none measured, no file written, nothing spent.`);
+    console.log(`LLM ROUTER RECEIPT ${JSON.stringify(receipt(routing, { outcome: `NAMED STOP: ${reason}` }))}`);
+    process.exit(0);
+  };
+  if (process.env.CONFIRM_PAID !== 'true') stop(`${routing.policy.probes_disabled_reason} - dispatch query-class-occupancy-probe.yml with confirm_paid: true`);
+  try { assertFreeRequest(routing, { model: MODEL, plugins: WEB_PLUGIN }); } catch (e) { stop(`occupancy needs the billed web plugin: ${e.message}`); }
 }
 
 if (!orKey && !rescoreOnly) {

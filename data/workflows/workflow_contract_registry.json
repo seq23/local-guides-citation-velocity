@@ -206,11 +206,14 @@
       "commands": [
         "npm ci --ignore-scripts",
         "node scripts/queries/probe_query_class_occupancy.mjs",
+        "node scripts/llm_citation_probe.mjs",
         "npm run atlas:build",
         "npm run queries:join-release",
         "npm run validate"
       ],
-      "required_inputs": [],
+      "required_inputs": [
+        "confirm_paid"
+      ],
       "required_secrets": [],
       "optional_secrets": [
         "OPENROUTER_API_KEY"
@@ -218,18 +221,19 @@
       "consumes": [
         "data/signals/query_class_probe_panel.json",
         "data/authority_scale/query_atlas.json (measured T1 head, via --atlas-top)",
-        "OpenRouter web-plugin citation annotations"
+        "OpenRouter via scripts/lib/free_llm_router.mjs ($0 models only; the billed web plugin is refused)"
       ],
       "produces": [
         "data/signals/query_class_occupancy.json",
         "data/authority_scale/query_atlas.json",
-        "data/queries/measured_demand_candidates.json"
+        "data/queries/measured_demand_candidates.json",
+        "data/signals/llm_citation_observations.json"
       ],
       "upstream": [],
       "downstream": [
         "velocity-content-release.yml"
       ],
-      "failure_boundary": "Dispatch-only, so it is not a scheduled mutator and does not consume the single scheduled-commit slot; the scheduled path runs the same probe inside query-evidence-refresh.yml. It commits its measurement instead of uploading an artifact, because the previous version left nothing behind for the atlas to read. It measures answer-engine citation slots via the OpenRouter web plugin, not Bing SERP slots: Bing blocks both residential and GitHub Actions egress with a JavaScript shell, which is why the only run of the previous version discarded 16 of 16 probes including both controls and still exited 0. A degraded probe is discarded, never recorded as zero occupancy, and a run that measures nothing or loses its controls exits non-zero."
+      "failure_boundary": "Dispatch-only and gated: owner policy 11 Oct 2026 (\"nothing should be paid ... cut the probes and make them free\") took both probes off every schedule. confirm_paid (boolean, default false) must be true or the refuse job prints a NAMED STOP and nothing runs. Every model call goes through scripts/lib/free_llm_router.mjs: $0 models only, max_cost_usd 0, web plugin refused, so the occupancy probe stops by name (it needs the billed web plugin) and writes nothing - the committed readings stay, stale, never zero - and the citation probe runs in knowledge mode on $0 models. A reported non-zero cost fails the run."
     },
     {
       "file": "query-evidence-refresh.yml",
@@ -252,7 +256,7 @@
         "python3 scripts/search_console/gsc_portfolio_report.py --mode daily --site sc-domain:theindustryguides.com data/search_intelligence",
         "node scripts/search_intelligence/search_intelligence.js targets",
         "node scripts/search_intelligence/search_intelligence.js consolidation",
-        "npm run probe:occupancy",
+        "node scripts/lib/free_llm_router.mjs --ping",
         "npm run atlas:build",
         "npm run queries:join-release",
         "npm run validate",
@@ -267,8 +271,7 @@
       ],
       "consumes": [
         "Google Search Console search-analytics query rows for the verified property",
-        "existing evidence_queries.json (merged, never replaced)",
-        "OpenRouter web-plugin citation annotations for the occupancy panel and the measured atlas head"
+        "existing evidence_queries.json (merged, never replaced)"
       ],
       "produces": [
         "data/queries/evidence/evidence_queries.json",
@@ -286,7 +289,7 @@
       "downstream": [
         "velocity-content-release.yml"
       ],
-      "failure_boundary": "Ingests measured Search Console demand, measures answer-engine citation occupancy, rebuilds the atlas on that measured winnability signal, joins it to the release queue as page candidates, and commits only if the full validation chain passes in the same run. Named in allowed_scheduled_mutation_workflows. It has no page-admission authority: the join proposes candidates and the release law downstream still decides. A push made with GITHUB_TOKEN raises no push event, so when the join produces candidates this workflow dispatches Velocity Content Release explicitly; when it produces none it dispatches nothing and prints the named stop reason. Missing credentials leave the evidence untouched and exit 0; a credentialed API failure is a hard error. A failed occupancy probe leaves the previously committed reading in place - stale, never a false zero."
+      "failure_boundary": "Ingests measured Search Console demand, rebuilds the atlas on the last committed citation-occupancy readings (the probes are off this schedule by owner policy, 11 Oct 2026; the cycle prints an LLM ROUTER RECEIPT from one $0 call through scripts/lib/free_llm_router.mjs), joins it to the release queue as page candidates, and commits only if the full validation chain passes in the same run. Named in allowed_scheduled_mutation_workflows. It has no page-admission authority: the join proposes candidates and the release law downstream still decides. A push made with GITHUB_TOKEN raises no push event, so when the join produces candidates this workflow dispatches Velocity Content Release explicitly; when it produces none it dispatches nothing and prints the named stop reason. Missing credentials leave the evidence untouched and exit 0; a credentialed API failure is a hard error. Occupancy readings stay as last committed - stale, never a false zero."
     },
     {
       "file": "search-intelligence-loop.yml",

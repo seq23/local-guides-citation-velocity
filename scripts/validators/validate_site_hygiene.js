@@ -13,6 +13,7 @@
  *   clarity            - the Clarity map holds the registered host -> id
  *   indexnow_key       - the key file is committed at the root and is a valid key file
  *   registration       - every registered build step still runs in `npm run build`
+ *   zero_paid_llm      - no scheduled paid model call; $0-only routing; probes dispatch-only
  * Pages: dist/ when present (what ships), else every admitted rendered page passed
  * through the installer in memory, so CI without a dist still proves the tags land.
  */
@@ -164,6 +165,24 @@ else if (read(kf).trim() !== kf.replace(/\.txt$/, '')) fail('indexnow_key', `${k
       for (const p of j('strengthened_pages.json').pages) if (!fs.existsSync(path.join(ROOT, p.rendered_file))) fail('search_intelligence', `strengthened page ${p.route} has no rendered file ${p.rendered_file}`);
       if (source === 'dist' && !home.includes('data-search-ranked-links="true"')) fail('search_intelligence', 'dist homepage lacks the ranked-links block');
     }
+  }
+}
+
+// zero paid LLM (owner policy 11 Oct 2026: "nothing should be paid ... cut the
+// probes and make them free"): rules in scripts/lib/zero_paid_llm_check.js, block
+// in the registry. Hostile fixtures replay every run, so a guard that stopped
+// catching a scheduled paid call fails here rather than passing quietly.
+{
+  const zp = reg.zero_paid_llm;
+  if (!zp) fail('zero_paid_llm', 'block missing from the registry');
+  else {
+    const { check, selfTest, repoIo } = require('../lib/zero_paid_llm_check.js');
+    const r = check(repoIo(ROOT), { reg: zp });
+    for (const f of r.failures) fail('zero_paid_llm', f);
+    for (const w of r.warnings) console.log(`  !! SITE HYGIENE WARNING [zero_paid_llm]: ${w}`);
+    const proof = selfTest(ROOT, zp);
+    for (const m of proof.missed) fail('zero_paid_llm', `negative proof no longer caught: ${m}`);
+    if (!r.failures.length && !proof.missed.length) console.log(`  zero_paid_llm: ${r.stats.scheduled_workflows} scheduled workflows reach no paid model; ${r.stats.probe_workflows} probe workflow dispatch-only behind confirm_paid; ${r.stats.models} $0 models; ${proof.cases} negative proofs caught`);
   }
 }
 
