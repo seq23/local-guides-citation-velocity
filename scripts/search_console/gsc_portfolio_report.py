@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Search Console portfolio tooling for every property the service account can see.
 
-Usage: gsc_portfolio_report.py [--mode report|sitemaps|coverage] [out_dir]
+Usage: gsc_portfolio_report.py [--mode report|sitemaps|coverage|analytics] [out_dir]
+       gsc_portfolio_report.py --mode daily --site sc-domain:theindustryguides.com [data_dir]
 
 report   (default) 28 complete days (ending 3 days ago, Search Console's data lag)
          of totals, top 25 queries by impressions, and page counts / top 10 pages.
@@ -14,7 +15,18 @@ coverage urlInspection.index.inspect on sitemap URLs (homepage first, then sitem
          order, cap 150 per property) under a portfolio-wide daily budget,
          8 requests in parallel; counts by coverage bucket plus per-URL rows.
 
-Every mode writes one JSON per property plus summary.json into out_dir and
+analytics query+page rows (rolling 28 complete days) for every property, one JSON
+         each; the portfolio-wide read the per-site daily files are built from.
+daily    ONE property, committed by the daily cycle into data_dir
+         (default data/search_intelligence): gsc_search_analytics_export.json
+         (query+page, rolling 28 days), gsc_sitemaps.json (sitemaps.list; submit
+         only when the property lists none) and index_coverage.json (URL
+         Inspection, 8 in parallel, at most 150 URLs a day, never-inspected and
+         oldest-inspected URLs first, so the rotation covers the whole sitemap
+         over time; rows merge with the previous file). A missing credential or
+         an unreadable property is a NAMED STOP line, exit 0, files untouched.
+
+Every other mode writes one JSON per property plus summary.json into out_dir and
 prints the summary. Exits non-zero when the account can read zero properties,
 or when a mode found nothing to act on (Rule 0: a run that reports nothing must
 not look like success).
@@ -312,6 +324,155 @@ def run_coverage(out_dir):
         sys.exit("no URL inspection succeeded")
 
 
+def window():
+    end = dt.date.today() - dt.timedelta(days=3)
+    start = end - dt.timedelta(days=27)
+    return start.isoformat(), end.isoformat()
+
+
+def collect_analytics(svc, site):
+    """query+page rows for the rolling 28-day window, with per-query and per-page rollups."""
+    s, e = window()
+    tot = query(svc, site, s, e, None, 1)
+    rows = []
+    for r in query(svc, site, s, e, ["query", "page"], 25000):
+        rows.append({"query": r["keys"][0], "page": r["keys"][1], "clicks": r.get("clicks", 0),
+                     "impressions": r.get("impressions", 0), "ctr": round(r.get("ctr", 0), 4),
+                     "position": round(r.get("position", 0), 1)})
+    rows.sort(key=lambda x: (-x["impressions"], x["query"], x["page"]))
+    by_query = [row(r, "query") for r in sorted(query(svc, site, s, e, ["query"], 25000), key=lambda r: (-r["impressions"], r["keys"][0]))]
+    by_page = [row(r, "page") for r in sorted(query(svc, site, s, e, ["page"], 25000), key=lambda r: (-r["impressions"], r["keys"][0]))]
+    return {"schema_version": "1.0", "truth_source": "google_search_console_search_analytics", "site_url": site,
+            "start_date": s, "end_date": e, "window_days": 28,
+            "collected_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+            "totals": row(tot[0]) if tot else {"clicks": 0, "impressions": 0, "ctr": 0, "position": 0},
+            "query_count": len(by_query), "page_count": len(by_page), "row_count": len(rows),
+            "rows": rows, "by_query": by_query, "by_page": by_page}
+
+
+def run_analytics(out_dir):
+    svc, account = load_service()
+    sites = list_sites(svc)
+    summary = {"mode": "analytics", "service_account": account, "property_count": len(sites), "properties": []}
+    for entry in sites:
+        site = entry["siteUrl"]
+        try:
+            rec = collect_analytics(svc, site)
+        except Exception as exc:
+            rec = {"site_url": site, "error": str(exc)[:500]}
+        write_json(out_dir, f"{slug(site)}.json", rec)
+        summary["properties"].append({k: rec.get(k) for k in ("site_url", "totals", "query_count", "page_count", "row_count", "error")})
+        print(f"{site}: {rec.get('totals')} rows={rec.get('row_count')} {rec.get('error', '')}")
+    write_json(out_dir, "summary.json", summary)
+    if not sites:
+        sys.exit("service account can read zero Search Console properties")
+
+
+def read_json(path, default=None):
+    try:
+        with open(path) as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return default
+
+
+def named_stop(msg):
+    print(f"NAMED STOP: {msg}")
+    sys.exit(0)
+
+
+def daily_coverage(creds, site, data_dir, now):
+    _, pages, notes = discover_sitemaps(site)
+    home = site_root(site)
+    own = [u for u in pages if in_property(site, u)]
+    universe = [home] + [u for u in own if u.rstrip("/") != home.rstrip("/")]
+    prev = read_json(os.path.join(data_dir, "index_coverage.json"), {}) or {}
+    prev_rows = {r["url"]: r for r in prev.get("urls", []) if r.get("url") in set(universe)}
+    # Rotation: the homepage, then never-inspected URLs in sitemap order, then the
+    # oldest inspections. Over ceil(N/150) days every sitemap URL is inspected.
+    order = {u: i for i, u in enumerate(universe)}
+    rest = sorted(universe[1:], key=lambda u: (u in prev_rows, (prev_rows.get(u) or {}).get("inspected_at") or "", order[u]))
+    batch = ([home] + rest)[:INSPECT_CAP_PER_PROPERTY]
+    local_svc = threading.local()
+
+    def inspect(url):
+        if not hasattr(local_svc, "svc"):
+            local_svc.svc = make_service(creds)
+        try:
+            res = local_svc.svc.urlInspection().index().inspect(
+                body={"inspectionUrl": url, "siteUrl": site}).execute().get("inspectionResult", {})
+            idx = res.get("indexStatusResult", {})
+            return {"url": url, "bucket": bucket(res), "verdict": idx.get("verdict"),
+                    "coverageState": idx.get("coverageState"), "lastCrawlTime": idx.get("lastCrawlTime"),
+                    "googleCanonical": idx.get("googleCanonical"), "userCanonical": idx.get("userCanonical"),
+                    "inspected_at": now}
+        except Exception as exc:
+            return {"url": url, "bucket": "error", "error": str(exc)[:300], "inspected_at": now}
+
+    with cf.ThreadPoolExecutor(INSPECT_PARALLEL) as pool:
+        fresh = list(pool.map(inspect, batch))
+    ok = [r for r in fresh if r["bucket"] != "error"]
+    if batch and not ok:
+        named_stop(f"URL Inspection failed for all {len(batch)} URLs of {site}: {fresh[0].get('error')}")
+    for r in ok:
+        prev_rows[r["url"]] = r
+    rows = [prev_rows[u] for u in universe if u in prev_rows]
+    by_state, buckets = {}, {}
+    for r in rows:
+        by_state[r.get("coverageState") or r["bucket"]] = by_state.get(r.get("coverageState") or r["bucket"], 0) + 1
+        buckets[r["bucket"]] = buckets.get(r["bucket"], 0) + 1
+    return {"schema_version": "1.0", "truth_source": "google_search_console_url_inspection", "site_url": site,
+            "collected_at": now, "state": "OK", "sitemap_url_count": len(universe),
+            "inspected_this_run": len(ok), "errors_this_run": len(fresh) - len(ok),
+            "inspected_total": len(rows), "never_inspected": len(universe) - len(rows),
+            "quota": {"daily_limit_per_property": 2000, "cap_per_site_per_day": INSPECT_CAP_PER_PROPERTY,
+                      "parallel": INSPECT_PARALLEL, "portfolio_daily_budget": INSPECT_DAILY_BUDGET},
+            "rotation": "homepage first, then never-inspected sitemap URLs in sitemap order, then oldest inspection first",
+            "summary": {"by_coverage_state": dict(sorted(by_state.items())), "buckets": dict(sorted(buckets.items()))},
+            "notes": notes, "urls": rows}
+
+
+def daily_sitemaps(svc_write, site, now):
+    before = sitemap_state(svc_write.sitemaps().list(siteUrl=site).execute().get("sitemap", []))
+    found, pages, notes = discover_sitemaps(site)
+    own = [u for u in found if in_property(site, u)]
+    submitted, errors = [], {}
+    if not before:  # submit only when the property lists no sitemap at all
+        for url in own:
+            try:
+                svc_write.sitemaps().submit(siteUrl=site, feedpath=url).execute()
+                submitted.append(url)
+            except Exception as exc:
+                errors[url] = str(exc)[:300]
+    after = sitemap_state(svc_write.sitemaps().list(siteUrl=site).execute().get("sitemap", [])) if submitted else before
+    return {"schema_version": "1.0", "site_url": site, "collected_at": now, "live_sitemaps": own,
+            "sitemap_page_urls": len(pages), "listed_before": before, "submitted": submitted,
+            "submit_errors": errors, "listed_after": after, "notes": notes}
+
+
+def run_daily(site, data_dir):
+    if not os.environ.get("GSC_SERVICE_ACCOUNT_JSON"):
+        named_stop("GSC_SERVICE_ACCOUNT_JSON is not set; Search Console files left as they were")
+    os.makedirs(data_dir, exist_ok=True)
+    now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    creds, account = load_creds(READONLY)
+    svc = make_service(creds)
+    try:
+        analytics = collect_analytics(svc, site)
+    except Exception as exc:
+        named_stop(f"search analytics unreadable for {site} as {account}: {str(exc)[:300]}")
+    write_json(data_dir, "gsc_search_analytics_export.json", analytics)
+    print(f"{site}: analytics rows={analytics['row_count']} queries={analytics['query_count']} totals={analytics['totals']}")
+    try:
+        wcreds, _ = load_creds(WRITE)
+        write_json(data_dir, "gsc_sitemaps.json", daily_sitemaps(make_service(wcreds), site, now))
+    except Exception as exc:
+        print(f"NAMED STOP: sitemaps.list unreadable for {site}: {str(exc)[:300]}")
+    cov = daily_coverage(creds, site, data_dir, now)
+    write_json(data_dir, "index_coverage.json", cov)
+    print(f"{site}: coverage inspected_this_run={cov['inspected_this_run']} total={cov['inspected_total']}/{cov['sitemap_url_count']} {cov['summary']['by_coverage_state']}")
+
+
 def query(svc, site, start, end, dims, limit):
     body = {"startDate": start, "endDate": end, "rowLimit": limit}
     if dims:
@@ -332,14 +493,23 @@ def main():
     mode = "report"
     if args[:1] == ["--mode"]:
         mode, args = args[1], args[2:]
-    if mode not in ("report", "sitemaps", "coverage"):
-        sys.exit(f"unknown mode {mode!r}; expected report, sitemaps or coverage")
+    site = None
+    if args[:1] == ["--site"]:
+        site, args = args[1], args[2:]
+    if mode not in ("report", "sitemaps", "coverage", "analytics", "daily"):
+        sys.exit(f"unknown mode {mode!r}; expected report, sitemaps, coverage, analytics or daily")
+    if mode == "daily":
+        if not site:
+            sys.exit("--mode daily needs --site <property>")
+        return run_daily(site, args[0] if args else "data/search_intelligence")
     out_dir = args[0] if args else f"gsc-{mode}"
     os.makedirs(out_dir, exist_ok=True)
     if mode == "sitemaps":
         return run_sitemaps(out_dir)
     if mode == "coverage":
         return run_coverage(out_dir)
+    if mode == "analytics":
+        return run_analytics(out_dir)
     svc, account = load_service()
     end = dt.date.today() - dt.timedelta(days=3)
     start = end - dt.timedelta(days=27)
