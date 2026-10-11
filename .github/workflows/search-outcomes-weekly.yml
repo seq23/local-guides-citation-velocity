@@ -3,8 +3,10 @@ name: Search Outcomes Weekly
 # One place that answers "is the search work helping" across the portfolio.
 # Mondays 08:00 America/Chicago: two UTC crons (13:00 in CDT, 14:00 in CST) and
 # a guard step that lets only the one matching Chicago's current offset run.
-# Report -> RED issues opened/updated/closed -> artifact -> validated commit of
-# reports/search_outcomes/<ISO-week>.{md,json} -> email to the owner.
+# Report -> RED issues opened/updated/closed -> free query discovery (seeded only
+# from the report's measured queries; $0, no keys, no model calls) -> artifact ->
+# validated commit of reports/search_outcomes/<ISO-week>.{md,json} and
+# data/discovery/<ISO-week>/ -> email to the owner (carries the Discovery table).
 # Without RESEND_API_KEY the email step is a NAMED STOP; everything else runs.
 on:
   schedule:
@@ -66,11 +68,22 @@ jobs:
           GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/search_console/search_outcomes_weekly.py --mode report reports/search_outcomes
+      - name: Free query discovery from measured seeds
+        # Autocomplete / PAA probe / Reddit, never a paid API or a model call; a blocked
+        # source is recorded as unavailable. Budget keeps the job inside its timeout.
+        if: steps.guard.outputs.run == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEEK: ${{ steps.report.outputs.week }}
+          DISCOVERY_BUDGET_SECONDS: "1500"
+        run: python3 scripts/search_console/free_discovery.py "reports/search_outcomes/$WEEK.json" data/discovery
       - uses: actions/upload-artifact@v7
         if: steps.guard.outputs.run == 'true'
         with:
           name: search-outcomes-${{ steps.report.outputs.week }}-${{ github.run_id }}
-          path: reports/search_outcomes/${{ steps.report.outputs.week }}.*
+          path: |
+            reports/search_outcomes/${{ steps.report.outputs.week }}.*
+            data/discovery/${{ steps.report.outputs.week }}/
           retention-days: 90
       - name: Commit the report
         # reports/ is gitignored repo-wide (repo-hygiene requires it); this one
@@ -84,10 +97,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           cp reports/search_outcomes/"$WEEK".* "$RUNNER_TEMP"/
+          mkdir -p "$RUNNER_TEMP/discovery" && cp -r data/discovery/"$WEEK" data/discovery/measured_targets_snapshot.json "$RUNNER_TEMP/discovery/"
           npm run validate:release
-          git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json"
+          git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json" "data/discovery/$WEEK" data/discovery/measured_targets_snapshot.json
           if git diff --cached --quiet; then echo "no changes to commit"; exit 0; fi
-          git commit -m "search outcomes weekly report $WEEK"
+          git commit -m "search outcomes weekly report + free discovery $WEEK"
           for attempt in 1 2 3; do
             # validation rewrites tracked evidence files; only the report is committed
             git reset -q --hard HEAD
@@ -96,16 +110,17 @@ jobs:
               git rebase --abort || true
               git reset --hard origin/main
               cp "$RUNNER_TEMP/$WEEK".* reports/search_outcomes/
+              mkdir -p data/discovery && cp -r "$RUNNER_TEMP/discovery/." data/discovery/
               npm run validate:release
-              git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json"
+              git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json" "data/discovery/$WEEK" data/discovery/measured_targets_snapshot.json
               if git diff --cached --quiet; then
                 echo "no changes after re-deriving onto origin/main"
                 exit 0
               fi
-              git commit -m "search outcomes weekly report $WEEK"
+              git commit -m "search outcomes weekly report + free discovery $WEEK"
             else
               npm run validate:release
-              git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json"
+              git add -f -- "reports/search_outcomes/$WEEK.md" "reports/search_outcomes/$WEEK.json" "data/discovery/$WEEK" data/discovery/measured_targets_snapshot.json
               git commit --amend --no-edit
             fi
             if git push origin HEAD:main; then exit 0; fi

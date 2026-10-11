@@ -1,7 +1,7 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-10-11T16:45:01.675Z",
+  "generated_at": "2026-10-11T17:10:25.593Z",
   "workflow_count": 11,
   "workflows": [
     {
@@ -257,10 +257,12 @@
       "primary_command": "python3 scripts/search_console/search_outcomes_weekly.py",
       "repo_lane": "measurement",
       "current_status": "add",
-      "reason": "Weekly (Mon 08:00 Chicago) portfolio search-outcome report: GSC week-over-week, committed coverage/strengthening/consolidation files, measured-URL 404s; commits the report pair, syncs RED issues, emails the owner.",
+      "reason": "Weekly (Mon 08:00 Chicago) portfolio search-outcome report: GSC week-over-week, committed coverage/strengthening/consolidation files, measured-URL 404s; then free query discovery from measured seeds ($0, no model calls); commits the report pair and data/discovery/<week>/, syncs RED issues, emails the owner.",
       "allowed_runtime_mutations": [
         "reports/search_outcomes/*.md",
-        "reports/search_outcomes/*.json"
+        "reports/search_outcomes/*.json",
+        "data/discovery/*/*.json",
+        "data/discovery/measured_targets_snapshot.json"
       ],
       "forbidden_runtime_mutations": [
         ".github/**",
@@ -276,7 +278,10 @@
         "data/strategy/**"
       ],
       "required_artifacts": [
-        "artifact path declared inline or by action"
+        "reports/search_outcomes/${{ steps.report.outputs.week }}.*",
+        "data/discovery/${{ steps.report.outputs.week }}/",
+        "retention-days: 90",
+        "-"
       ],
       "validation_owner": "validation registry and workflow topology validators"
     },

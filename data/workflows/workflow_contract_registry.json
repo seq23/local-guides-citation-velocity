@@ -487,6 +487,7 @@
       "timeout_minutes": 45,
       "commands": [
         "python3 scripts/search_console/search_outcomes_weekly.py --mode report reports/search_outcomes",
+        "python3 scripts/search_console/free_discovery.py",
         "python3 scripts/search_console/search_outcomes_weekly.py --mode email"
       ],
       "required_inputs": [],
@@ -499,17 +500,21 @@
       "consumes": [
         "Search Console API (service account gsc-bot, every property it can read)",
         "committed index_coverage / strengthened_pages / consolidation_candidates files of the portfolio repos (GitHub raw, now and 7 days ago)",
-        "live HTTP status of each property's top 25 pages by 28-day impressions"
+        "live HTTP status of each property's top 25 pages by 28-day impressions",
+        "the report's own 28-day query+page pull (discovery seeds: >= 2 impressions, top 40 per property)",
+        "free, keyless expansion: Google autocomplete, one Google SERP probe for People also ask, Reddit search.json",
+        "target_query_set / demand_families / measured_targets files of the portfolio repos (GitHub raw) for dedupe"
       ],
       "produces": [
-        "reports/search_outcomes/<ISO-week>.md and .json (committed)",
+        "reports/search_outcomes/<ISO-week>.md and .json (committed), with the Discovery section",
         "artifact search-outcomes-<week>-<run_id>",
         "one GitHub issue per RED site in this repo, closed when the site is GREEN",
-        "email to the owner via Resend"
+        "email to the owner via Resend",
+        "data/discovery/<ISO-week>/<host>.json per seeded property and data/discovery/measured_targets_snapshot.json (committed)"
       ],
       "upstream": [],
       "downstream": [],
-      "failure_boundary": "Exits non-zero when the account reads zero properties or an issue cannot be created. Coverage files that do not exist are reported as 'no coverage file', never a failure. Without RESEND_API_KEY the email step is a NAMED STOP and exits 0; a Resend refusal fails the run. Commits only the report pair, only after validate:release passes on the rebased tree."
+      "failure_boundary": "Exits non-zero when the account reads zero properties or an issue cannot be created. Coverage files that do not exist are reported as 'no coverage file', never a failure. Without RESEND_API_KEY the email step is a NAMED STOP and exits 0; a Resend refusal fails the run. Commits only the report pair, only after validate:release passes on the rebased tree. Discovery makes zero model calls and requests only free hosts (enforced in free_discovery.py and by the search-outcomes-weekly-report validator); a blocked source is recorded as unavailable, and zero candidates from every source is a NAMED STOP carried in the report."
     }
   ]
 }

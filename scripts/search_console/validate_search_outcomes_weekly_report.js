@@ -17,6 +17,16 @@
  * property is a report that hides the one going wrong.
  *
  * Rule 0: zero properties, or no table rows, is a failure, never a pass.
+ *
+ * Free discovery (scripts/search_console/free_discovery.py, same workflow, after the
+ * report): from 2026-W42 on, or for any report at schema 1.1+, the report carries a
+ * `discovery` block and data/discovery/<week>/<host>.json exists for every property
+ * that had seeds. Every candidate carries seed + source + status "unmeasured"; no
+ * candidate is in data/discovery/measured_targets_snapshot.json (the portfolio's
+ * target sets, demand families, measured targets and Search Console queries) or is
+ * any property's seed; the receipt shows zero model calls, cost 0, and requests only
+ * to the free hosts. Seeds with zero candidates from every source must carry a NAMED
+ * STOP in the report the owner reads, never a silent pass.
  * SEARCH_OUTCOMES_NOW (ISO timestamp) overrides the clock for proofs.
  */
 const fs = require('fs');
@@ -65,7 +75,50 @@ if (report) {
   }
 }
 
-const out = { validator: 'search-outcomes-weekly-report', ok: errors.length === 0, week, now: now.toISOString(),
+const FREE_HOSTS = new Set(['suggestqueries.google.com', 'www.google.com', 'www.reddit.com', 'raw.githubusercontent.com', 'api.github.com']);
+const norm = (q) => String(q || '').toLowerCase().replace(/\u2019/g, "'").replace(/[^\w\s']/g, ' ').replace(/\s+/g, ' ').trim();
+let discovery = null;
+if (report && (week >= '2026-W42' || String(report.schema_version) !== '1.0')) {
+  const d = report.discovery;
+  const dir = `data/discovery/${week}`;
+  discovery = { required: true, files: 0, candidates: 0 };
+  const seeded = (report.sites || []).filter((s) => Array.isArray(s.seeds) && s.seeds.length);
+  if (!d) errors.push(`${jsonRel} has no discovery block: free_discovery.py did not run after the report`);
+  else {
+    const r = d.receipt || {};
+    if (r.model_calls !== 0) errors.push(`discovery receipt model_calls=${r.model_calls}: the step must make no model call`);
+    if (r.cost_usd !== 0) errors.push(`discovery receipt cost_usd=${r.cost_usd}: nothing paid may run`);
+    if ((r.refused_hosts || []).length) errors.push(`discovery tried non-free hosts: ${r.refused_hosts.join(', ')}`);
+    for (const h of Object.keys(r.requests_by_host || {})) if (!FREE_HOSTS.has(h)) errors.push(`discovery called ${h}, not a free host`);
+    if (d.properties_with_seeds !== seeded.length) errors.push(`discovery covered ${d.properties_with_seeds} properties but ${seeded.length} had seeds`);
+    if (seeded.length && !d.candidate_count && !d.named_stop) errors.push('discovery found 0 candidates for seeded properties without a NAMED STOP: the step ran inert');
+    if (d.named_stop && !(fs.existsSync(path.join(ROOT, mdRel)) && fs.readFileSync(path.join(ROOT, mdRel), 'utf8').includes(d.named_stop))) errors.push(`${mdRel} does not carry the discovery NAMED STOP the owner must see`);
+    if (fs.existsSync(path.join(ROOT, mdRel)) && !/^Discovery: \d+ candidates for \d+ seeds/m.test(fs.readFileSync(path.join(ROOT, mdRel), 'utf8'))) errors.push(`${mdRel} has no Discovery summary line: the Monday email would not carry it`);
+  }
+  let measured = null;
+  const snapRel = 'data/discovery/measured_targets_snapshot.json';
+  try { measured = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, snapRel), 'utf8')).queries); } catch (e) { errors.push(`${snapRel} unreadable: ${e.message}`); }
+  if (measured && measured.size === 0) errors.push(`${snapRel} is empty: dedupe compared against nothing`);
+  const seedSet = new Set(seeded.flatMap((s) => s.seeds.map((x) => norm(x.query))));
+  for (const s of seeded) {
+    const rel = `${dir}/${s.host}.json`;
+    if (!fs.existsSync(path.join(ROOT, rel))) { errors.push(`${rel} missing: ${s.host} had ${s.seeds.length} seeds`); continue; }
+    let doc;
+    try { doc = JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch (e) { errors.push(`${rel} unreadable: ${e.message}`); continue; }
+    discovery.files += 1;
+    if (!doc.rule || !/cannot publish a page anywhere until Google shows an impression/.test(doc.rule)) errors.push(`${rel} does not carry the no-publish-until-impression rule`);
+    if (!doc.questions_for_page || typeof doc.questions_for_page !== 'object') errors.push(`${rel} has no questions_for_page map`);
+    for (const c of doc.candidates || []) {
+      discovery.candidates += 1;
+      if (!c.seed || !c.source) errors.push(`${rel} candidate "${c.query}" lacks seed or source`);
+      if (c.status !== 'unmeasured') errors.push(`${rel} candidate "${c.query}" has status ${c.status}, expected unmeasured`);
+      const n = norm(c.query);
+      if ((measured && measured.has(n)) || seedSet.has(n)) errors.push(`${rel} candidate "${c.query}" is already a measured target`);
+    }
+  }
+}
+
+const out = { validator: 'search-outcomes-weekly-report', discovery, ok: errors.length === 0, week, now: now.toISOString(),
   property_count: report && report.property_count, site_count: report && (report.sites || []).length, table_rows: tableRows, errors };
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'artifacts/validation/search-outcomes-weekly-report.json'), JSON.stringify(out, null, 2) + '\n');
@@ -73,4 +126,5 @@ if (errors.length) {
   for (const e of errors) console.error(`SEARCH OUTCOMES WEEKLY FAIL: ${e}`);
   process.exit(1);
 }
-console.log(`SEARCH OUTCOMES WEEKLY PASS: ${week} covers ${out.site_count}/${out.property_count} properties (${tableRows} table rows)`);
+console.log(`SEARCH OUTCOMES WEEKLY PASS: ${week} covers ${out.site_count}/${out.property_count} properties (${tableRows} table rows)` +
+  (discovery ? `; discovery ${discovery.files} files, ${discovery.candidates} candidates, 0 paid calls` : '; discovery not yet due for this report'));
