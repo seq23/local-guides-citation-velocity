@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-10-11T15:05:45.717Z",
+  "generated_at": "2026-10-11T16:43:11.145Z",
   "status": "PASS",
-  "workflow_count": 10,
+  "workflow_count": 11,
   "errors": [],
   "warnings": [],
   "lifecycle_checks": [
@@ -226,9 +226,16 @@
     },
     {
       "workflow": "query-class-occupancy-probe.yml",
-      "command_count": 5,
+      "command_count": 7,
       "status": "PASS",
       "commands": [
+        {
+          "command": "echo \"NAMED STOP - confirm_paid is not true; probe disabled by owner policy (11 Oct 2026). Nothing ran, nothing spent.",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
         {
           "command": "node scripts/queries/probe_query_class_occupancy.mjs \"${{ inputs.panel }}\" data/signals/query_class_occupancy.json --atlas-top \"${{ inputs.atlas_top || '0' }}\" --merge",
           "status": "PASS",
@@ -236,6 +243,19 @@
             {
               "type": "file",
               "path": "scripts/queries/probe_query_class_occupancy.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "node scripts/llm_citation_probe.mjs --limit 25",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/llm_citation_probe.mjs",
               "ok": true
             }
           ],
@@ -355,7 +375,7 @@
     },
     {
       "workflow": "query-evidence-refresh.yml",
-      "command_count": 12,
+      "command_count": 11,
       "status": "PASS",
       "commands": [
         {
@@ -409,26 +429,17 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "npm run probe:occupancy -- data/signals/query_class_probe_panel.json data/signals/query_class_occupancy.json --atlas-top 20 --merge",
+          "command": "echo \"occupancy + citation probes: SKIPPED - probe disabled by owner policy (dispatch-only, query-class-occupancy-probe.yml)\"\nnode scripts/lib/free_llm_router.mjs --ping",
           "status": "PASS",
           "checks": [
             {
-              "type": "npm_script",
-              "name": "probe:occupancy",
-              "ok": true
-            },
-            {
               "type": "file",
-              "path": "scripts/queries/probe_query_class_occupancy.mjs",
+              "path": "scripts/lib/free_llm_router.mjs",
               "ok": true
             }
           ],
-          "direct_npm_scripts": [
-            "probe:occupancy"
-          ],
-          "transitive_npm_scripts": [
-            "probe:occupancy"
-          ]
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         },
         {
           "command": "npm run atlas:build",
@@ -473,19 +484,6 @@
           "transitive_npm_scripts": [
             "queries:join-release"
           ]
-        },
-        {
-          "command": "node scripts/llm_citation_probe.mjs --limit 25",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "file",
-              "path": "scripts/llm_citation_probe.mjs",
-              "ok": true
-            }
-          ],
-          "direct_npm_scripts": [],
-          "transitive_npm_scripts": []
         },
         {
           "command": "node scripts/selfheal/run_lane_selfheal.mjs",
@@ -626,6 +624,75 @@
           "transitive_npm_scripts": [
             "validate:search-intelligence"
           ]
+        }
+      ]
+    },
+    {
+      "workflow": "search-outcomes-weekly.yml",
+      "command_count": 5,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "offset=$(TZ=America/Chicago date +%z)\nrun=true\nif [ \"$SCHEDULE\" = \"0 13 * * 1\" ] && [ \"$offset\" != \"-0500\" ]; then run=false; fi\nif [ \"$SCHEDULE\" = \"0 14 * * 1\" ] && [ \"$offset\" != \"-0600\" ]; then run=false; fi\necho \"run=$run\" >> \"$GITHUB_OUTPUT\"\necho \"schedule='${SCHEDULE:-dispatch}' chicago_offset=$offset run=$run\"",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "python3 -m pip install --disable-pip-version-check google-api-python-client google-auth >/dev/null\nnpm ci --ignore-scripts",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "python3 scripts/search_console/search_outcomes_weekly.py --mode report reports/search_outcomes",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/search_console/search_outcomes_weekly.py",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ncp reports/search_outcomes/\"$WEEK\".* \"$RUNNER_TEMP\"/\nnpm run validate:release\ngit add -f -- \"reports/search_outcomes/$WEEK.md\" \"reports/search_outcomes/$WEEK.json\"\nif git diff --cached --quiet; then echo \"no changes to commit\"; exit 0; fi\ngit commit -m \"search outcomes weekly report $WEEK\"\nfor attempt in 1 2 3; do\n# validation rewrites tracked evidence files; only the report is committed\ngit reset -q --hard HEAD\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\ncp \"$RUNNER_TEMP/$WEEK\".* reports/search_outcomes/\nnpm run validate:release\ngit add -f -- \"reports/search_outcomes/$WEEK.md\" \"reports/search_outcomes/$WEEK.json\"\nif git diff --cached --quiet; then\necho \"no changes after re-deriving onto origin/main\"\nexit 0\nfi\ngit commit -m \"search outcomes weekly report $WEEK\"\nelse\nnpm run validate:release\ngit add -f -- \"reports/search_outcomes/$WEEK.md\" \"reports/search_outcomes/$WEEK.json\"\ngit commit --amend --no-edit\nfi\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "validate:release",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/validation/run_validation_registry.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "validate:release"
+          ],
+          "transitive_npm_scripts": [
+            "validate:release"
+          ]
+        },
+        {
+          "command": "python3 scripts/search_console/search_outcomes_weekly.py --mode email \"reports/search_outcomes/$WEEK.md",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/search_console/search_outcomes_weekly.py",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
         }
       ]
     },
