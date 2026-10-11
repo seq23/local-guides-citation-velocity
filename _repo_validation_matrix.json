@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "ef387293f31cfe96a1dc33b3ffa27a60f86d5db4d892e3565b9d9b93c5104b05",
+  "registry_sha256": "c9b167dbd0b8b633c14bdcd4c37c54494b0bed81f1351af41fc1d14b2ea43f0b",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -53,12 +53,12 @@
     "LOCAL_ONLY": "Requires deployed URL, browser runtime, credentials, or operator environment."
   },
   "counts": {
-    "total": 216,
-    "active": 44,
+    "total": 217,
+    "active": 45,
     "on_demand": 10,
     "retired": 162,
     "local_only": 1,
-    "hard_fail": 51,
+    "hard_fail": 52,
     "strong_warning": 5,
     "soft_warning": 0,
     "info": 160
@@ -101,7 +101,8 @@
         "workflow-yaml-syntax",
         "workflow-contract-registry",
         "agent-run-drop-integrity",
-        "velocity-canonical-anchor-links"
+        "velocity-canonical-anchor-links",
+        "site-hygiene"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -112,6 +113,7 @@
         "occupancy-reading-ratchet",
         "recommendation-retry-ledger",
         "rendered-output-shrink-guard",
+        "site-hygiene",
         "validation-policy",
         "validation-registry",
         "velocity-canonical-anchor-links",
@@ -187,7 +189,8 @@
         "workflow-yaml-syntax",
         "workflow-contract-registry",
         "agent-run-drop-integrity",
-        "velocity-canonical-anchor-links"
+        "velocity-canonical-anchor-links",
+        "site-hygiene"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -198,6 +201,7 @@
         "occupancy-reading-ratchet",
         "recommendation-retry-ledger",
         "rendered-output-shrink-guard",
+        "site-hygiene",
         "validation-policy",
         "validation-registry",
         "velocity-canonical-anchor-links",
@@ -284,7 +288,8 @@
         "workflow-yaml-syntax",
         "workflow-contract-registry",
         "agent-run-drop-integrity",
-        "velocity-canonical-anchor-links"
+        "velocity-canonical-anchor-links",
+        "site-hygiene"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -294,6 +299,7 @@
         "occupancy-control-separation",
         "occupancy-reading-ratchet",
         "rendered-output-shrink-guard",
+        "site-hygiene",
         "validation-policy",
         "validation-registry",
         "velocity-canonical-anchor-links",
@@ -388,7 +394,8 @@
         "workflow-yaml-syntax",
         "workflow-contract-registry",
         "agent-run-drop-integrity",
-        "velocity-canonical-anchor-links"
+        "velocity-canonical-anchor-links",
+        "site-hygiene"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -398,6 +405,7 @@
         "occupancy-control-separation",
         "occupancy-reading-ratchet",
         "rendered-output-shrink-guard",
+        "site-hygiene",
         "validation-policy",
         "validation-registry",
         "velocity-canonical-anchor-links",
@@ -489,7 +497,8 @@
         "workflow-yaml-syntax",
         "workflow-contract-registry",
         "agent-run-drop-integrity",
-        "velocity-canonical-anchor-links"
+        "velocity-canonical-anchor-links",
+        "site-hygiene"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
@@ -500,6 +509,7 @@
         "occupancy-reading-ratchet",
         "recommendation-retry-ledger",
         "rendered-output-shrink-guard",
+        "site-hygiene",
         "validation-policy",
         "validation-registry",
         "velocity-canonical-anchor-links",
@@ -741,13 +751,15 @@
         "rendered-output-shrink-guard",
         "search-snippet-floors",
         "no-conflict-markers",
-        "velocity-commercial-pages"
+        "velocity-commercial-pages",
+        "site-hygiene"
       ],
       "execution_order": [
         "medical-schema-emission",
         "occupancy-control-separation",
         "occupancy-reading-ratchet",
         "rendered-output-shrink-guard",
+        "site-hygiene",
         "velocity-commercial-pages",
         "provider-evidence",
         "no-internal-instruction-leak",
@@ -795,13 +807,15 @@
         "no-conflict-markers",
         "velocity-commercial-pages",
         "agent-run-drop-integrity",
-        "velocity-canonical-anchor-links"
+        "velocity-canonical-anchor-links",
+        "site-hygiene"
       ],
       "execution_order": [
         "agent-run-drop-integrity",
         "medical-schema-emission",
         "occupancy-reading-ratchet",
         "rendered-output-shrink-guard",
+        "site-hygiene",
         "velocity-canonical-anchor-links",
         "velocity-commercial-pages",
         "provider-evidence",
@@ -3069,6 +3083,46 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "2026-10-09: the dentistry safety-net guides (/dentistry/free-dental-clinics/, /dentistry/dental-school-clinics/) exist to send \"free dental clinic near me\" and \"dental school clinic near me\" demand to the verified #free-low-cost-dental-clinics and #dental-school-clinics sections dentistryguides.com published for Atlanta, Chicago, Dallas, Houston, Los Angeles and Miami (local-guides-generator #54). A guide that renders without those links, links off the vertical canonical domain, drops the #anchor or loses a metro tells the reader a verified local list exists and does not lead to it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "site-hygiene",
+        "title": "Favicon, og:image, homepage JSON-LD, AEO definition + speakable, Clarity and IndexNow key stay in place",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_site_hygiene.js",
+        "command": "node scripts/validators/validate_site_hygiene.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/seo/site_hygiene_registry.json",
+          "data/seo/site_brand_assets.json",
+          "index.html"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/site-hygiene.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/site-hygiene.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Measured 10 Oct 2026 on theindustryguides.com: /favicon.ico 404, no og:image on any page, no FAQPage or BreadcrumbList on the homepage and no definition paragraph for answer engines. Each item is registered in data/seo/site_hygiene_registry.json; this fails if a rebuild, content cycle or refactor drops any of them (files, build-chain step, homepage schema/definition/speakable, Clarity id, IndexNow key file).",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -11458,6 +11512,46 @@
         "mutates_files": [],
         "enforce_no_source_mutation": true,
         "risk_prevented": "2026-10-09: the dentistry safety-net guides (/dentistry/free-dental-clinics/, /dentistry/dental-school-clinics/) exist to send \"free dental clinic near me\" and \"dental school clinic near me\" demand to the verified #free-low-cost-dental-clinics and #dental-school-clinics sections dentistryguides.com published for Atlanta, Chicago, Dallas, Houston, Los Angeles and Miami (local-guides-generator #54). A guide that renders without those links, links off the vertical canonical domain, drops the #anchor or loses a metro tells the reader a verified local list exists and does not lead to it.",
+        "default_behavior": "BLOCK_RELEASE",
+        "strict_behavior": "BLOCK_RELEASE",
+        "replacement_ids": [],
+        "retirement_reason": null
+      },
+      {
+        "id": "site-hygiene",
+        "title": "Favicon, og:image, homepage JSON-LD, AEO definition + speakable, Clarity and IndexNow key stay in place",
+        "status": "ACTIVE",
+        "severity": "HARD_FAIL",
+        "tier": "Tier 1",
+        "scope": "CONTAINER",
+        "profiles": [
+          "audit",
+          "content-release",
+          "core",
+          "full-audit",
+          "local",
+          "release",
+          "strict"
+        ],
+        "path": "scripts/validators/validate_site_hygiene.js",
+        "command": "node scripts/validators/validate_site_hygiene.js",
+        "depends_on": [],
+        "requires_files": [
+          "data/seo/site_hygiene_registry.json",
+          "data/seo/site_brand_assets.json",
+          "index.html"
+        ],
+        "prepare_commands": [],
+        "prepare_produces_files": [],
+        "prepare_mutates_files": [],
+        "produces_files": [
+          "artifacts/validation/site-hygiene.json"
+        ],
+        "mutates_files": [
+          "artifacts/validation/site-hygiene.json"
+        ],
+        "enforce_no_source_mutation": true,
+        "risk_prevented": "Measured 10 Oct 2026 on theindustryguides.com: /favicon.ico 404, no og:image on any page, no FAQPage or BreadcrumbList on the homepage and no definition paragraph for answer engines. Each item is registered in data/seo/site_hygiene_registry.json; this fails if a rebuild, content cycle or refactor drops any of them (files, build-chain step, homepage schema/definition/speakable, Clarity id, IndexNow key file).",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

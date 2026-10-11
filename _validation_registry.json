@@ -8879,6 +8879,64 @@
       ],
       "mutates_files": [],
       "hard_fail_basis": "public_route_integrity"
+    },
+    {
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 1",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "full-audit",
+        "local",
+        "release",
+        "strict"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "timeout_seconds": 180,
+      "depends_on": [],
+      "estimated_runtime_seconds": 10,
+      "id": "site-hygiene",
+      "title": "Favicon, og:image, homepage JSON-LD, AEO definition + speakable, Clarity and IndexNow key stay in place",
+      "path": "scripts/validators/validate_site_hygiene.js",
+      "command": "node scripts/validators/validate_site_hygiene.js",
+      "risk_prevented": "Measured 10 Oct 2026 on theindustryguides.com: /favicon.ico 404, no og:image on any page, no FAQPage or BreadcrumbList on the homepage and no definition paragraph for answer engines. Each item is registered in data/seo/site_hygiene_registry.json; this fails if a rebuild, content cycle or refactor drops any of them (files, build-chain step, homepage schema/definition/speakable, Clarity id, IndexNow key file).",
+      "requires_files": [
+        "data/seo/site_hygiene_registry.json",
+        "data/seo/site_brand_assets.json",
+        "index.html"
+      ],
+      "produces_files": [
+        "artifacts/validation/site-hygiene.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/site-hygiene.json"
+      ],
+      "why_existing_checks_do_not_cover": "homepage-schema is a warning that asserts entity nodes only; nothing checked favicon, og:image, the definition paragraph, speakable selectors, the Clarity map or the IndexNow key file.",
+      "unit_attribution": [
+        "failures.favicon_manifest[]",
+        "failures.og_image[]",
+        "failures.jsonld_types[]",
+        "failures.definition[]",
+        "failures.clarity[]",
+        "failures.indexnow_key[]",
+        "failures.registration[]"
+      ],
+      "unit_attribution_measured": "Each array was produced against a constructed failing state on 2026-10-11 (see the PR): removing favicon.ico, swapping og.png for a 1x1 PNG, renaming FAQPage on the homepage, moving the definition below another element, changing the Clarity id, deleting the IndexNow key file, and dropping install_site_head_assets.js from npm run build.",
+      "hard_fail_basis": "aeo_seo_geo_vital",
+      "evidence_file": "artifacts/validation/site-hygiene.json",
+      "tags": [
+        "seo",
+        "aeo",
+        "head",
+        "schema"
+      ],
+      "failure_action": "Fix at the source: data/seo/site_brand_assets.json + root brand files, scripts/install_site_head_assets.js, the homepage builder in scripts/build_site.js (HOME_DEFINITION / HOME_FAQ), data/clarity_projects.json. Never edit rendered pages."
     }
   ],
   "legacy_policy": {

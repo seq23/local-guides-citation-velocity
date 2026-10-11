@@ -20,7 +20,10 @@ const INTERNAL_DIRS = new Set([
 const PUBLIC_ROOT_FILES = new Set([
   '404.html', '_headers', '_redirects', 'about.html', 'disclaimer.html', 'feed.json',
   'feed.xml', 'humans.txt', 'index.html', 'indexnow.txt', 'llms-full.txt', 'llms.txt',
-  'methodology.html', 'privacy.html', 'robots.txt', 'sitemap.xml', 'terms.html'
+  'methodology.html', 'privacy.html', 'robots.txt', 'sitemap.xml', 'terms.html',
+  // Favicon, touch icons, web manifest and the og:image card: one list, owned by
+  // data/seo/site_brand_assets.json, so the published set and the installer agree.
+  ...JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'seo', 'site_brand_assets.json'), 'utf8')).files
 ]);
 
 const PUBLIC_EXTENSIONS = new Set([

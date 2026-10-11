@@ -1551,6 +1551,18 @@ function writeDistributionArtifacts(siteBase, allUrls){
   ].join('\n') + '\n');
 }
 
+
+// Homepage definition (AEO): 40-60 words, opens "The Industry Guides is", sits
+// directly under the H1. Guarded by validate_site_hygiene.js.
+const HOME_DEFINITION = 'The Industry Guides is an independent editorial publisher of source-backed decision guides for regulated and high-stakes services: USCIS medical exams, personal injury, dentistry, neuropsychological testing, and hormone, IV and hair treatment. Each guide explains the rules, compares the factors that matter, and routes you to a provider when you are ready.';
+// The homepage FAQ: rendered visibly and emitted as FAQPage from the same list.
+const HOME_FAQ = [
+  { q: 'Who runs this site?', a: 'The Industry Guides is an independent editorial publisher covering five regulated service categories.' },
+  { q: 'How are guides verified?', a: 'Pages use named frameworks, visible source records, review dates, and a hard publication gate.' },
+  { q: 'How fresh is the data?', a: 'Every page carries a source-derived modification date. Regulated claims are scheduled for recheck.' },
+  { q: 'Is this a government agency?', a: 'No. We link to primary government and professional sources where they control the rule.' },
+];
+
 function buildIndexPage(siteBase, toolSections = []){
   const verticals = [
     {id:'uscis-card', label:'USCIS Civil Surgeons', accent:'mint', guides:'/uscis-medical/', provider:'https://uscisexam.com/request-assistance/', copy:'I-693 rules, civil-surgeon state guides, vaccines, corrections, and scheduling.'},
@@ -1565,17 +1577,23 @@ function buildIndexPage(siteBase, toolSections = []){
   <section class="editorial-hero">
     <div class="verified-line"><span></span> VERIFIED INDEX · UPDATED ${nowISODate()}</div>
     <h1>The Industry Guides</h1>
-    <p class="editorial-deck">Independent, source-backed decision guides for regulated and high-stakes services. Understand the rules, compare the right factors, and move directly to a provider when you are ready.</p>
+    <p class="editorial-deck site-definition" data-site-definition="true">${HOME_DEFINITION}</p>
     <div class="cta hero-cta"><a class="primary" href="#vertical-routes">Find a Provider</a><a href="#featured-guides">Browse Industry Guides</a></div>
   </section>
   <section id="vertical-routes" class="homepage-section"><div class="section-label">Canonical verticals</div><div class="network-grid">${routeCards}</div></section>
   <section class="coverage-panel"><div class="section-label light">What we cover</div><h2>One Velocity library. Five provider destinations.</h2><p>All editorial guides, question pages, state pages, and disambiguators live here. Provider discovery happens through the canonical destination for each vertical.</p><div class="coverage-table-wrap"><table class="coverage-table"><thead><tr><th>Vertical</th><th>Coverage</th><th>Freshness</th><th>Next step</th></tr></thead><tbody>${rows}</tbody></table></div></section>
   <section id="featured-guides" class="homepage-section"><div class="section-label">Featured decisions</div><h2>Start with the decision, not the sales pitch</h2><div class="feature-grid"><a href="/civil-surgeon-vs-panel-physician/">Civil surgeon vs panel physician</a><a href="/neuropsych-eval-vs-iq-test-vs-psych-eval/">Neuropsych eval vs IQ test vs psych eval</a><a href="/personal-injury-vs-workers-comp/">Personal injury vs workers comp</a><a href="/dental-insurance-vs-medical-insurance/">Dental vs medical insurance</a><a href="/trt-vs-hair-loss-treatment/">TRT vs hair-loss treatment</a><a href="/uscis-medical/states/tennessee/civil-surgeon/">Tennessee civil-surgeon guide</a></div></section>
   ${renderToolSpotlight(toolSections, 'Fast tools for comparing options before you choose')}
-  <section class="homepage-section operations"><div class="section-label">Platform operations</div><h2>How The Industry Guides works</h2><div class="ops-grid"><div><h3>Who runs this site?</h3><p>The Industry Guides is an independent editorial publisher covering five regulated service categories.</p></div><div><h3>How are guides verified?</h3><p>Pages use named frameworks, visible source records, review dates, and a hard publication gate.</p></div><div><h3>How fresh is the data?</h3><p>Every page carries a source-derived modification date. Regulated claims are scheduled for recheck.</p></div><div><h3>Is this a government agency?</h3><p>No. We link to primary government and professional sources where they control the rule.</p></div></div></section>
+  <section class="homepage-section operations" data-home-faq="true"><div class="section-label">Platform operations</div><h2>How The Industry Guides works</h2><div class="ops-grid">${HOME_FAQ.map((f)=>`<div><h3>${htmlEscape(f.q)}</h3><p>${htmlEscape(f.a)}</p></div>`).join('')}</div></section>
   <section class="methodology-band"><div><div class="section-label">Methodology</div><h2>Source first. Decision second. Provider third.</h2><p>Each programmatic page must contain a unique defensible data atom, a direct answer, visible FAQs, source provenance, internal links, and provider routing. Boilerplate-only pages do not ship.</p><a href="/methodology">Read the methodology</a></div></section>
   <section class="closing-provider"><h2>Find a provider in your state</h2><p>Choose the vertical that matches your situation. You will continue to the corresponding provider destination.</p><div class="provider-button-grid">${verticals.map((v)=>`<a href="${v.provider}">${v.label}<strong>Find a Provider →</strong></a>`).join('')}</div></section>`;
-  return {slug:'/',title:'The Industry Guides | Source-Backed Guides and Provider Routing',description:'Source-backed guides, state pages, comparisons, and provider routing across USCIS medical, personal injury, dentistry, neuropsychology, and TRT.',bodyHtml:body,jsonld:{'@context':'https://schema.org','@type':'WebPage',name:'The Industry Guides',url:siteBase+'/',description:'Source-backed guides and provider routing across five regulated verticals.'},fanoutMeta:{slug:'/',title:'The Industry Guides',description:'Source-backed guides and provider routing.',sections:[{q:'What does The Industry Guides publish?',a:'Decision guides, question pages, state pages, and source-backed comparisons.'}],vertical:'generic',surface:'home'},vertical:'generic',surface:'home'};
+  return {slug:'/',title:'The Industry Guides | Source-Backed Guides and Provider Routing',description:'Source-backed guides, state pages, comparisons, and provider routing across USCIS medical, personal injury, dentistry, neuropsychology, and TRT.',bodyHtml:body,jsonld:[
+    {'@context':'https://schema.org','@type':'WebPage',name:'The Industry Guides',url:siteBase+'/',description:'Source-backed guides and provider routing across five regulated verticals.',
+      // Read-aloud surface: the definition under the H1 and the FAQ below.
+      speakable:{'@type':'SpeakableSpecification',cssSelector:['.site-definition','[data-home-faq="true"]']}},
+    {'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:siteBase+'/'}]},
+    {'@context':'https://schema.org','@type':'FAQPage',mainEntity:HOME_FAQ.map((f)=>({'@type':'Question',name:f.q,acceptedAnswer:{'@type':'Answer',text:f.a}}))}
+  ],fanoutMeta:{slug:'/',title:'The Industry Guides',description:'Source-backed guides and provider routing.',sections:[{q:'What does The Industry Guides publish?',a:'Decision guides, question pages, state pages, and source-backed comparisons.'}],vertical:'generic',surface:'home'},vertical:'generic',surface:'home'};
 }
 
 
