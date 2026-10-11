@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-10-10T07:09:26.049Z",
+  "generated_at": "2026-10-11T06:56:48.131Z",
   "status": "PASS",
-  "workflow_count": 9,
+  "workflow_count": 10,
   "errors": [],
   "warnings": [],
   "lifecycle_checks": [
@@ -194,6 +194,26 @@
           "command": "chmod +x distribution_scripts/*.sh\nif [ -f \"$RUNNER_TEMP/gsc-service-account.json\" ] && [ -n \"${GSC_SITE_URL:-}\" ]; then\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\" --creds \"$RUNNER_TEMP/gsc-service-account.json\" --gsc-site \"$GSC_SITE_URL\"\nelse\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\"\nfi",
           "status": "PASS",
           "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        }
+      ]
+    },
+    {
+      "workflow": "gsc-portfolio-report.yml",
+      "command_count": 1,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "python3 scripts/search_console/gsc_portfolio_report.py gsc-portfolio-report",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/search_console/gsc_portfolio_report.py",
+              "ok": true
+            }
+          ],
           "direct_npm_scripts": [],
           "transitive_npm_scripts": []
         }
