@@ -12,11 +12,23 @@
 // deployment config and carries the recipient (LEAD_TO = info@spryvc.com, where
 // the owner reads guides leads); a recipient is never shown to a visitor, a
 // sender or built page is. Scripts, data and reports are internal tooling.
+//
+// Sending code (12 Oct 2026): every file under scripts/ or functions/ that calls
+// api.resend.com, and every workflow in .github/workflows/, may never name
+// joinwestpeek.com, westpeek.ventures or spryvc.com except on a recipient line
+// (a TO / LEAD_TO constant: the owner's own inbox). The weekly search-outcomes
+// report went out From os@westpeek.ventures until then. Its sender is pinned like
+// the lead form's, and no sending file may read a sender from the environment.
 const fs = require('fs');
 const path = require('path');
 
 const FORBIDDEN = [/spry\s*labs/i, /spryvc\.com/i, /joinwestpeek\.com/i, /westpeek\.ventures/i];
 const LEAD_FROM_PIN = "const LEAD_FROM = 'The Industry Guides <hello@theindustryguides.com>';";
+const SENDER_DOMAINS = [/joinwestpeek\.com/i, /westpeek\.ventures/i, /spryvc\.com/i];
+const RECIPIENT_LINE = /^\s*(?:const\s+|let\s+|var\s+)?(?:LEAD_)?TO\s*=/;
+const ENV_SENDER = /(?:env\.\w*FROM|environ(?:\.get)?\s*[(\[]\s*["']\w*(?:FROM|SENDER)\w*["'])/;
+const WEEKLY_REPORT = 'scripts/search_console/search_outcomes_weekly.py';
+const WEEKLY_FROM_PIN = 'FROM = "The Industry Guides <hello@theindustryguides.com>"';
 
 function walk(dir, keep, out = []) {
   if (!fs.existsSync(dir)) return out;
@@ -61,7 +73,38 @@ function checkBrandSeparation({ root, distDir, functionsDir }) {
     if (/env\.EMAIL_FROM/.test(src)) failures.push(`${rel(leadFn)}: reads env.EMAIL_FROM; the sender must stay pinned in code`);
   }
 
-  return { ok: failures.length === 0, distFiles: distFiles.length, functionFiles: functionFiles.length, failures };
+  // Sending code and workflows: no West Peek / Spry domain outside a recipient line.
+  // scripts/tests/ holds this check's own fixtures (forbidden on purpose); this
+  // file names api.resend.com only in its description.
+  const skip = new Set(['node_modules', '.git', 'tests']);
+  const walkSrc = (dir, out = []) => {
+    if (!fs.existsSync(dir)) return out;
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (skip.has(ent.name)) continue;
+      const p = path.join(dir, ent.name);
+      if (ent.isDirectory()) walkSrc(p, out);
+      else if (ent.isFile() && /\.(m?js|ts|py|sh)$/.test(ent.name)) out.push(p);
+    }
+    return out;
+  };
+  const sendingFiles = [...walkSrc(path.join(root, 'scripts')), ...walkSrc(fnDir)]
+    .filter((fp) => path.resolve(fp) !== path.resolve(__filename) && fs.readFileSync(fp, 'utf8').includes('api.resend.com'));
+  const workflowFiles = walk(path.join(root, '.github', 'workflows'), (n) => /\.ya?ml$/.test(n));
+  if (!sendingFiles.length) failures.push('scanned zero sending files (no scripts/ or functions/ file calls api.resend.com)');
+  if (!workflowFiles.length) failures.push('scanned zero workflow files in .github/workflows/');
+  for (const fp of [...sendingFiles, ...workflowFiles]) {
+    const lines = fs.readFileSync(fp, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      const hits = SENDER_DOMAINS.filter((re) => re.test(line));
+      if (hits.length && !RECIPIENT_LINE.test(line)) failures.push(`${rel(fp)}:${i + 1}: ${hits.map(String).join(', ')} outside a recipient line`);
+      if (ENV_SENDER.test(line)) failures.push(`${rel(fp)}:${i + 1}: reads the sender from the environment; pin it in code`);
+    });
+  }
+  const weekly = path.join(root, WEEKLY_REPORT);
+  if (!fs.existsSync(weekly)) failures.push(`${WEEKLY_REPORT} not found: cannot check the weekly report sender`);
+  else if (!fs.readFileSync(weekly, 'utf8').split('\n').includes(WEEKLY_FROM_PIN)) failures.push(`${WEEKLY_REPORT}: weekly report sender must be pinned as ${WEEKLY_FROM_PIN}`);
+
+  return { ok: failures.length === 0, distFiles: distFiles.length, functionFiles: functionFiles.length, sendingFiles: sendingFiles.length, workflowFiles: workflowFiles.length, failures };
 }
 
-module.exports = { checkBrandSeparation, FORBIDDEN, LEAD_FROM_PIN };
+module.exports = { checkBrandSeparation, FORBIDDEN, LEAD_FROM_PIN, WEEKLY_REPORT, WEEKLY_FROM_PIN };

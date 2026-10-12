@@ -74,8 +74,12 @@ FALLBACK_OWNER = {
     "thedentistryguides.com": "local-guides-generator",
     "hicksconsulting.org": "hicks-consulting-canonical",
 }
-FROM = "os@westpeek.ventures"   # reused from ~/bin/scooter-watch-report.mjs
-TO = "sequoia@westpeek.ventures"
+# Sender pinned in code, never read from the environment (owner rule, 12 Oct 2026):
+# The Industry Guides never sends under another company's name. Sent through the
+# Resend account that verifies theindustryguides.com (repo secret RESEND_API_KEY).
+# scripts/lib/brand_separation.js fails the build if this line changes.
+FROM = "The Industry Guides <hello@theindustryguides.com>"
+TO = "sequoia@westpeek.ventures"   # recipient: the owner's own inbox
 SHARE_MARGIN = 0.02
 UA = "Mozilla/5.0 (compatible; search-outcomes-weekly)"
 FILE_RX = re.compile(r"(^|/)(index_coverage|strengthening_ledger|strengthened_pages|consolidation_candidates)\.json$")
