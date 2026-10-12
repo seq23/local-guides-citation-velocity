@@ -179,21 +179,29 @@ async function writeToAirtable({ env, record, notesField = '' }) {
   };
 }
 
+// The notification sender is part of the guides' identity, not deployment
+// config: every guides site is a property of The Industry Guides alone, so the
+// lead email goes out as The Industry Guides from its own verified domain
+// (theindustryguides.com, verified in Resend). It is pinned here, not read
+// from EMAIL_FROM, so a stale dashboard or wrangler.toml value can never put
+// another company's sender back on these emails. The recipient
+// (LEAD_TO) is where the owner reads leads, and stays deployment config.
+const LEAD_FROM = 'The Industry Guides <hello@theindustryguides.com>';
+
 async function relayLeadByEmail({ env, record, stored, reason }) {
   const key = String(env.RESEND_API_KEY || '').trim();
   // LEAD_TO accepts a comma-separated list. A lead notification that reaches
-  // one mailbox is one spam filter away from reaching nobody, and that is not
-  // hypothetical: every notification to info@spryvc.com was accepted by Resend
-  // and marked Delivered, and every one landed in spam. That address forwards,
-  // the forward breaks SPF alignment, and a joinwestpeek.com sender addressing
-  // a spryvc.com recipient reads as a spoof. Sending to each address directly
-  // removes both the forwarding hop and the single point of failure.
+  // one mailbox is one spam filter away from reaching nobody, and the address
+  // that turned out to be reachable is not always the one on the tin: mail to
+  // a forwarding inbox can be accepted by Resend and still never surface,
+  // because the forward breaks SPF alignment. Sending to each address directly
+  // removes the single point of failure.
   const to = String(env.LEAD_TO || env.EMAIL_REPLY_TO || '')
     .split(',')
     .map((addr) => addr.trim())
     .filter(Boolean);
-  const from = String(env.EMAIL_FROM || '').trim();
-  if (!key || !to.length || !from) return { ok: false, reason: 'missing_email_env' };
+  const from = LEAD_FROM;
+  if (!key || !to.length) return { ok: false, reason: 'missing_email_env' };
 
   const lines = Object.entries(record).map(([k, v]) => `${k}: ${v}`).join('\n');
   const where = record.market_slug || record.source_domain || '';
