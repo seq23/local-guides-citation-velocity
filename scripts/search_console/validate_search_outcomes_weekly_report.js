@@ -95,9 +95,20 @@ if (report && (week >= '2026-W42' || String(report.schema_version) !== '1.0')) {
     if (d.named_stop && !(fs.existsSync(path.join(ROOT, mdRel)) && fs.readFileSync(path.join(ROOT, mdRel), 'utf8').includes(d.named_stop))) errors.push(`${mdRel} does not carry the discovery NAMED STOP the owner must see`);
     if (fs.existsSync(path.join(ROOT, mdRel)) && !/^Discovery: \d+ candidates for \d+ seeds/m.test(fs.readFileSync(path.join(ROOT, mdRel), 'utf8'))) errors.push(`${mdRel} has no Discovery summary line: the Monday email would not carry it`);
   }
+  // Candidates are checked against the dedupe set of THEIR week (data/discovery/<week>/
+  // measured_targets_snapshot.json). The top-level snapshot is rewritten by every run, so
+  // on a Monday it already holds the new week's set; a query Google began measuring since
+  // is a discovery that worked, not a dedupe failure (failed run 38293344697, 12 Oct 2026).
+  // The top-level file stands in only when it declares this same week.
   let measured = null;
-  const snapRel = 'data/discovery/measured_targets_snapshot.json';
-  try { measured = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, snapRel), 'utf8')).queries); } catch (e) { errors.push(`${snapRel} unreadable: ${e.message}`); }
+  const weekSnapRel = `${dir}/measured_targets_snapshot.json`;
+  const topSnapRel = 'data/discovery/measured_targets_snapshot.json';
+  const snapRel = fs.existsSync(path.join(ROOT, weekSnapRel)) ? weekSnapRel : topSnapRel;
+  try {
+    const snap = JSON.parse(fs.readFileSync(path.join(ROOT, snapRel), 'utf8'));
+    if (snap.week !== week) errors.push(`${snapRel} is the dedupe set for ${snap.week}, not ${week}, and ${weekSnapRel} is missing: ${week}'s candidates cannot be checked`);
+    else measured = new Set(snap.queries);
+  } catch (e) { errors.push(`${snapRel} unreadable: ${e.message}`); }
   if (measured && measured.size === 0) errors.push(`${snapRel} is empty: dedupe compared against nothing`);
   const seedSet = new Set(seeded.flatMap((s) => s.seeds.map((x) => norm(x.query))));
   for (const s of seeded) {

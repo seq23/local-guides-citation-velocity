@@ -360,12 +360,20 @@ def main():
         summary.append({"property": host, "seeds": len(s["seeds"]), "expanded": expanded[host],
                         "candidates": len(cands), "questions_for_page": sum(len(v) for v in qfp.values())})
 
-    with open(os.path.join(out_root, "measured_targets_snapshot.json"), "w") as fh:
-        json.dump({"generated_at": now, "week": week,
-                   "rule": "Every query any portfolio repo already targets or Google already measured. No discovery candidate may be in it.",
-                   "sources": remote_sources + [{"source": "search_console_28d", "hosts": len(gsc.get("queries_by_host", {}))}],
-                   "query_count": len(measured), "queries": sorted(measured)}, fh, indent=0)
-        fh.write("\n")
+    snapshot = {"generated_at": now, "week": week,
+                "rule": "Every query any portfolio repo already targets or Google already measured. No discovery candidate may be in it.",
+                "sources": remote_sources + [{"source": "search_console_28d", "hosts": len(gsc.get("queries_by_host", {}))}],
+                "query_count": len(measured), "queries": sorted(measured)}
+    # Written twice: the top-level file is the latest dedupe set; the copy inside the
+    # week's directory is the set THAT week's candidates were deduped against, which is
+    # what the validator checks them with. Checking last week's candidates against this
+    # week's set failed every Monday run on 12 Oct 2026: a candidate that Google started
+    # measuring since (the outcome discovery exists for) read as a dedupe failure.
+    for snap_path in (os.path.join(out_root, "measured_targets_snapshot.json"),
+                      os.path.join(out_root, week, "measured_targets_snapshot.json")):
+        with open(snap_path, "w") as fh:
+            json.dump(snapshot, fh, indent=0)
+            fh.write("\n")
 
     every = [c | {"property": h} for h in found for c in found[h].values()]
     # Top 10 by seed impressions, one per seed first (questions preferred) so one big seed
