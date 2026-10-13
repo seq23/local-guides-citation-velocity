@@ -8915,24 +8915,34 @@
         "strict"
       ],
       "id": "velocity-canonical-anchor-links",
-      "title": "Velocity guides that route a local query class link to the canonical metro anchors, city pages, topic guide and intake they name",
+      "title": "Velocity guides link their canonical lead tool first and only topic-matched canonical guides, all of them real (inventory-checked), across all six verticals",
       "path": "scripts/validators/validate_velocity_canonical_anchor_links.js",
       "command": "node scripts/validators/validate_velocity_canonical_anchor_links.js",
       "tags": [
-        "velocity-only",
+        "all-verticals",
+        "canonical-guide-links",
         "canonical-routing",
-        "rendered-links",
         "dentistry",
+        "link-concentration",
+        "rendered-links",
         "safety-net",
-        "senior-living"
+        "senior-living",
+        "velocity-only"
       ],
-      "risk_prevented": "2026-10-09: the dentistry safety-net guides (/dentistry/free-dental-clinics/, /dentistry/dental-school-clinics/) exist to send \"free dental clinic near me\" and \"dental school clinic near me\" demand to the verified #free-low-cost-dental-clinics and #dental-school-clinics sections dentistryguides.com published for Atlanta, Chicago, Dallas, Houston, Los Angeles and Miami (local-guides-generator #54). A guide that renders without those links, links off the vertical canonical domain, drops the #anchor or loses a metro tells the reader a verified local list exists and does not lead to it. 2026-10-13 (senior-living): the eight Memphis Tri-State guides exist to send readers to memphisseniorcarehomes.com. Each must carry at least four followed /request-assistance/ links with the routing query (pt, src = its own path, intent, button, vertical=senior-living, page_kind, page_slug, market), the directory home link, the canonical guide pinned to its topic, at least one pinned city page, a canonical guide or city link in the first 150 words of the article, and a closing CTA to the intake; no nofollow/sponsored/ugc on any canonical link. Fan-out (13 Oct 2026): data/queries/senior_living_fanout_compiled.json must hold >= 400 compiled queries, every one routed to a path in data/contracts/senior_living_canonical_routes.json (the canonical site's route list), all 17 localities present and each rendered on some piece, and each piece rendering >= 20 of its own compiled queries. Search Readiness: 40-60 word \"X is\" definition under the H1 (B4), a comparison table and an ordered list (D2), >= 3 registered sources and a dated fact (D3), at most one FAQPage with every schema question visible (B5), homepage -> hub -> piece (B7), a canonical URL at most twice per page and at most 10 times sitewide, and memphisseniorcarehomes.com under 25% of outbound links (G3).",
+      "risk_prevented": "2026-10-09: the dentistry safety-net guides (/dentistry/free-dental-clinics/, /dentistry/dental-school-clinics/) exist to send \"free dental clinic near me\" and \"dental school clinic near me\" demand to the verified #free-low-cost-dental-clinics and #dental-school-clinics sections dentistryguides.com published for Atlanta, Chicago, Dallas, Houston, Los Angeles and Miami (local-guides-generator #54). A guide that renders without those links, links off the vertical canonical domain, drops the #anchor or loses a metro tells the reader a verified local list exists and does not lead to it. 2026-10-13 (senior-living): the eight Memphis Tri-State guides exist to send readers to memphisseniorcarehomes.com. Each must carry at least four followed /request-assistance/ links with the routing query (pt, src = its own path, intent, button, vertical=senior-living, page_kind, page_slug, market), the directory home link, the canonical guide pinned to its topic, at least one pinned city page, a canonical guide or city link in the first 150 words of the article, and a closing CTA to the intake; no nofollow/sponsored/ugc on any canonical link. Fan-out (13 Oct 2026): data/queries/senior_living_fanout_compiled.json must hold >= 400 compiled queries, every one routed to a path in data/contracts/senior_living_canonical_routes.json (the canonical site's route list), all 17 localities present and each rendered on some piece, and each piece rendering >= 20 of its own compiled queries. Search Readiness: 40-60 word \"X is\" definition under the H1 (B4), a comparison table and an ordered list (D2), >= 3 registered sources and a dated fact (D3), at most one FAQPage with every schema question visible (B5), homepage -> hub -> piece (B7), a canonical URL at most twice per page and at most 10 times sitewide, and memphisseniorcarehomes.com under 25% of outbound links (G3). 2026-10-13 (all verticals): the uscis-medical, dentistry, neuro, trt and personal-injury pieces linked their canonical /request-assistance/ about four times and the home page twice but zero canonical guides, and the guide links that did exist (insights, Medium articles) included two 404s (theaccidentguides.com/guides/switching-personal-injury-lawyers, hormonesivhair.com/guides/dht-hair-loss-treatments-plateau - the latter a rel=canonical) and two redirect-hop URLs missing their trailing slash. Now: every canonical /guides/ link on any rendered page must be a path in the committed per-canonical inventory (data/contracts/canonical_guides/<vertical>.json, built from the live hubs, fetched_at); every piece keeps >= 4 followed intake links; a piece whose title/slug/cluster matches a guide's topic_terms renders exactly those guides (sentence under the direct answer + 'Read the full guide' above the closing CTA) and a piece that matches none renders no guide link; zero matched pieces fails; and no canonical domain exceeds 25% of outbound links (G3, all canonicals).",
       "why_existing_checks_do_not_cover": "canonical-routing-law checks the per-route canonical_url domain in canonical_destination_registry.json, which for every Velocity page is the /request-assistance/ lead path; nothing read the in-body canonical anchor links, the spec field that carries them, or the rendered card. This validator reads both the durable spec and the rendered page (root and dist when present), pins the two safety-net guides x six metros, and fails on zero governed pages.",
       "requires_files": [
         "data/page_families/velocity_page_specs.json",
         "content/_shared/canonical_map.json",
         "data/queries/senior_living_fanout_compiled.json",
-        "data/contracts/senior_living_canonical_routes.json"
+        "data/contracts/senior_living_canonical_routes.json",
+        "data/contracts/canonical_guides/uscis-medical.json",
+        "data/contracts/canonical_guides/dentistry.json",
+        "data/contracts/canonical_guides/neuro.json",
+        "data/contracts/canonical_guides/trt.json",
+        "data/contracts/canonical_guides/personal-injury.json",
+        "data/contracts/canonical_guides/senior-living.json",
+        "scripts/lib/canonical_guide_links.js"
       ],
       "produces_files": [
         "artifacts/validation/velocity-canonical-anchor-links.json"

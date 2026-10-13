@@ -65,6 +65,16 @@ const { isPubliclyAdmitted, isEvidenceOnly, admittedRoutes, renderedButNotPublic
 const { headingFor, planHeadings, setHeadingPlan } = require('./lib/answer_shape');
 
 const { withoutBuildAcceptanceCriteria } = require('./lib/internal_instruction_text');
+const canonicalGuideLinks = require('./lib/canonical_guide_links');
+let canonicalGuideInventories = null;
+// Canonical guide links for a Velocity piece (2026-10-13): matched by topic from the
+// committed per-canonical inventories; [] when nothing matches or for senior-living
+// (hand-picked in its spec) and the vertical hubs.
+function canonicalGuidesFor({ vertical, slug, title, clusterTitle }){
+  if (!canonicalGuideInventories) canonicalGuideInventories = canonicalGuideLinks.loadInventories(ROOT);
+  if (['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/','/senior-living/'].includes(slug)) return [];
+  return canonicalGuideLinks.matchGuides(canonicalGuideInventories, vertical, canonicalGuideLinks.pieceTopicTexts({ slug, title, clusterTitle }));
+}
 function readUtf8(p){ return fs.readFileSync(p, 'utf8'); }
 function writeUtf8(p, s){ fs.mkdirSync(path.dirname(p), {recursive:true}); fs.writeFileSync(p, s, 'utf8'); }
 function writeJsonAtomic(p, data){
@@ -2298,8 +2308,12 @@ function buildVelocityOnlyProgrammaticPages(siteBase){
       ? `<section class="card provider-cta city-cta" data-city-cta="true"><div class="badge">Find communities</div><h2 class="h2">${htmlEscape(page.city_cta.heading)}</h2>${page.city_cta.text ? `<p>${htmlEscape(page.city_cta.text)}</p>` : ''}<div class="cta"><a class="primary" href="${htmlEscape(page.city_cta.url)}" data-canonical-city="true">${htmlEscape(page.city_cta.label)}</a>${page.city_cta.directory_url ? `<a href="${htmlEscape(page.city_cta.directory_url)}" data-canonical-directory="true">${htmlEscape(page.city_cta.directory_label || page.city_cta.directory_url)}</a>` : ''}</div></section>` : '';
     const closingCta = page.closing_cta
       ? `<section class="card provider-cta closing-cta" data-provider-cta="closing" data-closing-cta="true"><div class="badge">Next step</div><h2 class="h2">${htmlEscape(page.closing_cta.heading)}</h2>${page.closing_cta.text ? `<p>${htmlEscape(page.closing_cta.text)}</p>` : ''}<div class="cta"><a class="primary" href="${htmlEscape(destination)}">${htmlEscape(page.closing_cta.button_label || 'Find a Provider')}</a>${page.closing_cta.city_url ? `<a href="${htmlEscape(page.closing_cta.city_url)}" data-canonical-city="true">${htmlEscape(page.closing_cta.city_label)}</a>` : ''}${page.closing_cta.directory_url ? `<a href="${htmlEscape(page.closing_cta.directory_url)}" data-canonical-directory="true">${htmlEscape(page.closing_cta.directory_label || page.closing_cta.directory_url)}</a>` : ''}</div></section>` : '';
+    const pieceGuides = page.page_family === 'SENIOR-LIVING-GUIDES' ? [] : canonicalGuidesFor({ vertical: page.vertical, slug: page.slug, title: page.title });
+    const guideSite = canonicalOrigin ? new URL(canonicalOrigin).hostname : '';
+    const guideInline = canonicalGuideLinks.renderGuideInline(pieceGuides, guideSite, htmlEscape);
+    const guideClosing = canonicalGuideLinks.renderGuideClosing(pieceGuides, guideSite, htmlEscape);
     const midCta = `<section class="card provider-cta" data-provider-cta="after-decision-artifact"><div class="badge">Local next step</div><h2 class="h2">Ready to compare providers?</h2><p>Use the source-backed framework above, then continue to the matching provider destination.</p><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section>`;
-    const body = `${canonBlock(destination,destination,destination,(page.title || '').split(' in ')[0])}<article id="guide-content"><h1 class="h1">${htmlEscape(headingFor(page.slug, page.title))}</h1><p class="muted" data-definition="true">${definitionHtml}</p><section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title,page.description,70,page.content_atom))}</p></section><section class="card dated-fact"><div class="badge">Reviewed source fact</div><p>${htmlEscape(page.dated_primary_fact || `Primary sources reviewed ${page.date_modified}.`)}</p></section>${guideBox}${anchorCard}${decisionArtifacts}${renderProgrammaticContentAtom(page.content_atom,page.title)}${authorityCard}${midCta}${cityCta}<section class="card"><div class="badge">Primary sources</div><h2 class="h2">Verify the rule before acting</h2><ul>${sourceLinks}</ul></section><section class="card"><div class="badge">Decision questions</div>${renderAccordion(sections)}</section><section class="card provider-cta" data-provider-cta="contextual-body"><h2 class="h2">Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section>${fanoutCard}${closingCta}<section class="card sibling-links" data-sibling-links="true"><div class="badge">Related Velocity guides</div><ul>${related}</ul></section></article>${canonBlockBottom(destination,(page.title || '').split(' in ')[0])}<p class="muted small">Last updated: ${htmlEscape(page.date_modified)}</p>`;
+    const body = `${canonBlock(destination,destination,destination,(page.title || '').split(' in ')[0])}<article id="guide-content"><h1 class="h1">${htmlEscape(headingFor(page.slug, page.title))}</h1><p class="muted" data-definition="true">${definitionHtml}</p><section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title,page.description,70,page.content_atom))}</p>${guideInline}</section><section class="card dated-fact"><div class="badge">Reviewed source fact</div><p>${htmlEscape(page.dated_primary_fact || `Primary sources reviewed ${page.date_modified}.`)}</p></section>${guideBox}${anchorCard}${decisionArtifacts}${renderProgrammaticContentAtom(page.content_atom,page.title)}${authorityCard}${midCta}${cityCta}<section class="card"><div class="badge">Primary sources</div><h2 class="h2">Verify the rule before acting</h2><ul>${sourceLinks}</ul></section><section class="card"><div class="badge">Decision questions</div>${renderAccordion(sections)}</section><section class="card provider-cta" data-provider-cta="contextual-body"><h2 class="h2">Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section>${fanoutCard}${closingCta}<section class="card sibling-links" data-sibling-links="true"><div class="badge">Related Velocity guides</div><ul>${related}</ul></section></article>${guideClosing}${canonBlockBottom(destination,(page.title || '').split(' in ')[0])}<p class="muted small">Last updated: ${htmlEscape(page.date_modified)}</p>`;
     return {slug:page.slug,path:page.path,title:page.title,description:page.description,bodyHtml:body,jsonld:buildProgrammaticPageSchemas({siteBase,page,absUrl:toAbsUrl(siteBase,page.slug),sections}),vertical:page.vertical,related_links:siblings.map((rel)=>({slug:rel.slug,label:rel.title})),content_atom:page.content_atom,date_modified:page.date_modified,source_records:page.source_records,editorial_review:{status:'VELOCITY_ONLY_RELEASED',reviewed_at:page.date_modified},fanoutMeta:{slug:page.slug,title:page.title,description:page.description,vertical:page.vertical,sections,surface:'velocity-state-or-support'}};
   });
 }
@@ -2633,7 +2647,12 @@ for (const [vertical, meta] of Object.entries(registry)) {
     const heading = `<h1 class="h1">${htmlEscape(headingFor(p.slug, p.title))}</h1><p class="muted">${htmlEscape(p.description)}</p>`;
     const pageAtom = renderProgrammaticContentAtom(p.content_atom, p.title);
     const firstAnswer = (shapedSections.find((section) => String(section && (section.a || section.answer || '')).trim()) || {}).a || p.description;
-    const directAnswerBlock = `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(p.title, firstAnswer, 70, p.content_atom))}</p></section>`;
+    const pieceClusterTitle = p.cluster && clusterRegistry[p.vertical] && clusterRegistry[p.vertical].clusters && clusterRegistry[p.vertical].clusters[p.cluster] ? clusterRegistry[p.vertical].clusters[p.cluster].title : '';
+    const pieceGuides = p.vertical === 'senior-living' ? [] : canonicalGuidesFor({ vertical: p.vertical, slug: p.slug, title: p.title, clusterTitle: pieceClusterTitle });
+    const guideSite = new URL(canon.home).hostname;
+    const guideInline = canonicalGuideLinks.renderGuideInline(pieceGuides, guideSite, htmlEscape);
+    const guideClosing = canonicalGuideLinks.renderGuideClosing(pieceGuides, guideSite, htmlEscape);
+    const directAnswerBlock = `<section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(p.title, firstAnswer, 70, p.content_atom))}</p>${guideInline}</section>`;
 
     const toc = buildTOC(shapedSections);
     const acc = renderAccordion(shapedSections || []);
@@ -2744,6 +2763,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
       ${relatedLinks}
       ${adoptedLinks}
       ${postQueryUtility}
+      ${guideClosing}
       ${canonBlockBottom(providerDestinationUrl, canon.label)}
       <hr class="hr" />
       <p class="muted small">Last updated: ${nowISODate()}</p>

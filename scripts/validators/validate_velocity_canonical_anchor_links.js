@@ -255,7 +255,90 @@ if (seniorPages.length && !outbound) errors.push('senior_concentration:zero_outb
 if (seniorShare > MAX_OUTBOUND_SHARE) errors.push(`senior_concentration:share_${(seniorShare * 100).toFixed(1)}pct_over_${MAX_OUTBOUND_SHARE * 100}pct`);
 for (const [u, n] of perUrl) if (n > MAX_LINKS_PER_URL_SITEWIDE) errors.push(`senior_concentration:${u}_linked_${n}_times_sitewide`);
 
-const report = { validator: 'velocity-canonical-anchor-links', ok: errors.length === 0, governed_pages: governed.length, senior_living_pages: seniorPages.length, senior_living_intake_links: seniorIntakeLinks, senior_compiled_queries: compiled ? (compiled.queries || []).length : 0, senior_questions_rendered_per_piece: perPieceRendered, senior_outbound_share: Number(seniorShare.toFixed(4)), senior_outbound_links: seniorOutbound, outbound_links_total: outbound, senior_max_links_per_url: Math.max(0, ...perUrl.values()), required_guides: Object.keys(REQUIRED).length, rendered_links_checked: linksChecked, outputs: outputs.map((d) => path.relative(ROOT, d) || '.'), errors };
+// ---- canonical guide links, all verticals (2026-10-13) --------------------------
+// Owner's rule: the canonical lead tool first (every piece keeps >= 4 followed
+// /request-assistance/ links), then a canonical guide ONLY where the piece's topic
+// matches it. Every canonical /guides/ link anywhere on the site must resolve to a
+// path in the committed inventory for that canonical (data/contracts/canonical_guides/,
+// built from the live hubs), and every topic-matched piece must render exactly its
+// matched guides - the sentence under the direct answer and the "Read the full
+// guide" line above the closing CTA. Hard-fails when no piece matches a guide.
+const guideLib = require(path.join(ROOT, 'scripts', 'lib', 'canonical_guide_links.js'));
+let inventories = null; let guidePlan = null;
+try { inventories = guideLib.loadInventories(ROOT); guidePlan = guideLib.planPieceGuides(ROOT); } catch (e) { errors.push(`canonical_guides:${e.message}`); }
+const hostToInventory = new Map();
+if (inventories) for (const inv of inventories.values()) hostToInventory.set(new URL(inv.origin).hostname, inv);
+const guideLinkStats = { rendered_guide_links: 0, unknown_guide_links: 0, pieces: 0, pieces_with_guides: 0, pieces_without_match: 0, guide_links_on_pieces: 0, per_vertical: {} };
+if (inventories) {
+  for (const f of walkHtml(siteDir)) {
+    const html = fs.readFileSync(f, 'utf8');
+    for (const m of html.matchAll(/<a\s[^>]*href="(https?:\/\/[^"]+)"/g)) {
+      let u; try { u = new URL(m[1].replaceAll('&amp;', '&')); } catch { continue; }
+      const inv = hostToInventory.get(u.hostname.replace(/^www\./, ''));
+      if (!inv || !/^\/guides\/[^/]/.test(u.pathname)) continue;
+      guideLinkStats.rendered_guide_links++;
+      if (!inv.paths.has(u.pathname)) { guideLinkStats.unknown_guide_links++; errors.push(`guide_link_not_in_inventory:${u.origin}${u.pathname}:${path.relative(ROOT, f)}`); }
+    }
+  }
+  if (!guideLinkStats.rendered_guide_links) errors.push('canonical_guides:zero_rendered_guide_links_counted');
+}
+if (guidePlan) {
+  const matched = [...guidePlan.values()].filter((p) => p.guides.length).length;
+  if (!matched) errors.push('canonical_guides:zero_pieces_match_a_guide (the guard reaches nothing)');
+  for (const [route, piece] of guidePlan) {
+    for (const dir of outputs) {
+      const file = renderedFile(dir, route);
+      if (!fs.existsSync(file)) continue; // unrendered spec rows are admission's concern, not routing's
+      const rel = path.relative(ROOT, file);
+      const html = fs.readFileSync(file, 'utf8');
+      const host = piece.site.replace(/\./g, '\\.');
+      const anchors = [...html.matchAll(new RegExp(`<a\\s+([^>]*?)href="(https://${host}[^"]*)"([^>]*)>`, 'g'))].map((m) => ({ attrs: `${m[1]} ${m[3]}`, href: m[2].replaceAll('&amp;', '&') }));
+      for (const a of anchors) if (/rel="[^"]*(nofollow|sponsored|ugc)/.test(a.attrs)) errors.push(`${route}:canonical_link_not_followed:${a.href}:${rel}`);
+      const intake = anchors.filter((a) => { try { return new URL(a.href).pathname === '/request-assistance/'; } catch { return false; } }).length;
+      if (intake < MIN_INTAKE_LINKS) errors.push(`${route}:intake_links_below_${MIN_INTAKE_LINKS}:${intake}:${rel}`);
+      const inline = html.match(/<p class="canonical-guide-inline" data-canonical-guide-inline="(\d+)">([\s\S]*?)<\/p>/);
+      const closing = html.match(/<section class="card canonical-guide-closing"[^>]*>([\s\S]*?)<\/section>/);
+      if (dir !== ROOT) continue; // the counts below are reported once, from the committed output
+      const v = piece.vertical;
+      const st = (guideLinkStats.per_vertical[v] = guideLinkStats.per_vertical[v] || { pieces: 0, pieces_with_guides: 0, guide_links: 0, pieces_without_match: 0 });
+      st.pieces++; guideLinkStats.pieces++;
+      if (!piece.guides.length) {
+        st.pieces_without_match++; guideLinkStats.pieces_without_match++;
+        if (inline || closing) errors.push(`${route}:guide_link_without_topic_match:${rel}`);
+        continue;
+      }
+      st.pieces_with_guides++; guideLinkStats.pieces_with_guides++;
+      if (!inline) { errors.push(`${route}:matched_guide_sentence_missing:${rel}`); continue; }
+      const shown = [...inline[2].matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+      const want = piece.guides.map((g) => g.url);
+      if (shown.join(' ') !== want.join(' ')) errors.push(`${route}:guide_sentence_links_${shown.join(',')}_expected_${want.join(',')}:${rel}`);
+      if (!closing || !closing[1].includes(`href="${want[0]}"`)) errors.push(`${route}:read_the_full_guide_line_missing:${rel}`);
+      const bottom = html.indexOf('data-canon-block="bottom"');
+      if (closing && bottom >= 0 && html.indexOf(closing[0]) > bottom) errors.push(`${route}:read_the_full_guide_line_after_closing_cta:${rel}`);
+      st.guide_links += shown.length + (closing ? 1 : 0); guideLinkStats.guide_links_on_pieces += shown.length + (closing ? 1 : 0);
+    }
+  }
+  if (!guideLinkStats.pieces) errors.push('canonical_guides:zero_rendered_pieces');
+}
+// G3 for every canonical: no canonical domain above a quarter of all outbound links.
+const perCanonicalShare = {};
+{
+  const counts = new Map(); let total = 0;
+  for (const f of walkHtml(siteDir)) for (const m of fs.readFileSync(f, 'utf8').matchAll(/<a\s[^>]*href="(https?:\/\/[^"]+)"/g)) {
+    let u; try { u = new URL(m[1].replaceAll('&amp;', '&')); } catch { continue; }
+    if (/(^|\.)theindustryguides\.com$/.test(u.hostname)) continue;
+    total++;
+    const h = u.hostname.replace(/^www\./, '');
+    if (hostToInventory.has(h)) counts.set(h, (counts.get(h) || 0) + 1);
+  }
+  for (const [h, n] of counts) {
+    perCanonicalShare[h] = Number((n / total).toFixed(4));
+    if (n / total > MAX_OUTBOUND_SHARE) errors.push(`canonical_concentration:${h}_share_${((n / total) * 100).toFixed(1)}pct_over_${MAX_OUTBOUND_SHARE * 100}pct`);
+  }
+  if (hostToInventory.size && !total) errors.push('canonical_concentration:zero_outbound_links_counted');
+}
+
+const report = { validator: 'velocity-canonical-anchor-links', ok: errors.length === 0, governed_pages: governed.length, senior_living_pages: seniorPages.length, senior_living_intake_links: seniorIntakeLinks, senior_compiled_queries: compiled ? (compiled.queries || []).length : 0, senior_questions_rendered_per_piece: perPieceRendered, senior_outbound_share: Number(seniorShare.toFixed(4)), senior_outbound_links: seniorOutbound, outbound_links_total: outbound, senior_max_links_per_url: Math.max(0, ...perUrl.values()), required_guides: Object.keys(REQUIRED).length, rendered_links_checked: linksChecked, canonical_guide_links: guideLinkStats, canonical_outbound_share: perCanonicalShare, outputs: outputs.map((d) => path.relative(ROOT, d) || '.'), errors };
 fs.mkdirSync(path.dirname(path.join(ROOT, REPORT)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, REPORT), JSON.stringify(report, null, 2) + '\n');
 if (errors.length) {
@@ -263,4 +346,4 @@ if (errors.length) {
   console.error(errors.slice(0, 40).join('\n'));
   process.exit(1);
 }
-console.log(`VELOCITY CANONICAL ANCHOR LINKS PASS: ${governed.length} guides, ${linksChecked} rendered anchor links on ${report.outputs.join(', ')}; senior-living ${seniorPages.length} guides, ${seniorIntakeLinks} intake links, ${report.senior_compiled_queries} compiled queries, outbound share ${(seniorShare * 100).toFixed(1)}%`);
+console.log(`VELOCITY CANONICAL ANCHOR LINKS PASS: ${governed.length} guides, ${linksChecked} rendered anchor links on ${report.outputs.join(', ')}; senior-living ${seniorPages.length} guides, ${seniorIntakeLinks} intake links, ${report.senior_compiled_queries} compiled queries, outbound share ${(seniorShare * 100).toFixed(1)}%; canonical guides: ${guideLinkStats.pieces_with_guides}/${guideLinkStats.pieces} pieces matched, ${guideLinkStats.guide_links_on_pieces} guide links, ${guideLinkStats.rendered_guide_links} sitewide all in inventory; max canonical share ${(Math.max(0, ...Object.values(perCanonicalShare)) * 100).toFixed(1)}%`);
