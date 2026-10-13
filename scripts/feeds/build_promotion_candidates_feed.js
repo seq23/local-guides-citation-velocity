@@ -40,6 +40,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { toCanonicalVertical } = require('../lib/canonical_vertical');
 
 const ROOT = process.cwd();
 const SOURCE = 'data/queries/measured_demand_candidates.json';
@@ -79,6 +80,10 @@ function build() {
   const projected = candidates.map((c) => {
     const row = {};
     for (const f of PUBLIC_FIELDS) if (c[f] !== undefined && c[f] !== null) row[f] = c[f];
+    // The consumer (local-guides-generator) keys on the canonical vertical id; a
+    // source spelling such as "pi" or "uscis" was dropped there. Unknown -> absent,
+    // which the required-field check below then refuses to publish.
+    if (row.vertical !== undefined) { const v = toCanonicalVertical(row.vertical); if (v) row.vertical = v; else delete row.vertical; }
     const absent = REQUIRED_FIELDS.filter((f) => row[f] === undefined);
     if (absent.length) missingRequired.push(`${c.id || c.query || '(unidentified row)'}: ${absent.join(', ')}`);
     return row;

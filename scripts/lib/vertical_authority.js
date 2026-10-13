@@ -16,7 +16,10 @@ const VERTICAL_ALIASES = new Map(Object.entries({
   neuropsych: 'neuro',
   uscis: 'uscis-medical',
   'uscis medical': 'uscis-medical',
-  'uscis-medical': 'uscis-medical'
+  'uscis-medical': 'uscis-medical',
+  'senior-living': 'senior-living',
+  'senior living': 'senior-living',
+  senior_living: 'senior-living'
 }));
 
 const ROUTE_SEGMENT_BY_VERTICAL = {
@@ -24,7 +27,8 @@ const ROUTE_SEGMENT_BY_VERTICAL = {
   dentistry: 'dentistry',
   trt: 'trt',
   neuro: 'neuro',
-  'uscis-medical': 'uscis-medical'
+  'uscis-medical': 'uscis-medical',
+  'senior-living': 'senior-living'
 };
 
 function normalizeVertical(value) {

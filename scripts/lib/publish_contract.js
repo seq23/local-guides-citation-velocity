@@ -68,6 +68,12 @@ const VERTICAL_CONFIG = {
     sourceVertical: 'uscis',
     domain: 'https://uscisexam.com',
     label: 'USCIS Medical Exams'
+  },
+  'senior-living': {
+    basePath: 'senior-living',
+    sourceVertical: 'senior-living',
+    domain: 'https://memphisseniorcarehomes.com',
+    label: 'Senior Living'
   }
 };
 

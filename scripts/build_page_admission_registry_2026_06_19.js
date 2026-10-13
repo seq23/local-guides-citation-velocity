@@ -69,8 +69,8 @@ const recByPage=new Map();
 for(const r of recommendations){const key=normalizePath(r.page);if(!recByPage.has(key))recByPage.set(key,[]);recByPage.get(key).push(r.id);}
 const winByPage=new Map();
 for(const w of wins){for(const page of (w.pages||[w.page]).filter(Boolean)){const key=normalizePath(page);if(!winByPage.has(key))winByPage.set(key,[]);winByPage.get(key).push(w.id);}}
-function pageType(item){const p=item.path;if(['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].includes(p))return 'Vertical hub';if(p.startsWith('/insights/')&&p!=='/insights/')return 'Insight';if(p.startsWith('/medium-articles/'))return 'Medium article';if(p.startsWith('/atlas/'))return 'Atlas';if(liveByPath.has(p))return 'Canonical guide';return 'Global page';}
-function verticalFor(p,source){if(source?.vertical)return source.vertical==='personal_injury'?'personal-injury':source.vertical;for(const v of ['personal-injury','dentistry','trt','neuro','uscis-medical'])if(p.includes(`/${v}/`)||p.startsWith(`${v}-`)||p.includes(`/${v}-`))return v;return 'global';}
+function pageType(item){const p=item.path;if(['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/','/senior-living/'].includes(p))return 'Vertical hub';if(p.startsWith('/insights/')&&p!=='/insights/')return 'Insight';if(p.startsWith('/medium-articles/'))return 'Medium article';if(p.startsWith('/atlas/'))return 'Atlas';if(liveByPath.has(p))return 'Canonical guide';return 'Global page';}
+function verticalFor(p,source){if(source?.vertical)return source.vertical==='personal_injury'?'personal-injury':source.vertical;for(const v of ['personal-injury','dentistry','trt','neuro','uscis-medical','senior-living'])if(p.includes(`/${v}/`)||p.startsWith(`${v}-`)||p.includes(`/${v}-`))return v;return 'global';}
 function sensitivity(source){if(source?.sensitivity_profile)return source.sensitivity_profile;const d=String(source?.disclaimer||'').toLowerCase();if(d.includes('legal')&&d.includes('medical'))return 'legal-medical';if(d.includes('legal'))return 'legal';if(d.includes('medical'))return 'medical';return 'general';}
 const pages=published.map(item=>{
   const p=item.path;

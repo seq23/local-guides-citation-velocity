@@ -112,7 +112,7 @@ function inferPageFamily(meta){
   if (slug === '/insights/' || surface === 'insight-archive') return 'archive';
   if (slug.startsWith('/insights/') || surface === 'insight') return 'insight';
   if (slug.startsWith('/medium-articles/') || surface === 'medium-article') return 'medium-article';
-  if (/^\/(personal-injury|dentistry|trt|neuro|uscis-medical)\/$/.test(slug)) return 'vertical-home';
+  if (/^\/(personal-injury|dentistry|trt|neuro|uscis-medical|senior-living)\/$/.test(slug)) return 'vertical-home';
   if (slug.endsWith('.html')) return 'utility';
   return 'detail';
 }
@@ -122,7 +122,8 @@ function guessVerticalFromSlug(slug){
   if (String(slug).startsWith('/dentistry/')) return 'dentistry';
   if (String(slug).startsWith('/trt/')) return 'trt';
   if (String(slug).startsWith('/neuro/')) return 'neuro';
-  if (String(slug).startsWith('/uscis-medical/')) return 'uscis';
+  if (String(slug).startsWith('/uscis-medical/')) return 'uscis-medical';
+  if (String(slug).startsWith('/senior-living/')) return 'senior-living';
   return 'generic';
 }
 
@@ -259,7 +260,9 @@ function buildLinks(meta){
       dentistry: '/dentistry/',
       trt: '/trt/',
       neuro: '/neuro/',
-      uscis: '/uscis-medical/'
+      uscis: '/uscis-medical/',
+      'uscis-medical': '/uscis-medical/',
+      'senior-living': '/senior-living/'
     }[vertical];
     if (hub && hub !== slug) add(hub, 'Return to the main hub', 'hub');
   }

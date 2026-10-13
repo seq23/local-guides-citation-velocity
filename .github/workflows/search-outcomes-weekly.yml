@@ -67,6 +67,10 @@ jobs:
         env:
           GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Lead funnel for memphisseniorcarehomes.com (same value as the secret of this
+          # name on seq23/local-guides-generator). Absent -> the row says "funnel: no
+          # token" and the run stays green.
+          SENIOR_TICK_TOKEN: ${{ secrets.SENIOR_TICK_TOKEN }}
         run: python3 scripts/search_console/search_outcomes_weekly.py --mode report reports/search_outcomes
       - name: Free query discovery from measured seeds
         # Autocomplete / PAA probe / Reddit, never a paid API or a model call; a blocked

@@ -11,7 +11,8 @@ const CANONICALS = [
   'dentistryguides.com',
   'hormonesivhair.com',
   'neuroevalguides.com',
-  'uscisexam.com'
+  'uscisexam.com',
+  'memphisseniorcarehomes.com'
 ];
 
 function walk(dir){
@@ -62,6 +63,7 @@ function requiresAnswerBox(fp){
     || rel.startsWith('/trt/')
     || rel.startsWith('/neuro/')
     || rel.startsWith('/uscis-medical/')
+    || rel.startsWith('/senior-living/')
     || rel.startsWith('/insights/');
 }
 
@@ -73,6 +75,7 @@ function requiresQaBlock(fp){
     || rel.startsWith('/trt/')
     || rel.startsWith('/neuro/')
     || rel.startsWith('/uscis-medical/')
+    || rel.startsWith('/senior-living/')
     || rel === '/tools/index.html'
     || rel.startsWith('/insights/');
 }
@@ -90,6 +93,7 @@ function requiresFanoutBlock(fp){
     || rel.startsWith('/trt/')
     || rel.startsWith('/neuro/')
     || rel.startsWith('/uscis-medical/')
+    || rel.startsWith('/senior-living/')
     || rel.startsWith('/insights/');
 }
 

@@ -5,7 +5,7 @@ const ROOT=path.resolve(__dirname,'..','..');
 const registry=JSON.parse(fs.readFileSync(path.join(ROOT,'data','seo','search_submission_registry.json'),'utf8'));
 const published=JSON.parse(fs.readFileSync(path.join(ROOT,'content','_live','published_urls.json'),'utf8'));
 const urls=(published.urls||published.items||published).map(v=>typeof v==='string'?v:(v.url||v.loc)).filter(Boolean);
-const priority=urls.filter(u=>/theindustryguides\.com\/(personal-injury|dentistry|neuro|trt|uscis-medical|insights|[^/]+-vs-)/.test(u)).slice(0,500);
+const priority=urls.filter(u=>/theindustryguides\.com\/(personal-injury|dentistry|neuro|trt|uscis-medical|senior-living|insights|[^/]+-vs-)/.test(u)).slice(0,500);
 const generatedAt=`${registry.effective_date}T00:00:00.000Z`;
 const payload={schema_version:'1.0',generated_at:generatedAt,source_url_count:urls.length,priority_url_count:priority.length,domains:registry.domains,priority_urls:priority,hash:crypto.createHash('sha256').update(priority.join('\n')).digest('hex')};
 fs.mkdirSync(path.join(ROOT,'artifacts','release'),{recursive:true});

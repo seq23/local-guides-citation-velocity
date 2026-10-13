@@ -43,6 +43,7 @@ const {
 const { buildFanoutData, injectFanoutIntoHtml, inferPageFamily } = require('./lib/fanout');
 const { getPageShapeConfig } = require('./lib/page_shape_config');
 const { renderCitationVelocityArtifacts } = require('./lib/citation_velocity_artifacts');
+const { toCanonicalVertical } = require('./lib/canonical_vertical');
 // Artifact blocks already DELIVERED on an accepted route, merged back in at render
 // time. See scripts/lib/accepted_artifacts.js: until the semantic manifest became
 // durable it was a per-run snapshot, so 249 accepted pages rebuilt 1,145,001 bytes
@@ -110,7 +111,7 @@ function assertGeneratedHtmlBeforeWrite({ kind, slug, html, minWords = 120, requ
   const words = generatedWordCount(text);
   if (words < minWords) errors.push(`word count too low: ${words} < ${minWords}`);
   if (/TODO|FIXME|undefined|null\s+is the official|\[object Object\]/i.test(text)) errors.push('placeholder/leak detected');
-  if (/\/insights\/(dentistry|neuro|trt|uscis-medical|personal-injury)-\1-/.test(text)) errors.push('double-vertical insight slug detected');
+  if (/\/insights\/(dentistry|neuro|trt|uscis-medical|personal-injury|senior-living)-\1-/.test(text)) errors.push('double-vertical insight slug detected');
   if (errors.length) {
     throw new Error(`Generated ${kind} failed prewrite gate for ${slug}: ${errors.join('; ')}`);
   }
@@ -854,8 +855,74 @@ function providerDestination(canonHome){
   // "Find a Provider" CTA on the insights and guide pages landed the reader on
   // a guides index one hop short of the request surface. The CTA copy already
   // promised "the matching provider destination"; only the href disagreed.
-  try { return `${new URL(canonHome).origin}/request-assistance/`; }
+  //
+  // A spec page may name its own intake URL (provider_destination_url): the
+  // canonical /request-assistance/ path plus the routing query the canonical
+  // site's intake reads (pt, src, intent, vertical, page_kind, page_slug ...).
+  // That URL is already the request surface, so it is returned whole; every
+  // other input still normalizes to the bare origin path exactly as before.
+  try {
+    const u = new URL(canonHome);
+    if (u.pathname === '/request-assistance/' && u.search) return u.href;
+    return `${u.origin}/request-assistance/`;
+  }
   catch { return canonHome; }
+}
+
+/**
+ * Inline links in authored spec copy: "[label](https://host/path/)".
+ *
+ * The text is escaped first, so the only markup that can reach the page is an
+ * anchor this function writes, and only to an origin the page is allowed to
+ * route to (its own canonical site). Anything else throws before a byte is
+ * written: a guide that silently loses a link, or links off-network, fails the
+ * build instead of shipping. Links are followed (no rel=nofollow/sponsored).
+ */
+/**
+ * Pick a page's visible fan-out questions: round-robin across localities (then
+ * head phrases) so every locality the piece owns is asked before any repeats.
+ * Deterministic: input order is the compiled file's sorted order.
+ */
+function pickFanoutQuestions(rows, limit){
+  // One answered question per place (or per topic for place-less queries), with
+  // that group's other real phrasings listed under it, so a piece shows many
+  // hyperlocal searches without repeating the same answer forty times.
+  const groups = new Map();
+  for (const r of rows) {
+    const key = r.locality || r.region || `topic:${r.modifier || r.head_phrase || 'general'}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  }
+  const out = [];
+  let total = 0;
+  // A piece with few places (East Arkansas: two cities) shows more phrasings per place.
+  const perGroup = Math.min(15, Math.max(6, Math.ceil(limit / Math.max(1, groups.size))));
+  for (const list of groups.values()) {
+    if (total >= limit) break;
+    const take = list.slice(0, Math.min(perGroup, limit - total));
+    out.push({ primary: take[0], variants: take.slice(1) });
+    total += take.length;
+  }
+  return out;
+}
+
+function renderLinkedText(text, allowedOrigins, context, opts = {}){
+  // opts.seen: per-page set of canonical URLs already linked. A URL is linked at
+  // most once per page (later mentions render as plain text), which keeps any
+  // single canonical URL far under the sitewide link-concentration cap.
+  const seen = opts.seen instanceof Set ? opts.seen : null;
+  const allowed = new Set((allowedOrigins || []).map((o)=> new URL(o).origin));
+  const escaped = htmlEscape(String(text || ''));
+  const out = escaped.replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, (m, label, rawUrl)=>{
+    const url = rawUrl.replace(/&amp;/g, '&');
+    let origin;
+    try { origin = new URL(url).origin; } catch { throw new Error(`${context}: unparseable inline link ${url}`); }
+    if (!allowed.has(origin)) throw new Error(`${context}: inline link ${url} is not on an allowed canonical origin (${[...allowed].join(', ')})`);
+    if (seen) { if (seen.has(url)) return label; seen.add(url); }
+    return `<a href="${htmlEscape(url)}" data-canonical-inline="true">${label}</a>`;
+  });
+  if (/\]\(/.test(out.replace(/<a [^>]*>[^<]*<\/a>/g, ''))) throw new Error(`${context}: malformed inline link markup left in text`);
+  return out;
 }
 
 function canonBlock(canonHome, canonStateHint, canonDirHint, canonLabel){
@@ -921,7 +988,10 @@ function renderAccordion(sections){
       ? `<h3 class=\"h2\">Red flags</h3><ul>${s.red_flags.map(i=>`<li>${htmlEscape(i)}</li>`).join('')}</ul>`
       : '';
 
-    const a = `<p>${htmlEscape(s.a || '')}</p>`;
+    // _answer_html is set only in memory by buildVelocityOnlyProgrammaticPages
+    // from a_linked via renderLinkedText (escaped, origin-allowlisted); it is
+    // never read from a source file.
+    const a = `<p>${typeof s._answer_html === 'string' ? s._answer_html : htmlEscape(s.a || '')}</p>`;
 
     return `
       <div class=\"acc-item\" id=\"${id}\" data-query-variants='${attrEscape(JSON.stringify(Array.isArray(s.query_variants) ? s.query_variants : []))}'>
@@ -1181,7 +1251,8 @@ function buildVerticalSlugMap(){
     dentistry: '/dentistry/',
     trt: '/trt/',
     neuro: '/neuro/',
-    uscis: '/uscis-medical/'
+    uscis: '/uscis-medical/',
+    'senior-living': '/senior-living/'
   };
 }
 
@@ -1190,11 +1261,11 @@ function scorePriority(entry){
   const slug = String((entry && entry.slug) || '');
   let score = 0;
   if (slug === '/') score += 1000;
-  if (['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].includes(slug)) score += 900;
+  if (['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/','/senior-living/'].includes(slug)) score += 900;
   if (['/tools/','/glossary/','/insights/','/medium/'].includes(slug)) score += 700;
   if (slug.startsWith('/insights/')) score += 500;
   if (slug.startsWith('/medium/')) score += 350;
-  if (slug.startsWith('/personal-injury/') || slug.startsWith('/dentistry/') || slug.startsWith('/trt/') || slug.startsWith('/neuro/') || slug.startsWith('/uscis-medical/')) score += 250;
+  if (slug.startsWith('/personal-injury/') || slug.startsWith('/dentistry/') || slug.startsWith('/trt/') || slug.startsWith('/neuro/') || slug.startsWith('/uscis-medical/') || slug.startsWith('/senior-living/')) score += 250;
   score -= slug.length / 1000;
   return score;
 }
@@ -1554,10 +1625,10 @@ function writeDistributionArtifacts(siteBase, allUrls){
 
 // Homepage definition (AEO): 40-60 words, opens "The Industry Guides is", sits
 // directly under the H1. Guarded by validate_site_hygiene.js.
-const HOME_DEFINITION = 'The Industry Guides is an independent editorial publisher of source-backed decision guides for regulated and high-stakes services: USCIS medical exams, personal injury, dentistry, neuropsychological testing, and hormone, IV and hair treatment. Each guide explains the rules, compares the factors that matter, and routes you to a provider when you are ready.';
+const HOME_DEFINITION = 'The Industry Guides is an independent editorial publisher of source-backed decision guides for regulated and high-stakes services: USCIS medical exams, personal injury, dentistry, neuropsychological testing, hormone, IV and hair treatment, and senior living. Each guide explains the rules, compares the factors that matter, and routes you to a provider when you are ready.';
 // The homepage FAQ: rendered visibly and emitted as FAQPage from the same list.
 const HOME_FAQ = [
-  { q: 'Who runs this site?', a: 'The Industry Guides is an independent editorial publisher covering five regulated service categories.' },
+  { q: 'Who runs this site?', a: 'The Industry Guides is an independent editorial publisher covering six regulated service categories.' },
   { q: 'How are guides verified?', a: 'Pages use named frameworks, visible source records, review dates, and a hard publication gate.' },
   { q: 'How fresh is the data?', a: 'Every page carries a source-derived modification date. Regulated claims are scheduled for recheck.' },
   { q: 'Is this a government agency?', a: 'No. We link to primary government and professional sources where they control the rule.' },
@@ -1569,7 +1640,8 @@ function buildIndexPage(siteBase, toolSections = []){
     {id:'personal-injury-card', label:'Personal Injury Law', accent:'coral', guides:'/personal-injury/', provider:'https://theaccidentguides.com/request-assistance/', copy:'State deadlines, negligence rules, claims, evidence, fees, and decision guides.'},
     {id:'dentistry-card', label:'Dentistry Network', accent:'teal', guides:'/dentistry/', provider:'https://dentistryguides.com/request-assistance/', copy:'Insurance, Medicaid, costs, treatment comparisons, urgency, and provider questions.'},
     {id:'neuro-card', label:'Neuro / ADHD Testing', accent:'lavender', guides:'/neuro/', provider:'https://neuroevalguides.com/request-assistance/', copy:'Evaluation types, referrals, costs, reports, school/work use, and state access.'},
-    {id:'trt-card', label:'Hormones, IV & Hair', accent:'gold', guides:'/trt/', provider:'https://hormonesivhair.com/request-assistance/', copy:'TRT rules, telehealth, monitoring, fertility, hair loss, and treatment comparisons.'}
+    {id:'trt-card', label:'Hormones, IV & Hair', accent:'gold', guides:'/trt/', provider:'https://hormonesivhair.com/request-assistance/', copy:'TRT rules, telehealth, monitoring, fertility, hair loss, and treatment comparisons.'},
+    {id:'senior-living-card', label:'Senior Living (Memphis Tri-State)', accent:'mint', guides:'/senior-living/', provider:'https://memphisseniorcarehomes.com/request-assistance/', copy:'Assisted living vs memory care, Tennessee and Mississippi licensing, TennCare CHOICES, VA benefits, and hospital discharge.'}
   ];
   const routeCards = verticals.map((v)=>`<article class="network-card ${v.accent}" id="${v.id}"><div class="network-kicker">Canonical vertical</div><h3>${v.label}</h3><p>${v.copy}</p><div class="cta"><a class="primary" href="${v.provider}">Find a Provider</a><a href="${v.guides}">Browse Guides</a></div></article>`).join('');
   const rows = verticals.map((v)=>`<tr><td>${v.label}</td><td><a href="${v.guides}">Guides and state pages</a></td><td>Reviewed ${nowISODate()}</td><td><a class="table-cta" href="${v.provider}">Find a Provider</a></td></tr>`).join('');
@@ -1588,7 +1660,7 @@ function buildIndexPage(siteBase, toolSections = []){
   <section class="methodology-band"><div><div class="section-label">Methodology</div><h2>Source first. Decision second. Provider third.</h2><p>Each programmatic page must contain a unique defensible data atom, a direct answer, visible FAQs, source provenance, internal links, and provider routing. Boilerplate-only pages do not ship.</p><a href="/methodology">Read the methodology</a></div></section>
   <section class="closing-provider"><h2>Find a provider in your state</h2><p>Choose the vertical that matches your situation. You will continue to the corresponding provider destination.</p><div class="provider-button-grid">${verticals.map((v)=>`<a href="${v.provider}">${v.label}<strong>Find a Provider →</strong></a>`).join('')}</div></section>`;
   return {slug:'/',title:'The Industry Guides | Source-Backed Guides and Provider Routing',description:'Source-backed guides, state pages, comparisons, and provider routing across USCIS medical, personal injury, dentistry, neuropsychology, and TRT.',bodyHtml:body,jsonld:[
-    {'@context':'https://schema.org','@type':'WebPage',name:'The Industry Guides',url:siteBase+'/',description:'Source-backed guides and provider routing across five regulated verticals.',
+    {'@context':'https://schema.org','@type':'WebPage',name:'The Industry Guides',url:siteBase+'/',description:'Source-backed guides and provider routing across six regulated verticals.',
       // Read-aloud surface: the definition under the H1 and the FAQ below.
       speakable:{'@type':'SpeakableSpecification',cssSelector:['.site-definition','[data-home-faq="true"]']}},
     {'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:siteBase+'/'}]},
@@ -1896,10 +1968,14 @@ function exportFanoutArtifacts(entries){
       missing.push({ slug: entry.slug, reason: 'missing fanout object' });
       return;
     }
+    // Emit canonical vertical ids only (data/contracts/velocity_vertical_aliases.json):
+    // pages carry source spellings (personal_injury, uscis) that the published
+    // releases/fanout_query_clusters.<vertical>.json files used to repeat.
+    const canonicalVertical = toCanonicalVertical(fanout.vertical);
     manifest.push({
       slug: entry.slug,
       title: entry.title,
-      vertical: fanout.vertical,
+      vertical: canonicalVertical,
       page_family: fanout.page_family,
       variant_count: fanout.variant_count,
       variants: fanout.variants,
@@ -1907,12 +1983,12 @@ function exportFanoutArtifacts(entries){
     });
     if (!fanout.variant_count) missing.push({ slug: entry.slug, reason: 'no variants generated' });
     (fanout.variants || []).forEach((variant)=> {
-      const key = `${fanout.vertical}::${String(variant).toLowerCase()}`;
+      const key = `${canonicalVertical || 'generic'}::${String(variant).toLowerCase()}`;
       const items = duplicateMap.get(key) || [];
       items.push(entry.slug);
       duplicateMap.set(key, items);
     });
-    const verticalKey = fanout.vertical || 'generic';
+    const verticalKey = canonicalVertical || 'generic';
     const bucket = perVertical.get(verticalKey) || [];
     bucket.push({ slug: entry.slug, title: entry.title, page_family: fanout.page_family, variants: fanout.variants, links: fanout.links });
     perVertical.set(verticalKey, bucket);
@@ -1934,6 +2010,13 @@ function exportFanoutArtifacts(entries){
   perVertical.forEach((items, vertical)=> {
     writeUtf8(path.join(releasesDir, `fanout_query_clusters.${vertical}.json`), JSON.stringify(items, null, 2) + '\n');
   });
+  // A per-vertical file this build no longer writes is a stale spelling
+  // (fanout_query_clusters.personal_injury.json, .uscis.json): remove it so the
+  // published set is exactly what this build produced.
+  for (const name of fs.readdirSync(releasesDir)) {
+    const m = /^fanout_query_clusters\.(.+)\.json$/.exec(name);
+    if (m && !perVertical.has(m[1])) fs.unlinkSync(path.join(releasesDir, name));
+  }
 
   console.log(`Fan-out manifest written for ${manifest.length} pages.`);
 }
@@ -2143,8 +2226,52 @@ function buildVelocityOnlyProgrammaticPages(siteBase){
     // cluster guide (e.g. .../dentistry/anxiety-trust/) instead of the request
     // surface. providerDestination() normalizes any canonical URL to its
     // origin's /request-assistance/, per PAGE_RELEASE_LAW.md §6.
-    const destination = providerDestination(page.canonical_target_url);
-    const sections = Array.isArray(page.sections) ? page.sections : [];
+    const canonicalOrigin = (()=>{ try { return new URL(page.canonical_target_url).origin; } catch { return null; } })();
+    if (page.provider_destination_url) {
+      let u; try { u = new URL(page.provider_destination_url); } catch { throw new Error(`Velocity page ${page.slug}: provider_destination_url is not a URL`); }
+      if (u.origin !== canonicalOrigin || u.pathname !== '/request-assistance/') throw new Error(`Velocity page ${page.slug}: provider_destination_url must be ${canonicalOrigin}/request-assistance/ (got ${u.origin}${u.pathname})`);
+    }
+    const destination = providerDestination(page.provider_destination_url || page.canonical_target_url);
+    const linkOrigins = canonicalOrigin ? [canonicalOrigin] : [];
+    // Structural routing cards (guide box, city list, city CTA, closing CTA) own
+    // their URLs; inline copy links a canonical URL only if no card and no earlier
+    // sentence already does.
+    const linkSeen = new Set([
+      ...((page.canonical_guide_box && page.canonical_guide_box.links) || []).map((l)=>l.url),
+      ...(page.page_family === 'SENIOR-LIVING-GUIDES' ? (page.canonical_anchor_links || []).map((l)=>l.url) : []),
+      ...(page.city_cta && page.city_cta.url ? [page.city_cta.url] : []),
+      ...(page.closing_cta ? [page.closing_cta.city_url, page.closing_cta.directory_url].filter(Boolean) : [])
+    ]);
+    const dedupeLinks = page.page_family === 'SENIOR-LIVING-GUIDES' ? { seen: linkSeen } : {};
+    // The definition may name the same canonical guide the "Read the full guide"
+    // box lists (it is the in-first-150-words route); it dedupes only against itself.
+    const definitionSeen = new Set();
+    const definitionHtml = page.definition_linked ? renderLinkedText(page.definition_linked, linkOrigins, `${page.slug} definition`, page.page_family === 'SENIOR-LIVING-GUIDES' ? { seen: definitionSeen } : {}) : htmlEscape(page.description);
+    for (const u of definitionSeen) linkSeen.add(u);
+    const sections = (Array.isArray(page.sections) ? page.sections : []).map((s, i)=> (s && s.a_linked)
+      ? Object.assign({}, s, { _answer_html: renderLinkedText(s.a_linked, linkOrigins, `${page.slug} section ${i + 1}`, dedupeLinks) })
+      : s);
+    // Query fan-out question set (senior-living): the compiled universe assigns each
+    // query to one piece and one canonical route; the piece answers it briefly and
+    // links the route that owns the full answer (once per page, see linkSeen).
+    const fanoutSpec = page.fanout_questions && page.fanout_questions.source ? page.fanout_questions : null;
+    let fanoutCard = '';
+    if (fanoutSpec) {
+      const compiled = loadJson(path.join(ROOT, fanoutSpec.source));
+      const mine = (compiled.queries || []).filter((q)=>q.velocity_piece === page.slug);
+      if (!mine.length) throw new Error(`Velocity page ${page.slug}: no compiled fan-out queries in ${fanoutSpec.source}`);
+      const picked = pickFanoutQuestions(mine, Number(fanoutSpec.limit) || 60);
+      const site = canonicalOrigin;
+      const shownCount = picked.reduce((n, g)=>n + 1 + g.variants.length, 0);
+      const items = picked.map(({ primary: q, variants })=>{
+        const url = `${site}${q.canonical_route}`;
+        if (new URL(url).origin !== canonicalOrigin) throw new Error(`${page.slug}: fan-out route off the canonical origin: ${url}`);
+        const link = linkSeen.has(url) ? `<span class="muted">${htmlEscape(q.canonical_label)} (linked above)</span>` : (linkSeen.add(url), `<a href="${htmlEscape(url)}" data-canonical-fanout="true">${htmlEscape(q.canonical_label)}</a>`);
+        const also = variants.length ? `<p class="muted small">Also searched: ${variants.map((v)=>`<span data-fanout-query="${htmlEscape(v.normalized_query)}">${htmlEscape(v.query)}</span>`).join('; ')}</p>` : '';
+        return `<div class="fanout-q" data-fanout-query="${htmlEscape(q.normalized_query)}"><h3 class="h3">${htmlEscape(q.question)}</h3><p>${htmlEscape(q.answer)} ${link}</p>${also}</div>`;
+      }).join('');
+      fanoutCard = `<section class="card fanout-questions" data-fanout-questions="${shownCount}"><div class="badge">Local questions</div><h2 class="h2">${htmlEscape(fanoutSpec.heading || 'Questions families ask in the Memphis area')}</h2>${items}</section>`;
+    }
     if (sections.length < 3) throw new Error(`Velocity page ${page.slug} needs at least three substantive decision sections`);
     const siblings = relatedFor.get(page.slug) || [];
     const sourceRegistry = loadJson(path.join(ROOT,'data','evidence','source_registry.json'));
@@ -2161,8 +2288,18 @@ function buildVelocityOnlyProgrammaticPages(siteBase){
     const anchorLinks = Array.isArray(page.canonical_anchor_links) ? page.canonical_anchor_links.filter((l)=>l && l.url && l.label) : [];
     const anchorCard = anchorLinks.length ? `<section class="card canonical-anchor-links" data-canonical-anchor-links="${anchorLinks.length}"><div class="badge">Verified local lists</div><h2 class="h2">${htmlEscape(page.canonical_anchor_heading || 'Verified local lists by city')}</h2>${page.canonical_anchor_intro ? `<p>${htmlEscape(page.canonical_anchor_intro)}</p>` : ''}<ul>${anchorLinks.map((l)=>`<li><a href="${htmlEscape(l.url)}" data-canonical-anchor="true">${htmlEscape(l.label)}</a>${l.note ? ` <span class="muted">— ${htmlEscape(l.note)}</span>` : ''}</li>`).join('')}</ul></section>` : '';
     const decisionArtifacts = Array.isArray(page.decision_artifacts) && page.decision_artifacts.length ? renderCitationVelocityArtifacts(page.decision_artifacts) : '';
+    // Opt-in routing cards (senior-living, 2026-10-13). A Velocity guide's job is
+    // to send the reader to the canonical site: the full canonical guide, the
+    // city page, and the intake. Pages without these fields render as before.
+    // validate_velocity_canonical_anchor_links.js reads the spec and this output.
+    const guideBox = page.canonical_guide_box && Array.isArray(page.canonical_guide_box.links) && page.canonical_guide_box.links.length
+      ? `<section class="card canonical-guide-box" data-canonical-guide-box="${page.canonical_guide_box.links.length}"><div class="badge">Read the full guide</div><h2 class="h2">${htmlEscape(page.canonical_guide_box.heading || 'Read the full guide')}</h2><ul>${page.canonical_guide_box.links.map((l)=>`<li><a href="${htmlEscape(l.url)}" data-canonical-guide="true">${htmlEscape(l.label)}</a>${l.note ? ` <span class="muted">— ${htmlEscape(l.note)}</span>` : ''}</li>`).join('')}</ul></section>` : '';
+    const cityCta = page.city_cta && page.city_cta.url
+      ? `<section class="card provider-cta city-cta" data-city-cta="true"><div class="badge">Find communities</div><h2 class="h2">${htmlEscape(page.city_cta.heading)}</h2>${page.city_cta.text ? `<p>${htmlEscape(page.city_cta.text)}</p>` : ''}<div class="cta"><a class="primary" href="${htmlEscape(page.city_cta.url)}" data-canonical-city="true">${htmlEscape(page.city_cta.label)}</a>${page.city_cta.directory_url ? `<a href="${htmlEscape(page.city_cta.directory_url)}" data-canonical-directory="true">${htmlEscape(page.city_cta.directory_label || page.city_cta.directory_url)}</a>` : ''}</div></section>` : '';
+    const closingCta = page.closing_cta
+      ? `<section class="card provider-cta closing-cta" data-provider-cta="closing" data-closing-cta="true"><div class="badge">Next step</div><h2 class="h2">${htmlEscape(page.closing_cta.heading)}</h2>${page.closing_cta.text ? `<p>${htmlEscape(page.closing_cta.text)}</p>` : ''}<div class="cta"><a class="primary" href="${htmlEscape(destination)}">${htmlEscape(page.closing_cta.button_label || 'Find a Provider')}</a>${page.closing_cta.city_url ? `<a href="${htmlEscape(page.closing_cta.city_url)}" data-canonical-city="true">${htmlEscape(page.closing_cta.city_label)}</a>` : ''}${page.closing_cta.directory_url ? `<a href="${htmlEscape(page.closing_cta.directory_url)}" data-canonical-directory="true">${htmlEscape(page.closing_cta.directory_label || page.closing_cta.directory_url)}</a>` : ''}</div></section>` : '';
     const midCta = `<section class="card provider-cta" data-provider-cta="after-decision-artifact"><div class="badge">Local next step</div><h2 class="h2">Ready to compare providers?</h2><p>Use the source-backed framework above, then continue to the matching provider destination.</p><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section>`;
-    const body = `${canonBlock(destination,destination,destination,(page.title || '').split(' in ')[0])}<article id="guide-content"><h1 class="h1">${htmlEscape(headingFor(page.slug, page.title))}</h1><p class="muted">${htmlEscape(page.description)}</p><section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title,page.description,70,page.content_atom))}</p></section><section class="card dated-fact"><div class="badge">Reviewed source fact</div><p>${htmlEscape(page.dated_primary_fact || `Primary sources reviewed ${page.date_modified}.`)}</p></section>${anchorCard}${decisionArtifacts}${renderProgrammaticContentAtom(page.content_atom,page.title)}${authorityCard}${midCta}<section class="card"><div class="badge">Primary sources</div><h2 class="h2">Verify the rule before acting</h2><ul>${sourceLinks}</ul></section><section class="card"><div class="badge">Decision questions</div>${renderAccordion(sections)}</section><section class="card provider-cta" data-provider-cta="contextual-body"><h2 class="h2">Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section><section class="card sibling-links" data-sibling-links="true"><div class="badge">Related Velocity guides</div><ul>${related}</ul></section></article>${canonBlockBottom(destination,(page.title || '').split(' in ')[0])}<p class="muted small">Last updated: ${htmlEscape(page.date_modified)}</p>`;
+    const body = `${canonBlock(destination,destination,destination,(page.title || '').split(' in ')[0])}<article id="guide-content"><h1 class="h1">${htmlEscape(headingFor(page.slug, page.title))}</h1><p class="muted" data-definition="true">${definitionHtml}</p><section class="card answer-box" data-direct-answer="true"><div class="badge">Direct answer</div><p>${htmlEscape(buildDirectAnswer(page.title,page.description,70,page.content_atom))}</p></section><section class="card dated-fact"><div class="badge">Reviewed source fact</div><p>${htmlEscape(page.dated_primary_fact || `Primary sources reviewed ${page.date_modified}.`)}</p></section>${guideBox}${anchorCard}${decisionArtifacts}${renderProgrammaticContentAtom(page.content_atom,page.title)}${authorityCard}${midCta}${cityCta}<section class="card"><div class="badge">Primary sources</div><h2 class="h2">Verify the rule before acting</h2><ul>${sourceLinks}</ul></section><section class="card"><div class="badge">Decision questions</div>${renderAccordion(sections)}</section><section class="card provider-cta" data-provider-cta="contextual-body"><h2 class="h2">Need help applying this guide?</h2><div class="cta"><a class="primary" href="${htmlEscape(destination)}">Find a Provider</a></div></section>${fanoutCard}${closingCta}<section class="card sibling-links" data-sibling-links="true"><div class="badge">Related Velocity guides</div><ul>${related}</ul></section></article>${canonBlockBottom(destination,(page.title || '').split(' in ')[0])}<p class="muted small">Last updated: ${htmlEscape(page.date_modified)}</p>`;
     return {slug:page.slug,path:page.path,title:page.title,description:page.description,bodyHtml:body,jsonld:buildProgrammaticPageSchemas({siteBase,page,absUrl:toAbsUrl(siteBase,page.slug),sections}),vertical:page.vertical,related_links:siblings.map((rel)=>({slug:rel.slug,label:rel.title})),content_atom:page.content_atom,date_modified:page.date_modified,source_records:page.source_records,editorial_review:{status:'VELOCITY_ONLY_RELEASED',reviewed_at:page.date_modified},fanoutMeta:{slug:page.slug,title:page.title,description:page.description,vertical:page.vertical,sections,surface:'velocity-state-or-support'}};
   });
 }
@@ -2321,7 +2458,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
 
   pages.push(buildScaffoldPage('/about.html','About The Industry Guides and Its Editorial Team','About The Industry Guides: who publishes it, its editorial ownership, the evidence standards it holds to, and its provider-routing boundaries.',
     `<h1 class="h1">About</h1>
-     <p class="muted">The Industry Guides is an independent editorial publisher. It publishes source-backed decision guides, state pages, comparison pages, and direct answers across five regulated service categories.</p>
+     <p class="muted">The Industry Guides is an independent editorial publisher. It publishes source-backed decision guides, state pages, comparison pages, and direct answers across six regulated service categories.</p>
      <section class="card" data-editorial-identity="true"><div class="badge">Who creates the content</div>
        <h2 class="h2">The Industry Guides Editorial Team</h2>
        <p>Pages are published under the accountable organizational byline <strong>The Industry Guides Editorial Team</strong>. We do not invent clinician, attorney, immigration, or reviewer credentials. A named individual reviewer appears only after identity, credentials, scope, and approval are documented in the authority registry.</p>
@@ -2452,7 +2589,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
     throw new Error('Derived query_to_cluster map is empty before canonical write');
   }
 
-  const doubleVerticalPattern = /\/insights\/(dentistry|neuro|trt|uscis-medical|personal-injury)-\1-/;
+  const doubleVerticalPattern = /\/insights\/(dentistry|neuro|trt|uscis-medical|personal-injury|senior-living)-\1-/;
   const badDerivedPaths = atlasStructures.queryToCluster
     .map((item) => item && item.publish_path)
     .filter((publishPath) => doubleVerticalPattern.test(String(publishPath || '')));
@@ -2811,7 +2948,8 @@ ${m}`;
     {slug:'/dentistry/', title:'Dentistry', desc:'Short answers + routing to official local guides.', v:'dentistry'},
     {slug:'/trt/', title:'TRT & Hair', desc:'Short answers + routing to official local guides.', v:'trt'},
     {slug:'/neuro/', title:'Neuropsych Evaluations', desc:'Short answers + routing to official local guides.', v:'neuro'},
-    {slug:'/uscis-medical/', title:'USCIS Medical', desc:'Short answers + routing to official local guides.', v:'uscis-medical'}
+    {slug:'/uscis-medical/', title:'USCIS Medical', desc:'Short answers + routing to official local guides.', v:'uscis-medical'},
+    {slug:'/senior-living/', title:'Senior Living', desc:'Short answers + routing to official local guides.', v:'senior-living'}
   ];
 
   const missingHubSlugs = hubs.filter((h) => !have.has(h.slug)).map((h) => h.slug);
@@ -3118,9 +3256,9 @@ ${m}`;
   const isHtml = (slug)=> slug === '/' || slug.endsWith('.html') || slug.endsWith('/');
   const isAtlas = (slug)=> slug.startsWith('/atlas/');
   const isInsight = (slug)=> slug.startsWith('/insights/') && slug !== '/insights/';
-  const isCluster = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].some((prefix) => slug.startsWith(prefix) && slug !== prefix);
-  const isUtil = (slug)=> slug.endsWith('.html') && !slug.startsWith('/personal-injury/') && !slug.startsWith('/dentistry/') && !slug.startsWith('/trt/') && !slug.startsWith('/neuro/') && !slug.startsWith('/uscis-medical/') && !slug.startsWith('/medium-articles/') && !slug.startsWith('/insights/') && !slug.startsWith('/atlas/');
-  const isVerticalHub = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/'].includes(slug);
+  const isCluster = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/','/senior-living/'].some((prefix) => slug.startsWith(prefix) && slug !== prefix);
+  const isUtil = (slug)=> slug.endsWith('.html') && !slug.startsWith('/personal-injury/') && !slug.startsWith('/dentistry/') && !slug.startsWith('/trt/') && !slug.startsWith('/neuro/') && !slug.startsWith('/uscis-medical/') && !slug.startsWith('/senior-living/') && !slug.startsWith('/medium-articles/') && !slug.startsWith('/insights/') && !slug.startsWith('/atlas/');
+  const isVerticalHub = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/','/senior-living/'].includes(slug);
   const isCore = (slug)=> slug === '/' || isVerticalHub(slug) || ['/tools/','/glossary/','/about.html','/methodology.html','/disclaimer.html','/privacy.html','/terms.html','/medium/','/insights/','/atlas/'].includes(slug);
 
   const core = allUrls.filter(u=>isCore(u.slug));
