@@ -42,6 +42,7 @@ const HUB = {
   neuro: '/neuro/',
   trt: '/trt/',
   'uscis-medical': '/uscis-medical/',
+  'senior-living': '/senior-living/',
 };
 
 const pagesDoc = rd('content/_live/pages.json');

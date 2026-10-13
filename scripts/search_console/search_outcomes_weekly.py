@@ -73,7 +73,86 @@ FALLBACK_OWNER = {
     "aplayermode.com": "sprylabs-hpc-site",
     "thedentistryguides.com": "local-guides-generator",
     "hicksconsulting.org": "hicks-consulting-canonical",
+    "memphisseniorcarehomes.com": "local-guides-generator",
 }
+# Portfolio properties this report must cover once the service account can see
+# them. A property registered but not yet shared with the account (or still
+# verifying) is a NOTICE in the report, never a failure: the run stays green and
+# the row appears on the first week the account can read it.
+# memphisseniorcarehomes.com: senior-living canonical (local-guides-generator),
+# registration started 13 Oct 2026.
+EXPECTED_PROPERTIES = {
+    "memphisseniorcarehomes.com": "local-guides-generator",
+}
+# Lead funnel next to search, so search -> leads reads as one line per property.
+# GET <origin>/api/senior-funnel?days=7 with header x-senior-tick-token (repo secret
+# SENIOR_TICK_TOKEN, the same value local-guides-generator holds). No token ->
+# "funnel: no token"; any fetch/parse failure -> "funnel: unavailable". Neither is
+# ever RED: only the measured rule below is.
+FUNNEL_ENDPOINTS = {
+    "memphisseniorcarehomes.com": "https://memphisseniorcarehomes.com/api/senior-funnel?days=7",
+}
+FUNNEL_TOKEN_ENV = "SENIOR_TICK_TOKEN"
+# RED: people land from search but nobody starts the intake -> the intake is not
+# reachable from the pages they land on.
+FUNNEL_RED_MIN_CLICKS = 20
+
+
+def fetch_funnel(host, fetch=None):
+    url = FUNNEL_ENDPOINTS.get(host)
+    if not url:
+        return None
+    token = os.environ.get(FUNNEL_TOKEN_ENV, "").strip()
+    if not token:
+        return {"status": "no_token"}
+    try:
+        status, raw = (fetch or http)(url, "GET", None, {"x-senior-tick-token": token}, 20)
+        doc = json.loads(raw or b"{}")
+        if status != 200 or not doc.get("ok"):
+            return {"status": "unavailable", "http_status": status}
+        fu = doc.get("followup_outcomes") or {}
+        by_page = sorted(doc.get("leads_by_page") or [], key=lambda r: -int(r.get("leads") or 0))
+        return {
+            "status": "ok",
+            "intake_starts": int(doc.get("intake_starts") or 0),
+            "leads": int(doc.get("contact_submitted") or 0),
+            "unsellable": int(doc.get("unsellable") or 0),
+            "teasers": int(doc.get("teasers_sent") or 0),
+            "accepts_flat": int(doc.get("accepts_flat") or 0),
+            "accepts_rent": int(doc.get("accepts_rent") or 0),
+            "releases": int(doc.get("releases") or 0),
+            "moved_in": int(fu.get("moved_in") or 0),
+            "top_sources": [{"page_slug": r.get("page_slug") or "(none)", "leads": int(r.get("leads") or 0)} for r in by_page[:5]],
+        }
+    except Exception as exc:  # a funnel outage must never hide or redden the search row
+        return {"status": "unavailable", "error": str(exc)[:200]}
+
+
+def funnel_verdict(m, fun, v, why):
+    """Overrides the search verdict only on the measured funnel rule."""
+    if not fun or fun.get("status") != "ok" or m.get("error"):
+        return v, why
+    clicks = int((m.get("current") or {}).get("clicks") or 0)
+    if clicks >= FUNNEL_RED_MIN_CLICKS and fun["intake_starts"] == 0:
+        return "RED", (f"{clicks} search clicks this week and 0 intake starts: the intake is not reachable "
+                       "from the pages people land on")
+    return v, why
+
+
+def funnel_line(s):
+    fun = s.get("funnel")
+    if not fun:
+        return None
+    c = s.get("current") or {}
+    if fun.get("status") == "no_token":
+        return f"funnel: no token (set repo secret {FUNNEL_TOKEN_ENV})"
+    if fun.get("status") != "ok":
+        return "funnel: unavailable"
+    src = ", ".join(f"{r['page_slug']} ({r['leads']})" for r in fun["top_sources"]) or "none"
+    return (f"impressions {c.get('impressions', '-')}, clicks {c.get('clicks', '-')}, intake starts {fun['intake_starts']}, "
+            f"leads {fun['leads']}, unsellable {fun['unsellable']}, teasers {fun['teasers']}, accepts "
+            f"{fun['accepts_flat']} flat / {fun['accepts_rent']} rent, releases {fun['releases']}, moved-in {fun['moved_in']}; "
+            f"top lead sources: {src}")
 # Sender pinned in code, never read from the environment (owner rule, 12 Oct 2026):
 # The Industry Guides never sends under another company's name. Sent through the
 # Resend account that verifies theindustryguides.com (repo secret RESEND_API_KEY).
@@ -395,7 +474,11 @@ def render_md(rep):
                  f"28d {d.get('impressions', '-')} impr / {d.get('clicks', '-')} clicks; top queries: {q}; "
                  f"strengthened this week {s['coverage']['strengthened_this_week']}; consolidation candidates pending "
                  f"{'none recorded' if s['coverage']['candidates_pending'] is None else s['coverage']['candidates_pending']}; "
-                 f"measured URLs checked {len(s.get('url_status') or {})}.")
+                 f"measured URLs checked {len(s.get('url_status') or {})}."
+                 + (f" Search -> leads: {funnel_line(s)}." if funnel_line(s) else ""))
+    if rep.get("pending_properties"):
+        L += ["", "Not yet visible to the service account (skipped, not a failure): "
+              + ", ".join(f"{p['host']} (owner {p['owner']})" for p in rep["pending_properties"]) + "."]
     L += ["", "Coverage sources: " + "; ".join(f"{r}: {n}" for r, n in sorted(rep["repo_notes"].items())), ""]
     return "\n".join(L)
 
@@ -453,6 +536,10 @@ def run_report(out_dir):
     sites = [e["siteUrl"] for e in list_sites(svc)]
     if not sites:
         sys.exit("service account can read zero Search Console properties")
+    visible = {host_of(s) for s in sites}
+    pending = sorted(h for h in EXPECTED_PROPERTIES if h not in visible)
+    for h in pending:
+        print(f"NOTICE: {h} is not yet visible to {account}; skipped this week (Search Console registration pending)")
     cov_hosts, repo_notes = read_repo_files(now)
     rows = []
     measured_queries = {}
@@ -466,6 +553,10 @@ def run_report(out_dir):
         cov = cov_hosts.get(h) or {"owner": None, "coverage_file": None, "share_now": None, "share_prior": None,
                                    "strengthened_this_week": 0, "candidates_pending": None}
         v, why = verdict(m, cov)
+        fun = fetch_funnel(h)
+        if fun is not None:
+            m["funnel"] = fun
+            v, why = funnel_verdict(m, fun, v, why)
         measured = m.pop("measured_queries_28d", [])
         if measured:
             measured_queries[h] = measured
@@ -476,7 +567,9 @@ def run_report(out_dir):
     rep = {"schema_version": "1.1", "week": week, "generated_at": now.isoformat(timespec="seconds"),
            "service_account": account, "property_count": len(sites), "site_count": len(rows),
            "windows": {k: [a.isoformat(), b.isoformat()] for k, (a, b) in win.items()},
-           "counts": counts, "repo_notes": repo_notes, "sites": rows}
+           "counts": counts, "repo_notes": repo_notes, "sites": rows,
+           "pending_properties": [{"host": h, "owner": EXPECTED_PROPERTIES[h],
+                                   "notice": "not yet visible to the service account; skipped"} for h in pending]}
     md = render_md(rep)
     rep["issue_actions"] = sync_issues(rep)
     os.makedirs(out_dir, exist_ok=True)

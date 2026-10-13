@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { toCanonicalVertical } = require('../lib/canonical_vertical');
 
 const ROOT = path.resolve(__dirname, '../..');
 const TODAY = process.env.SOURCE_DATE || new Date().toISOString().slice(0, 10);
@@ -41,15 +42,23 @@ function stripPII(value) {
 function excerpt(value, limit = 280) {
   return stripPII(value).replace(/\s+/g, ' ').trim().slice(0, limit);
 }
+// Returns a canonical vertical id (data/contracts/velocity_vertical_aliases.json)
+// or null when the signal names no vertical. It used to return the source
+// spellings 'uscis' and 'general', which reached data/signals/*/latest.json.
 function inferVertical(text, explicit) {
-  if (explicit && explicit !== 'general') return explicit;
+  const known = toCanonicalVertical(explicit);
+  if (known) return known;
+  return inferVerticalFromText(text);
+}
+function inferVerticalFromText(text) {
   const v = String(text || '').toLowerCase();
   if (/dentist|dental|tooth|teeth|implant|invisalign|oral surgeon/.test(v)) return 'dentistry';
   if (/injury|accident|settlement|lawyer|insurance claim/.test(v)) return 'personal-injury';
   if (/autism|adhd|neuro|evaluation|assessment|aba|speech therapy/.test(v)) return 'neuro';
-  if (/uscis|i-693|civil surgeon|green card|rfe|immigration medical/.test(v)) return 'uscis';
+  if (/uscis|i-693|civil surgeon|green card|rfe|immigration medical/.test(v)) return 'uscis-medical';
   if (/trt|testosterone|hormone|hair loss|hair transplant/.test(v)) return 'trt';
-  return 'general';
+  if (/assisted living|memory care|senior living|nursing home|tenncare|aid and attendance/.test(v)) return 'senior-living';
+  return null;
 }
 function inferCandidateType(record) {
   if (record.candidate_type) return record.candidate_type;
@@ -70,7 +79,7 @@ function normalizeRecord(record, idx) {
   const title = excerpt(record.raw_signal_phrase || record.raw_title || record.title || '', 240);
   const vertical = inferVertical(`${title} ${record.short_excerpt || ''}`, record.vertical);
   const candidateType = inferCandidateType(record);
-  const routeOwner = record.route_owner || (candidateType === 'block' ? 'no_public_route' : `/insights/${slugify(`${vertical}-${title}`).slice(0, 82)}.html`);
+  const routeOwner = record.route_owner || (candidateType === 'block' ? 'no_public_route' : `/insights/${slugify(`${vertical || 'general'}-${title}`).slice(0, 82)}.html`);
   const normalizedQuery = /\?$/.test(title) ? title : `${title}?`;
   const riskLevel = inferRisk(record);
   return {

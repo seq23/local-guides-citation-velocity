@@ -17,7 +17,7 @@ const structural=[
   ['provider action',/<a[^>]+class=["'][^"']*primary[^"']*["'][^>]+href=["']https:\/\//]
 ];
 for(const [name,re] of structural) if(!re.test(html)) errors.push(`missing homepage structure: ${name}`);
-for(const url of ['https://theaccidentguides.com/request-assistance/','https://dentistryguides.com/request-assistance/','https://hormonesivhair.com/request-assistance/','https://neuroevalguides.com/request-assistance/','https://uscisexam.com/request-assistance/']) if(!html.includes(url)) errors.push(`missing provider destination: ${url}`);
+for(const url of ['https://theaccidentguides.com/request-assistance/','https://dentistryguides.com/request-assistance/','https://hormonesivhair.com/request-assistance/','https://neuroevalguides.com/request-assistance/','https://uscisexam.com/request-assistance/','https://memphisseniorcarehomes.com/request-assistance/']) if(!html.includes(url)) errors.push(`missing provider destination: ${url}`);
 const visible=html.replace(/href=["'][^"']*request-assistance[^"']*["']/gi,'');
 if(/request assistance/i.test(visible)) errors.push('visible legacy assistance label remains');
 if(!/The Industry Guides Editorial Team|independent editorial publisher/i.test(html)) errors.push('homepage lacks truthful publisher identity');

@@ -18,6 +18,7 @@ const {
 } = require('./pipeline_lib');
 
 const { ShardedJsonWriter } = require('../lib/sharded_json');
+const { isCanonicalVertical } = require('../lib/canonical_vertical');
 
 // The 100K governor is policy, not a code literal. It used to be
 // `const TARGET = 100000` here, and that same constant was then written into
@@ -78,7 +79,7 @@ const VERTICAL_SEEDS = {
       'case timeline', 'evidence checklist', 'switching lawyers', 'fee agreement'
     ]
   },
-  uscis: {
+  'uscis-medical': {
     label: 'USCIS medical exam',
     entities: [
       'civil surgeon', 'I-693 doctor', 'immigration medical exam office',
@@ -305,6 +306,15 @@ function considerRepairCandidate(record, state) {
 function run() {
   const profile = readJson('data/strategy/citation_strategy_profile.json', {});
   const verticalKeys = (profile.verticals || Object.keys(VERTICAL_SEEDS)).filter((v) => VERTICAL_SEEDS[v]);
+  // Every record below carries `vertical` and lands in files other lanes read
+  // (free_win_self_heal_queue.json, the runway shards). Emit canonical ids only.
+  // A profile vertical with no seed used to be filtered out silently: the
+  // profile said "uscis" while the seed was keyed differently, and that vertical
+  // would simply vanish from the runway. Name it instead.
+  const unseeded = (profile.verticals || []).filter((v) => !VERTICAL_SEEDS[v]);
+  if (unseeded.length) throw new Error(`citation runway: profile vertical(s) ${unseeded.join(', ')} have no seed in VERTICAL_SEEDS`);
+  const nonCanonical = verticalKeys.filter((v) => !isCanonicalVertical(v));
+  if (nonCanonical.length) throw new Error(`citation runway: non-canonical vertical key(s) ${nonCanonical.join(', ')}; see data/contracts/velocity_vertical_aliases.json`);
   const routes = routeInventory();
   const generatedAt = `${TODAY}T00:00:00.000Z`;
   const repairState = repairCandidateState();

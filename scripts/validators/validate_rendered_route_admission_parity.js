@@ -70,7 +70,7 @@ const EXCLUSIONS_REL = 'data/content/rendered_route_exclusions.json';
 // would double-count or invent findings; they are named here rather than
 // filtered by accident of a glob.
 const ROUTE_ROOTS = [
-  'personal-injury', 'dentistry', 'trt', 'neuro', 'uscis-medical',
+  'personal-injury', 'dentistry', 'trt', 'neuro', 'uscis-medical', 'senior-living',
   'insights', 'atlas', 'glossary', 'tools', 'medium', 'medium-articles'
 ];
 // Skipped only at the top level. `dentistry` is a route root, but

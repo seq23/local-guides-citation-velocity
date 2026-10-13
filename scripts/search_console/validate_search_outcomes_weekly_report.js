@@ -35,6 +35,13 @@ const path = require('path');
 const ROOT = process.cwd();
 const DIR = 'reports/search_outcomes';
 const errors = [];
+// The memphisseniorcarehomes.com search -> leads row (funnel columns, "no token" /
+// "unavailable" never RED, RED on >= 20 clicks with 0 intake starts) is proved
+// against a fixture response on every run; no network, no secret.
+{
+  const r = require('child_process').spawnSync('python3', ['-I', '-B', 'scripts/tests/test_senior_funnel_row.py'], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, SENIOR_TICK_TOKEN: '' } });
+  if (r.status !== 0) errors.push(`senior funnel row fixture test failed: ${(r.stderr || r.stdout || r.error || '').toString().trim().split('\n').slice(-3).join(' | ')}`);
+}
 
 function isoWeek(d) {
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));

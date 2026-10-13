@@ -8,7 +8,7 @@ const admission=read('data/content/page_admission_registry.json');
 const insights=read('content/_live/insights.json');
 const wins=read('data/citation_velocity/wins.json');
 const registry=read('data/routing/canonical_destination_registry.json');
-const domainByVertical={personal_injury:'https://theaccidentguides.com/','personal-injury':'https://theaccidentguides.com/',dentistry:'https://dentistryguides.com/',trt:'https://hormonesivhair.com/',neuro:'https://neuroevalguides.com/','uscis-medical':'https://uscisexam.com/'};
+const domainByVertical={personal_injury:'https://theaccidentguides.com/','personal-injury':'https://theaccidentguides.com/',dentistry:'https://dentistryguides.com/',trt:'https://hormonesivhair.com/',neuro:'https://neuroevalguides.com/','uscis-medical':'https://uscisexam.com/','senior-living':'https://memphisseniorcarehomes.com/'};
 const insightByPath=new Map((insights.items||[]).map(i=>[i.publish_path,i]));
 const existingSpecific=new Map((registry.page_routes||[]).map(r=>[r.route,r]));
 const pageRoutes=[];

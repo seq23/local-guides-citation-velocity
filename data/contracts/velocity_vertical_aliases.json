@@ -1,0 +1,46 @@
+{
+  "contract_version": "1.1",
+  "_why": [
+    "This repo wrote the same vertical under several spellings (uscis, uscis_medical,",
+    "uscis-medical; pi, personal_injury, personal-injury) into the files other systems",
+    "read: the promotion-candidates feed, the release-candidate queue, the fanout",
+    "release files and the citation runway. local-guides-generator keeps the alias",
+    "table that maps them (data/contracts/velocity_vertical_aliases.json there), and",
+    "silently dropped every candidate whose spelling it did not know.",
+    "This file mirrors that table. canonical_ids is the only vocabulary this repo",
+    "may EMIT; aliases are accepted on INPUT and resolved by",
+    "scripts/lib/canonical_vertical.js. validate_canonical_vertical_ids.js fails the",
+    "build if an emitted file carries any value outside canonical_ids.",
+    "Internal source records (content/_live/pages.json and friends) still key personal",
+    "injury as personal_injury; that is a source vocabulary, normalized at the emit",
+    "boundary, not a published value."
+  ],
+  "mirrors": "seq23/local-guides-generator:data/contracts/velocity_vertical_aliases.json",
+  "canonical_ids": [
+    "dentistry",
+    "neuro",
+    "trt",
+    "personal-injury",
+    "uscis-medical",
+    "senior-living"
+  ],
+  "aliases": {
+    "dentistry": "dentistry",
+    "dental": "dentistry",
+    "neuro": "neuro",
+    "neuropsych": "neuro",
+    "trt": "trt",
+    "trt_hair": "trt",
+    "personal-injury": "personal-injury",
+    "personal_injury": "personal-injury",
+    "personal injury": "personal-injury",
+    "pi": "personal-injury",
+    "uscis-medical": "uscis-medical",
+    "uscis_medical": "uscis-medical",
+    "uscis medical": "uscis-medical",
+    "uscis": "uscis-medical",
+    "senior-living": "senior-living",
+    "senior_living": "senior-living",
+    "senior living": "senior-living"
+  }
+}

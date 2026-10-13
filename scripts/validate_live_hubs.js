@@ -12,7 +12,8 @@ const REQUIRED_HUB_SLUGS = [
   '/dentistry/',
   '/trt/',
   '/neuro/',
-  '/uscis-medical/'
+  '/uscis-medical/',
+  '/senior-living/'
 ];
 
 function readJson(p) {

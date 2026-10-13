@@ -71,6 +71,8 @@ const ALIASES = {
   uscis: 'uscis-medical',
   uscis_medical: 'uscis-medical',
   neuro: 'neuro',
+  senior_living: 'senior-living',
+  'senior living': 'senior-living',
 };
 
 /**
