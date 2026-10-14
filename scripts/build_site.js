@@ -1447,7 +1447,7 @@ function enforceValidationSiteContractsOnHtml(html){
   let out = html;
   // The umbrella homepage (14 Oct 2026) carries its own routing: the six
   // vertical cards are its canonical block (data-canon-block="top", each card
-  // names its domain), the definition sits under the H1, and the four Q/As are
+  // names its domain), the definition sits in the About block, and the four Q/As are
   // visible. None of the generic contract cards ("Official local guides", "At a
   // glance", "Canonical routing", "What this page recommends") are added to it.
   const isUmbrellaHome = /<section\b[^>]*data-umbrella-home="true"/i.test(out);
@@ -1653,8 +1653,9 @@ function writeDistributionArtifacts(siteBase, allUrls){
 }
 
 
-// Homepage definition (AEO): 40-60 words, opens "The Industry Guides is", sits
-// directly under the H1. Guarded by validate_site_hygiene.js.
+// Homepage definition (AEO): 40-60 words, opens "The Industry Guides is", one
+// per page inside <main>; it sits in the "About The Industry Guides" block (the
+// hero is H1 + one subline). Guarded by validate_site_hygiene.js.
 const HOME_DEFINITION = 'The Industry Guides is an independent editorial publisher of source-backed decision guides for regulated and high-stakes services: USCIS medical exams, personal injury, dentistry, neuropsychological testing, hormone, IV and hair treatment, and senior living. Each guide explains the rules, compares the factors that matter, and routes you to a provider when you are ready.';
 // The homepage FAQ: rendered visibly and emitted as FAQPage from the same list.
 const HOME_FAQ = [
@@ -1666,12 +1667,12 @@ const HOME_FAQ = [
 
 function buildIndexPage(siteBase){
   // Owner-approved layout (14 Oct 2026): hero, then the six canonical vertical
-  // cards, How every guide site works, Questions. scripts/lib/umbrella_homepage.js
+  // cards, How every guide site works, Questions, About. scripts/lib/umbrella_homepage.js
   // renders it; validate_umbrella_homepage_shape.js guards it.
   const body = umbrellaHomepage.renderBody({ esc: htmlEscape, definition: HOME_DEFINITION, faq: HOME_FAQ, root: ROOT });
   return {slug:'/',title:'The Industry Guides | Source-Backed Guides and Provider Routing',description:'Source-backed guides, state pages, comparisons, and provider routing across USCIS medical exams, personal injury, dentistry, neuropsych testing, hormones, IV and hair, and Memphis-area senior living.',bodyHtml:body,jsonld:[
     {'@context':'https://schema.org','@type':'WebPage',name:'The Industry Guides',url:siteBase+'/',description:'Source-backed guides and provider routing across six regulated verticals.',
-      // Read-aloud surface: the definition under the H1 and the FAQ below.
+      // Read-aloud surface: the definition (About block) and the FAQ.
       speakable:{'@type':'SpeakableSpecification',cssSelector:['.site-definition','[data-home-faq="true"]']}},
     {'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:siteBase+'/'}]},
     {'@context':'https://schema.org','@type':'FAQPage',mainEntity:HOME_FAQ.map((f)=>({'@type':'Question',name:f.q,acceptedAnswer:{'@type':'Answer',text:f.a}}))}

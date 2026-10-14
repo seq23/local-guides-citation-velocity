@@ -8,8 +8,12 @@
  *   og_image           - og.png is a 1200x630 PNG and every page gets og:image +
  *                        width/height + twitter:image from the publish-time installer
  *   jsonld_types       - the homepage carries every registered JSON-LD type
- *   definition         - a 40-60 word "<Site> is ..." paragraph directly under the H1,
- *                        and a SpeakableSpecification whose selectors all resolve
+ *   definition         - exactly one 40-60 word "<Site> is ..." definition paragraph
+ *                        (the registry's definition_marker) inside <main>, above the
+ *                        footer - in the hero or an "About" block, placement is the
+ *                        page's call (14 Oct 2026: the umbrella hero is H1 + one
+ *                        subline, the definition sits in About) - and a
+ *                        SpeakableSpecification whose selectors all resolve
  *   clarity            - the Clarity map holds the registered host -> id
  *   indexnow_key       - the key file is committed at the root and is a valid key file
  *   registration       - every registered build step still runs in `npm run build`
@@ -95,15 +99,46 @@ if (badIcon.length) fail('favicon_manifest', `${badIcon.length}/${pages.length} 
 // homepage
 const hp = reg.homepage;
 const home = (source === 'dist' && fs.existsSync(path.join(DIST, hp.rendered_file))) ? fs.readFileSync(path.join(DIST, hp.rendered_file), 'utf8') : read(hp.rendered_file);
-const m = home.match(/<h1[^>]*>[\s\S]*?<\/h1>\s*(<p[^>]*>)([\s\S]*?)<\/p>/i);
-let words = 0;
-if (!m || !m[1].includes(hp.definition_marker)) fail('definition', 'the element directly under the H1 is not the definition paragraph');
-else {
-  const text = m[2].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
-  words = text.split(' ').length;
-  if (words < hp.definition_words[0] || words > hp.definition_words[1]) fail('definition', `definition is ${words} words`);
-  if (!text.startsWith(hp.definition_opens_with)) fail('definition', `definition must open "${hp.definition_opens_with}"`);
+/**
+ * The definition rule, as a pure function so its negative proofs replay every run.
+ * Returns { words, errors }. The purpose is AEO entity clarity: one "<Site> is ..."
+ * paragraph a reader and an answer engine can lift, inside <main> (never the
+ * footer), and only one, so the speakable selector reads one definition.
+ */
+function checkDefinition(html, hp) {
+  const errors = [];
+  const main = String(html).match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
+  if (!main) return { words: 0, errors: ['the homepage has no <main> to hold the definition'] };
+  const marked = [...main[1].matchAll(/(<p\b[^>]*>)([\s\S]*?)<\/p>/gi)].filter((x) => x[1].includes(hp.definition_marker));
+  const outside = (String(html).match(new RegExp(hp.definition_marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length - marked.length;
+  if (outside > 0) errors.push(`${outside} definition marker(s) outside a <p> in <main>`);
+  if (!marked.length) return { words: 0, errors: [...errors, 'no definition paragraph inside <main>'] };
+  if (marked.length > 1) errors.push(`${marked.length} definition paragraphs, exactly one required`);
+  const text = marked[0][2].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+  const words = text.split(' ').length;
+  if (words < hp.definition_words[0] || words > hp.definition_words[1]) errors.push(`definition is ${words} words`);
+  if (!text.startsWith(hp.definition_opens_with)) errors.push(`definition must open "${hp.definition_opens_with}"`);
+  return { words, errors };
 }
+const defProof = (() => {
+  const mk = (n) => `<p class="site-definition" ${hp.definition_marker}>${hp.definition_opens_with}${Array.from({ length: n }, () => 'word').join(' ')}.</p>`;
+  const good = mk(hp.definition_words[0] + 5);
+  const cases = [
+    ['definition in an About block above the footer passes', `<main><section><h1>H</h1><p>Pick.</p></section><section><h2>About</h2>${good}</section></main><footer></footer>`, true],
+    ['definition under the H1 passes', `<main><section><h1>H</h1>${good}</section></main>`, true],
+    ['no definition fails', '<main><section><h1>H</h1><p>Pick.</p></section></main>', false],
+    ['definition only in the footer fails', `<main><h1>H</h1></main><footer>${good}</footer>`, false],
+    ['two definition paragraphs fail', `<main><h1>H</h1>${good}<section>${good}</section></main>`, false],
+    ['a too-short definition fails', `<main><h1>H</h1>${mk(5)}</main>`, false],
+    ['a definition that does not open with the site name fails', `<main><h1>H</h1><p ${hp.definition_marker}>${Array.from({ length: 50 }, () => 'word').join(' ')}</p></main>`, false],
+  ];
+  const missed = cases.filter(([, html, pass]) => (checkDefinition(html, hp).errors.length === 0) !== pass).map(([n]) => n);
+  return { cases: cases.length, missed };
+})();
+for (const n of defProof.missed) fail('definition', `negative proof no longer holds: ${n}`);
+const def = checkDefinition(home, hp);
+const words = def.words;
+for (const e of def.errors) fail('definition', e);
 const nodes = [];
 for (const s of home.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
   try { const v = JSON.parse(s[1]); const add = (x) => { if (Array.isArray(x)) x.forEach(add); else if (x && x['@graph']) add(x['@graph']); else if (x) nodes.push(x); }; add(v); }
@@ -193,4 +228,4 @@ if (!report.ok) {
   for (const [k, v] of Object.entries(failures)) console.error(`SITE HYGIENE FAIL [${k}]: ${v.join(' | ')}`);
   process.exit(1);
 }
-console.log(`SITE HYGIENE PASS (${host}; ${pages.length} pages via ${source}; definition ${words} words; ${types.size} JSON-LD types)`);
+console.log(`SITE HYGIENE PASS (${host}; ${pages.length} pages via ${source}; definition ${words} words, ${defProof.cases} definition proofs; ${types.size} JSON-LD types)`);

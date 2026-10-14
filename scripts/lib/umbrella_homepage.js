@@ -2,9 +2,10 @@
 /**
  * The theindustryguides.com homepage (owner-approved layout, 14 Oct 2026).
  *
- * Order, top to bottom: umbrella header -> hero (one H1 + the definition
- * paragraph) -> the six canonical vertical cards -> "How every guide site
- * works" -> "Questions about The Industry Guides" -> umbrella footer. The visual
+ * Order, top to bottom: umbrella header -> hero (one H1 + one short subline)
+ * -> the six canonical vertical cards -> "How every guide site works" ->
+ * "Questions about The Industry Guides" -> "About The Industry Guides" (the
+ * AEO definition paragraph, read by validate_site_hygiene.js) -> umbrella footer. The visual
  * system is the one the six canonical sites share: white ground, IBM Plex Sans,
  * a 1120px container, 1px #DCE2EA cards with a 12px radius, ink #14213D,
  * accent #0A5C66.
@@ -41,6 +42,9 @@ const VERTICAL_CARDS = [
     scope: 'Assisted living vs memory care, Tennessee and Mississippi licensing, TennCare CHOICES, VA benefits, and hospital discharge.',
     questions: ['/guides/assisted-living-cost-memphis/', '/guides/memory-care-when-is-it-time/', '/guides/hospital-discharge-to-assisted-living-memphis/'] },
 ];
+
+// The one line under the H1 (owner-approved layout, 14 Oct 2026).
+const HERO_SUBLINE = 'Pick your situation. Each guide answers the first questions, shows the costs and timeline, then connects you to a licensed provider in your state if you want one.';
 
 const HOW_STEPS = [
   { n: '1', label: 'Answer', title: 'The first questions, answered first', body: 'Cost, timing, who is qualified and what to bring, with the source records shown on the page.' },
@@ -80,7 +84,7 @@ function renderBody({ esc, definition, faq, root }) {
   <section class="uh-hero" data-umbrella-home="true">
     <div class="uh-wrap">
       <h1>Plain answers for six decisions people make under pressure.</h1>
-      <p class="uh-deck site-definition" data-site-definition="true">${definition}</p>
+      <p class="uh-deck" data-hero-subline="true">${esc(HERO_SUBLINE)}</p>
     </div>
   </section>
   <section id="vertical-routes" class="uh-verticals" data-canon-block="top" data-home-verticals="true" aria-label="The six guide sites">
@@ -98,6 +102,12 @@ function renderBody({ esc, definition, faq, root }) {
     <div class="uh-wrap">
       <h2>Questions about The Industry Guides</h2>
       <dl class="uh-faq">${faq.map((f) => `<div><dt>${esc(f.q)}</dt><dd>${esc(f.a)}</dd></div>`).join('')}</dl>
+    </div>
+  </section>
+  <section id="about" class="uh-about" data-home-about="true">
+    <div class="uh-wrap">
+      <h2>About The Industry Guides</h2>
+      <p class="uh-definition site-definition" data-site-definition="true">${definition}</p>
     </div>
   </section>`;
 }
@@ -171,7 +181,10 @@ const STYLE = `<style data-umbrella-home-style="true">
 .uh-step-label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0A5C66}
 .uh-step h3{margin:0;font-size:18px;font-weight:600}
 .uh-step p{margin:0;font-size:15px;line-height:1.5;color:#374151}
-.uh-questions h2{margin:0;font-size:24px;font-weight:700}
+.uh-questions h2,.uh-about h2{margin:0;font-size:24px;font-weight:700}
+.uh-about{border-top:1px solid #E3E7EE}
+.uh-about .uh-wrap{padding-top:32px;padding-bottom:32px;display:flex;flex-direction:column;gap:12px}
+.uh-definition{margin:0;font-size:16px;line-height:1.6;color:#374151;max-width:820px}
 .uh-faq{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 32px}
 .uh-faq>div{display:flex;flex-direction:column;gap:6px}
 .uh-faq dt{font-weight:600;font-size:16px}
@@ -209,4 +222,4 @@ function applyChrome(html, year) {
     .replace('</head>', `  ${HEAD_EXTRA}\n</head>`);
 }
 
-module.exports = { VERTICAL_CARDS, HOW_STEPS, resolveCards, renderBody, applyChrome };
+module.exports = { VERTICAL_CARDS, HERO_SUBLINE, HOW_STEPS, resolveCards, renderBody, applyChrome };
