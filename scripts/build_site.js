@@ -55,6 +55,7 @@ const { mergeAcceptedArtifacts } = require('./lib/accepted_artifacts');
 const { isMedicalHubRoute, medicalWebPageNode, costSpecificationTable, pageRoute } = require('./lib/medical_schema');
 const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
+const umbrellaHomepage = require('./lib/umbrella_homepage');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
 const { fitTitle, fitDescription, factsFromBody } = require('./lib/search_snippet');
 const { restoreFrozenPages, applyFrozenMetadataToEntries, ensureFrozenInventoryEntries, normalizeRoute, mutableRouteSet, acceptedHtmlForRoute, loadRegistry: loadFrozenRegistry } = require('./lib/frozen_pages');
@@ -240,7 +241,8 @@ function loadAgentExactLedger(){
   return exists(ledgerPath) ? loadJson(ledgerPath) : { entries: [] };
 }
 
-function renderLayout({title, description, absUrl, bodyHtml, jsonld}){
+function renderLayout({title, description, absUrl, bodyHtml, jsonld, surface}){
+  const isUmbrellaHome = surface === 'home';
   const tpl = readUtf8(LAYOUT);
   const schema = mergeSchema(jsonld);
   // The head values a search result shows are held to the snippet floors here,
@@ -248,17 +250,19 @@ function renderLayout({title, description, absUrl, bodyHtml, jsonld}){
   // A short description is lengthened from the page's own accordion questions.
   const headTitle = fitTitle(title);
   const headDescription = fitDescription(description, { facts: factsFromBody(bodyHtml), subject: title });
-  return tpl
+  const html = tpl
     .replaceAll('{{TITLE}}', htmlEscape(headTitle))
     .replaceAll('{{DESCRIPTION}}', htmlEscape(headDescription))
     // Single choke point for the shared layout's canonical tag. Pages serves
     // `foo.html` at `/foo`, so the `.html` form is a 308 and must not be the
     // canonical.
     .replaceAll('{{ABS_URL}}', htmlEscape(publicUrl(absUrl)))
-    .replaceAll('{{BODY}}', `<p class="muted small editorial-byline" data-editorial-byline="true">Published by <a href="/about">The Industry Guides Editorial Team</a>.</p>
+    // The homepage carries the byline in its umbrella footer, so nothing sits above the hero.
+    .replaceAll('{{BODY}}', isUmbrellaHome ? bodyHtml : `<p class="muted small editorial-byline" data-editorial-byline="true">Published by <a href="/about">The Industry Guides Editorial Team</a>.</p>
 ${bodyHtml}`)
     .replaceAll('{{YEAR}}', nowISODate().slice(0, 4))
     .replaceAll('{{JSONLD}}', JSON.stringify(schema, null, 2));
+  return isUmbrellaHome ? umbrellaHomepage.applyChrome(html, nowISODate().slice(0, 4)) : html;
 }
 
 function getCanonHook(canonLabel, canonHome){
@@ -1441,6 +1445,12 @@ function splitLongParagraphsForValidation(html){
 
 function enforceValidationSiteContractsOnHtml(html){
   let out = html;
+  // The umbrella homepage (14 Oct 2026) carries its own routing: the six
+  // vertical cards are its canonical block (data-canon-block="top", each card
+  // names its domain), the definition sits under the H1, and the four Q/As are
+  // visible. None of the generic contract cards ("Official local guides", "At a
+  // glance", "Canonical routing", "What this page recommends") are added to it.
+  const isUmbrellaHome = /<section\b[^>]*data-umbrella-home="true"/i.test(out);
   const isHomepage = /<section class="editorial-hero">/i.test(out)
     && /<h1>The Industry Guides<\/h1>/i.test(out);
 
@@ -1487,7 +1497,7 @@ ${validationEditorialBylineHtml()}`);
   if (selfCanonical && !/"dateModified"\s*:/.test(out)) {
     out = out.replace(/<\/head>/i, `${validationReviewSchemaHtml(canonical,reviewDate)}\n</head>`);
   }
-  if (!hasTop || needsEarlyCanon) {
+  if (!isUmbrellaHome && (!hasTop || needsEarlyCanon)) {
     out = out.replace(
       /<main[^>]*>/i,
       (m) => `${m}\n${isHomepage ? validationContractHomepageHtml() : validationContractCanonHtml()}`
@@ -1496,11 +1506,11 @@ ${validationEditorialBylineHtml()}`);
   if (!isHomepage && !out.includes('class="card answer-box"')) {
     out = out.replace(/(<section class="card[^>]*data-canon-block="top"[\s\S]*?<\/section>)/i, `$1\n${validationContractAnswerHtml()}`);
   }
-  if (!out.includes('class="qa-block"')) {
+  if (!isUmbrellaHome && !out.includes('class="qa-block"')) {
     const anchor = out.includes('class="card answer-box"') ? /(<section class="card answer-box"[\s\S]*?<\/section>)/i : /<main[^>]*>/i;
     out = out.replace(anchor, (m) => `${m}\n${validationContractQaHtml()}`);
   }
-  if (!hasBottom) {
+  if (!isUmbrellaHome && !hasBottom) {
     out = out.replace(/<\/main>/i, `${validationContractBottomHtml()}\n</main>`);
   }
   if ((out.includes('class="accordion"') || out.includes('class="qa-stack"')) && !out.includes('FAQPage')) {
@@ -1509,7 +1519,7 @@ ${validationEditorialBylineHtml()}`);
   // After the answer panel is guaranteed to exist, so the summary has the anchor
   // it is seated against. A page whose own recommendation cannot be located is
   // returned untouched rather than given a placeholder.
-  out = applyRecommendationSummary(out, 'card');
+  if (!isUmbrellaHome) out = applyRecommendationSummary(out, 'card');
   out = splitLongParagraphsForValidation(out);
   return out;
 }
@@ -1654,32 +1664,12 @@ const HOME_FAQ = [
   { q: 'Is this a government agency?', a: 'No. We link to primary government and professional sources where they control the rule.' },
 ];
 
-function buildIndexPage(siteBase, toolSections = []){
-  const verticals = [
-    {id:'uscis-card', label:'USCIS Civil Surgeons', accent:'mint', guides:'/uscis-medical/', provider:'https://uscisexam.com/request-assistance/', copy:'I-693 rules, civil-surgeon state guides, vaccines, corrections, and scheduling.'},
-    {id:'personal-injury-card', label:'Personal Injury Law', accent:'coral', guides:'/personal-injury/', provider:'https://theaccidentguides.com/request-assistance/', copy:'State deadlines, negligence rules, claims, evidence, fees, and decision guides.'},
-    {id:'dentistry-card', label:'Dentistry Network', accent:'teal', guides:'/dentistry/', provider:'https://dentistryguides.com/request-assistance/', copy:'Insurance, Medicaid, costs, treatment comparisons, urgency, and provider questions.'},
-    {id:'neuro-card', label:'Neuro / ADHD Testing', accent:'lavender', guides:'/neuro/', provider:'https://neuroevalguides.com/request-assistance/', copy:'Evaluation types, referrals, costs, reports, school/work use, and state access.'},
-    {id:'trt-card', label:'Hormones, IV & Hair', accent:'gold', guides:'/trt/', provider:'https://hormonesivhair.com/request-assistance/', copy:'TRT rules, telehealth, monitoring, fertility, hair loss, and treatment comparisons.'},
-    {id:'senior-living-card', label:'Senior Living (Memphis Tri-State)', accent:'mint', guides:'/senior-living/', provider:'https://memphisseniorcarehomes.com/request-assistance/', copy:'Assisted living vs memory care, Tennessee and Mississippi licensing, TennCare CHOICES, VA benefits, and hospital discharge.'}
-  ];
-  const routeCards = verticals.map((v)=>`<article class="network-card ${v.accent}" id="${v.id}"><div class="network-kicker">Canonical vertical</div><h3>${v.label}</h3><p>${v.copy}</p><div class="cta"><a class="primary" href="${v.provider}">Find a Provider</a><a href="${v.guides}">Browse Guides</a></div></article>`).join('');
-  const rows = verticals.map((v)=>`<tr><td>${v.label}</td><td><a href="${v.guides}">Guides and state pages</a></td><td>Reviewed ${nowISODate()}</td><td><a class="table-cta" href="${v.provider}">Find a Provider</a></td></tr>`).join('');
-  const body = `
-  <section class="editorial-hero">
-    <div class="verified-line"><span></span> VERIFIED INDEX · UPDATED ${nowISODate()}</div>
-    <h1>The Industry Guides</h1>
-    <p class="editorial-deck site-definition" data-site-definition="true">${HOME_DEFINITION}</p>
-    <div class="cta hero-cta"><a class="primary" href="#vertical-routes">Find a Provider</a><a href="#featured-guides">Browse Industry Guides</a></div>
-  </section>
-  <section id="vertical-routes" class="homepage-section"><div class="section-label">Canonical verticals</div><div class="network-grid">${routeCards}</div></section>
-  <section class="coverage-panel"><div class="section-label light">What we cover</div><h2>One Velocity library. Five provider destinations.</h2><p>All editorial guides, question pages, state pages, and disambiguators live here. Provider discovery happens through the canonical destination for each vertical.</p><div class="coverage-table-wrap"><table class="coverage-table"><thead><tr><th>Vertical</th><th>Coverage</th><th>Freshness</th><th>Next step</th></tr></thead><tbody>${rows}</tbody></table></div></section>
-  <section id="featured-guides" class="homepage-section"><div class="section-label">Featured decisions</div><h2>Start with the decision, not the sales pitch</h2><div class="feature-grid"><a href="/civil-surgeon-vs-panel-physician/">Civil surgeon vs panel physician</a><a href="/neuropsych-eval-vs-iq-test-vs-psych-eval/">Neuropsych eval vs IQ test vs psych eval</a><a href="/personal-injury-vs-workers-comp/">Personal injury vs workers comp</a><a href="/dental-insurance-vs-medical-insurance/">Dental vs medical insurance</a><a href="/trt-vs-hair-loss-treatment/">TRT vs hair-loss treatment</a><a href="/uscis-medical/states/tennessee/civil-surgeon/">Tennessee civil-surgeon guide</a></div></section>
-  ${renderToolSpotlight(toolSections, 'Fast tools for comparing options before you choose')}
-  <section class="homepage-section operations" data-home-faq="true"><div class="section-label">Platform operations</div><h2>How The Industry Guides works</h2><div class="ops-grid">${HOME_FAQ.map((f)=>`<div><h3>${htmlEscape(f.q)}</h3><p>${htmlEscape(f.a)}</p></div>`).join('')}</div></section>
-  <section class="methodology-band"><div><div class="section-label">Methodology</div><h2>Source first. Decision second. Provider third.</h2><p>Each programmatic page must contain a unique defensible data atom, a direct answer, visible FAQs, source provenance, internal links, and provider routing. Boilerplate-only pages do not ship.</p><a href="/methodology">Read the methodology</a></div></section>
-  <section class="closing-provider"><h2>Find a provider in your state</h2><p>Choose the vertical that matches your situation. You will continue to the corresponding provider destination.</p><div class="provider-button-grid">${verticals.map((v)=>`<a href="${v.provider}">${v.label}<strong>Find a Provider →</strong></a>`).join('')}</div></section>`;
-  return {slug:'/',title:'The Industry Guides | Source-Backed Guides and Provider Routing',description:'Source-backed guides, state pages, comparisons, and provider routing across USCIS medical, personal injury, dentistry, neuropsychology, and TRT.',bodyHtml:body,jsonld:[
+function buildIndexPage(siteBase){
+  // Owner-approved layout (14 Oct 2026): hero, then the six canonical vertical
+  // cards, How every guide site works, Questions. scripts/lib/umbrella_homepage.js
+  // renders it; validate_umbrella_homepage_shape.js guards it.
+  const body = umbrellaHomepage.renderBody({ esc: htmlEscape, definition: HOME_DEFINITION, faq: HOME_FAQ, root: ROOT });
+  return {slug:'/',title:'The Industry Guides | Source-Backed Guides and Provider Routing',description:'Source-backed guides, state pages, comparisons, and provider routing across USCIS medical exams, personal injury, dentistry, neuropsych testing, hormones, IV and hair, and Memphis-area senior living.',bodyHtml:body,jsonld:[
     {'@context':'https://schema.org','@type':'WebPage',name:'The Industry Guides',url:siteBase+'/',description:'Source-backed guides and provider routing across six regulated verticals.',
       // Read-aloud surface: the definition under the H1 and the FAQ below.
       speakable:{'@type':'SpeakableSpecification',cssSelector:['.site-definition','[data-home-faq="true"]']}},
@@ -2567,7 +2557,7 @@ for (const [vertical, meta] of Object.entries(registry)) {
   const toolsPageForHub = toolsPayloadRaw && toolsPayloadRaw.data && toolsPayloadRaw.data.pages ? toolsPayloadRaw.data.pages[0] : null;
 
   // Homepage consumes the same governed tools payload used by vertical hubs.
-  pages.unshift(buildIndexPage(siteBase, toolsPageForHub ? toolsPageForHub.sections || [] : []));
+  pages.unshift(buildIndexPage(siteBase));
 
   // pages.json => atlas pages
   const pagesPayload = payloads.find(p=>p.name === 'pages.json');
@@ -3085,7 +3075,7 @@ ${m}`;
 
     // Render with stable last-updated stamp
     const bodyHtmlStamped = setLastUpdated(p.bodyHtml, lastmod);
-    const html = renderLayout({ title:p.title, description:p.description, absUrl, bodyHtml: bodyHtmlStamped, jsonld:p.jsonld });
+    const html = renderLayout({ title:p.title, description:p.description, absUrl, bodyHtml: bodyHtmlStamped, jsonld:p.jsonld, surface:p.surface });
     const normalizedHtml = html.replace(/[ \t]+$/gm, '');
     if (String(routePath || '').startsWith('/insights/')) {
       assertGeneratedHtmlBeforeWrite({ kind: 'page', slug: routePath, html: normalizedHtml, minWords: 80, requireCanonBlocks: false });

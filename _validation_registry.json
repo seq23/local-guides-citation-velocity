@@ -3376,18 +3376,11 @@
       "title": "Live hub contract",
       "path": "scripts/validate_live_hubs.js",
       "command": "node scripts/validate_live_hubs.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
+      "status": "RETIRED",
+      "severity": "INFO",
       "tier": "Tier 3",
       "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
+      "profiles": [],
       "tags": [
         "render",
         "hubs"
@@ -3409,7 +3402,10 @@
       ],
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "hard_fail_basis": "public_route_integrity"
+      "retirement_reason": "Absorbed 2026-10-14 by umbrella-homepage-shape, which runs the same content/_live/pages.json hub-slug check for every canonical vertical id (not a hand-kept list of six) and also proves the homepage links each hub and routes each vertical to its canonical; keeps the HARD_FAIL count at 40.",
+      "replacement_ids": [
+        "umbrella-homepage-shape"
+      ]
     },
     {
       "id": "lkg-candidates",
@@ -4078,6 +4074,52 @@
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
       "hard_fail_basis": "public_route_integrity",
       "unit_attribution_measured": "13 Oct 2026: keying the citation runway seed back to \"uscis\" (scripts/citation_intelligence/build_100k_citation_runway.js) and regenerating made the validator fail (exit 1, 21 errors: 50 \"uscis\" values in data/measurement/free_win_self_heal_queue.json and 1,000 per runway shard); restored, regenerated, exit 0 with 102,743 canonical values across 35 emitted files. Before the emitter fixes it failed on releases/fanout_query_clusters.personal_injury.json and .uscis.json and on 609 \"personal_injury\" values in .build/fanout_manifest.json."
+    },
+    {
+      "id": "umbrella-homepage-shape",
+      "title": "The homepage routes to the six canonical guide sites first: hero, then six vertical cards with verified links, no keyword-inventory grid",
+      "path": "scripts/validators/validate_umbrella_homepage_shape.js",
+      "command": "node scripts/validators/validate_umbrella_homepage_shape.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 2",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "routing",
+        "homepage",
+        "cross-repo-contract"
+      ],
+      "risk_prevented": "theindustryguides.com is the hub that routes readers to the six canonical guide sites. The owner-approved homepage (14 Oct 2026) puts that routing first; before it, the first thing in <main> was a five-domain 'Official local guides' strip and an 'At a glance' box, the senior-living canonical was missing from the router strip, and a keyword grid ('Related decision paths people also use' / 'Related search intents') sat inside the hero. Fails when index.html (and dist/index.html when built) has no hero holding the H1, when the first section after the hero is not #vertical-routes, when fewer than six vertical cards render or a canonical vertical id has no card (or two), when a card does not link its canonical's /request-assistance/, its root and its /<vertical>/ hub, when a card has fewer than three links to 200-status guide paths in data/contracts/canonical_guides/<vertical>.json (or any guide link outside it), when the visible page carries 'Related decision paths', 'owned routes', 'Related search intents' or a fanout block, and when content/_live/pages.json lacks a vertical's hub slug (absorbed from live-hubs). Zero cards or a missing file fails.",
+      "why_existing_checks_do_not_cover": "site-hygiene checks the definition under the H1 and the JSON-LD types, not what follows the hero or where the hub routes; rendered-internal-hrefs checks internal hrefs resolve, not that each vertical is routed to its own canonical; velocity-canonical-anchor-links governs Velocity pieces, not the homepage cards; live-hubs only read pages.json. The validator runs a 9-case self-test on synthetic pages every time (scripts/tests/test_umbrella_homepage_shape.js runs the same cases standalone plus the renderer's own output).",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": "artifacts/validation/umbrella-homepage-shape.json",
+      "failure_action": "fix scripts/lib/umbrella_homepage.js (cards, question paths) or scripts/build_site.js, rebuild, and re-run",
+      "depends_on": [],
+      "requires_files": [
+        "index.html",
+        "data/contracts/velocity_vertical_aliases.json",
+        "content/_live/pages.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/umbrella-homepage-shape.json"
+      ],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "hard_fail_basis": "public_route_integrity",
+      "unit_attribution_measured": "14 Oct 2026: against the homepage rendered from main ad87cbcdc (committed index.html) the check fails with 11 errors: 0 vertical cards of 6 (one 'no card' per canonical vertical id), the first section in <main> is the 'Official local guides' strip rather than the hero, and the visible 'Related decision paths' / 'Related search intents' fanout block. Against the rebuilt homepage it passes (2 files, 6 cards, 9 self-test cases)."
     },
     {
       "id": "no-internal-instruction-leak",
