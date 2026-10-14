@@ -44,8 +44,13 @@ function assertCspAllowsWebAnalytics() {
   const problems = [];
   if (!directive('script-src').includes('https://static.cloudflareinsights.com')) problems.push("script-src must allow https://static.cloudflareinsights.com");
   if (!directive('connect-src').includes('https://cloudflareinsights.com')) problems.push("connect-src must allow https://cloudflareinsights.com");
+  // The homepage (scripts/lib/umbrella_homepage.js) loads IBM Plex Sans from
+  // Google Fonts, the type the six canonical sites share; a CSP without these
+  // two hosts silently falls back to the system font.
+  if (!directive('style-src').includes('https://fonts.googleapis.com')) problems.push("style-src must allow https://fonts.googleapis.com");
+  if (!directive('font-src').includes('https://fonts.gstatic.com')) problems.push("font-src must allow https://fonts.gstatic.com");
   if (problems.length) {
-    console.error(`build_pages_dist: _headers CSP blocks Cloudflare Web Analytics: ${problems.join('; ')}`);
+    console.error(`build_pages_dist: _headers CSP blocks Cloudflare Web Analytics or the homepage font: ${problems.join('; ')}`);
     process.exit(1);
   }
 }

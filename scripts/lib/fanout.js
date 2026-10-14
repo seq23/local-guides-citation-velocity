@@ -322,7 +322,9 @@ function injectFanoutIntoHtml(html, data){
       ''
     );
 
-  if (!data || !data.variant_count || data.page_family === 'medium-article') {
+  // The homepage carries no visible query grid (owner-approved layout, 14 Oct
+  // 2026): its fanout data still goes to the manifest and release clusters.
+  if (!data || !data.variant_count || data.page_family === 'medium-article' || data.page_family === 'home') {
     return cleaned.replace(fanoutBlockPattern, '\n');
   }
 
