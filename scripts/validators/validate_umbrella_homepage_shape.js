@@ -2,7 +2,7 @@
 'use strict';
 // theindustryguides.com is the hub that routes readers to the six canonical
 // guide sites. The owner-approved homepage (14 Oct 2026) puts that routing first:
-// hero, then the six vertical cards, each with three links into its canonical's
+// hero (one H1 + one subline, no definition paragraph), then the six vertical cards, each with three links into its canonical's
 // verified guide inventory, a "Find a ..." link to its /request-assistance/ and
 // a link to its root. This guards the routing, not the styling.
 //
@@ -69,6 +69,15 @@ function checkHtml(html, { inventories, ids, label = 'index.html' }) {
   if (!sections.length) return [`${label}: zero sections inside <main>`];
   const heroAt = sections.findIndex((s) => /<h1\b/i.test(s));
   if (heroAt !== 0) errors.push(`${label}: the first section in <main> is not the hero holding the H1`);
+  if (heroAt >= 0) {
+    // The hero is the H1 and one short subline, nothing else (owner-approved
+    // layout, 14 Oct 2026); the definition paragraph lives in the About block.
+    const hero = sections[heroAt];
+    const inner = hero.slice(hero.indexOf('>') + 1, hero.lastIndexOf('</section>')).replace(/<\/?div\b[^>]*>/gi, '');
+    const blocks = [...inner.matchAll(/<(h1|p|ul|ol|dl|section|article|form|h[2-6]|figure|table|nav|a)\b[^>]*>/gi)].map((x) => x[1].toLowerCase());
+    if (blocks.join(',') !== 'h1,p') errors.push(`${label}: the hero is not one H1 + one subline (${blocks.join(',') || 'empty'})`);
+    if (/data-site-definition="true"/.test(hero)) errors.push(`${label}: the definition paragraph sits in the hero, not the About block`);
+  }
   const next = heroAt >= 0 ? sections[heroAt + 1] : null;
   const opener = next ? next.slice(0, next.indexOf('>') + 1) : '';
   if (!next || !/\bid="vertical-routes"/.test(opener)) errors.push(`${label}: the first section after the hero is not the vertical cards (#vertical-routes)`);
@@ -127,7 +136,7 @@ function run(root = ROOT) {
 }
 
 // ---------------------------------------------------------------- self-test
-function goodPage(inventories, ids, { drop = null, extraBefore = '', mutateCard = null, tail = '' } = {}) {
+function goodPage(inventories, ids, { drop = null, extraBefore = '', mutateCard = null, tail = '', heroExtra = '' } = {}) {
   const cards = ids.filter((id) => id !== drop).map((id) => {
     const inv = inventories.get(id);
     const qs = inv.guides.filter((g) => Number(g.http_status) === 200).slice(0, 3).map((g) => `<li><a href="${inv.origin}${g.path}">${g.title}</a></li>`).join('');
@@ -135,7 +144,7 @@ function goodPage(inventories, ids, { drop = null, extraBefore = '', mutateCard 
     if (mutateCard && mutateCard.id === id) card = mutateCard.fn(card, inv);
     return card;
   }).join('');
-  return `<html><body><main><section class="uh-hero" data-umbrella-home="true"><h1>Plain answers</h1><p>def</p></section>${extraBefore}<section id="vertical-routes" data-home-verticals="true">${cards}</section><section id="how"><h2>How every guide site works</h2></section>${tail}</main></body></html>`;
+  return `<html><body><main><section class="uh-hero" data-umbrella-home="true"><div><h1>Plain answers</h1><p>Pick your situation.</p>${heroExtra}</div></section>${extraBefore}<section id="vertical-routes" data-home-verticals="true">${cards}</section><section id="how"><h2>How every guide site works</h2></section>${tail}</main></body></html>`;
 }
 
 function selfTest(root = ROOT) {
@@ -144,6 +153,8 @@ function selfTest(root = ROOT) {
   const first = ids[0];
   const cases = [
     { name: 'approved shape passes', html: goodPage(inventories, ids), pass: true },
+    { name: 'a second paragraph under the H1 fails (the 53-word definition back in the hero)', html: goodPage(inventories, ids, { heroExtra: '<p class="site-definition" data-site-definition="true">The Industry Guides is ...</p>' }), pass: false },
+    { name: 'a hero without the subline fails', html: goodPage(inventories, ids).replace('<p>Pick your situation.</p>', ''), pass: false },
     { name: 'no main fails', html: '<html><body><section><h1>x</h1></section></body></html>', pass: false },
     { name: 'a section between hero and cards fails (old "At a glance" / router strip)', html: goodPage(inventories, ids, { extraBefore: '<section class="card answer-box"><h2>Use this page to frame the decision</h2></section>' }), pass: false },
     { name: 'five cards fails', html: goodPage(inventories, ids, { drop: ids[ids.length - 1] }), pass: false },
