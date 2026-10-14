@@ -250,6 +250,25 @@ function selfProofCases() {
     });
   }
 
+  {
+    // Run 38587094793: the orphan-adoption section left a host page once its orphan
+    // gained an inbound link elsewhere. That is the link graph moving, not content
+    // leaving; a guard that counted it would freeze the graph. A plain related list
+    // losing an item still fails (lostli/ above).
+    const adopted = '<section class="card related-links adopted-links" data-adopted-links="true"><div class="badge">Also in this guide</div><h2 class="h2">Less common questions people ask next</h2><p class="muted">m</p><ul><li><a href="/x/">x</a></li></ul></section>';
+    const host = fixturePage(F(3, 3, 2)).replace('</main>', `${adopted}</main>`);
+    const released = fixturePage(F(3, 3, 2));
+    const plainLost = fixturePage(F(3, 3, 2)).replace('<section>section</section>', '');
+    const a = classify({ routes: { 'host/index.html': deliveredBlocks(host), 'plain/index.html': deliveredBlocks(host) }, justified_shrinks: [] },
+      (p) => deliveredBlocks(p === 'host/index.html' ? released : plainLost));
+    cases.push({
+      name: 'orphan_adoption_section_is_graph_scaffolding_not_content',
+      why: 'host/ dropped its data-adopted-links section (its orphan found another inbound link) - passes. plain/ dropped an ordinary section - fails.',
+      pass: a.shrunk.length === 1 && a.shrunk[0].implementation_path === 'plain/index.html' && a.measured === 2,
+      observed: { shrunk: a.shrunk.map((x) => `${x.implementation_path}:${x.lost_kinds.map((l) => l.kind).join('+')}`) }
+    });
+  }
+
   const none = classify({ routes: { 'a/index.html': F(1, 1) }, justified_shrinks: [] }, () => null);
   cases.push({
     name: 'nothing_on_disk_measures_zero',

@@ -15,13 +15,25 @@
  * styles, comments, templates and noscript are not delivered and are not counted.
  * A kind may only fall under a named justification; it can never be paid for by
  * growth in another kind.
+ *
+ * Not counted: the orphan-adoption section (<section ... data-adopted-links="true">,
+ * "Less common questions people ask next"). It is the link graph's scaffolding, not
+ * the page's content - build_site.js seats it on whichever page the orphan-adoption
+ * host queue picks for a route that has no other inbound link, and removes it once the
+ * route has one. Counting it froze the graph: Velocity Content Release run
+ * 38587094793 stopped (RENDERED_CONTENT_LOST) because /uscis-medical/cost/ stopped
+ * being an orphan and civil-surgeon-near-me rightly dropped the one-link section
+ * that had been adopting it.
  */
 const KINDS = ['section', 'h2', 'h3', 'p', 'li', 'table'];
+// The adopted-links section holds no nested section (badge div, h2, p, ul).
+const ADOPTED_RE = /<section\b[^>]*\bdata-adopted-links="true"[^>]*>[\s\S]*?<\/section>/gi;
 
 function deliveredRegion(html) {
   const s = String(html || '')
     .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<(script|style|template|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ');
+    .replace(/<(script|style|template|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(ADOPTED_RE, ' ');
   const open = s.search(/<main\b[^>]*>/i);
   const close = s.toLowerCase().lastIndexOf('</main>');
   if (open >= 0 && close > open) return s.slice(open, close);
@@ -51,4 +63,4 @@ function lostKinds(floor, current) {
   return out;
 }
 
-module.exports = { KINDS, deliveredBlocks, deliveredRegion, totalBlocks, lostKinds };
+module.exports = { ADOPTED_RE, KINDS, deliveredBlocks, deliveredRegion, totalBlocks, lostKinds };
