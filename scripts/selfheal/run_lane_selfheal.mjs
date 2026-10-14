@@ -9,16 +9,22 @@
 //
 //   - the commit pattern is derived from the registry's repair_writes, so what a
 //     repair rewrites is committed with the evidence, and
-//   - anything the self-heal changed that the lane cannot commit is a hard stop,
-//     named file by file, instead of a silent partial commit.
+//   - anything outside that surface is settled before the surface check
+//     (lane_surface_settle.mjs): what a non-repair step re-rendered (a validator's
+//     `npm run build` prepare) is restored to HEAD; a repair that wrote outside the
+//     surface is withdrawn whole and recorded as a NAMED STOP in
+//     artifacts/validation/publish-blocked-state.json, committed with the evidence
+//     and self-clearing. Only a path git could not put back is a hard stop.
 //
-// A rebuild-shaped repair (npm run build re-emitting rendered HTML) lands in the
-// second case on purpose: publishing rendered content is velocity-content-release's
-// job, not a 30-minute evidence refresh's. The lane says so and fails.
+// Publishing rendered content is velocity-content-release's job, not a 30-minute
+// evidence refresh's. Until 2026-10-14 a re-render with zero repairs (run
+// 38524268332: 282 pages from canonical-domains' build prepare) exited 1 here and
+// the lane committed no evidence at all.
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import contract from './lane_commit_contract.js';
+import { statusMap, settleOutOfSurface, recordLaneStop } from './lane_surface_settle.mjs';
 
 const { ROOT, committablePatterns, isCommittable } = contract;
 
@@ -80,25 +86,45 @@ if (heal.status !== 0) {
   process.exit(heal.status || 1);
 }
 
-const after = changedPaths();
-const touched = [...after].filter((p) => !before.has(p)).sort();
-const uncommittable = touched.filter((p) => !isCommittable(p, patterns));
+const codes = statusMap(ROOT);
+const touched = [...codes.keys()].filter((p) => !before.has(p)).sort();
 
 // What the loop itself says it did, so the step reports repairs rather than the
-// validation receipts every run writes regardless.
+// validation receipts every run writes regardless - and which paths each repair
+// wrote, so a repair's writes are never mistaken for a re-render.
 let repairedIds = [];
+const repairWrote = new Map();
 try {
   const loop = JSON.parse(fs.readFileSync(`${ROOT}/artifacts/validation/self-heal-loop.json`, 'utf8'));
-  repairedIds = (loop.attempts || []).flatMap((a) => (a.repaired || []).filter((r) => r.code === 0 && !r.no_op).map((r) => r.id));
+  for (const r of (loop.attempts || []).flatMap((a) => a.repaired || [])) {
+    if (r.code !== 0 || r.no_op) continue;
+    repairedIds.push(r.id);
+    // A repair whose writes could not be measured is charged with every path the
+    // step changed: unknown attribution may never be restored as a mere re-render.
+    const wrote = Array.isArray(r.wrote_paths) ? r.wrote_paths : touched;
+    repairWrote.set(r.id, [...new Set([...(repairWrote.get(r.id) || []), ...wrote])]);
+  }
 } catch { /* the loop always writes this; if it did not, say nothing rather than guess */ }
+repairedIds = [...new Set(repairedIds)];
+
+// Restore what non-repair steps rendered outside the surface; withdraw (and name)
+// any repair that wrote outside it. See lane_surface_settle.mjs for why.
+const settled = settleOutOfSurface({ root: ROOT, touched, codes, repairWrote, isCommittable: (p) => isCommittable(p, patterns) });
+const stateRel = recordLaneStop(ROOT, settled);
+
+const left = statusMap(ROOT);
+const uncommittable = [...left.keys()].filter((p) => !before.has(p) && !isCommittable(p, patterns)).sort();
 
 const report = {
-  schema_version: '1.0',
+  schema_version: '1.1',
   committable_patterns: patterns,
   repaired_validators: repairedIds,
   step_changed_paths: touched,
+  restored_non_repair_paths: settled.rendered_by_non_repair_steps,
+  withdrawn_repair_paths: settled.named_stop ? settled.named_stop.withdrawn_paths : [],
+  named_stop: settled.named_stop,
   uncommittable_paths: uncommittable,
-  status: uncommittable.length ? 'FAIL' : 'PASS',
+  status: uncommittable.length ? 'FAIL' : (settled.named_stop ? 'NAMED_STOP' : 'PASS'),
   checked_at: new Date().toISOString(),
 };
 fs.mkdirSync(`${ROOT}/artifacts/validation`, { recursive: true });
@@ -107,17 +133,27 @@ fs.writeFileSync(`${ROOT}/artifacts/validation/lane-self-heal.json`, `${JSON.str
 // The lane must state what it did either way. "Nothing to repair" is a result;
 // exiting 0 in silence is what let the discarded-repair defect hide.
 if (!repairedIds.length) {
-  console.log('[lane self-heal] no validator needed repair; this step changed only validation receipts');
+  console.log('[lane self-heal] no validator needed repair');
 } else {
   console.log(`[lane self-heal] repaired ${repairedIds.length} validator(s): ${repairedIds.join(', ')}`);
 }
-console.log(`[lane self-heal] ${touched.length} path(s) changed by this step:`);
-for (const p of touched) console.log(`  ${p}`);
+console.log(`[lane self-heal] ${touched.length} path(s) changed by this step; ${settled.rendered_by_non_repair_steps.length} re-rendered by non-repair steps (validator prepares) outside the commit surface were restored to HEAD:`);
+for (const p of settled.rendered_by_non_repair_steps.slice(0, 20)) console.log(`  restored ${p}`);
+if (settled.rendered_by_non_repair_steps.length > 20) console.log(`  ... and ${settled.rendered_by_non_repair_steps.length - 20} more (artifacts/validation/lane-self-heal.json)`);
 
+if (settled.named_stop) {
+  const ns = settled.named_stop;
+  const line = `NAMED STOP ${ns.code}: ${ns.meaning}`;
+  console.log(`::warning title=NAMED STOP ${ns.code}::${line}`);
+  for (const p of ns.paths_outside_surface.slice(0, 20)) console.log(`  outside surface: ${p}`);
+  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### ${line}\n\nRecorded in \`${stateRel}\` (committed with the evidence; clears on the next run with nothing left over).\n`);
+}
+
+// After the restore nothing outside the surface may remain. If git could not put
+// something back, committing would publish a tree this run never validated.
 if (uncommittable.length) {
-  console.error(`LANE SELF-HEAL FAIL: ${uncommittable.length} repaired path(s) are outside this lane's commit surface, so committing now would publish a tree this run never validated:`);
-  for (const p of uncommittable) console.error(`  ${p}`);
-  console.error('This lane refreshes evidence; publishing rendered content is velocity-content-release.yml. Run that lane rather than widening this one.');
+  console.error(`LANE SELF-HEAL FAIL: ${uncommittable.length} path(s) are still outside this lane's commit surface after the restore, so committing now would publish a tree this run never validated:`);
+  for (const p of uncommittable.slice(0, 50)) console.error(`  ${p}`);
   process.exit(1);
 }
 

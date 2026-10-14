@@ -463,6 +463,15 @@ jobs:
             git add -- data/release/historic_page_maximum.json data/release/rendered_size_baseline.json
             git add -A
             git commit --amend --no-edit
+            # SHRINK GUARD ON THE EXACT COMMIT BEING PUSHED (2026-10-14, run 38524703457:
+            # validate:release failed the guard on this tree and publish_gate_decision let it
+            # through because the guard has no repair; main went red). Exit 3 is the NAMED
+            # STOP RENDERED_CONTENT_LOST: nothing is pushed and the lane ends green with the
+            # stop annotated. rendered-output-shrink-guard's self-proof reads this wiring.
+            phase "$attempt" "shrink guard on the exact commit being pushed"
+            gate=0; node scripts/release/shrink_guard_push_gate.mjs || gate=$?
+            if [ "$gate" = 3 ]; then echo "[publish] NAMED STOP RENDERED_CONTENT_LOST - not pushed; see the annotation"; exit 0; fi
+            if [ "$gate" != 0 ]; then exit 1; fi
             phase "$attempt" "push to main"
             if git push origin HEAD:main; then
               echo "[publish] attempt $attempt SUCCEEDED at $(date -u +%H:%M:%SZ)"

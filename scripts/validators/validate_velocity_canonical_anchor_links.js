@@ -239,10 +239,17 @@ for (const page of seniorPages) {
 if (seniorPages.length) for (const l of SENIOR_LOCALITIES) if (!renderedLocalities.has(l)) errors.push(`senior_fanout:locality_never_rendered_on_a_piece:${l}`);
 // G3 sitewide: memphisseniorcarehomes.com stays under a quarter of all outbound
 // links and no single URL of it is linked more than ten times across the site.
-const siteDir = fs.existsSync(distDir) ? distDir : ROOT;
-const walkHtml = (dir, out = []) => { for (const ent of fs.readdirSync(dir, { withFileTypes: true })) { if (ent.name === 'node_modules' || ent.name.startsWith('.')) continue; const pth = path.join(dir, ent.name); if (ent.isDirectory()) { if (dir === ROOT && ['scripts', 'data', 'content', 'artifacts', 'reports', 'dist', 'releases', 'docs', 'functions', 'templates', 'tools', 'staging', 'outputs', 'proofs'].includes(ent.name)) continue; walkHtml(pth, out); } else if (ent.name.endsWith('.html')) out.push(pth); } return out; };
+// Sitewide counts read THE SERVED TREE, from the repo root, in every environment
+// (scripts/lib/served_tree.js - the same admitted-route set build_pages_dist.js copies
+// into dist). This used to read dist when present and the whole repo root otherwise, so
+// Validate Repo (with dist) counted 9 links to one URL and Query Evidence Refresh (no
+// dist) counted 18 against a cap of 10 - same commit, two answers (run 38524268332).
+// served-tree-count-parity runs this validator with and without dist and fails if the
+// two counts ever differ again.
+const servedFiles = require(path.join(ROOT, 'scripts', 'lib', 'served_tree.js')).servedHtmlFiles(ROOT);
+if (!servedFiles.length) errors.push('served_tree:zero_served_html_files');
 let outbound = 0; let seniorOutbound = 0; const perUrl = new Map();
-for (const f of walkHtml(siteDir)) {
+for (const f of servedFiles) {
   for (const m of fs.readFileSync(f, 'utf8').matchAll(/<a\s[^>]*href="(https?:\/\/[^"]+)"/g)) {
     let u; try { u = new URL(m[1].replaceAll('&amp;', '&')); } catch { continue; }
     if (/(^|\.)theindustryguides\.com$/.test(u.hostname)) continue;
@@ -270,7 +277,7 @@ const hostToInventory = new Map();
 if (inventories) for (const inv of inventories.values()) hostToInventory.set(new URL(inv.origin).hostname, inv);
 const guideLinkStats = { rendered_guide_links: 0, unknown_guide_links: 0, pieces: 0, pieces_with_guides: 0, pieces_without_match: 0, guide_links_on_pieces: 0, per_vertical: {} };
 if (inventories) {
-  for (const f of walkHtml(siteDir)) {
+  for (const f of servedFiles) {
     const html = fs.readFileSync(f, 'utf8');
     for (const m of html.matchAll(/<a\s[^>]*href="(https?:\/\/[^"]+)"/g)) {
       let u; try { u = new URL(m[1].replaceAll('&amp;', '&')); } catch { continue; }
@@ -324,7 +331,7 @@ if (guidePlan) {
 const perCanonicalShare = {};
 {
   const counts = new Map(); let total = 0;
-  for (const f of walkHtml(siteDir)) for (const m of fs.readFileSync(f, 'utf8').matchAll(/<a\s[^>]*href="(https?:\/\/[^"]+)"/g)) {
+  for (const f of servedFiles) for (const m of fs.readFileSync(f, 'utf8').matchAll(/<a\s[^>]*href="(https?:\/\/[^"]+)"/g)) {
     let u; try { u = new URL(m[1].replaceAll('&amp;', '&')); } catch { continue; }
     if (/(^|\.)theindustryguides\.com$/.test(u.hostname)) continue;
     total++;
@@ -338,7 +345,17 @@ const perCanonicalShare = {};
   if (hostToInventory.size && !total) errors.push('canonical_concentration:zero_outbound_links_counted');
 }
 
-const report = { validator: 'velocity-canonical-anchor-links', ok: errors.length === 0, governed_pages: governed.length, senior_living_pages: seniorPages.length, senior_living_intake_links: seniorIntakeLinks, senior_compiled_queries: compiled ? (compiled.queries || []).length : 0, senior_questions_rendered_per_piece: perPieceRendered, senior_outbound_share: Number(seniorShare.toFixed(4)), senior_outbound_links: seniorOutbound, outbound_links_total: outbound, senior_max_links_per_url: Math.max(0, ...perUrl.values()), required_guides: Object.keys(REQUIRED).length, rendered_links_checked: linksChecked, canonical_guide_links: guideLinkStats, canonical_outbound_share: perCanonicalShare, outputs: outputs.map((d) => path.relative(ROOT, d) || '.'), errors };
+// Self-proof (2026-10-14): one commit, one answer. scripts/tests/test_served_tree_count_parity.js
+// re-runs this validator with a 40-link decoy inside dist/ and again with dist/ moved
+// aside, and fails if the sitewide counts differ or are zero. The child runs carry
+// SERVED_TREE_PARITY_CHILD so they do not recurse.
+let servedTreeParity = 'skipped_in_child';
+if (!process.env.SERVED_TREE_PARITY_CHILD) {
+  const t = require('child_process').spawnSync(process.execPath, [path.join(ROOT, 'scripts/tests/test_served_tree_count_parity.js')], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, SERVED_TREE_PARITY_CHILD: '1' } });
+  servedTreeParity = t.status === 0 ? 'PASS' : 'FAIL';
+  if (t.status !== 0) errors.push(`served_tree_parity:${`${t.stdout}${t.stderr}`.trim().split('\n').slice(0, 3).join(' | ')}`);
+}
+const report = { validator: 'velocity-canonical-anchor-links', ok: errors.length === 0, served_tree_parity: servedTreeParity, sitewide: { served_html_files: servedFiles.length, outbound_links: outbound, senior_outbound_links: seniorOutbound, senior_links_per_url: Object.fromEntries([...perUrl].sort()) }, governed_pages: governed.length, senior_living_pages: seniorPages.length, senior_living_intake_links: seniorIntakeLinks, senior_compiled_queries: compiled ? (compiled.queries || []).length : 0, senior_questions_rendered_per_piece: perPieceRendered, senior_outbound_share: Number(seniorShare.toFixed(4)), senior_outbound_links: seniorOutbound, outbound_links_total: outbound, senior_max_links_per_url: Math.max(0, ...perUrl.values()), required_guides: Object.keys(REQUIRED).length, rendered_links_checked: linksChecked, canonical_guide_links: guideLinkStats, canonical_outbound_share: perCanonicalShare, outputs: outputs.map((d) => path.relative(ROOT, d) || '.'), errors };
 fs.mkdirSync(path.dirname(path.join(ROOT, REPORT)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, REPORT), JSON.stringify(report, null, 2) + '\n');
 if (errors.length) {
