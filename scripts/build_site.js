@@ -1453,7 +1453,17 @@ function enforceValidationSiteContractsOnHtml(html){
 
   const hasTop = /data-canon-block=(['"])top\1/i.test(out) || /<!--\s*CANON_TOP\s*-->/i.test(out);
   const hasBottom = /data-canon-block=(['"])bottom\1/i.test(out) || /<!--\s*CANON_BOTTOM\s*-->/i.test(out);
-  const early = validationFirstNWords(out, 200);
+  // The canonical-guide sentence and closing line (#194) are ADDITIVE: they sit
+  // beside the routing block, they never stand in for it. Read the first 200
+  // words with them removed, or a piece whose matched guide names its canonical
+  // domain early loses the "Use the canonical local guide before acting" block
+  // on its next rebuild - the 2026-10-14 release dropped it from six
+  // uscis-medical hubs that way, while the frozen retrofit kept it on every
+  // other page (shrink guard, run 38525995326).
+  const early = validationFirstNWords(
+    out.replace(canonicalGuideLinks.INLINE_RE, ' ').replace(canonicalGuideLinks.CLOSING_RE, ' '),
+    200,
+  );
   const needsEarlyCanon = !validationHasAnyCanon(early);
   if (!/data-editorial-byline=(["'])true\1/i.test(out)) {
     if (/<main[^>]*>/i.test(out)) out = out.replace(/<main[^>]*>/i, (m) => `${m}

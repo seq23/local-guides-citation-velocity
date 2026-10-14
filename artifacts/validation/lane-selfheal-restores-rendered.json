@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "guard": "lane-selfheal-restores-rendered",
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "non_repair_render_is_restored_and_evidence_kept",
+      "pass": true,
+      "observed": {
+        "left": [
+          "artifacts/validation/evidence.json"
+        ],
+        "restored": [
+          "guides/a/index.html",
+          "guides/new/index.html"
+        ],
+        "named_stop": null
+      }
+    },
+    {
+      "name": "repair_outside_surface_is_withdrawn_whole_and_named",
+      "pass": true,
+      "observed": {
+        "named_stop": {
+          "code": "REPAIR_OUTSIDE_LANE_SURFACE",
+          "stranded_repairs": [
+            "some-validator"
+          ],
+          "paths_outside_surface": [
+            "guides/c/index.html"
+          ],
+          "withdrawn_paths": [
+            "data/repair_target.json",
+            "guides/c/index.html"
+          ],
+          "meaning": "Repair(s) some-validator rewrote 1 path(s) this lane may not commit (rendered content belongs to velocity-content-release.yml). The repair was withdrawn whole and NOT published; the evidence was. This clears itself on the next run with nothing left over."
+        },
+        "left": [
+          "artifacts/validation/publish-blocked-state.json"
+        ]
+      }
+    },
+    {
+      "name": "named_stop_self_clears",
+      "pass": true,
+      "observed": {
+        "lane_named_stop": null
+      }
+    },
+    {
+      "name": "live_runner_settles_before_the_surface_check",
+      "pass": true,
+      "observed": {
+        "settleAt": 5616,
+        "recordAt": 5748,
+        "checkAt": 8120
+      }
+    }
+  ]
+}

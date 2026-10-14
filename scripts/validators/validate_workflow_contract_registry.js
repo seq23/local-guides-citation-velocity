@@ -64,9 +64,24 @@ if (!gsc) {
   }
 }
 
+// The evidence lane's commit-surface contract (2026-10-14). Query Evidence Refresh
+// run 38524268332 made zero repairs, canonical-domains' `npm run build` prepare re-
+// rendered 282 pages outside the lane's commit surface, the runner exited 1 and no
+// evidence was committed. scripts/tests/test_lane_selfheal_restore.mjs drives the
+// settle code the runner uses (scripts/selfheal/lane_surface_settle.mjs) in a
+// throwaway git repo and pins the runner's wiring; a workflow running a script whose
+// contract is broken is the same harm as one pointing at nothing.
+const laneTests = [];
+{
+  const { spawnSync } = require('child_process');
+  const t = spawnSync(process.execPath, [path.join(ROOT, 'scripts/tests/test_lane_selfheal_restore.mjs')], { cwd: ROOT, encoding: 'utf8' });
+  laneTests.push({ test: 'scripts/tests/test_lane_selfheal_restore.mjs', exit: t.status });
+  if (t.status !== 0) errors.push(`query-evidence-refresh.yml runs scripts/selfheal/run_lane_selfheal.mjs, whose commit-surface contract failed: ${`${t.stdout}${t.stderr}`.trim().split('\n').slice(0, 4).join(' | ')}`);
+}
+
 const result = { id: 'workflow-contract-registry', status: errors.length ? 'FAIL' : 'PASS',
-  workflows_checked: entries.length, scripts_checked: scriptsChecked, errors };
+  workflows_checked: entries.length, scripts_checked: scriptsChecked, lane_contract_tests: laneTests, errors };
 fs.mkdirSync(path.join(ROOT, path.dirname(OUT)), { recursive: true });
 fs.writeFileSync(path.join(ROOT, OUT), JSON.stringify(result, null, 2) + '\n');
 if (errors.length) { console.error(`workflow-contract-registry FAIL\n  ${errors.join('\n  ')}`); process.exit(1); }
-console.log(`workflow-contract-registry PASS (${entries.length} workflows, ${scriptsChecked} scripts)`);
+console.log(`workflow-contract-registry PASS (${entries.length} workflows, ${scriptsChecked} scripts, ${laneTests.length} lane contract test(s))`);

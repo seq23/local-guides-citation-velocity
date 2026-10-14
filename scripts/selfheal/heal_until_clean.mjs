@@ -18,6 +18,7 @@
 // Exit 0 means the chain is green and it is safe to push. Non-zero means it is
 // not, and the report names what could not be healed and why.
 import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,6 +66,36 @@ function treeState() {
 
 // The registry runner writes a machine-readable summary; prefer it over parsing
 // console output, which changes shape between validators.
+// Which paths a repair actually wrote, by content: every changed path's bytes
+// before and after the repair. A lane that may only commit part of the tree needs
+// to tell a repair's writes from what a validator's prepare step (a build) re-
+// rendered, and porcelain status alone cannot - a path already modified before the
+// repair looks the same after it (scripts/selfheal/lane_surface_settle.mjs).
+function contentSnapshot() {
+  const r = spawnSync('git', ['-c', 'core.quotepath=false', 'status', '--porcelain', '--untracked-files=all'], {
+    cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28,
+  });
+  if (r.status !== 0) return null;
+  const snap = new Map();
+  for (const line of (r.stdout || '').split('\n')) {
+    if (!line) continue;
+    let p = line.slice(3).trim();
+    if (p.includes(' -> ')) p = p.split(' -> ')[1];
+    let h = 'absent';
+    try { h = crypto.createHash('sha1').update(fs.readFileSync(path.join(ROOT, p))).digest('hex'); } catch { /* deleted */ }
+    snap.set(p, h);
+  }
+  return snap;
+}
+
+function wrotePaths(before, after) {
+  if (!before || !after) return null;
+  const out = new Set();
+  for (const [p, h] of after) if (before.get(p) !== h) out.add(p);
+  for (const p of before.keys()) if (!after.has(p)) out.add(p);
+  return [...out].sort();
+}
+
 function failedValidators() {
   const summary = path.join(ROOT, `artifacts/validation/validation-summary-${PROFILE}.json`);
   const fallback = path.join(ROOT, 'artifacts/validation/validation-summary.json');
@@ -108,8 +139,10 @@ for (let attempt = 1; attempt <= MAX; attempt += 1) {
     if (DRY) { console.log(`  would repair ${id}: ${cmd}`); repaired.push({ id, cmd, code: 0, dry: true }); continue; }
     console.log(`  repairing ${id}: ${cmd}`);
     const before = treeState();
+    const snapBefore = contentSnapshot();
     const r = run(cmd);
     const after = treeState();
+    const wrote = wrotePaths(snapBefore, contentSnapshot());
     // A repair that exits 0 without touching a single file has done nothing -
     // UNLESS the validator it targets already passes. Tier 8's
     // repair-command-efficacy validator (added by PR #73) proves every ACTIVE
@@ -151,6 +184,7 @@ for (let attempt = 1; attempt <= MAX; attempt += 1) {
       code: r.code,
       no_op: noOp,
       resolved_by_recheck: verdict.resolvedByRecheck,
+      wrote_paths: wrote,
       // Persist the refusal text alongside the verdict, so the artifact a human
       // is pointed at carries the reason and not only the exit code.
       said: String(r.out || '').trim().split('\n').slice(-40).join('\n'),

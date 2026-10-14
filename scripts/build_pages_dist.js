@@ -7,15 +7,12 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const MAX_CLOUDFLARE_ASSET_BYTES = 25 * 1024 * 1024;
-const ADMISSION_REGISTRY = path.join(ROOT, 'data', 'content', 'page_admission_registry.json');
-const admissionPayload = JSON.parse(fs.readFileSync(ADMISSION_REGISTRY, 'utf8'));
-const ADMITTED_ROUTES = new Set((admissionPayload.pages || []).filter((p) => p.publication_status === 'ADMITTED').map((p) => p.path));
+// One definition of what is served, shared with every reader that asks the same
+// question (scripts/lib/served_tree.js).
+const servedTree = require('./lib/served_tree');
+const ADMITTED_ROUTES = servedTree.admittedRoutes(ROOT);
 
-const INTERNAL_DIRS = new Set([
-  '.build', '.build-cache', '.cache', '.git', '.github', '.wrangler', 'artifacts', 'content',
-  'data', 'distribution_scripts', 'docs', 'logs', 'node_modules', 'reports', 'scripts',
-  'staging', 'templates', 'tmp'
-]);
+const INTERNAL_DIRS = servedTree.INTERNAL_DIRS;
 
 const PUBLIC_ROOT_FILES = new Set([
   '404.html', '_headers', '_redirects', 'about.html', 'disclaimer.html', 'feed.json',
@@ -63,12 +60,7 @@ function shouldSkipDir(abs) {
   if (rel === '.well-known') return false;
   return INTERNAL_DIRS.has(first);
 }
-function routeForHtmlRel(rel) {
-  if (rel === 'index.html') return '/';
-  if (rel.endsWith('/index.html')) return `/${rel.slice(0, -'index.html'.length)}`;
-  if (rel.endsWith('.html')) return `/${rel}`;
-  return null;
-}
+const { routeForHtmlRel } = servedTree;
 function renderedRelForRoute(route) {
   if (route === '/') return 'index.html';
   if (route.endsWith('.html')) return route.replace(/^\/+/, '');
@@ -79,11 +71,7 @@ function isPublicFile(abs) {
   const parts = rel.split('/');
   const base = path.basename(rel);
   const ext = path.extname(base).toLowerCase();
-  if (ext === '.html') {
-    if (rel === '404.html') return true;
-    const route = routeForHtmlRel(rel);
-    return Boolean(route && ADMITTED_ROUTES.has(route));
-  }
+  if (ext === '.html') return servedTree.isServedHtmlRel(rel, ADMITTED_ROUTES);
   if (parts.length === 1) return PUBLIC_ROOT_FILES.has(base) || /^[a-f0-9]{64}\.txt$/i.test(base);
   return PUBLIC_EXTENSIONS.has(ext);
 }
