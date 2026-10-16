@@ -780,6 +780,14 @@ function buildAtlasStructures(registry, clusterPages, insightItems) {
   return { atlas, queryToCluster };
 }
 
+// The atlas names its canonical domain by linking that site's guide index:
+// the canonical holds the guides (owner rule, 13 Oct 2026), and a bare-origin
+// link on every atlas page spent the sitewide per-URL link cap on the home page
+// (memphisseniorcarehomes.com hit 11 > 10 once /atlas/senior-living/ was served).
+function atlasCanonicalGuidesUrl(domain){
+  try { return `${new URL(/^https?:\/\//.test(domain) ? domain : `https://${domain}`).origin}/guides/`; } catch { return domain; }
+}
+
 function renderAtlasBody({ title, description, atlasConfig, allVerticals }) {
   if (!atlasConfig) {
     const cards = Object.values(allVerticals || {}).map((meta) => `<li><a href="${htmlEscape(meta.atlas_path || `/atlas/${meta.base_path}/`)}">${htmlEscape(meta.label)}</a> — ${meta.total_clusters} clusters · ${meta.total_queries} queries</li>`).join('');
@@ -803,7 +811,7 @@ function renderAtlasBody({ title, description, atlasConfig, allVerticals }) {
     <ul>
       <li><strong>Total clusters:</strong> ${atlasConfig.total_clusters}</li>
       <li><strong>Total mapped query pages:</strong> ${atlasConfig.total_queries}</li>
-      <li><strong>Canonical domain:</strong> <a href="${htmlEscape(atlasConfig.canonical_domain)}">${htmlEscape(String(atlasConfig.canonical_domain).replace(/^https?:\/\//,''))}</a></li>
+      <li><strong>Canonical domain:</strong> <a href="${htmlEscape(atlasCanonicalGuidesUrl(atlasConfig.canonical_domain))}">${htmlEscape(String(atlasConfig.canonical_domain).replace(/^https?:\/\//,''))}</a></li>
     </ul></section>
     <div class="grid">${clusterCards}</div>`;
 }
