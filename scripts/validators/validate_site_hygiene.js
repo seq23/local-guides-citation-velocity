@@ -217,7 +217,12 @@ else if (read(kf).trim() !== kf.replace(/\.txt$/, '')) fail('indexnow_key', `${k
     for (const w of r.warnings) console.log(`  !! SITE HYGIENE WARNING [zero_paid_llm]: ${w}`);
     const proof = selfTest(ROOT, zp);
     for (const m of proof.missed) fail('zero_paid_llm', `negative proof no longer caught: ${m}`);
-    if (!r.failures.length && !proof.missed.length) console.log(`  zero_paid_llm: ${r.stats.scheduled_workflows} scheduled workflows reach no paid model; ${r.stats.probe_workflows} probe workflow dispatch-only behind confirm_paid; ${r.stats.models} $0 models; ${proof.cases} negative proofs caught`);
+    // Router behaviour (stubbed fetch): a per-model 403/404 falls through, only a
+    // refused KEY stops the route, and every $0 guarantee still throws.
+    const rt = require('child_process').spawnSync(process.execPath, ['scripts/tests/test_free_llm_router.mjs'], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, OPENROUTER_API_KEY: '' } });
+    const pins = /free_llm_router: (\d+) behaviour pins pass/.exec(rt.stdout || '');
+    if (rt.status !== 0 || !pins || Number(pins[1]) < 8) fail('zero_paid_llm', `router behaviour pins failed: ${((rt.stderr || '') + (rt.stdout || '')).trim().split('\n').slice(-6).join(' | ').slice(0, 600)}`);
+    if (!r.failures.length && !proof.missed.length && rt.status === 0 && pins) console.log(`  zero_paid_llm: ${pins[1]} router behaviour pins; ${r.stats.scheduled_workflows} scheduled workflows reach no paid model; ${r.stats.probe_workflows} probe workflow dispatch-only behind confirm_paid; ${r.stats.models} $0 models; ${proof.cases} negative proofs caught`);
   }
 }
 
