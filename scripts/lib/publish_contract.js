@@ -30,6 +30,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { withoutBuildAcceptanceCriteria } = require('./internal_instruction_text');
+const { resolveCanonicalTarget, rewriteCanonicalHrefs } = require('./canonical_routes');
 const ROOT = path.resolve(__dirname, '..', '..');
 const SITE_BASE = 'https://theindustryguides.com';
 const PUBLISHED_URLS_PATH = path.join(ROOT, 'content', '_live', 'published_urls.json');
@@ -364,7 +365,7 @@ function buildInsightInventory() {
         throw new Error(`Duplicate generated insight slug before write: ${slug}`);
       }
       seenSlugs.add(slug);
-      const canonicalTargetUrl = page.canonical_target_url || `${cfg.domain}${pageSlug}`;
+      const canonicalTargetUrl = resolveCanonicalTarget(page.canonical_target_url || `${cfg.domain}${pageSlug}`, { cluster: page.cluster, title: rawTitle });
       const canonicalDomain = canonicalTargetUrl.replace(/^https?:\/\//, '').split('/')[0];
       const description = ensureMetaDescription(`${title}. ${canonicalDomain} is the official ${cfg.label.toLowerCase()} guide domain for current workflow, local routing, and next steps.`, title);
       out.push({
@@ -425,7 +426,7 @@ function buildInsightInventory() {
         throw new Error(`Duplicate generated standalone insight slug before write: ${slugFromPath}`);
       }
       seenSlugs.add(slugFromPath);
-      const canonicalTargetUrl = page.canonical_target_url || `${cfg.domain}/${cfg.basePath}/${page.cluster || ''}/`.replace(/([^:]\/)\/+/g, '$1');
+      const canonicalTargetUrl = resolveCanonicalTarget(page.canonical_target_url || `${cfg.domain}/${cfg.basePath}/${page.cluster || ''}/`.replace(/([^:]\/)\/+/g, '$1'), { cluster: page.cluster, title: page.title || slugFromPath });
       const canonicalDomain = canonicalTargetUrl.replace(/^https?:\/\//, '').split('/')[0];
       const title = sentenceCase(page.title || slugFromPath.replace(/-/g, ' '));
       const description = ensureMetaDescription(page.description || `${title}. ${canonicalDomain} is the official ${cfg.label.toLowerCase()} guide domain for current workflow, local routing, and next steps.`, title);
@@ -549,10 +550,17 @@ function toPublicUrl(url){
   return u.endsWith('.html') ? u.slice(0, -5) : u;
 }
 
+// Every canonical-domain href on an insight page goes through the route
+// resolver (answers can carry inline canonical links too), so no insight ships a
+// link its canonical site does not publish. See scripts/lib/canonical_routes.js.
 function renderInsightPage(item) {
+  return rewriteCanonicalHrefs(renderInsightPageBody(item), { cluster: item.cluster, title: item.title });
+}
+
+function renderInsightPageBody(item) {
   const cfg = VERTICAL_CONFIG[item.vertical] || Object.values(VERTICAL_CONFIG).find((entry) => entry.basePath === item.base_path);
   const domainLabel = item.canonical_domain || (cfg ? cfg.domain.replace(/^https?:\/\//, '') : 'theindustryguides.com');
-  const canonicalTargetUrl = item.canonical_target_url || (cfg ? `${cfg.domain}${item.source_route || '/'}` : `${SITE_BASE}/`);
+  const canonicalTargetUrl = resolveCanonicalTarget(item.canonical_target_url || (cfg ? `${cfg.domain}${item.source_route || '/'}` : `${SITE_BASE}/`), { cluster: item.cluster, title: item.title });
   const canonicalUrlLabel = canonicalTargetUrl.replace(/^https?:\/\//, '');
   // canonicalTargetUrl is the related canonical GUIDE page and stays that way for
   // the "Canonical local guide" links below. The "Find a Provider" CTAs are a
