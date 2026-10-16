@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "c6937b9bd8264ee0876a22edbc25be037eaf14cb153e61248d18f957b2e7977a",
+  "registry_sha256": "ed9c19aeefe10913941197f332e2be66eb853b0fd7fc9122382988765f6f106f",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -1734,7 +1734,7 @@
       },
       {
         "id": "evidence-registry",
-        "title": "Primary-source and claim registry integrity",
+        "title": "Primary-source and claim registry integrity, including retired authority URLs",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 3",
@@ -1750,7 +1750,15 @@
         "path": "scripts/validators/validate_evidence_registry.js",
         "command": "node scripts/validators/validate_evidence_registry.js",
         "depends_on": [],
-        "requires_files": [],
+        "requires_files": [
+          "data/evidence/source_registry.json",
+          "data/evidence/claim_registry.json",
+          "data/evidence/state_direct_authorities.json",
+          "data/evidence/state_source_registry.json",
+          "data/evidence/medicaid_dental_fee_schedules.json",
+          "data/page_families/velocity_page_specs.json",
+          "content/_live/pages.json"
+        ],
         "prepare_commands": [],
         "prepare_produces_files": [],
         "prepare_mutates_files": [],
@@ -1761,7 +1769,7 @@
           "artifacts/validation/evidence-registry.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Regulated or numeric pages could ship with missing, dangling, or malformed provenance records.",
+        "risk_prevented": "Regulated or numeric pages could ship with missing, dangling, or malformed provenance records. ALSO PINS RETIRED AUTHORITY URLS (16 Oct 2026). Every state page cites a licensing board or a federal programme page by URL, and those publishers move pages without redirecting. Danielle's site-audit crawl of theindustryguides.com found nine such links serving 404 from live guide pages: the Montana, Iowa, South Dakota, Connecticut and Tennessee psychology boards, the Tennessee medical board, the CMS state-based exchange list, and the Georgia Medicaid dental fee schedule, whose quarterly PDF filename carries a publication timestamp GAMMIS rotates so a direct link rots within three months. A claim sourced to a dead URL is the root of a false public claim, which is this validator's own hard_fail_basis, so the pin lives here rather than as a forty-first blocker. scripts/lib/retired_authority_urls.js holds the retired/live pairs and the evidence for each; this validator calls it. It fails when a retired URL reappears in the evidence or page-family source files or in any rendered HTML, AND when a replacement URL is absent from the source files, which is what 'fixed to nothing' looks like. Deliberately offline: a live crawl in CI would go red on a publisher bot-blocking us (ftc.gov 404s its own root to this egress) or on a hosting outage (medicaid.ms.gov was serving a temporary-site notice on 2026-10-16); both were investigated on 16 Oct and left unpinned because neither was a defect on our side.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],
@@ -13995,7 +14003,7 @@
       },
       {
         "id": "evidence-registry",
-        "title": "Primary-source and claim registry integrity",
+        "title": "Primary-source and claim registry integrity, including retired authority URLs",
         "status": "ACTIVE",
         "severity": "HARD_FAIL",
         "tier": "Tier 3",
@@ -14011,7 +14019,15 @@
         "path": "scripts/validators/validate_evidence_registry.js",
         "command": "node scripts/validators/validate_evidence_registry.js",
         "depends_on": [],
-        "requires_files": [],
+        "requires_files": [
+          "data/evidence/source_registry.json",
+          "data/evidence/claim_registry.json",
+          "data/evidence/state_direct_authorities.json",
+          "data/evidence/state_source_registry.json",
+          "data/evidence/medicaid_dental_fee_schedules.json",
+          "data/page_families/velocity_page_specs.json",
+          "content/_live/pages.json"
+        ],
         "prepare_commands": [],
         "prepare_produces_files": [],
         "prepare_mutates_files": [],
@@ -14022,7 +14038,7 @@
           "artifacts/validation/evidence-registry.json"
         ],
         "enforce_no_source_mutation": true,
-        "risk_prevented": "Regulated or numeric pages could ship with missing, dangling, or malformed provenance records.",
+        "risk_prevented": "Regulated or numeric pages could ship with missing, dangling, or malformed provenance records. ALSO PINS RETIRED AUTHORITY URLS (16 Oct 2026). Every state page cites a licensing board or a federal programme page by URL, and those publishers move pages without redirecting. Danielle's site-audit crawl of theindustryguides.com found nine such links serving 404 from live guide pages: the Montana, Iowa, South Dakota, Connecticut and Tennessee psychology boards, the Tennessee medical board, the CMS state-based exchange list, and the Georgia Medicaid dental fee schedule, whose quarterly PDF filename carries a publication timestamp GAMMIS rotates so a direct link rots within three months. A claim sourced to a dead URL is the root of a false public claim, which is this validator's own hard_fail_basis, so the pin lives here rather than as a forty-first blocker. scripts/lib/retired_authority_urls.js holds the retired/live pairs and the evidence for each; this validator calls it. It fails when a retired URL reappears in the evidence or page-family source files or in any rendered HTML, AND when a replacement URL is absent from the source files, which is what 'fixed to nothing' looks like. Deliberately offline: a live crawl in CI would go red on a publisher bot-blocking us (ftc.gov 404s its own root to this egress) or on a hosting outage (medicaid.ms.gov was serving a temporary-site notice on 2026-10-16); both were investigated on 16 Oct and left unpinned because neither was a defect on our side.",
         "default_behavior": "BLOCK_RELEASE",
         "strict_behavior": "BLOCK_RELEASE",
         "replacement_ids": [],

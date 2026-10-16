@@ -3,6 +3,17 @@
 ## CLASSIFICATION
 Level 2 generated static publishing and citation-velocity repository.
 
+## PUBLIC DOMAIN
+
+`theindustryguides.com` — the umbrella hub this repository builds and publishes. Declared here so
+the domain maps to this repository by name rather than by inference: Danielle's Ahrefs site-audit
+job resolves a flagged Ahrefs project to a repository by grepping every `REPO_IDENTITY.md` for the
+domain, and until 16 Oct 2026 nothing claimed this one, so every finding against the site had to be
+mapped by reading the rendered routes.
+
+The six canonical guide sites are separate repositories and are not claimed here; this repository
+publishes the hub and the Velocity pages that route into them.
+
 ## SOURCE OF TRUTH
 The latest supplied baseline ZIP is the starting source of truth. Inside the repository, durable authority is split by layer:
 
