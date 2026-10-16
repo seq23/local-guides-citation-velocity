@@ -17,9 +17,14 @@
  *   - If no listed model answers, the result is a NAMED STOP and nothing is
  *     generated. There is no paid fallback, by construction: the only ids this
  *     module can send are the ids in the config.
- *   - A refused credential (401/403, or a disabled key) is its own named stop,
- *     distinct from "no free model answered", so a receipt never confuses a dead
- *     key with a model outage.
+ *   - A refused credential (401, 402, a key-shaped error message, or a 403 the
+ *     key-info check confirms) is its own named stop, distinct from "no free model
+ *     answered", so a receipt never confuses a dead key with a model outage.
+ *   - A 403/404 for ONE model is that model's refusal, not the key's: OpenRouter
+ *     403s some :free models per model (e.g. "only available on agentic harnesses")
+ *     while the key answers GET /api/v1/auth/key 200 and other $0 models answer.
+ *     The router records the attempt and tries the next listed model; only if
+ *     auth/key itself refuses the key does a 403 become the credential stop.
  *
  * CLI:
  *   node scripts/lib/free_llm_router.mjs --receipt   policy receipt, no network
@@ -90,8 +95,12 @@ async function fetchJson(url, init, timeoutMs) {
   } finally { clearTimeout(t); }
 }
 
-const keyRefused = (status, msg) => status === 401 || status === 403
-  || /disabled|invalid api key|no auth|user not found|key limit|unauthori[sz]ed/i.test(String(msg || ''));
+// Credential-shaped message: about the KEY, never a model ("model disabled" is per model).
+const KEY_MESSAGE = /\bkey\b[^.]*\b(disabled|invalid|limit)|\b(disabled|invalid)\b[^.]*\bkey\b|no auth|user not found|unauthori[sz]ed/i;
+/** True only when the CREDENTIAL is refused. 403/404 alone are per-model (see header). */
+export const keyRefused = (status, msg) => status === 401 || status === 402 || KEY_MESSAGE.test(String(msg || ''));
+/** A per-model refusal that might still hide a dead key; confirmed against auth/key. */
+const perModelRefusal = (status) => status === 403 || status === 404;
 
 /**
  * One call to one listed $0 model. Returns { ok, model, content, data, cost } or
@@ -128,11 +137,18 @@ export async function chatOnce(cfg, { model, messages, max_tokens = 400, tempera
  */
 export async function chatFree(cfg, opts = {}) {
   const attempts = [];
+  let keyChecked = null;
   for (const model of freeModelIds(cfg)) {
     const r = await chatOnce(cfg, { ...opts, model });
     if (r.ok) return { ...r, attempts };
     attempts.push({ model, error: r.error, status: r.status ?? null });
     if (r.credential_refused) return { ok: false, stop: r.error === NO_KEY_STOP ? NO_KEY_STOP : KEY_REFUSED_STOP, attempts };
+    if (perModelRefusal(r.status)) {
+      // One model's 403/404 is not the key's. Ask auth/key once: an HTTP refusal
+      // there is the credential stop; a live key means try the next model.
+      if (keyChecked === null) keyChecked = await keyInfo(opts.key ?? (process.env.OPENROUTER_API_KEY || ''));
+      if (keyChecked.status && keyChecked.status >= 400) return { ok: false, stop: KEY_REFUSED_STOP, attempts, key_check: keyChecked.error };
+    }
   }
   return { ok: false, stop: NO_FREE_MODEL_STOP, attempts };
 }
@@ -146,7 +162,7 @@ export async function keyInfo(key = process.env.OPENROUTER_API_KEY || '') {
   if (!key) return { error: 'no key' };
   try {
     const { res, data } = await fetchJson('https://openrouter.ai/api/v1/auth/key', { headers: { authorization: `Bearer ${key}` } }, 15000);
-    if (!res.ok) return { error: `HTTP ${res.status}${data?.error?.message ? ` ${data.error.message}` : ''}`.slice(0, 160) };
+    if (!res.ok) return { status: res.status, error: `HTTP ${res.status}${data?.error?.message ? ` ${data.error.message}` : ''}`.slice(0, 160) };
     const d = data?.data || {};
     return { key_label: d.label ?? null, limit: d.limit ?? null, usage: d.usage ?? null, is_free_tier: d.is_free_tier ?? null, limit_remaining: d.limit_remaining ?? null };
   } catch (e) {
