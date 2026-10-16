@@ -25,6 +25,16 @@
  *     while the key answers GET /api/v1/auth/key 200 and other $0 models answer.
  *     The router records the attempt and tries the next listed model; only if
  *     auth/key itself refuses the key does a 403 become the credential stop.
+ *   - An answer is non-empty text. A body read that fails (a timeout that fires
+ *     after OpenRouter sent the headers of a slow answer) is an error with its
+ *     elapsed ms, a reply with no choices is `no_choices`, and an empty answer is
+ *     never an answer: chatFree tries the next $0 model (16 Oct 2026, WPP-llm
+ *     #42/#43: a swallowed body timeout and nemotron's reasoning trace eating
+ *     max_tokens both looked like empty answers and stopped the route).
+ *   - Reasoning models (nemotron :free) are asked for low reasoning effort; an
+ *     empty answer cut off by length is retried once with reasoning switched off.
+ *   - A 429's Retry-After (<= 30 s) is waited out once per model, inside one
+ *     bounded total route budget (DEFAULT_TOTAL_BUDGET_MS).
  *
  * CLI:
  *   node scripts/lib/free_llm_router.mjs --receipt   policy receipt, no network
@@ -85,15 +95,58 @@ export function assertFreeRequest(cfg, { model, plugins } = {}) {
   if (!freeModelIds(cfg).includes(model)) throw new PaidCallRefused(`model "${model}" is not in the $0 list in ${ROUTING_REL}; refused (max_cost_usd 0)`);
 }
 
+// Reasoning models spend completion tokens on a hidden trace; ask for little of it,
+// and switch it off for the one retry of an empty, length-cut answer.
+export const REASONING_FIRST = Object.freeze({ effort: 'low', exclude: true });
+export const REASONING_OFF = Object.freeze({ enabled: false });
+export const MAX_RETRY_AFTER_MS = 30000;
+export const DEFAULT_TOTAL_BUDGET_MS = 300000;
+export const NO_CHOICES = 'no_choices';
+export const EMPTY_ANSWER = 'empty';
+
+/**
+ * fetch + JSON body inside ONE timeout. OpenRouter sends headers early on a slow
+ * answer, so the abort often lands while the body downloads: that is a timeout
+ * (thrown, with elapsed ms), never an empty answer. A 2xx whose body cannot be
+ * read is thrown too; a non-2xx with an unreadable body keeps its status.
+ */
 async function fetchJson(url, init, timeoutMs) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  const t0 = Date.now();
   try {
-    const res = await fetch(url, { ...init, signal: ctrl.signal });
-    const data = await res.json().catch(() => ({}));
-    return { res, data };
+    let res;
+    try { res = await fetch(url, { ...init, signal: ctrl.signal }); } catch (e) {
+      if (ctrl.signal.aborted || e?.name === 'AbortError') throw new Error(`timeout after ${Date.now() - t0} ms waiting for headers (limit ${timeoutMs} ms)`);
+      throw new Error(`request failed after ${Date.now() - t0} ms: ${String(e?.message || e)}`);
+    }
+    let data;
+    try { data = await res.json(); } catch (e) {
+      const ms = Date.now() - t0;
+      if (ctrl.signal.aborted || e?.name === 'AbortError' || /abort|timeout/i.test(String(e?.message))) throw new Error(`timeout after ${ms} ms reading the response body (HTTP ${res.status} headers arrived; limit ${timeoutMs} ms)`);
+      if (res.ok) throw new Error(`unreadable response body after ${ms} ms (HTTP ${res.status}): ${String(e?.message || e)}`);
+      data = {};
+    }
+    return { res, data, elapsed_ms: Date.now() - t0 };
   } finally { clearTimeout(t); }
 }
+
+/** Retry-After (seconds or HTTP date), OpenRouter's error metadata, or X-RateLimit-Reset (epoch ms). */
+export function retryAfterMs(res, data) {
+  const h = (n) => (typeof res?.headers?.get === 'function' ? res.headers.get(n) : null);
+  const meta = data?.error?.metadata?.headers || {};
+  const ra = h('retry-after') ?? meta['Retry-After'] ?? meta['retry-after'] ?? null;
+  if (ra !== null && ra !== undefined && String(ra).trim() !== '') {
+    const secs = Number(ra);
+    if (Number.isFinite(secs)) return Math.max(0, secs * 1000);
+    const at = Date.parse(String(ra));
+    if (Number.isFinite(at)) return Math.max(0, at - Date.now());
+  }
+  const reset = Number(h('x-ratelimit-reset') ?? meta['X-RateLimit-Reset'] ?? NaN);
+  if (Number.isFinite(reset) && reset > 0) return Math.max(0, reset - Date.now());
+  return null;
+}
+const realSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Credential-shaped message: about the KEY, never a model ("model disabled" is per model).
 const KEY_MESSAGE = /\bkey\b[^.]*\b(disabled|invalid|limit)|\b(disabled|invalid)\b[^.]*\bkey\b|no auth|user not found|unauthori[sz]ed/i;
@@ -103,51 +156,86 @@ export const keyRefused = (status, msg) => status === 401 || status === 402 || K
 const perModelRefusal = (status) => status === 403 || status === 404;
 
 /**
- * One call to one listed $0 model. Returns { ok, model, content, data, cost } or
- * { ok:false, error, credential_refused }. Throws PaidCallRefused before sending
- * anything billable and CostViolation if the provider reports a non-zero cost.
+ * One call to one listed $0 model. Returns { ok, model, content, data, cost,
+ * finish_reason } or { ok:false, error, credential_refused }. ok:true may carry
+ * empty content (finish_reason says why); chatFree never counts that as an answer.
+ * An empty answer cut off by length (a reasoning trace that ate max_tokens) is
+ * retried once on the same model with reasoning off. Throws PaidCallRefused
+ * before sending anything billable and CostViolation on a non-zero cost.
  */
-export async function chatOnce(cfg, { model, messages, max_tokens = 400, temperature = 0, key = process.env.OPENROUTER_API_KEY || '', timeoutMs = 30000, plugins } = {}) {
+export async function chatOnce(cfg, { model, messages, max_tokens = 400, temperature = 0, key = process.env.OPENROUTER_API_KEY || '', timeoutMs = 30000, plugins, reasoning = REASONING_FIRST } = {}) {
   assertFreeRequest(cfg, { model, plugins });
   if (!key) return { ok: false, model, error: NO_KEY_STOP, credential_refused: true };
-  let res; let data;
-  try {
-    ({ res, data } = await fetchJson(cfg.endpoint || 'https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, messages, max_tokens, temperature, usage: { include: true } }),
-    }, timeoutMs));
-  } catch (e) {
-    return { ok: false, model, error: String(e?.message || e).slice(0, 160), credential_refused: false };
+  const once = async (reasoningOpt) => {
+    let res; let data; let elapsed;
+    try {
+      ({ res, data, elapsed_ms: elapsed } = await fetchJson(cfg.endpoint || 'https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model, messages, max_tokens, temperature, reasoning: reasoningOpt, usage: { include: true } }),
+      }, timeoutMs));
+    } catch (e) {
+      return { ok: false, model, error: String(e?.message || e).slice(0, 160), credential_refused: false };
+    }
+    const errMsg = data?.error?.message;
+    if (!res.ok || errMsg) {
+      return { ok: false, model, status: res.status, error: errMsg || `HTTP ${res.status}`, credential_refused: keyRefused(res.status, errMsg), retry_after_ms: res.status === 429 ? retryAfterMs(res, data) : null };
+    }
+    const cost = data?.usage?.cost;
+    if (cost !== undefined && cost !== null && Number(cost) !== 0) {
+      throw new CostViolation(`OpenRouter reported cost ${cost} USD for ${model} (generation ${data?.id || 'unknown'}). max_cost_usd is 0: failing the run.`);
+    }
+    const choices = Array.isArray(data?.choices) ? data.choices : [];
+    if (!choices.length) return { ok: false, model, status: res.status, error: NO_CHOICES, credential_refused: false, elapsed_ms: elapsed };
+    const msg = choices[0]?.message || {};
+    const content = typeof msg.content === 'string' ? msg.content : '';
+    const reasoningChars = typeof msg.reasoning === 'string' ? msg.reasoning.length : 0;
+    return { ok: true, model, content, finish_reason: choices[0]?.finish_reason ?? null, reasoning_chars: reasoningChars, reasoning: reasoningOpt === REASONING_OFF ? 'off' : 'low', elapsed_ms: elapsed, data, cost: cost ?? null, cost_reported: cost !== undefined && cost !== null };
+  };
+  const r = await once(reasoning);
+  if (r.ok && !r.content.trim() && reasoning !== REASONING_OFF && (r.finish_reason === 'length' || r.reasoning_chars > 0)) {
+    const r2 = await once(REASONING_OFF);
+    return { ...r2, first_try: { finish_reason: r.finish_reason, reasoning_chars: r.reasoning_chars } };
   }
-  const errMsg = data?.error?.message;
-  if (!res.ok || errMsg) {
-    return { ok: false, model, status: res.status, error: errMsg || `HTTP ${res.status}`, credential_refused: keyRefused(res.status, errMsg) };
-  }
-  const cost = data?.usage?.cost;
-  if (cost !== undefined && cost !== null && Number(cost) !== 0) {
-    throw new CostViolation(`OpenRouter reported cost ${cost} USD for ${model} (generation ${data?.id || 'unknown'}). max_cost_usd is 0: failing the run.`);
-  }
-  return { ok: true, model, content: data?.choices?.[0]?.message?.content || '', data, cost: cost ?? null, cost_reported: cost !== undefined && cost !== null };
+  return r;
 }
 
 /**
- * Try each listed $0 model in order. First answer wins. Never reaches a model
- * outside the list. Returns { ok:true, ... } or { ok:false, stop, attempts }.
+ * Try each listed $0 model in order. First NON-EMPTY answer wins; an empty one,
+ * a timeout or `no_choices` falls through to the next model. A 429 with
+ * Retry-After <= 30 s is waited out once per model. Everything runs inside one
+ * total budget (totalBudgetMs); models past it are recorded as skipped. Never
+ * reaches a model outside the list. Returns { ok:true, ... } or { ok:false, stop, attempts }.
  */
 export async function chatFree(cfg, opts = {}) {
+  const { totalBudgetMs = DEFAULT_TOTAL_BUDGET_MS, sleep = realSleep, ...rest } = opts;
+  const deadline = Date.now() + totalBudgetMs;
+  const perCall = rest.timeoutMs ?? 30000;
   const attempts = [];
   let keyChecked = null;
   for (const model of freeModelIds(cfg)) {
-    const r = await chatOnce(cfg, { ...opts, model });
-    if (r.ok) return { ...r, attempts };
-    attempts.push({ model, error: r.error, status: r.status ?? null });
-    if (r.credential_refused) return { ok: false, stop: r.error === NO_KEY_STOP ? NO_KEY_STOP : KEY_REFUSED_STOP, attempts };
-    if (perModelRefusal(r.status)) {
-      // One model's 403/404 is not the key's. Ask auth/key once: an HTTP refusal
-      // there is the credential stop; a live key means try the next model.
-      if (keyChecked === null) keyChecked = await keyInfo(opts.key ?? (process.env.OPENROUTER_API_KEY || ''));
-      if (keyChecked.status && keyChecked.status >= 400) return { ok: false, stop: KEY_REFUSED_STOP, attempts, key_check: keyChecked.error };
+    let waited = false;
+    for (;;) {
+      const left = deadline - Date.now();
+      if (left <= 0) { attempts.push({ model, error: 'skipped: total route budget spent', status: null }); break; }
+      const r = await chatOnce(cfg, { ...rest, model, timeoutMs: Math.min(perCall, left) });
+      if (r.ok && r.content.trim()) return { ...r, attempts };
+      if (r.ok) { attempts.push({ model, error: EMPTY_ANSWER, status: null, finish_reason: r.finish_reason, reasoning: r.reasoning }); break; }
+      attempts.push({ model, error: r.error, status: r.status ?? null });
+      if (r.credential_refused) return { ok: false, stop: r.error === NO_KEY_STOP ? NO_KEY_STOP : KEY_REFUSED_STOP, attempts };
+      if (perModelRefusal(r.status)) {
+        // One model's 403/404 is not the key's. Ask auth/key once: an HTTP refusal
+        // there is the credential stop; a live key means try the next model.
+        if (keyChecked === null) keyChecked = await keyInfo(rest.key ?? (process.env.OPENROUTER_API_KEY || ''));
+        if (keyChecked.status && keyChecked.status >= 400) return { ok: false, stop: KEY_REFUSED_STOP, attempts, key_check: keyChecked.error };
+      }
+      const wait = r.status === 429 ? r.retry_after_ms : null;
+      if (wait !== null && wait !== undefined && !waited && wait <= MAX_RETRY_AFTER_MS && Date.now() + wait < deadline) {
+        waited = true;
+        await sleep(wait);
+        continue;
+      }
+      break;
     }
   }
   return { ok: false, stop: NO_FREE_MODEL_STOP, attempts };
@@ -196,7 +284,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const cfg = loadRouting(root);
   if (argv.includes('--ping')) {
     const key = await keyInfo();
-    const r = await chatFree(cfg, { messages: [{ role: 'user', content: 'Reply with the single word: ok' }], max_tokens: 5 });
+    // A realistic budget: a reasoning model given 5 tokens always answers empty.
+    const r = await chatFree(cfg, { messages: [{ role: 'user', content: 'Reply with the single word: ok' }], max_tokens: 200, timeoutMs: 60000, totalBudgetMs: 120000 });
     const outcome = r.ok ? `FREE MODEL ANSWERED: ${r.model} (reported cost ${r.cost_reported ? r.cost : 'not reported'})` : `NAMED STOP: ${r.stop}`;
     console.log(`LLM ROUTER KEY ${JSON.stringify(key)}`);
     console.log(`LLM ROUTER RECEIPT ${JSON.stringify(receipt(cfg, { outcome, key, attempts: r.attempts }))}`);
