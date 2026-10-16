@@ -127,6 +127,8 @@ const HEADER = `<header class="site-header uh-header">
 const footer = (year) => `<footer class="site-footer uh-footer">
     <div class="uh-wrap uh-footer-row">
       <span>© ${year} The Industry Guides</span>
+      <a href="/insights/">Insights</a>
+      <a href="/atlas/">Atlas</a>
       <a href="/methodology">Methodology</a>
       <a href="/tools/">Tools</a>
       <a href="/glossary/">Glossary</a>
