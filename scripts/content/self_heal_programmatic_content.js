@@ -21,7 +21,7 @@ const SOURCE_DEFS={
   'SRC-MEDICAID-DENTAL-BENEFIT':{publisher:'Medicaid.gov',title:'Dental Care',url:'https://www.medicaid.gov/medicaid/benefits/dental-care/index.html',source_type:'federal_primary',authority_scope:'Federal dental benefit requirements and state-option context',retrieved_at:DATE},
   'SRC-ASPPB-LICENSING-BOARDS':{publisher:'Association of State and Provincial Psychology Boards',title:'Contact a Licensing Board',url:'https://www.asppb.net/page/BdContactNewPG',source_type:'regulatory_directory',authority_scope:'State psychology board, license verification, law, and rules links',retrieved_at:DATE},
   'SRC-FSMB-STATE-MEDICAL-BOARDS':{publisher:'Federation of State Medical Boards',title:'Contact a State Medical Board',url:'https://www.fsmb.org/contact-a-state-medical-board/',source_type:'regulatory_directory',authority_scope:'State medical board contact and official board website links',retrieved_at:DATE},
-  'SRC-ADA-STATE-DENTAL-BOARDS':{publisher:'American Dental Association',title:'Dental Licensure by State',url:'https://www.ada.org/resources/careers/licensure/dental-licensure-by-state',source_type:'regulatory_directory',authority_scope:'State dental board and licensure pathway discovery',retrieved_at:DATE}
+  'SRC-ADA-STATE-DENTAL-BOARDS':{publisher:'American Dental Association',title:'State Dental Boards',url:'https://www.ada.org/resources/careers/licensure/state-dental-boards',source_type:'regulatory_directory',authority_scope:'State dental board and licensure pathway discovery',retrieved_at:DATE}
 };
 
 const FAMILY={

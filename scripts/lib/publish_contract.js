@@ -343,6 +343,12 @@ function buildInsightInventory() {
     const cfg = VERTICAL_CONFIG[page.vertical];
     if (!cfg) continue;
     if (!page.cluster) continue;
+    // Senior living: the /senior-living/ hub's FAQ sections are not standalone
+    // insights. Its velocity pieces are the governed /senior-living/* family
+    // (validate_velocity_canonical_anchor_links.js pins each to its topic guide).
+    // The three insights minted from the hub FAQ were never admitted, so they and
+    // every link to them 404'd live (16 Oct 2026); the hub serves the same answers.
+    if (page.vertical === 'senior-living') continue;
     const pageSlug = String(page.slug || `/${cfg.basePath}/`);
     const pageLeaf = slugify(pageSlug.split('/').filter(Boolean).pop() || cfg.basePath);
     const explicitInsightPath = String(page.path || '');
