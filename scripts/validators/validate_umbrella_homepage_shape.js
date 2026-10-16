@@ -60,6 +60,41 @@ function visibleText(html) {
 
 function hrefs(html) { return [...String(html).matchAll(/<a\b[^>]*\bhref="([^"]*)"/gi)].map((m) => m[1]); }
 
+/**
+ * THE CONTACT LINK MUST BE A PLAIN MAILTO THAT A CRAWLER CAN READ.
+ *
+ * Cloudflare Email Address Obfuscation rewrites any mailto it finds into
+ * `/cdn-cgi/l/email-protection#<hex>` and recovers the address in JavaScript. A crawler
+ * does not run that JavaScript, so it follows a real link to a route that returns 404 —
+ * which is what Danielle's 16 Oct 2026 crawl of theindustryguides.com found on the
+ * homepage, the site's only mailto. Cloudflare's documented opt-out is to wrap the markup
+ * in `<!--email_off-->` ... `<!--/email_off-->`; scripts/lib/umbrella_homepage.js does.
+ *
+ * ASSERTS BOTH DIRECTIONS, because a "every mailto must be wrapped" check alone passes a
+ * page that lost the contact link altogether, and would have gone on passing if the
+ * generator ever dropped it:
+ *   - at least one mailto is present;
+ *   - no mailto survives outside the email_off markers;
+ *   - the obfuscated form is not baked into the source we publish.
+ */
+function checkContactMailto(html, label) {
+  const errors = [];
+  const s = String(html);
+  if (/cdn-cgi\/l\/email-protection/i.test(s)) {
+    errors.push(`${label}: a Cloudflare /cdn-cgi/l/email-protection link is in the published markup (404s for every crawler)`);
+  }
+  const mailtos = (s.match(/href="mailto:/gi) || []).length;
+  if (!mailtos) {
+    errors.push(`${label}: no contact mailto in the footer`);
+    return errors;
+  }
+  const unprotected = (s.replace(/<!--email_off-->[\s\S]*?<!--\/email_off-->/gi, '').match(/href="mailto:/gi) || []).length;
+  if (unprotected) {
+    errors.push(`${label}: ${unprotected} of ${mailtos} mailto link(s) sit outside <!--email_off-->, so Cloudflare rewrites them into a /cdn-cgi/l/email-protection link that 404s for crawlers`);
+  }
+  return errors;
+}
+
 /** Returns the list of failures for one rendered homepage. */
 function checkHtml(html, { inventories, ids, label = 'index.html' }) {
   const errors = [];
@@ -108,6 +143,7 @@ function checkHtml(html, { inventories, ids, label = 'index.html' }) {
   const text = visibleText(html);
   for (const re of BANNED_VISIBLE) if (re.test(text)) errors.push(`${label}: visible keyword-inventory grid ("${re.source}")`);
   if (/data-fanout-block="true"/.test(html)) errors.push(`${label}: visible fanout block present`);
+  errors.push(...checkContactMailto(html, label));
   return errors;
 }
 
@@ -136,7 +172,9 @@ function run(root = ROOT) {
 }
 
 // ---------------------------------------------------------------- self-test
-function goodPage(inventories, ids, { drop = null, extraBefore = '', mutateCard = null, tail = '', heroExtra = '' } = {}) {
+const GOOD_FOOTER = '<footer><!--email_off--><a href="mailto:hello@example.test">Contact</a><!--/email_off--></footer>';
+
+function goodPage(inventories, ids, { drop = null, extraBefore = '', mutateCard = null, tail = '', heroExtra = '', footer = GOOD_FOOTER } = {}) {
   const cards = ids.filter((id) => id !== drop).map((id) => {
     const inv = inventories.get(id);
     const qs = inv.guides.filter((g) => Number(g.http_status) === 200).slice(0, 3).map((g) => `<li><a href="${inv.origin}${g.path}">${g.title}</a></li>`).join('');
@@ -144,7 +182,8 @@ function goodPage(inventories, ids, { drop = null, extraBefore = '', mutateCard 
     if (mutateCard && mutateCard.id === id) card = mutateCard.fn(card, inv);
     return card;
   }).join('');
-  return `<html><body><main><section class="uh-hero" data-umbrella-home="true"><div><h1>Plain answers</h1><p>Pick your situation.</p>${heroExtra}</div></section>${extraBefore}<section id="vertical-routes" data-home-verticals="true">${cards}</section><section id="how"><h2>How every guide site works</h2></section>${tail}</main></body></html>`;
+  const foot = footer === null ? '' : footer;
+  return `<html><body><main><section class="uh-hero" data-umbrella-home="true"><div><h1>Plain answers</h1><p>Pick your situation.</p>${heroExtra}</div></section>${extraBefore}<section id="vertical-routes" data-home-verticals="true">${cards}</section><section id="how"><h2>How every guide site works</h2></section>${tail}</main>${foot}</body></html>`;
 }
 
 function selfTest(root = ROOT) {
@@ -163,6 +202,10 @@ function selfTest(root = ROOT) {
     { name: 'the visible "Related decision paths" grid fails', html: goodPage(inventories, ids, { tail: '<section class="card fanout-block" data-fanout-block="true"><h2>Related decision paths people also use</h2></section>' }), pass: false },
     { name: '"owned routes" text fails', html: goodPage(inventories, ids, { tail: '<section><p>Additional owned routes for this topic</p></section>' }), pass: false },
     { name: 'the grid kept only in a script (schema) passes', html: goodPage(inventories, ids, { tail: '<script type="application/ld+json">{"name":"Related decision paths"}</script>' }), pass: true },
+    { name: 'a contact mailto outside <!--email_off--> fails (Cloudflare would obfuscate it into a 404)', html: goodPage(inventories, ids, { footer: '<footer><a href="mailto:hello@example.test">Contact</a></footer>' }), pass: false },
+    { name: 'a footer with no contact mailto fails', html: goodPage(inventories, ids, { footer: '<footer><a href="/privacy">Privacy</a></footer>' }), pass: false },
+    { name: 'an already-obfuscated /cdn-cgi/l/email-protection link fails', html: goodPage(inventories, ids, { footer: '<footer><a href="/cdn-cgi/l/email-protection#462e">Contact</a></footer>' }), pass: false },
+    { name: 'one wrapped mailto beside one unwrapped mailto fails', html: goodPage(inventories, ids, { footer: '<footer><!--email_off--><a href="mailto:a@example.test">A</a><!--/email_off--><a href="mailto:b@example.test">B</a></footer>' }), pass: false },
   ];
   const failures = [];
   for (const c of cases) {

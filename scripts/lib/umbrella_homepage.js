@@ -124,6 +124,14 @@ const HEADER = `<header class="site-header uh-header">
     </div>
   </header>`;
 
+// The contact link is wrapped in Cloudflare's `<!--email_off-->` opt-out markers.
+// WITHOUT THEM Cloudflare Email Address Obfuscation rewrites the mailto into
+// `/cdn-cgi/l/email-protection#<hex>`, which is a real link to a route that 404s for
+// anything that does not run its JavaScript: every crawler, Ahrefs Site Audit included.
+// Danielle's 16 Oct 2026 crawl of theindustryguides.com found exactly that on the
+// homepage (the site's only mailto). The markers tell Cloudflare to leave the address
+// alone, so the link stays a plain mailto for readers and crawlers alike.
+// validate_umbrella_homepage_shape.js fails if a mailto on this page loses them.
 const footer = (year) => `<footer class="site-footer uh-footer">
     <div class="uh-wrap uh-footer-row">
       <span>© ${year} The Industry Guides</span>
@@ -136,7 +144,7 @@ const footer = (year) => `<footer class="site-footer uh-footer">
       <a href="/about">For providers</a>
       <a href="/disclaimer">Disclaimer</a>
       <a href="/privacy">Privacy</a>
-      <a href="mailto:hello@theindustryguides.com">Contact: hello@theindustryguides.com</a>
+      <!--email_off--><a href="mailto:hello@theindustryguides.com">Contact: hello@theindustryguides.com</a><!--/email_off-->
     </div>
     <p class="uh-wrap uh-byline muted small editorial-byline" data-editorial-byline="true">Published by <a href="/about">The Industry Guides Editorial Team</a>.</p>
   </footer>`;
@@ -224,4 +232,4 @@ function applyChrome(html, year) {
     .replace('</head>', `  ${HEAD_EXTRA}\n</head>`);
 }
 
-module.exports = { VERTICAL_CARDS, HERO_SUBLINE, HOW_STEPS, resolveCards, renderBody, applyChrome };
+module.exports = { VERTICAL_CARDS, HERO_SUBLINE, HOW_STEPS, resolveCards, renderBody, applyChrome, footer };

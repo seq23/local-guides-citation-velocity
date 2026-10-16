@@ -6,4 +6,12 @@ const sourceIds=new Set((sources.sources||[]).map(s=>s.source_id)); const claimI
 for(const s of sources.sources||[]){if(!/^https:\/\//.test(s.url))errors.push(`source_url:${s.source_id}`);if(!/^\d{4}-\d{2}-\d{2}$/.test(s.retrieved_at||''))errors.push(`source_retrieved:${s.source_id}`);if(!s.allowed_claim_classes?.length)errors.push(`source_claim_classes:${s.source_id}`)}
 for(const c of claims.claims||[]){for(const id of c.source_ids||[])if(!sourceIds.has(id))errors.push(`claim_unknown_source:${c.claim_id}:${id}`);if(!/^\d{4}-\d{2}-\d{2}$/.test(c.last_verified||''))errors.push(`claim_last_verified:${c.claim_id}`)}
 for(const p of pages.pages||[]){if(!p.full_scope_program)continue;for(const id of p.source_records||[])if(!sourceIds.has(id))errors.push(`page_unknown_source:${p.path||p.slug}:${id}`);for(const id of p.claim_ids||[])if(!claimIds.has(id))errors.push(`page_unknown_claim:${p.path||p.slug}:${id}`)}
-const report={validator:'evidence-registry',ok:!errors.length,sources:sourceIds.size,claims:claimIds.size,errors};fs.mkdirSync(path.join(ROOT,'artifacts','validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts','validation','evidence-registry.json'),JSON.stringify(report,null,2)+'\n');if(errors.length){console.error(errors.slice(0,50).join('\n'));process.exit(1)}console.log(`Evidence registry passed: ${sourceIds.size} sources and ${claimIds.size} full-scope claims.`);
+// Retired authority URLs: see scripts/lib/retired_authority_urls.js for the
+// retired/live pairs, the evidence behind each, and why the check is offline rather than a crawl.
+// Enforced here because a claim sourced to a URL that 404s is the root of a false public claim,
+// this validator's own hard_fail_basis, and because the repository caps blockers at 40.
+const retiredUrls=require('../lib/retired_authority_urls');
+{const st=retiredUrls.selfTest();for(const f of st.failures)errors.push(`retired_url_self_test:${f}`);
+ const r=retiredUrls.run();for(const e of r.errors)errors.push(`retired_url:${e}`);
+ if(!r.data_files||!r.html_files)errors.push('retired_url:inert: zero source files or zero rendered pages read');}
+const report={validator:'evidence-registry',ok:!errors.length,sources:sourceIds.size,claims:claimIds.size,errors};fs.mkdirSync(path.join(ROOT,'artifacts','validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts','validation','evidence-registry.json'),JSON.stringify(report,null,2)+'\n');if(errors.length){console.error(errors.slice(0,50).join('\n'));process.exit(1)}console.log(`Evidence registry passed: ${sourceIds.size} sources and ${claimIds.size} full-scope claims; ${retiredUrls.RETIRED.length} retired authority URL(s) pinned and absent.`);
