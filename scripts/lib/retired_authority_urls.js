@@ -28,6 +28,11 @@
 // files AND the rendered HTML:
 //   - a retired URL reappears anywhere;
 //   - a replacement URL is absent from the data files, which is how "fixed to nothing" would look.
+//   - a retired URL appears in any GENERATOR under scripts/ (every .js/.mjs/.cjs except this file).
+//     2026-10-17 the CMS repair above was undone by the nightly "velocity content release": its
+//     scripts/content/self_heal_programmatic_content.js hard-coded the dead URL in SOURCE_DEFS and
+//     re-upserted it into source_registry.json on every run. The data-file pin only saw that a day
+//     later, on main; scanning the generators fails the PR that leaves (or puts) a dead URL in one.
 // Both directions, because a one-sided check passes a registry whose row was deleted rather than
 // repaired. Self-tests prove each direction on synthetic text every run.
 const fs = require('fs');
@@ -102,6 +107,24 @@ function renderedFiles() {
   return out;
 }
 
+// Generators that write the files above. Scanned for retired URLs only (a replacement need not
+// appear in every script). This file is excluded because it names every retired URL on purpose.
+function generatorFiles() {
+  const out = [];
+  const self = path.resolve(__filename);
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name.startsWith('.') || e.name === 'node_modules') continue;
+      const abs = path.join(dir, e.name);
+      if (e.isDirectory()) walk(abs);
+      else if (/\.(c|m)?js$/.test(e.name) && path.resolve(abs) !== self) out.push(abs);
+    }
+  };
+  const scripts = path.join(ROOT, 'scripts');
+  if (fs.existsSync(scripts)) walk(scripts);
+  return out;
+}
+
 /** The pin, run over one haystack of {label -> text}. Returned so the self-test can drive it. */
 function check(texts, { requireLive = true } = {}) {
   const errors = [];
@@ -128,10 +151,16 @@ function selfTest() {
     { name: 'a missing replacement fails (fixed to nothing)',
       texts: [['synthetic', RETIRED.slice(1).map((r) => r.live).join('\n')]], pass: false },
     { name: 'an empty corpus fails rather than passing vacuously', texts: [['synthetic', '']], pass: false },
+    { name: 'a generator holding a retired URL fails even with no replacement required',
+      texts: [['scripts/synthetic_generator.js', `const SOURCE_DEFS={x:{url:'${row.retired}'}};`]],
+      requireLive: false, pass: false },
+    { name: 'a generator holding only live URLs passes',
+      texts: [['scripts/synthetic_generator.js', `const SOURCE_DEFS={x:{url:'${row.live}'}};`]],
+      requireLive: false, pass: true },
   ];
   const failures = [];
   for (const c of cases) {
-    const errs = check(c.texts);
+    const errs = check(c.texts, { requireLive: c.requireLive !== false });
     if (c.pass && errs.length) failures.push(`expected pass: ${c.name}: ${errs.join('; ')}`);
     if (!c.pass && !errs.length) failures.push(`expected failure: ${c.name}`);
   }
@@ -153,14 +182,17 @@ function run() {
   const html = renderedFiles().map((abs) => [path.relative(ROOT, abs), fs.readFileSync(abs, 'utf8')]);
   if (!html.length) errors.push('zero rendered HTML files found: the pin would be inert');
   errors.push(...check(html, { requireLive: false }));
-  return { errors, data_files: data.length, html_files: html.length };
+  const gens = generatorFiles().map((abs) => [path.relative(ROOT, abs), fs.readFileSync(abs, 'utf8')]);
+  if (!gens.length) errors.push('zero generator scripts found under scripts/: the generator pin would be inert');
+  errors.push(...check(gens, { requireLive: false }));
+  return { errors, data_files: data.length, html_files: html.length, generator_files: gens.length };
 }
 
 module.exports = { RETIRED, check, selfTest, run };
 
 if (require.main === module) {
   const st = selfTest();
-  const { errors, data_files, html_files } = run();
+  const { errors, data_files, html_files, generator_files } = run();
   const all = [...st.failures.map((f) => `self-test: ${f}`), ...errors];
   const evidence = {
     validator: 'retired-authority-urls',
@@ -168,6 +200,7 @@ if (require.main === module) {
     pinned_pairs: RETIRED.length,
     data_files,
     html_files,
+    generator_files,
     self_test_cases: st.cases,
     errors: all,
   };
@@ -175,5 +208,5 @@ if (require.main === module) {
   fs.writeFileSync(path.join(ROOT, 'artifacts', 'validation', 'retired-authority-urls.json'),
     JSON.stringify(evidence, null, 2) + '\n');
   if (all.length) { console.error(`RETIRED AUTHORITY URLS FAIL (${all.length})\n${all.join('\n')}`); process.exit(1); }
-  console.log(`retired authority URLs PASS: ${RETIRED.length} retired/live pairs pinned across ${data_files} source file(s) and ${html_files} rendered page(s), ${st.cases} self-test cases`);
+  console.log(`retired authority URLs PASS: ${RETIRED.length} retired/live pairs pinned across ${data_files} source file(s), ${html_files} rendered page(s) and ${generator_files} generator script(s), ${st.cases} self-test cases`);
 }
