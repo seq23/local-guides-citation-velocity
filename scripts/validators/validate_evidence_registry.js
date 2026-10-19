@@ -13,5 +13,5 @@ for(const p of pages.pages||[]){if(!p.full_scope_program)continue;for(const id o
 const retiredUrls=require('../lib/retired_authority_urls');
 {const st=retiredUrls.selfTest();for(const f of st.failures)errors.push(`retired_url_self_test:${f}`);
  const r=retiredUrls.run();for(const e of r.errors)errors.push(`retired_url:${e}`);
- if(!r.data_files||!r.html_files)errors.push('retired_url:inert: zero source files or zero rendered pages read');}
+ if(!r.data_files||!r.html_files||!r.generator_files)errors.push('retired_url:inert: zero source files, rendered pages or generator scripts read');}
 const report={validator:'evidence-registry',ok:!errors.length,sources:sourceIds.size,claims:claimIds.size,errors};fs.mkdirSync(path.join(ROOT,'artifacts','validation'),{recursive:true});fs.writeFileSync(path.join(ROOT,'artifacts','validation','evidence-registry.json'),JSON.stringify(report,null,2)+'\n');if(errors.length){console.error(errors.slice(0,50).join('\n'));process.exit(1)}console.log(`Evidence registry passed: ${sourceIds.size} sources and ${claimIds.size} full-scope claims; ${retiredUrls.RETIRED.length} retired authority URL(s) pinned and absent.`);
