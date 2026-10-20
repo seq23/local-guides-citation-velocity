@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-10-20T12:07:54.566Z",
+  "generated_at": "2026-10-20T16:20:28.206Z",
   "status": "PASS",
   "workflow_count": 11,
   "errors": [],
@@ -633,7 +633,7 @@
       "status": "PASS",
       "commands": [
         {
-          "command": "offset=$(TZ=America/Chicago date +%z)\nrun=true\nif [ \"$SCHEDULE\" = \"0 13 * * 1\" ] && [ \"$offset\" != \"-0500\" ]; then run=false; fi\nif [ \"$SCHEDULE\" = \"0 14 * * 1\" ] && [ \"$offset\" != \"-0600\" ]; then run=false; fi\necho \"run=$run\" >> \"$GITHUB_OUTPUT\"\necho \"schedule='${SCHEDULE:-dispatch}' chicago_offset=$offset run=$run\"",
+          "command": "offset=$(TZ=America/Chicago date +%z)\nrun=true\nif [ \"$SCHEDULE\" = \"0 13 * * 1\" ] && [ \"$offset\" != \"-0500\" ]; then run=false; fi\nif [ \"$SCHEDULE\" = \"0 14 * * 1\" ] && [ \"$offset\" != \"-0600\" ]; then run=false; fi\n# Catch-up crons: run only if this ISO week's report is missing on main.\nif [ \"$SCHEDULE\" = \"0 17,20,23 * * 1\" ] || [ \"$SCHEDULE\" = \"30 12 * * 0,2-6\" ]; then\nweek=$(date -u +%G-W%V)\nif gh api \"repos/$REPO/contents/reports/search_outcomes/$week.json?ref=main\" --silent 2>/dev/null; then\nrun=false; echo \"catch-up: $week report already on main\"\nelse\necho \"catch-up: $week report missing on main; running\"\nfi\nfi\necho \"run=$run\" >> \"$GITHUB_OUTPUT\"\necho \"schedule='${SCHEDULE:-dispatch}' chicago_offset=$offset run=$run\"",
           "status": "PASS",
           "checks": [],
           "direct_npm_scripts": [],
