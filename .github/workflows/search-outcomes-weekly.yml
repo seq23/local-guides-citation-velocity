@@ -8,10 +8,20 @@ name: Search Outcomes Weekly
 # validated commit of reports/search_outcomes/<ISO-week>.{md,json} and
 # data/discovery/<ISO-week>/ -> email to the owner (carries the Discovery table).
 # Without RESEND_API_KEY the email step is a NAMED STOP; everything else runs.
+#
+# Catch-up: the Monday run is the only writer of this week's report, and the
+# release gate (validate_search_outcomes_weekly_report.js) requires it on main
+# from Tuesday 00:00 UTC. On 2026-10-19 the Monday run failed on an unrelated
+# validator (fixed in #211 an hour later) and nothing re-ran it, so main went
+# red on Tuesday for a missing 2026-W43. The catch-up crons below run ONLY when
+# this ISO week's report is not on main: Monday afternoon retries land it before
+# the gate turns, and the daily one repairs any week that still slipped.
 on:
   schedule:
     - cron: "0 13 * * 1"
     - cron: "0 14 * * 1"
+    - cron: "0 17,20,23 * * 1"
+    - cron: "30 12 * * 0,2-6"
   workflow_dispatch:
 
 permissions:
@@ -35,11 +45,22 @@ jobs:
         id: guard
         env:
           SCHEDULE: ${{ github.event.schedule }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           offset=$(TZ=America/Chicago date +%z)
           run=true
           if [ "$SCHEDULE" = "0 13 * * 1" ] && [ "$offset" != "-0500" ]; then run=false; fi
           if [ "$SCHEDULE" = "0 14 * * 1" ] && [ "$offset" != "-0600" ]; then run=false; fi
+          # Catch-up crons: run only if this ISO week's report is missing on main.
+          if [ "$SCHEDULE" = "0 17,20,23 * * 1" ] || [ "$SCHEDULE" = "30 12 * * 0,2-6" ]; then
+            week=$(date -u +%G-W%V)
+            if gh api "repos/$REPO/contents/reports/search_outcomes/$week.json?ref=main" --silent 2>/dev/null; then
+              run=false; echo "catch-up: $week report already on main"
+            else
+              echo "catch-up: $week report missing on main; running"
+            fi
+          fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
           echo "schedule='${SCHEDULE:-dispatch}' chicago_offset=$offset run=$run"
       - uses: actions/checkout@v7
