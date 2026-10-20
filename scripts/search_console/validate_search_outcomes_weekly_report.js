@@ -136,6 +136,23 @@ if (report && (week >= '2026-W42' || String(report.schema_version) !== '1.0')) {
   }
 }
 
+// The Monday run is the only writer of the report this gate requires. A failed
+// Monday run with nothing to re-run it held main red for a week's report on
+// 2026-10-20 (W43). The workflow must keep a Monday catch-up that fires before
+// Tuesday 00:00 UTC and a daily catch-up, both guarded on the report being missing.
+{
+  const wf = fs.readFileSync(path.join(ROOT, '.github/workflows/search-outcomes-weekly.yml'), 'utf8');
+  const crons = [...wf.matchAll(/cron:\s*"([^"]+)"/g)].map((m) => m[1]);
+  const mondayCatchUp = crons.find((c) => { const [, h, , , dow] = c.split(/\s+/); return dow === '1' && h.split(',').some((x) => Number(x) > 14 && Number(x) <= 23); });
+  const dailyCatchUp = crons.find((c) => { const dow = c.split(/\s+/)[4]; return dow === '0,2-6'; });
+  if (!mondayCatchUp) errors.push('search-outcomes-weekly.yml has no Monday catch-up cron after 14:00 UTC: a failed Monday run leaves main red from Tuesday');
+  if (!dailyCatchUp) errors.push('search-outcomes-weekly.yml has no daily (Sun, Tue-Sat) catch-up cron: a week that slipped is never repaired');
+  for (const c of [mondayCatchUp, dailyCatchUp].filter(Boolean)) {
+    if (!wf.includes(`"$SCHEDULE" = "${c}"`)) errors.push(`search-outcomes-weekly.yml catch-up cron "${c}" is not routed through the report-missing guard`);
+  }
+  if (!/contents\/reports\/search_outcomes\/\$week\.json\?ref=main/.test(wf)) errors.push('search-outcomes-weekly.yml catch-up guard does not check this week\'s report on main');
+}
+
 const out = { validator: 'search-outcomes-weekly-report', discovery, ok: errors.length === 0, week, now: now.toISOString(),
   property_count: report && report.property_count, site_count: report && (report.sites || []).length, table_rows: tableRows, errors };
 fs.mkdirSync(path.join(ROOT, 'artifacts/validation'), { recursive: true });
