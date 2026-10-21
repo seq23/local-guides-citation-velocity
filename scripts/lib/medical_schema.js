@@ -104,8 +104,11 @@ function priceSpecificationNodes(slug) {
   const spec = costSpecForRoute(slug);
   if (!spec) return [];
   const currency = costSpecs().currency || 'USD';
+  // unitText is defined on UnitPriceSpecification, not PriceSpecification (Ahrefs,
+  // 14 Oct 2026: schema.org validation error on /dentistry/clear-aligners/ and
+  // /dentistry/dental-implants/). A row with a unit is a price per that unit.
   return spec.rows.map((row) => ({
-    '@type': 'PriceSpecification',
+    '@type': row.unit ? 'UnitPriceSpecification' : 'PriceSpecification',
     name: row.item,
     priceCurrency: currency,
     minPrice: Number(row.min),
@@ -144,7 +147,9 @@ function medicalWebPageNode({ siteBase, page, absUrl, dateModified }) {
   };
   if (prices.length && spec) {
     node.about = {
-      '@type': 'MedicalProcedure',
+      // offers is not a MedicalProcedure property; the procedure is also the
+      // Service the quoted prices are for, and Service carries offers.
+      '@type': ['MedicalProcedure', 'Service'],
       name: spec.procedure || spec.name || page.title,
       description: spec.intro || page.description,
       offers: {

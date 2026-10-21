@@ -35,10 +35,13 @@ const HOST = 'theindustryguides.com';
 
 // Directories that hold sources, generated bundles or archives rather than the
 // served site. Walking them would count links from HTML nobody is ever served.
+// medium-articles/ is NOT listed: its 14 pages are served, in the sitemap and answer
+// 200, so a walk that skipped them could neither see them orphaned nor follow
+// their links (21 Oct 2026).
 const NON_SITE_DIRS = new Set([
   'node_modules', '.git', '.build', '.github', 'dist', 'reports', 'staging', 'outputs',
   'content-bank', 'artifacts', 'logs', 'releases', 'proofs', 'docs', 'templates',
-  'medium-articles', 'data', 'scripts', 'seo', 'content', 'functions', '.clarity', 'atlas-src'
+  'data', 'scripts', 'seo', 'content', 'functions', '.clarity', 'atlas-src'
 ]);
 
 function normalizeRoute(value) {
@@ -176,11 +179,34 @@ function buildLinkGraph(root = ROOT) {
 
   const published = [...sitemapRoutes].filter((route) => isLive(route)).sort();
 
-  return { sitemapRoutes, redirected, rendered, indexable, outbound, inboundLive, inboundDead, isLive, published, resolve };
+  // REACHABLE FROM THE HOMEPAGE, not merely "linked from somewhere".
+  //
+  // Ahrefs, 14 Oct 2026, and the 21 Oct audit of the served tree: 17 sitemap pages
+  // had a live inbound link and were still unreachable, because every page linking
+  // to them was itself only linked from inside the same group (pairs like
+  // neurofeedback-for-adhd <-> neurofeedback-for-depression). An inbound count of
+  // one cannot see an island; a crawler entering at / never finds it. Reachability
+  // is a walk over live pages' links starting at the homepage.
+  const reachable = new Set();
+  if (isLive('/')) {
+    const queue = ['/'];
+    reachable.add('/');
+    while (queue.length) {
+      const route = queue.shift();
+      for (const target of outbound.get(route) || []) {
+        if (reachable.has(target) || !isLive(target)) continue;
+        reachable.add(target);
+        queue.push(target);
+      }
+    }
+  }
+
+  return { sitemapRoutes, redirected, rendered, indexable, outbound, inboundLive, inboundDead, isLive, published, resolve, reachable };
 }
 
 /**
- * Published pages that no live page links to.
+ * Published pages a crawler entering at / can never reach: nothing live links to
+ * them, or only pages that are themselves unreachable do (an island).
  *
  * `dead_inbound` names the pages that DO link to it but are not served, because that
  * distinction is the whole finding: "nothing links to it" and "the only thing that
@@ -190,10 +216,13 @@ function buildLinkGraph(root = ROOT) {
 function findOrphans(graph) {
   const orphans = [];
   for (const route of graph.published) {
+    if (route === '/' || graph.reachable.has(route)) continue;
     const live = graph.inboundLive.get(route) || new Set();
-    if (live.size > 0) continue;
     orphans.push({
       route,
+      // island: live pages DO link here, but none of them is reachable from / either.
+      kind: live.size > 0 ? 'island' : 'no_live_inbound',
+      live_inbound: [...live].sort(),
       dead_inbound: [...(graph.inboundDead.get(route) || new Set())].sort(),
     });
   }

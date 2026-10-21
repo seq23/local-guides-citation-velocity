@@ -20,6 +20,15 @@
  *      a figure the reader cannot see is deceptive markup, and it is the specific way
  *      a price-schema change goes wrong;
  *   5. every JSON-LD block on those pages parses.
+ *   6. SITEWIDE (Ahrefs, 14 Oct 2026: "Structured data has schema.org validation
+ *      error" on /dentistry/clear-aligners/ and /dentistry/dental-implants/ -
+ *      unitText on PriceSpecification, offers on MedicalProcedure): every JSON-LD
+ *      node on every served page uses a schema.org type that exists and only
+ *      properties schema.org defines for that type (data/schema/schemaorg_vocab.json,
+ *      vendored from the official release - validator.schema.org itself answers CI
+ *      with a CAPTCHA); and the fields Google requires are present: Question name +
+ *      acceptedAnswer.text, HowToStep text, ListItem position + name, Article headline,
+ *      and URL-only properties (isBasedOn, url) are absolute URLs.
  *
  * Rule 0: zero pages examined, or zero expected routes, is a hard failure.
  */
@@ -61,7 +70,9 @@ function typesIn(value, found = new Set()) {
 function nodesOfType(value, type, out = []) {
   if (Array.isArray(value)) { for (const v of value) nodesOfType(v, type, out); return out; }
   if (value && typeof value === 'object') {
-    if (value['@type'] === type) out.push(value);
+    const types = Array.isArray(value['@type']) ? value['@type'] : [value['@type']];
+    // UnitPriceSpecification IS a PriceSpecification (schema.org subclass).
+    if (types.includes(type) || (type === 'PriceSpecification' && types.includes('UnitPriceSpecification'))) out.push(value);
     for (const v of Object.values(value)) nodesOfType(v, type, out);
   }
   return out;
@@ -69,6 +80,64 @@ function nodesOfType(value, type, out = []) {
 function visibleText(html) {
   return String(html || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<[^>]+>/g, ' ')
     .replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ');
+}
+
+const VOCAB_REL = 'data/schema/schemaorg_vocab.json';
+const URL_ONLY_PROPERTIES = new Set(['isBasedOn', 'url', 'mainEntityOfPage', 'sameAs', 'logo']);
+
+// Rule 6: schema.org vocabulary + Google required fields on every served page.
+function sitewideStructuredData() {
+  const vocab = readJson(VOCAB_REL, null);
+  const out = { pages: 0, blocks: 0, nodes: 0, errors: [] };
+  if (!vocab || !vocab.classes || !vocab.properties) { out.errors.push({ file: VOCAB_REL, error: 'schema.org vocabulary missing; sitewide structured data is UNKNOWN' }); return out; }
+  const ancestors = new Map();
+  const ancestorsOf = (type) => {
+    if (ancestors.has(type)) return ancestors.get(type);
+    const seen = new Set();
+    const walk = (t) => { if (seen.has(t)) return; seen.add(t); for (const s of vocab.classes[t] || []) walk(s); };
+    walk(type);
+    ancestors.set(type, seen);
+    return seen;
+  };
+  const { servedHtmlFiles } = require('../lib/served_tree');
+  const err = (file, error) => out.errors.push({ file, error });
+  const visit = (node, file) => {
+    if (Array.isArray(node)) { for (const n of node) visit(n, file); return; }
+    if (!node || typeof node !== 'object') return;
+    const types = node['@type'] === undefined ? [] : (Array.isArray(node['@type']) ? node['@type'] : [node['@type']]);
+    if (types.length) out.nodes += 1;
+    const lineage = new Set();
+    for (const t of types) {
+      if (!vocab.classes[t]) err(file, `unknown schema.org type ${t}`);
+      else for (const a of ancestorsOf(t)) lineage.add(a);
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (key === '@graph') { visit(value, file); continue; }
+      if (key.startsWith('@')) continue;
+      const domain = vocab.properties[key];
+      if (!domain) { err(file, `unknown schema.org property ${key}`); continue; }
+      if (types.length && lineage.size && !domain.some((d) => lineage.has(d))) err(file, `property ${key} is not defined for ${types.join('|')}`);
+      if (URL_ONLY_PROPERTIES.has(key)) for (const v of [].concat(value)) if (typeof v === 'string' && !/^https?:\/\//.test(v)) err(file, `${key} is not an absolute URL: ${v}`);
+      visit(value, file);
+    }
+    const t = types[0];
+    if (t === 'Question' && (!node.name || !node.acceptedAnswer || !String(node.acceptedAnswer.text || '').trim())) err(file, 'Question without name or acceptedAnswer.text');
+    if (t === 'HowToStep' && !String(node.text || '').trim() && !node.itemListElement) err(file, 'HowToStep without text');
+    if (t === 'ListItem' && (node.position == null || !(node.name || (node.item && node.item.name) || typeof node.item === 'string'))) err(file, 'ListItem without position or name');
+    if ((t === 'Article' || t === 'NewsArticle' || t === 'BlogPosting') && !node.headline) err(file, `${t} without headline`);
+    if (t === 'FAQPage' && node.mainEntity !== undefined && ![].concat(node.mainEntity).length) err(file, 'FAQPage with empty mainEntity');
+  };
+  for (const abs of servedHtmlFiles(ROOT)) {
+    const file = path.relative(ROOT, abs);
+    if (file === '404.html') continue;
+    out.pages += 1;
+    const { blocks, parseErrors } = jsonLdBlocks(fs.readFileSync(abs, 'utf8'));
+    for (const e of parseErrors) err(file, `JSON-LD does not parse: ${e}`);
+    out.blocks += blocks.length;
+    for (const block of blocks) visit(block, file);
+  }
+  if (!out.pages || !out.blocks || !out.nodes) err('(site)', `zero ${!out.pages ? 'pages' : !out.blocks ? 'JSON-LD blocks' : 'typed nodes'} examined; sitewide structured data is UNKNOWN`);
+  return out;
 }
 
 function main() {
@@ -151,7 +220,8 @@ function main() {
     process.exit(1);
   }
 
-  const failures = missingMedical.length + wrongMedical.length + missingPrice.length + priceMismatch.length + invisiblePrice.length + parseFailures.length;
+  const sitewide = sitewideStructuredData();
+  const failures = missingMedical.length + wrongMedical.length + missingPrice.length + priceMismatch.length + invisiblePrice.length + parseFailures.length + sitewide.errors.length;
   fs.mkdirSync(rel('artifacts/validation'), { recursive: true });
   fs.writeFileSync(rel(OUT), `${JSON.stringify({
     schema_version: '1.0', validator: 'medical-schema-emission', status: failures ? 'FAIL' : 'PASS',
@@ -160,7 +230,8 @@ function main() {
     pages_checked: checked, price_routes_checked: priceRoutesChecked, pages_not_built: notBuilt.length,
     missing_medical_web_page: missingMedical, medical_web_page_on_non_medical_route: wrongMedical,
     missing_price_specification: missingPrice, price_mismatch: priceMismatch,
-    price_in_markup_not_visible_on_page: invisiblePrice, json_ld_parse_failures: parseFailures
+    price_in_markup_not_visible_on_page: invisiblePrice, json_ld_parse_failures: parseFailures,
+    sitewide_structured_data: { vocabulary: VOCAB_REL, pages_checked: sitewide.pages, json_ld_blocks: sitewide.blocks, typed_nodes: sitewide.nodes, error_count: sitewide.errors.length, errors: sitewide.errors.slice(0, 200), error_kinds: Object.fromEntries([...sitewide.errors.reduce((m, e) => m.set(e.error.replace(/: .*$/, ''), (m.get(e.error.replace(/: .*$/, '')) || 0) + 1), new Map())]) }
   }, null, 2)}\n`);
 
   if (failures) {
@@ -171,9 +242,12 @@ function main() {
     for (const f of priceMismatch.slice(0, 15)) console.error(`  PRICE MISMATCH ${JSON.stringify(f)}`);
     for (const f of invisiblePrice.slice(0, 15)) console.error(`  PRICE NOT VISIBLE ON PAGE ${JSON.stringify(f)}`);
     for (const f of parseFailures.slice(0, 10)) console.error(`  JSON-LD DOES NOT PARSE ${f.file}: ${f.errors.join('; ')}`);
+    const byError = new Map();
+    for (const e of sitewide.errors) { if (!byError.has(e.error)) byError.set(e.error, []); byError.get(e.error).push(e.file); }
+    for (const [error, files] of [...byError].slice(0, 20)) console.error(`  STRUCTURED DATA ${error} - ${files.length} page(s), first: ${files[0]}`);
     process.exit(1);
   }
-  console.log(`MEDICAL SCHEMA EMISSION PASS: ${checked} rendered page(s) parsed; MedicalWebPage on ${expectedMedical.length} medical hub route(s) and on none of ${expectedNotMedical.length} personal-injury route(s); PriceSpecification on ${priceRoutesChecked} costed route(s), every figure also visible on the page.`);
+  console.log(`MEDICAL SCHEMA EMISSION PASS: ${checked} rendered page(s) parsed; MedicalWebPage on ${expectedMedical.length} medical hub route(s) and on none of ${expectedNotMedical.length} personal-injury route(s); PriceSpecification on ${priceRoutesChecked} costed route(s), every figure also visible on the page; sitewide ${sitewide.nodes} typed JSON-LD node(s) in ${sitewide.blocks} block(s) on ${sitewide.pages} served page(s) valid against the schema.org vocabulary and Google's required fields.`);
 }
 
 main();

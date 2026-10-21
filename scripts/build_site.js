@@ -53,7 +53,7 @@ const { mergeAcceptedArtifacts } = require('./lib/accepted_artifacts');
 // HowTo were live everywhere, the medical types were emitted nowhere, and the citation
 // runs asked for them on every neuro and dentistry sweep since July.
 const { isMedicalHubRoute, medicalWebPageNode, costSpecificationTable, pageRoute } = require('./lib/medical_schema');
-const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
+const { atomHowToSteps, schemaHowToSteps, atomToCitationArtifact, buildDirectAnswer, deriveContentAtom, validateContentAtom } = require('./lib/content_atom');
 const { mergeSchema, networkSchemaNodes } = require('./lib/network_schema');
 const umbrellaHomepage = require('./lib/umbrella_homepage');
 const { applyAgentExactRepairsToPage } = require('./lib/agent_exact_repairs');
@@ -1059,7 +1059,7 @@ function buildProgrammaticPageSchemas({ siteBase, page, absUrl, sections }) {
       mainEntityOfPage: absUrl,
       datePublished: dateModified,
       dateModified,
-      author: { '@type':'Organization', name:'The Industry Guides Editorial Team', url: `${siteBase}/about.html` },
+      author: { '@type':'Organization', name:'The Industry Guides Editorial Team', url: `${siteBase}/about` },
       publisher: { '@id': `${siteBase}/#organization` },
       inLanguage:'en'
     },
@@ -1081,7 +1081,7 @@ function buildProgrammaticPageSchemas({ siteBase, page, absUrl, sections }) {
       description: `Use this page-specific decision artifact to work through ${page.title}.`,
       url: `${absUrl}#howto`,
       dateModified,
-      step: atomSteps.map((step, index) => ({ '@type':'HowToStep', position:index + 1, name:step.name, text:step.text }))
+      step: schemaHowToSteps(atomSteps)
     },
     {
       '@context':'https://schema.org',
@@ -3244,8 +3244,8 @@ ${m}`;
   llmsFull.push('');
   llmsFull.push('Publisher: The Industry Guides Editorial Team');
   llmsFull.push(`Site: ${siteBase}/`);
-  llmsFull.push(`Methodology: ${siteBase}/methodology.html`);
-  llmsFull.push(`About and authorship: ${siteBase}/about.html`);
+  llmsFull.push(`Methodology: ${siteBase}/methodology`);
+  llmsFull.push(`About and authorship: ${siteBase}/about`);
   llmsFull.push(`Sitemap: ${siteBase}/sitemap.xml`);
   llmsFull.push('');
   llmsFull.push('Scope: source-backed editorial decision support. Local provider discovery, current availability, local pricing, and transactional next steps belong to the registered canonical provider destination for each vertical.');
@@ -3290,12 +3290,28 @@ ${m}`;
   const isVerticalHub = (slug)=> ['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/','/senior-living/'].includes(slug);
   const isCore = (slug)=> slug === '/' || isVerticalHub(slug) || ['/tools/','/glossary/','/about.html','/methodology.html','/disclaimer.html','/privacy.html','/terms.html','/medium/','/insights/','/atlas/'].includes(slug);
 
-  const core = allUrls.filter(u=>isCore(u.slug));
-  const verticals = allUrls.filter(u=>isVerticalHub(u.slug));
-  const atlasUrls = allUrls.filter(u=>isAtlas(u.slug));
-  const clusterUrls = allUrls.filter(u=>isCluster(u.slug));
-  const insightUrls = allUrls.filter(u=>isInsight(u.slug));
-  const util = allUrls.filter(u=>isUtil(u.slug));
+  // ONE SITEMAP PER URL. Ahrefs, 14 Oct 2026: 448 "Page in multiple sitemaps".
+  // The children were built from overlapping predicates (/about.html matched core
+  // and util, the vertical hubs core and verticals, /atlas/ core and atlas) and
+  // sitemap_all.xml repeated every one of them, so every URL sat in two or three
+  // sitemaps. Each URL is now claimed by the FIRST predicate that matches, in this
+  // order, and whatever no predicate claims (root comparison pages,
+  // /medium-articles/**) goes to sitemap_pages.xml - so the split is a partition:
+  // complete without a catch-all copy, and validate_sitemap_parity.js fails any URL
+  // listed twice or not at all.
+  const sitemapPartition = [
+    { name: 'sitemap_core.xml', test: (slug) => isCore(slug) && !isVerticalHub(slug) },
+    { name: 'sitemap_verticals.xml', test: isVerticalHub },
+    { name: 'sitemap_atlas.xml', test: isAtlas },
+    { name: 'sitemap_clusters.xml', test: isCluster },
+    { name: 'sitemap_insights.xml', test: isInsight },
+    { name: 'sitemap_util.xml', test: isUtil },
+    { name: 'sitemap_pages.xml', test: () => true }
+  ];
+  const partitioned = new Map(sitemapPartition.map((part) => [part.name, []]));
+  for (const entry of allUrls) partitioned.get(sitemapPartition.find((part) => part.test(entry.slug)).name).push(entry);
+  const partitionedCount = [...partitioned.values()].reduce((n, list) => n + list.length, 0);
+  if (partitionedCount !== allUrls.length) throw new Error(`sitemap partition placed ${partitionedCount} of ${allUrls.length} URLs`);
   ensurePublishedUrlInventory(allUrls.map((entry) => ({
     url: entry.loc,
     path: entry.slug,
@@ -3313,28 +3329,17 @@ ${m}`;
   const SITEMAPS_DIR = path.join(ROOT, 'sitemaps');
 
   const now = allUrls.map((entry) => entry.lastmod).filter(Boolean).sort().at(-1) || nowISODate();
-  const files = [
-    {name:'sitemap_core.xml', xml: buildUrlset(core)},
-    {name:'sitemap_verticals.xml', xml: buildUrlset(verticals)},
-    {name:'sitemap_atlas.xml', xml: buildUrlset(atlasUrls)},
-    {name:'sitemap_clusters.xml', xml: buildUrlset(clusterUrls)},
-    {name:'sitemap_insights.xml', xml: buildUrlset(insightUrls)},
-    {name:'sitemap_util.xml', xml: buildUrlset(util)},
-    {name:'sitemap_all.xml', xml: buildUrlset(allUrls)}
-  ];
+  // Empty children are not written or indexed: an empty <urlset> advertises nothing.
+  const files = [...partitioned].filter(([, list]) => list.length).map(([name, list]) => ({ name, xml: buildUrlset(list) }));
+  // Children this build no longer writes (sitemap_all.xml, retired 21 Oct 2026, or a
+  // child whose partition emptied) are deleted so the served tree never keeps a stale
+  // sitemap that repeats URLs. /sitemaps/sitemap_all.xml 301s to /sitemap.xml.
+  for (const stale of fs.readdirSync(SITEMAPS_DIR).filter((f) => f.endsWith('.xml') && !files.some((x) => x.name === f))) fs.unlinkSync(path.join(SITEMAPS_DIR, stale));
   files.forEach(f=> writeUtf8(path.join(SITEMAPS_DIR, f.name), f.xml));
 
   // sitemap index (served at /sitemap.xml)
   const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     files
-      // sitemap_all.xml stays in the index on purpose. The split children are
-      // built from slug-prefix predicates (isCore/isCluster/isInsight/isUtil/...)
-      // that do not cover every publishable route: root-level comparison pages
-      // ("/trt-vs-peptide-therapy/") and "/medium-articles/**" match none of
-      // them, so 34 live URLs were reachable only via sitemap_all.xml and were
-      // therefore invisible to any crawler that entered through /sitemap.xml.
-      // Keeping the complete child in the index makes the categorisation gap
-      // non-fatal: a route that no predicate claims is still announced.
       .map(f=>`  <sitemap><loc>${htmlEscape(siteBase + '/sitemaps/' + f.name)}</loc><lastmod>${now}</lastmod></sitemap>`)
       .join('\n') +
     `\n</sitemapindex>\n`;

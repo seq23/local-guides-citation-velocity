@@ -154,7 +154,9 @@ function main() {
     const wanted = new Set(tokenize(orphan.route));
     const vertical = verticalOf(orphan.route);
     const ranked = graph.published
-      .filter((route) => route !== orphan.route && verticalOf(route) === vertical)
+      // A host must itself be reachable from /: adopting an island member onto
+      // another island member links it and leaves it just as unreachable.
+      .filter((route) => route !== orphan.route && verticalOf(route) === vertical && graph.reachable.has(route))
       .map((route) => {
         let overlap = 0;
         for (const token of hostTokens.get(route)) if (wanted.has(token)) overlap += 1;

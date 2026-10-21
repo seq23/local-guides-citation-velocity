@@ -1366,7 +1366,8 @@
       "failure_action": "stop release and repair",
       "depends_on": [],
       "requires_files": [
-        "dist/index.html"
+        "dist/index.html",
+        "scripts/lib/link_reachability.js"
       ],
       "prepare_commands": [
         "npm run build"
@@ -2743,7 +2744,7 @@
       ],
       "requires_files": [
         "data/release/frozen_page_registry.json",
-        "sitemaps/sitemap_all.xml",
+        "sitemap.xml",
         "docs/PAGE_RELEASE_LAW.md"
       ],
       "produces_files": [
@@ -3728,7 +3729,8 @@
       "risk_prevented": "Prevents the medical schema types the citation runs asked for from being declared but not emitted, and prevents price markup quoting a figure the reader cannot see. content/_live/pages.json carried a schema_eligibility.medical_web_page flag on 220 records that no code path read.",
       "requires_files": [
         "content/_live/pages.json",
-        "data/content/itemized_cost_specifications.json"
+        "data/content/itemized_cost_specifications.json",
+        "data/schema/schemaorg_vocab.json"
       ],
       "produces_files": [
         "artifacts/validation/medical-schema-emission.json"
@@ -3975,7 +3977,10 @@
       "evidence_file": "artifacts/validation/network-crawler-contract.json",
       "failure_action": "stop release and repair",
       "depends_on": [],
-      "requires_files": [],
+      "requires_files": [
+        "config/cloudflare/zone_cache_rules.json",
+        "_headers"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
@@ -5479,7 +5484,7 @@
       "requires_files": [
         "data/content/rendered_route_exclusions.json",
         "_redirects",
-        "sitemaps/sitemap_all.xml"
+        "sitemap.xml"
       ],
       "prepare_commands": [],
       "prepare_produces_files": [],
@@ -6366,7 +6371,9 @@
       "evidence_file": "artifacts/validation/sitemap-parity.json",
       "failure_action": "stop release and repair",
       "depends_on": [],
-      "requires_files": [],
+      "requires_files": [
+        "scripts/lib/sitemap_children.js"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
@@ -7709,7 +7716,7 @@
       "why_existing_checks_do_not_cover": "admission-reachability asks whether a released page is in the sitemap; all 18 orphans were. rendered-internal-hrefs asks whether the hrefs on a page resolve; every href on every host resolved. Neither asks whether any SERVED page carries a link to a given page, and neither discounts a link carried by a route that answers a redirect - which is the condition 15 of the 18 turned on.",
       "requires_files": [
         "_redirects",
-        "sitemaps/sitemap_all.xml",
+        "sitemap.xml",
         "data/content/internal_link_inbound_baseline.json"
       ],
       "produces_files": [
@@ -7755,7 +7762,7 @@
         "scripts/release/finalize_content_release.js",
         "data/release/orphan_adoption_assignments.json",
         "_redirects",
-        "sitemaps/sitemap_all.xml"
+        "sitemap.xml"
       ],
       "produces_files": [
         "artifacts/validation/promoted-route-inbound-link.json"

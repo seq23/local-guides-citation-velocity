@@ -8,31 +8,34 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-/*.html
-  Cache-Control: public, max-age=300, s-maxage=3600
-
+# HTML pages: one Cache-Control per URL, with s-maxage so the zone cache can hold
+# them (config/cloudflare/zone_cache_rules.json makes HTML cache-eligible at all;
+# without that rule every page answered cf-cache-status: DYNAMIC). Pages joins the
+# values of every rule a URL matches, so these patterns must not overlap:
+#   /                  the homepage
+#   /*/                every directory route (hubs, guides, questions, atlas, ...)
+#   /insights/:slug    the extensionless insight pages
+#   /about ...         the extensionless root pages
+# validate_network_crawler_contract.js checks every served URL gets exactly one.
 /
   Cache-Control: public, max-age=300, s-maxage=3600
 
-/personal-injury/*
+/*/
   Cache-Control: public, max-age=300, s-maxage=3600
 
-/dentistry/*
+/insights/:slug
   Cache-Control: public, max-age=300, s-maxage=3600
 
-/trt/*
+/about
   Cache-Control: public, max-age=300, s-maxage=3600
 
-/neuro/*
+/methodology
   Cache-Control: public, max-age=300, s-maxage=3600
 
-/uscis-medical/*
+/privacy
   Cache-Control: public, max-age=300, s-maxage=3600
 
-/tools/*
-  Cache-Control: public, max-age=300, s-maxage=3600
-
-/glossary/*
+/disclaimer
   Cache-Control: public, max-age=300, s-maxage=3600
 
 /sitemap.xml

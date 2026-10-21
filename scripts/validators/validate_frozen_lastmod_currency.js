@@ -44,7 +44,8 @@ const { loadRegistry, acceptedHtmlForRoute, declaredDatesInHtml, acceptedLastmod
 
 const ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE = path.join(ROOT, 'artifacts/validation/frozen-lastmod-currency.json');
-const SITEMAPS = ['sitemaps/sitemap_all.xml', 'sitemap.xml'];
+// The children sitemap.xml names (a partition since 21 Oct 2026; sitemap_all.xml retired).
+const SITEMAPS = [...require('../lib/sitemap_children').readSitemapChildren(ROOT).children, 'sitemap.xml'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 // The sitemap publishes /about and /insights/foo for the routes the registry
 // knows as /about.html and /insights/foo.html; both sides compare on this key.
