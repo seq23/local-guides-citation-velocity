@@ -24,8 +24,11 @@ async function cf(method, url, body) {
   return { status: res.status, json };
 }
 const owned = (rule) => CONFIG.rules.some((r) => r.ref === rule.ref);
+// The API returns action_parameters with its own key order; compare canonically.
+const canonical = (v) => (Array.isArray(v) ? v.map(canonical) : v && typeof v === 'object'
+  ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
 const same = (live, want) => live && live.expression === want.expression && live.action === want.action && live.enabled === want.enabled
-  && JSON.stringify(live.action_parameters) === JSON.stringify(want.action_parameters);
+  && JSON.stringify(canonical(live.action_parameters)) === JSON.stringify(canonical(want.action_parameters));
 
 async function main() {
   if (!TOKEN) { console.error('CLOUDFLARE_API_TOKEN is not set; inject it from the vault.'); process.exit(2); }
