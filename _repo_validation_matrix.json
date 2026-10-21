@@ -1,7 +1,7 @@
 {
   "schema_version": "3.0",
   "generated_from": "_validation_registry.json",
-  "registry_sha256": "ed9c19aeefe10913941197f332e2be66eb853b0fd7fc9122382988765f6f106f",
+  "registry_sha256": "563eb9f678b128300811708d5ba162916bbcbc687d6b196b3f6d37974c4518da",
   "authority": "Generated executable projection. Edit _validation_registry.json, then run npm run validation:matrix.",
   "lineage_policy": {
     "authority": "_validation_registry.json is the executable source of truth for validation selection, dependency order, prerequisites, outputs, severity, and mutation boundaries.",
@@ -1441,7 +1441,8 @@
         "command": "node scripts/validate_canonical_domains.js",
         "depends_on": [],
         "requires_files": [
-          "dist/index.html"
+          "dist/index.html",
+          "scripts/lib/link_reachability.js"
         ],
         "prepare_commands": [
           "npm run build"
@@ -1931,7 +1932,8 @@
         "depends_on": [],
         "requires_files": [
           "content/_live/pages.json",
-          "data/content/itemized_cost_specifications.json"
+          "data/content/itemized_cost_specifications.json",
+          "data/schema/schemaorg_vocab.json"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
@@ -1968,7 +1970,10 @@
         "path": "scripts/validators/validate_network_crawler_contract.js",
         "command": "node scripts/validators/validate_network_crawler_contract.js",
         "depends_on": [],
-        "requires_files": [],
+        "requires_files": [
+          "config/cloudflare/zone_cache_rules.json",
+          "_headers"
+        ],
         "prepare_commands": [],
         "prepare_produces_files": [],
         "prepare_mutates_files": [],
@@ -2685,7 +2690,9 @@
         "path": "scripts/validate_sitemap_parity.js",
         "command": "node scripts/validate_sitemap_parity.js",
         "depends_on": [],
-        "requires_files": [],
+        "requires_files": [
+          "scripts/lib/sitemap_children.js"
+        ],
         "prepare_commands": [],
         "prepare_produces_files": [],
         "prepare_mutates_files": [],
@@ -9516,7 +9523,8 @@
         "depends_on": [],
         "requires_files": [
           "content/_live/pages.json",
-          "data/content/itemized_cost_specifications.json"
+          "data/content/itemized_cost_specifications.json",
+          "data/schema/schemaorg_vocab.json"
         ],
         "prepare_commands": [],
         "prepare_produces_files": [],
@@ -11903,7 +11911,10 @@
         "path": "scripts/validators/validate_network_crawler_contract.js",
         "command": "node scripts/validators/validate_network_crawler_contract.js",
         "depends_on": [],
-        "requires_files": [],
+        "requires_files": [
+          "config/cloudflare/zone_cache_rules.json",
+          "_headers"
+        ],
         "prepare_commands": [],
         "prepare_produces_files": [],
         "prepare_mutates_files": [],
@@ -12139,7 +12150,9 @@
         "path": "scripts/validate_sitemap_parity.js",
         "command": "node scripts/validate_sitemap_parity.js",
         "depends_on": [],
-        "requires_files": [],
+        "requires_files": [
+          "scripts/lib/sitemap_children.js"
+        ],
         "prepare_commands": [],
         "prepare_produces_files": [],
         "prepare_mutates_files": [],
@@ -14748,7 +14761,8 @@
         "command": "node scripts/validate_canonical_domains.js",
         "depends_on": [],
         "requires_files": [
-          "dist/index.html"
+          "dist/index.html",
+          "scripts/lib/link_reachability.js"
         ],
         "prepare_commands": [
           "npm run build"
