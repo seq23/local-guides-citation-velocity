@@ -392,6 +392,15 @@ function buildDirectAnswer(title, answer, maxWords = 70, atom = null) {
   return summary.replace(/\s+([,.!?;:])/g, '$1');
 }
 
+// HowToStep nodes for JSON-LD. A step with no text is dropped rather than emitted as
+// `text: ""`: Google and the schema.org validator both reject a HowToStep without
+// text, and inventing text the page does not show is worse. Ahrefs, 14 Oct 2026.
+function schemaHowToSteps(steps) {
+  return (steps || [])
+    .filter((step) => step && String(step.text || '').trim())
+    .map((step, index) => ({ '@type': 'HowToStep', position: index + 1, name: step.name, text: step.text }));
+}
+
 function atomHowToSteps(atom) {
   if (!atom) return [];
   if (atom.type === 'named_framework') return atom.steps.map((step) => ({ name: step.label, text: step.action }));
@@ -406,6 +415,7 @@ function atomHowToSteps(atom) {
 module.exports = {
   ALLOWED_ATOM_TYPES,
   atomHowToSteps,
+  schemaHowToSteps,
   atomToCitationArtifact,
   buildDirectAnswer,
   deriveContentAtom,

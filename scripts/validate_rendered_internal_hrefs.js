@@ -81,6 +81,28 @@ function routeOfFile(rel) {
   return '/' + rel.replace(/\.html$/, '');
 }
 
+// A redirecting target, wherever a served page or the sitemap names it. Anchors were
+// graded from 25 Sep 2026; the JSON-LD on every page still named
+// https://theindustryguides.com/about.html (a 308) as the author URL on 2,136 pages
+// until 21 Oct 2026, because structured data, <meta content> and sitemap <loc>
+// values are not href/src attributes and were never looked at.
+function redirectIssue(target) {
+  if (redirectSources.has(slashless(target))) return 'is a _redirects source (answers 301)';
+  if (/\.html$/i.test(target) && !/\/index\.html$/i.test(target) && target !== '/404.html') return `is the .html form (Pages answers 308 to ${target.replace(/\.html$/i, '')})`;
+  if (/\/index\.html$/i.test(target)) return `is the /index.html form (Pages answers 308 to ${target.replace(/index\.html$/i, '')})`;
+  return null;
+}
+let nonAnchorUrlsChecked = 0;
+function gradeSelfUrls(text, relFile, where, errorsOut) {
+  for (const m of String(text).matchAll(/https?:\/\/(?:www\.)?theindustryguides\.com(\/[^"'\s<>\\]*)?/gi)) {
+    const target = (m[1] || '/').split('#')[0].split('?')[0];
+    if (/\.(xml|txt|json|png|jpe?g|svg|ico|webmanifest|css|js)$/i.test(target)) continue;
+    nonAnchorUrlsChecked += 1;
+    const issue = redirectIssue(target);
+    if (issue) errorsOut.push({ file: relFile, href: m[0], issue: `${where} URL ${issue}` });
+  }
+}
+
 const errors = [];
 let checked = 0;
 let servedPagesChecked = 0;
@@ -90,6 +112,10 @@ for (const file of htmlFiles) {
   const html = fs.readFileSync(file,'utf8');
   const served = servedRoutes.has(routeOfFile(relFile));
   if (served) servedPagesChecked += 1;
+  if (served) {
+    for (const m of html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)) gradeSelfUrls(m[1], relFile, 'JSON-LD', errors);
+    for (const m of html.matchAll(/<meta\b[^>]*content="(https?:\/\/(?:www\.)?theindustryguides\.com[^"]*)"[^>]*>/gi)) gradeSelfUrls(m[1], relFile, 'meta content', errors);
+  }
   if (html.includes('{{')) errors.push({ file: relFile, href: 'UNRESOLVED_TEMPLATE_TOKEN', issue: 'possible unresolved template token' });
   for (const { attr, value } of extractAttrs(html)) {
     const raw = value.trim();
@@ -109,19 +135,24 @@ for (const file of htmlFiles) {
     servedLinksChecked += 1;
     const target = href.split('#')[0].split('?')[0];
     if (!target) continue;
-    if (redirectSources.has(slashless(target))) errors.push({ file: relFile, href: raw, issue: 'internal target is a _redirects source (answers 301)' });
-    else if (/\.html$/i.test(target) && !/\/index\.html$/i.test(target) && target !== '/404.html') errors.push({ file: relFile, href: raw, issue: `internal target is the .html form (Pages answers 308 to ${target.replace(/\.html$/i, '')})` });
-    else if (/\/index\.html$/i.test(target)) errors.push({ file: relFile, href: raw, issue: `internal target is the /index.html form (Pages answers 308 to ${target.replace(/index\.html$/i, '')})` });
+    const issue = redirectIssue(target);
+    if (issue) errors.push({ file: relFile, href: raw, issue: `internal target ${issue}` });
   }
+}
+// Sitemap <loc> values: a sitemap entry that redirects is a 3XX a crawler is told to fetch.
+for (const rel of ['sitemap.xml', ...(fs.existsSync(path.join(ROOT, 'sitemaps')) ? fs.readdirSync(path.join(ROOT, 'sitemaps')).filter((n) => n.endsWith('.xml')).map((n) => `sitemaps/${n}`) : [])]) {
+  if (!fs.existsSync(path.join(ROOT, rel))) continue;
+  for (const m of fs.readFileSync(path.join(ROOT, rel), 'utf8').matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)) gradeSelfUrls(m[1], rel, 'sitemap <loc>', errors);
 }
 // Rule 0: a check that examined nothing has not passed.
 const stops = [];
 if (!checked) stops.push('0 href/src values were examined: the tree is unbuilt or the walk found no HTML.');
 if (!servedRoutes.size) stops.push('no sitemap route could be read (sitemap.xml and sitemaps/*.xml), so no served page was graded for redirecting links.');
 if (!servedPagesChecked || !servedLinksChecked) stops.push(`served-page link check examined ${servedPagesChecked} page(s) and ${servedLinksChecked} link(s); a sitemap whose routes resolve to no rendered file graded nothing.`);
+if (!nonAnchorUrlsChecked) stops.push('0 JSON-LD / meta / sitemap URLs were examined for redirects.');
 if (!redirectSources.size) stops.push('_redirects is missing or empty, so no link could be tested against a redirect source.');
 fs.mkdirSync(path.join(ROOT,'artifacts','validation'), { recursive:true });
-fs.writeFileSync(path.join(ROOT,'artifacts','validation','hrefs.json'), JSON.stringify({ validator:'rendered-internal-hrefs', ok:errors.length===0 && !stops.length, checked, served_pages_checked: servedPagesChecked, served_links_checked: servedLinksChecked, redirect_sources: redirectSources.size, error_count:errors.length, stops, errors }, null, 2)+'\n');
+fs.writeFileSync(path.join(ROOT,'artifacts','validation','hrefs.json'), JSON.stringify({ validator:'rendered-internal-hrefs', ok:errors.length===0 && !stops.length, checked, served_pages_checked: servedPagesChecked, served_links_checked: servedLinksChecked, non_anchor_urls_checked: nonAnchorUrlsChecked, redirect_sources: redirectSources.size, error_count:errors.length, stops, errors }, null, 2)+'\n');
 if (stops.length) { console.error('[validate_rendered_internal_hrefs] STOP - nothing was graded:'); for (const s of stops) console.error(`- ${s}`); process.exit(1); }
 if (errors.length) { console.error(`[validate_rendered_internal_hrefs] ${errors.length} rendered href issues found.`); console.error(errors.slice(0,50).map(e=>`${e.file} -> ${e.href} (${e.issue})`).join('\n')); process.exit(1); }
-console.log(`[validate_rendered_internal_hrefs] OK. Checked ${checked} rendered href/src values; ${servedLinksChecked} links on ${servedPagesChecked} served pages point at no redirect (${redirectSources.size} redirect sources).`);
+console.log(`[validate_rendered_internal_hrefs] OK. Checked ${checked} rendered href/src values; ${servedLinksChecked} links on ${servedPagesChecked} served pages point at no redirect, nor do ${nonAnchorUrlsChecked} JSON-LD, meta and sitemap URLs (${redirectSources.size} redirect sources).`);

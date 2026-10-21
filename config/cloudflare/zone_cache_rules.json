@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "zone": "theindustryguides.com",
+  "phase": "http_request_cache_settings",
+  "applied_by": "scripts/cloudflare/apply_zone_cache_rules.js",
+  "why": "Cloudflare Pages serves static HTML without the zone cache: every page answered cf-cache-status: DYNAMIC and paid the full Pages round trip on every request (Ahrefs 14 Oct 2026: 41 slow pages, 9 slow responses to AI crawlers; TTFB 541-835 ms in their crawl). This rule makes the site's GET responses cache-eligible; how long each is held comes from the Cache-Control the repo's _headers file sets (s-maxage), so _headers stays the one place that decides freshness. /api/ (Pages Functions: lead capture, click tracking) is excluded and stays dynamic.",
+  "smart_tiered_cache": true,
+  "rules": [
+    {
+      "ref": "tig_static_edge_cache",
+      "description": "theindustryguides.com static pages and assets: cache-eligible, TTL from origin Cache-Control; /api/ stays dynamic",
+      "expression": "(http.host eq \"theindustryguides.com\" and not starts_with(http.request.uri.path, \"/api/\"))",
+      "action": "set_cache_settings",
+      "action_parameters": {
+        "cache": true,
+        "edge_ttl": { "mode": "respect_origin" },
+        "browser_ttl": { "mode": "respect_origin" }
+      },
+      "enabled": true
+    }
+  ]
+}

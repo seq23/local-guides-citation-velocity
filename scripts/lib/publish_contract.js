@@ -10,7 +10,7 @@ function ensureMetaDescription(desc, title) {
 
 const { renderCitationVelocityArtifacts } = require('./citation_velocity_artifacts');
 const { mergeAcceptedArtifacts } = require('./accepted_artifacts');
-const { atomHowToSteps, atomToCitationArtifact, buildDirectAnswer, validateContentAtom } = require('./content_atom');
+const { atomHowToSteps, schemaHowToSteps, atomToCitationArtifact, buildDirectAnswer, validateContentAtom } = require('./content_atom');
 const { LEDGER_PATH, applyAgentExactRepairsToInsightItem } = require('./agent_exact_repairs');
 const { headingFor } = require('./answer_shape');
 const { mergeSchema } = require('./network_schema');
@@ -618,9 +618,13 @@ function renderInsightPageBody(item) {
         mainEntityOfPage: pageUrl,
         datePublished: dateModified,
         dateModified,
+        // The byline every insight page shows ("The Industry Guides Editorial Team"),
+        // the same author node the programmatic pages carry.
+        author: { '@type': 'Organization', name: 'The Industry Guides Editorial Team', url: `${SITE_BASE}/about` },
         publisher: { '@type': 'Organization', name: 'The Industry Guides', url: SITE_BASE },
         about: canonicalTargetUrl,
-        isBasedOn: item.source_route
+        // isBasedOn is a URL property: a bare route ("/dentistry/") is not one.
+        isBasedOn: /^https?:\/\//.test(String(item.source_route || '')) ? item.source_route : `${SITE_BASE}${item.source_route}`
       },
       {
         '@type': 'FAQPage',
@@ -633,7 +637,7 @@ function renderInsightPageBody(item) {
         name: item.content_atom.title,
         description: `Use this page-specific decision artifact to work through ${item.title}.`,
         dateModified,
-        step: howToSteps.map((step, index) => ({ '@type': 'HowToStep', position: index + 1, name: step.name, text: step.text }))
+        step: schemaHowToSteps(howToSteps)
       },
       {
         '@type': 'BreadcrumbList',
