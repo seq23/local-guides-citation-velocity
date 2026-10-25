@@ -42,6 +42,12 @@ const errors = [];
   const r = require('child_process').spawnSync('python3', ['-I', '-B', 'scripts/tests/test_senior_funnel_row.py'], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, SENIOR_TICK_TOKEN: '' } });
   if (r.status !== 0) errors.push(`senior funnel row fixture test failed: ${(r.stderr || r.stdout || r.error || '').toString().trim().split('\n').slice(-3).join(' | ')}`);
 }
+// The RED rule (sustained, material drop; not weekly noise) and the coverage repo
+// list are proved against fixtures on every run too.
+{
+  const r = require('child_process').spawnSync('python3', ['-I', '-B', 'scripts/tests/test_search_outcomes_red_rule.py'], { cwd: ROOT, encoding: 'utf8' });
+  if (r.status !== 0) errors.push(`search outcome RED rule fixture test failed: ${(r.stderr || r.stdout || r.error || '').toString().trim().split('\n').slice(-3).join(' | ')}`);
+}
 
 function isoWeek(d) {
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
