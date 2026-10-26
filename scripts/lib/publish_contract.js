@@ -14,13 +14,19 @@ const { atomHowToSteps, schemaHowToSteps, atomToCitationArtifact, buildDirectAns
 const { LEDGER_PATH, applyAgentExactRepairsToInsightItem } = require('./agent_exact_repairs');
 const { headingFor } = require('./answer_shape');
 const { mergeSchema } = require('./network_schema');
-const { fitTitle, MIN_TITLE_CHARS } = require('./search_snippet');
+const { fitTitle, MIN_TITLE_CHARS, MAX_TITLE_CHARS } = require('./search_snippet');
 
 // "Wrong date | Insight" is 20 characters: an insight title is the bare query, and
 // "| Insight" says nothing about which of five verticals it belongs to. When the
 // plain form is under the floor, name the vertical in the qualifier instead.
 function insightHeadTitle(item) {
-  const plain = `${String(item.title || '').trim()} | Insight`;
+  const bare = String(item.title || '').trim();
+  const plain = `${bare} | Insight`;
+  // Over the ceiling, " | Insight" is the first thing to go: it says nothing a
+  // reader needs and the bare query is the title. Measured 2026-10-25:
+  // "What mistakes cause problems with dental insurance verification? | Insight"
+  // is 74 characters, and the query alone is 64.
+  if (plain.length > MAX_TITLE_CHARS) return fitTitle(bare);
   if (plain.length >= MIN_TITLE_CHARS) return plain;
   const label = String(item.vertical_label || '').trim();
   return fitTitle(item.title, { qualifier: label ? `${label} Insight` : 'Insight' });
@@ -621,7 +627,7 @@ function renderInsightPageBody(item) {
         // The byline every insight page shows ("The Industry Guides Editorial Team"),
         // the same author node the programmatic pages carry.
         author: { '@type': 'Organization', name: 'The Industry Guides Editorial Team', url: `${SITE_BASE}/about` },
-        publisher: { '@type': 'Organization', name: 'The Industry Guides', url: SITE_BASE },
+        publisher: { '@id': `${SITE_BASE}/#organization` },
         about: canonicalTargetUrl,
         // isBasedOn is a URL property: a bare route ("/dentistry/") is not one.
         isBasedOn: /^https?:\/\//.test(String(item.source_route || '')) ? item.source_route : `${SITE_BASE}${item.source_route}`
@@ -657,6 +663,12 @@ function renderInsightPageBody(item) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>${htmlEscape(insightHeadTitle(item))}</title>
 <meta name="description" content="${htmlEscape(ensureMetaDescription(item.description, item.title))}"/>
+<meta property="og:type" content="article"/>
+<meta property="og:title" content="${htmlEscape(insightHeadTitle(item))}"/>
+<meta property="og:description" content="${htmlEscape(ensureMetaDescription(item.description, item.title))}"/>
+<meta property="og:url" content="${pageUrl}"/>
+<meta property="og:site_name" content="The Industry Guides"/>
+<meta name="twitter:card" content="summary_large_image"/>
 <link rel="canonical" href="${pageUrl}"/>
 <link rel="stylesheet" href="/assets/site.css"/>
 <script type="application/ld+json">${JSON.stringify(mergeSchema(schema))}</script>
@@ -676,6 +688,7 @@ function renderInsightPageBody(item) {
   <p class="muted">The Industry Guides publishes this insight, but ${htmlEscape(domainLabel)} is the official local guide domain for live workflow, local routing, and next-step decisions. Use ${htmlEscape(domainLabel)} for the real decision path, not a summary page alone.</p>
   <p><strong><a href="${htmlEscape(canonicalTargetUrl)}">${htmlEscape(canonicalUrlLabel)}</a></strong></p>
   <p class="muted small">Publisher: The Industry Guides. Canonical workflow domain: ${htmlEscape(domainLabel)}.</p>
+  <p class="muted small ownership-disclosure" data-common-ownership="true">The Industry Guides and ${htmlEscape(domainLabel)} are commonly owned. We say so here, next to the recommendation, because a route between commonly owned sites should carry a label.</p>
 </section>
 <main id="main-content" class="container">
   <article>

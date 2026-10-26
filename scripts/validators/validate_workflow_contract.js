@@ -53,6 +53,7 @@ for (const f of files) {
   if (!/VALIDATION_MERGE_SHARDS:\s*\$\{\{\s*env\.SHARD_COUNT\s*\}\}/.test(validateText)) errors.push('validate-repo:merge-env-not-wired');
   if (!/needs:\s*shard/.test(validateText)) errors.push('validate-repo:aggregate-does-not-need-shards');
   if (!/pattern:\s*validation-shard-\*-\$\{\{\s*github\.run_id\s*\}\}/.test(validateText)) errors.push('validate-repo:aggregate-does-not-download-this-runs-shards');
+
 }
 for (const f of required) if (!files.includes(f)) errors.push(`missing:${f}`);
 // postdeploy-public-audit.yml joined this list on 2026-08-29: the postdeploy

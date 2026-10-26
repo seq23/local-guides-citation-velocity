@@ -7,7 +7,9 @@ Usage: gsc_portfolio_report.py [--mode report|sitemaps|coverage|analytics] [out_
 report   (default) 28 complete days (ending 3 days ago, Search Console's data lag)
          of totals, top 25 queries by impressions, and page counts / top 10 pages.
 sitemaps sitemaps.list per property; discovers the live sitemaps (robots.txt
-         Sitemap: lines, else /sitemap.xml, following sitemap-index children) and
+         Sitemap: lines, else /sitemap.xml, following sitemap-index children),
+         sitemaps.delete every submitted sitemap the site no longer serves (a
+         retired sitemap reports its own 404 as an error for ever), and
          sitemaps.submit every one that is not listed or whose last submission
          errored; re-lists and records before/after state. Writes to Search
          Console only; never to the repo.
@@ -179,6 +181,7 @@ def run_sitemaps(out_dir):
             rec.update({"listed_before": sorted(before), "discovered": found, "discovery_notes": notes,
                         "sitemap_page_urls": len(pages)})
             submitted, submit_errors = [], {}
+            retired, retire_errors = [], {}
             foreign = [u for u in found if not in_property(site, u)]
             for url in found:
                 prior = before.get(url)
@@ -190,6 +193,34 @@ def run_sitemaps(out_dir):
                         submitted.append(url)
                     except Exception as exc:
                         submit_errors[url] = str(exc)[:300]
+            # A sitemap the site no longer publishes stays submitted for ever and
+            # counts its own 404 as an error. theindustryguides.com retired
+            # sitemap_util.xml and sitemap_all.xml (#217 replaced them with
+            # sitemap_pages.xml); sitemap_util.xml kept a 7 Apr 2026 submission,
+            # answered 404 from then on, and reported "1 errors" to every
+            # Search Readiness run. The loop above made it worse: errors > 0 meant
+            # it was re-submitted on every pass, so the error could never clear.
+            #
+            # Retire it instead, and only when the URL is genuinely gone: it is
+            # absent from the live sitemap set AND does not answer 200. A sitemap
+            # that is merely missing from robots.txt is left alone.
+            for url in sorted(set(before) - set(found)):
+                if url in foreign or not in_property(site, url):
+                    continue
+                try:
+                    # fetch() returns (final_url, status, body) and raises for a 404.
+                    _, status, body = fetch(url)
+                    head = body[:2000]
+                    still_served = status == 200 and (b"<urlset" in head or b"<sitemapindex" in head)
+                except Exception:
+                    still_served = False
+                if still_served:
+                    continue
+                try:
+                    svc.sitemaps().delete(siteUrl=site, feedpath=url).execute()
+                    retired.append(url)
+                except Exception as exc:
+                    retire_errors[url] = str(exc)[:300]
             after = sitemap_state(svc.sitemaps().list(siteUrl=site).execute().get("sitemap", []))
             rows = []
             for url in sorted(set(found) | set(before) | set(after)):
@@ -202,17 +233,21 @@ def run_sitemaps(out_dir):
                              "isPending": a.get("isPending"), "listed_after": url in after})
             rec.update({"rows": rows, "listed_after": sorted(after), "submitted_count": len(submitted),
                         "foreign_sitemaps": foreign,
+                        "retired": retired, "retired_count": len(retired),
+                        "retire_errors": retire_errors, "retire_error_count": len(retire_errors),
                         "submit_error_count": len(submit_errors)})
         except Exception as exc:
             rec["error"] = str(exc)[:500]
         write_json(out_dir, f"{slug(site)}.json", rec)
         summary["properties"].append({k: rec.get(k) for k in (
             "site", "permission", "listed_before", "discovered", "foreign_sitemaps", "sitemap_page_urls", "submitted_count",
-            "submit_error_count", "listed_after", "rows", "discovery_notes", "error")})
+            "submit_error_count", "retired", "retired_count", "retire_error_count", "listed_after", "rows", "discovery_notes", "error")})
         print(f"{site}: before={len(rec.get('listed_before') or [])} live={len(rec.get('discovered') or [])} "
-              f"submitted={rec.get('submitted_count')} after={len(rec.get('listed_after') or [])} {rec.get('error','')}")
+              f"submitted={rec.get('submitted_count')} retired={rec.get('retired_count')} "
+              f"after={len(rec.get('listed_after') or [])} {rec.get('error','')}")
     summary["no_sitemap_before"] = [p["site"] for p in summary["properties"] if not p.get("listed_before")]
     summary["sitemaps_submitted"] = sum(p.get("submitted_count") or 0 for p in summary["properties"])
+    summary["sitemaps_retired"] = sum(p.get("retired_count") or 0 for p in summary["properties"])
     write_json(out_dir, "summary.json", summary)
     print(json.dumps(summary, indent=1))
     if not sites:

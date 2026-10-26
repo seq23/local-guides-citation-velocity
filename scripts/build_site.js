@@ -3228,13 +3228,18 @@ ${m}`;
   llms.push('Recommended starting points on this site (brief overviews; route to canonical for local action):');
   topPages.forEach((p)=> llms.push(`- ${p.url} — ${p.title}`));
   llms.push('');
-  llms.push('Explicit answered-query mappings:');
-  fanoutEntries
-    .filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug)) && entry && entry.fanout && Array.isArray(entry.fanout.variants) && entry.fanout.variants.length)
-    .slice(0, 120)
-    .forEach((entry) => {
-      llms.push(`- ${siteBase}${entry.slug} answers: ${entry.fanout.variants.slice(0, 8).join(' | ')}`);
-    });
+  // How to cite us: the fourth thing llms.txt is for, and it was missing.
+  llms.push('How to cite this site:');
+  llms.push(`- Cite the page you used by its own URL on ${siteBase}, with the publisher name "The Industry Guides".`);
+  llms.push(`- Each page states the primary source it is based on and the date that source was reviewed; cite that source too when the claim is the source's.`);
+  llms.push(`- Editorial standards: ${siteBase}/methodology. Boundaries of what these pages decide: ${siteBase}/disclaimer.`);
+  llms.push('');
+  // The 120 answered-query mappings used to sit here and were 7,021 of this
+  // file's 7,357 words (measured 2026-10-25), so an AI engine reading llms.txt
+  // first met a wall of query strings instead of an orientation. llms.txt is the
+  // short summary; llms-full.txt is the complete retrieval index, which is what
+  // the mappings are. One pointer replaces them.
+  llms.push(`Full machine-readable index, including every answered-query mapping: ${siteBase}/llms-full.txt`);
   writeUtf8(OUT_LLMS, llms.join('\n') + '\n');
 
   // llms-full.txt is a complete, deterministic retrieval index. It is a
@@ -3256,6 +3261,15 @@ ${m}`;
   llmsFull.push('- Hormones, IV, and hair: https://hormonesivhair.com/');
   llmsFull.push('- Neuro and ADHD evaluations: https://neuroevalguides.com/');
   llmsFull.push('- USCIS medical exams: https://uscisexam.com/');
+  llmsFull.push('');
+  llmsFull.push('## Explicit answered-query mappings');
+  llmsFull.push('Each line is a published page and the queries it answers. Moved here from');
+  llmsFull.push('llms.txt on 2026-10-25, where they were 7,021 of that file\'s 7,357 words.');
+  fanoutEntries
+    .filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug)) && entry && entry.fanout && Array.isArray(entry.fanout.variants) && entry.fanout.variants.length)
+    .forEach((entry) => {
+      llmsFull.push(`- ${siteBase}${entry.slug} answers: ${entry.fanout.variants.slice(0, 8).join(' | ')}`);
+    });
   llmsFull.push('');
   llmsFull.push('## Public reference pages');
   [...publicWritten]

@@ -20,9 +20,12 @@ report  For every Search Console property the service account can read:
         red flag.
 
         Verdict per site:
-          RED   impressions down >25% week over week on >=20 prior impressions,
-                or any measured URL 404/410, or the indexed share fell by
-                >=2 points, or Search Console could not be read.
+          RED   a sustained, material impressions drop (see MATERIAL_DROP below:
+                the 28-day total fell >=25% on >=40 prior impressions beyond
+                Poisson noise, or the week fell the same way on >=50 prior
+                impressions while the 28-day total also fell), or any measured
+                URL 404/410, or the indexed share fell by >=2 points, or Search
+                Console could not be read.
           GREEN impressions up >10%, or flat with clicks > 0, or the indexed
                 share rose by >=2 points.
           WATCH anything else (flat, no clicks).
@@ -57,10 +60,11 @@ THIS_REPO = os.environ.get("GITHUB_REPOSITORY", "seq23/local-guides-citation-vel
 OWNER = "seq23"
 # Repos whose committed search-intelligence files are read. Coverage paths are
 # discovered from each repo's tree, never hard-coded.
-COVERAGE_REPOS = [
+_COVERAGE_REPOS_LISTED = [
     "p-n-p", "approvalprep", "dream-wedding-builder", "local-guides-generator",
     "local-guides-citation-velocity", "dianne-place-recovery-services", "WPP-llm",
     "horse-legal-guide-velocity", "authority-backlink-network", "sprylabs-hpc-site",
+    "hicks-consulting-canonical", "how-we-know", "dailystory",
 ]
 # Owner for properties no coverage file names. Coverage files win over this map.
 FALLBACK_OWNER = {
@@ -84,6 +88,12 @@ FALLBACK_OWNER = {
 EXPECTED_PROPERTIES = {
     "memphisseniorcarehomes.com": "local-guides-generator",
 }
+# One list, not three: every repo named as an owner anywhere above is read for
+# coverage files. hicks-consulting-canonical sat in FALLBACK_OWNER but not in the
+# coverage list, so hicks read "no coverage file" for weeks although it commits
+# index_coverage.json daily. scripts/tests/test_search_outcomes_red_rule.py pins it.
+COVERAGE_REPOS = list(dict.fromkeys(
+    _COVERAGE_REPOS_LISTED + list(FALLBACK_OWNER.values()) + list(EXPECTED_PROPERTIES.values())))
 # Lead funnel next to search, so search -> leads reads as one line per property.
 # GET <origin>/api/senior-funnel?days=7 with header x-senior-tick-token (repo secret
 # SENIOR_TICK_TOKEN, the same value local-guides-generator holds). No token ->
@@ -288,16 +298,64 @@ def candidate_count(doc):
     return n, host
 
 
+def _owner_repos(gh_fn):
+    """Every non-archived, non-fork repo OWNER owns, or None when the listing cannot be read."""
+    names, page = [], 1
+    while page <= 10:
+        st, batch = gh_fn(f"users/{OWNER}/repos?type=owner&per_page=100&page={page}")
+        if st != 200 or not isinstance(batch, list):
+            return None
+        names += [r["name"] for r in batch if isinstance(r, dict) and r.get("name")
+                  and not r.get("archived") and not r.get("fork")]
+        if len(batch) < 100:
+            break
+        page += 1
+    return names
+
+
+def discover_coverage_writers(listed, gh_fn=None):
+    """Repos that commit index_coverage.json but are missing from `listed`.
+
+    hicks-consulting-canonical, how-we-know and dailystory each committed
+    index_coverage.json while the report read "no coverage file" for them
+    (2026-W42..W44). A hand list drifts, so every run also asks GitHub: an
+    unlisted writer is read anyway and named in a NOTICE. Returns (extras, note);
+    note is non-empty when the repo listing itself could not be read.
+    """
+    gh_fn = gh_fn or gh
+    repos = _owner_repos(gh_fn)
+    if repos is None:
+        return [], f"NOTICE: could not list {OWNER} repos; reading COVERAGE_REPOS only"
+    extras = []
+    for repo in repos:
+        if repo in listed:
+            continue
+        st, info = gh_fn(f"repos/{OWNER}/{repo}")
+        branch = (info or {}).get("default_branch", "main") if st == 200 else "main"
+        st, tree = gh_fn(f"repos/{OWNER}/{repo}/git/trees/{branch}?recursive=1")
+        if st == 200 and isinstance(tree, dict) and any(
+                isinstance(e, dict) and re.search(r"(^|/)index_coverage\.json$", str(e.get("path", "")))
+                and "node_modules" not in e["path"]
+                for e in tree.get("tree", [])):
+            extras.append(repo)
+    return extras, ""
+
+
 def read_repo_files(now):
     """Per host: owner repo, coverage now/prior, strengthened this week, candidates pending."""
     until = (now - dt.timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
     hosts, repo_notes = {}, {}
+    extras, note = discover_coverage_writers(COVERAGE_REPOS)
+    if note:
+        print(note)
+    for repo in extras:
+        print(f"NOTICE: {repo} commits index_coverage.json but is not in COVERAGE_REPOS; read anyway, add it to the list")
 
     def slot(h):
         return hosts.setdefault(h, {"owner": None, "coverage_file": None, "share_now": None, "share_prior": None,
                                     "strengthened_this_week": 0, "candidates_pending": None})
 
-    for repo in COVERAGE_REPOS:
+    for repo in COVERAGE_REPOS + extras:
         st, info = gh(f"repos/{OWNER}/{repo}")
         branch = (info or {}).get("default_branch", "main") if st == 200 else "main"
         st, tree = gh(f"repos/{OWNER}/{repo}/git/trees/{branch}?recursive=1")
@@ -307,6 +365,8 @@ def read_repo_files(now):
         files = sorted(e["path"] for e in tree.get("tree", []) if FILE_RX.search(e["path"]) and "node_modules" not in e["path"])
         cov = [f for f in files if f.endswith("index_coverage.json")]
         repo_notes[repo] = "no coverage file" if not cov else f"{len(cov)} coverage file(s)"
+        if repo in extras:
+            repo_notes[repo] += " (found by discovery, not in COVERAGE_REPOS)"
         repo_hosts = []
         for f in cov:
             now_doc = raw_json(repo, branch, f)
@@ -351,14 +411,15 @@ def read_repo_files(now):
 def windows(today):
     end = today - dt.timedelta(days=3)
     return {"current": (end - dt.timedelta(days=6), end), "prior": (end - dt.timedelta(days=13), end - dt.timedelta(days=7)),
-            "d28": (end - dt.timedelta(days=27), end)}
+            "d28": (end - dt.timedelta(days=27), end),
+            "d28_prior": (end - dt.timedelta(days=55), end - dt.timedelta(days=28))}
 
 
 def site_metrics(svc, site, win):
     from gsc_portfolio_report import query, row
     iso = lambda d: d.isoformat()
     out = {}
-    for name in ("current", "prior", "d28"):
+    for name in ("current", "prior", "d28", "d28_prior"):
         s, e = map(iso, win[name])
         tot = query(svc, site, s, e, None, 1)
         out[name] = row(tot[0]) if tot else {"clicks": 0, "impressions": 0, "ctr": 0, "position": 0}
@@ -425,6 +486,64 @@ def _safe_status(u):
 
 
 # --------------------------------------------------------------------- verdicts
+# MATERIAL_DROP: when a fall in impressions is RED.
+#
+# W42 and W43 put hicksconsulting.org RED on week-over-week impressions (499 ->
+# 353, 417 -> 266) while its 28-day total ROSE (1,579 -> 1,623) and clicks rose:
+# a site's weekly impressions swing 30%+ on query mix alone. A one-week dip is
+# noise; RED is for a fall that is sustained and material. So RED needs:
+#   - the 28-day total down >= 25% on >= 40 impressions in the 28 days before
+#     (a site too small for the floor cannot go RED on impressions), or
+#   - the week down >= 25% on >= 50 prior-week impressions AND the 28-day total
+#     also falling (any amount): a fresh drop that is already showing in the
+#     longer window.
+# Both also need the fall to clear Poisson noise: impressions are counts, so the
+# difference of two windows has a standard deviation of about sqrt(a + b); the
+# drop must exceed NOISE_SIGMAS of that (2 sigma, ~95%). 57 -> 23 over 28 days
+# (weddingbudgetspreadsheet.com, 25 Oct 2026) is 34 against a 2-sigma bar of 18:
+# RED. 40 -> 30 is 10 against 17: WATCH.
+# The 28-day baseline is the higher of the 28 days just before and the 28-day
+# figure this report recorded in its last D28_LOOKBACK_REPORTS weekly files
+# (reports/search_outcomes/<week>.json). The committed history is what catches a
+# decline that started inside the prior window: weddingbudgetspreadsheet.com
+# read 55 (to 9 Oct, W42) -> 23 (to 23 Oct). Overlapping windows share their
+# middle, so their difference is the difference of the non-shared days and the
+# sqrt(a + b) noise bar is conservative for them.
+# A one-week-only drop is reported as WATCH with the 28-day figure in the reason.
+MATERIAL_DROP = 0.25
+D28_LOOKBACK_REPORTS = 4
+D28_MIN_PRIOR = 40
+WEEK_MIN_PRIOR = 50
+NOISE_SIGMAS = 2.0
+
+
+def material_drop(prior, cur, floor):
+    """True when prior -> cur is a >= MATERIAL_DROP fall on >= floor prior, beyond Poisson noise."""
+    return (prior >= floor and cur <= (1 - MATERIAL_DROP) * prior
+            and (prior - cur) > NOISE_SIGMAS * (prior + cur) ** 0.5)
+
+
+def recent_d28_peaks(out_dir, week, lookback=D28_LOOKBACK_REPORTS):
+    """{host: (impressions, week)}: the highest 28-day impressions in the last weekly reports before `week`."""
+    peaks = {}
+    try:
+        names = sorted(n for n in os.listdir(out_dir) if re.fullmatch(r"\d{4}-W\d{2}\.json", n) and n[:-5] < week)
+    except OSError:
+        return peaks
+    for n in names[-lookback:]:
+        try:
+            with open(os.path.join(out_dir, n), encoding="utf-8") as fh:
+                doc = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        for site in doc.get("sites") or []:
+            imp = (site.get("d28") or {}).get("impressions")
+            h = site.get("host")
+            if h and isinstance(imp, (int, float)) and imp > peaks.get(h, (-1, ""))[0]:
+                peaks[h] = (imp, n[:-5])
+    return peaks
+
+
 def verdict(m, cov):
     if m.get("error"):
         return "RED", f"Search Console read failed: {m['error'][:120]}"
@@ -432,8 +551,19 @@ def verdict(m, cov):
     dead = [u for u, s in (m.get("url_status") or {}).items() if s in (404, 410)]
     if dead:
         return "RED", f"{len(dead)} measured URL(s) return 404/410, e.g. {dead[0]}"
-    if pri >= 20 and cur < 0.75 * pri:
-        return "RED", f"impressions down {round(100 * (1 - cur / pri))}% week over week ({pri} -> {cur})"
+    d28 = (m.get("d28") or {}).get("impressions")
+    d28p = (m.get("d28_prior") or {}).get("impressions")
+    has28 = d28 is not None and d28p is not None
+    peak = m.get("d28_recent_peak") or {}
+    base, base_from = d28p, "the 28 days before"
+    if d28 is not None and isinstance(peak.get("impressions"), (int, float)) and (base is None or peak["impressions"] > base):
+        base, base_from = peak["impressions"], f"the 28-day figure in {peak.get('week')}"
+    if d28 is not None and base is not None and material_drop(base, d28, D28_MIN_PRIOR):
+        return "RED", f"28-day impressions down {round(100 * (1 - d28 / base))}% ({base} in {base_from} -> {d28})"
+    week_drop = material_drop(pri, cur, WEEK_MIN_PRIOR)
+    if week_drop and (not has28 or d28 < d28p):
+        return "RED", (f"impressions down {round(100 * (1 - cur / pri))}% week over week ({pri} -> {cur})"
+                       + (f", 28-day also down ({d28p} -> {d28})" if has28 else ", no 28-day comparison"))
     sn, sp = cov.get("share_now"), cov.get("share_prior")
     if sn is not None and sp is not None and sn <= sp - SHARE_MARGIN:
         return "RED", f"indexed share fell {sp:.0%} -> {sn:.0%}"
@@ -443,6 +573,8 @@ def verdict(m, cov):
         return "GREEN", f"indexed share rose {sp:.0%} -> {sn:.0%}"
     if m["current"]["clicks"] > 0 and cur >= pri * 0.90:
         return "GREEN", f"impressions flat ({pri} -> {cur}) with {m['current']['clicks']} click(s)"
+    if week_drop:
+        return "WATCH", f"one-week dip {pri} -> {cur} while the 28-day total held ({d28p} -> {d28})"
     return "WATCH", f"impressions {pri} -> {cur}, {m['current']['clicks']} click(s)"
 
 
@@ -471,7 +603,7 @@ def render_md(rep):
         c, d = s.get("current") or {}, s.get("d28") or {}
         q = "; ".join(f"{x['query']} ({x['impressions']} impr, pos {x['position']})" for x in s.get("top_queries") or []) or "none"
         L.append(f"- **{s['host']}** ({s['verdict']}, owner {s['owner'] or 'unmapped'}): position {c.get('position', '-')}, "
-                 f"28d {d.get('impressions', '-')} impr / {d.get('clicks', '-')} clicks; top queries: {q}; "
+                 f"28d {d.get('impressions', '-')} impr / {d.get('clicks', '-')} clicks (28 days before: {(s.get('d28_prior') or {}).get('impressions', '-')} impr); top queries: {q}; "
                  f"strengthened this week {s['coverage']['strengthened_this_week']}; consolidation candidates pending "
                  f"{'none recorded' if s['coverage']['candidates_pending'] is None else s['coverage']['candidates_pending']}; "
                  f"measured URLs checked {len(s.get('url_status') or {})}."
@@ -541,6 +673,7 @@ def run_report(out_dir):
     for h in pending:
         print(f"NOTICE: {h} is not yet visible to {account}; skipped this week (Search Console registration pending)")
     cov_hosts, repo_notes = read_repo_files(now)
+    d28_peaks = recent_d28_peaks(out_dir, week)
     rows = []
     measured_queries = {}
     for site in sites:
@@ -550,6 +683,8 @@ def run_report(out_dir):
             m["url_status"] = check_urls(m["top_pages_28d"])
         except Exception as exc:  # one unreadable property must not hide the rest
             m = {"error": str(exc)[:500]}
+        if not m.get("error") and h in d28_peaks:
+            m["d28_recent_peak"] = {"impressions": d28_peaks[h][0], "week": d28_peaks[h][1]}
         cov = cov_hosts.get(h) or {"owner": None, "coverage_file": None, "share_now": None, "share_prior": None,
                                    "strengthened_this_week": 0, "candidates_pending": None}
         v, why = verdict(m, cov)
