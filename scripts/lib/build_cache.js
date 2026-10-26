@@ -71,6 +71,24 @@ const ENV_KEYS = ['ALLOW_CANONICAL_DATA_REGEN', 'VELOCITY_CONTENT_SOURCE', 'SOUR
 // real tracked file the build writes.
 const INPUT_EXCLUDE = new Set(['content/_shared/content_state.json']);
 
+// Same reasoning as content_state.json, one directory wider. data/signals/** is the
+// firehose/scoring pipeline's own ledger, not build input: every file under it is
+// rewritten with a real wall-clock `generated_at` by
+// release:daily-citation-intelligence:preview, which the merge gate runs in every
+// job before the build. Hashing it as input gave each of the gate's five jobs a
+// DIFFERENT input hash for the same commit - two consecutive previews on one
+// machine produced two different hashes - so no job could ever reuse another's
+// entry and the cache could only ever hit on a tree nothing had touched. Nothing
+// in the build chain reads it (grep-verified across build_site.js,
+// apply_medicaid_dental_fee_data.js, build_promotion_candidates_feed.js,
+// build_pages_dist.js, install_clarity.js, install_site_head_assets.js and
+// install_served_head_contract.js), and build-result-cache-integrity proves the
+// claim rather than trusting it: a restore made against a tree whose signal
+// ledgers have since been rewritten is still hashed, file by file, against an
+// isolated cache-disabled ground-truth build. These files are captured and
+// restored in the OUTPUT delta like any other tracked file the build touches.
+const INPUT_EXCLUDE_PREFIXES = ['data/signals/'];
+
 // The wrapper, and the build-result-cache-integrity validator that proves it,
 // each write their own evidence file AFTER a build+snapshot. Once written it
 // sits on disk as an untracked file forever (nothing commits it), so `git
@@ -115,7 +133,10 @@ function inputFileList() {
     if (fs.statSync(abs).isFile()) { files.push(abs); continue; }
     walk(abs, files);
   }
-  return files.filter((abs) => !INPUT_EXCLUDE.has(path.relative(ROOT, abs).split(path.sep).join('/')));
+  return files.filter((abs) => {
+    const rel = path.relative(ROOT, abs).split(path.sep).join('/');
+    return !INPUT_EXCLUDE.has(rel) && !INPUT_EXCLUDE_PREFIXES.some((p) => rel.startsWith(p));
+  });
 }
 
 /** SHA-256 over every input file's path + content, plus env and schema. Content is read fresh each call - no mtime/size shortcut - so this is always correct, never a fast guess. */
@@ -274,6 +295,7 @@ module.exports = {
   SCHEMA_VERSION,
   INPUT_PATHS,
   INPUT_EXCLUDE,
+  INPUT_EXCLUDE_PREFIXES,
   ENV_KEYS,
   BUILD_DIRS,
   cacheDir,

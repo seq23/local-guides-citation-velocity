@@ -43,3 +43,20 @@ exactly once and passed. Shard weights come from measured durations in
 `_validation_registry.json` (`estimated_runtime_seconds`); refresh them with
 `npm run ci:refresh-shard-weights -- <run-id>` after a run whose timings moved,
 or the balancer packs one shard twice as heavy as the rest.
+
+**The gate builds the site once per commit, not once per job.** The release lane's
+`site-build` stage runs `npm run build:cached`
+([`scripts/lib/build_cache.js`](scripts/lib/build_cache.js)), shard 2 saves the
+resulting `.build-cache` entry, and the aggregate job — which runs after every
+shard, on the critical path — restores it instead of regenerating all ~2,400 pages
+a second time in series. Two rules hold this up, and a test reads each:
+
+- Nothing wall-clock-stamped may enter the cache's hashed input surface. The gate
+  runs `release:daily-citation-intelligence:preview` in every job first, and that
+  rewrites `data/signals/**` with a real `generated_at`, so those paths are in
+  `INPUT_EXCLUDE_PREFIXES`. Hash a generated ledger as input and every job gets a
+  different key for the same commit, which is a cache that can never hit.
+- `build-result-cache-integrity` is in the `release` profile, not just `audit`,
+  because the gate now depends on the cache. It refuses to pass without an entry
+  for the current input hash and hashes every git-tracked file plus the build dirs
+  against an isolated, cache-disabled ground-truth build.

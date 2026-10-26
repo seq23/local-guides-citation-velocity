@@ -55,6 +55,22 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      - name: Restore the build-result cache
+        # The lane's site-build stage runs `npm run build:cached`, so this is what
+        # makes it a no-op. Keyed on the commit: the shard that saves it below
+        # finishes before the aggregate job starts (needs: shard), so the aggregate
+        # restores this run's own entry instead of rebuilding all ~2,400 pages a
+        # second time in series on the critical path. The prefix restore-key lets a
+        # rebase retry or a re-run whose hashed input surface did not move hit a
+        # previous run's entry; the wrapper verifies every entry against its own
+        # input hash and falls back to a real build on any doubt, so a stale or
+        # wrong-commit restore cannot be used. Search Readiness h5.
+        uses: actions/cache/restore@v4
+        with:
+          path: .build-cache
+          key: build-cache-v1-${{ github.sha }}
+          restore-keys: |
+            build-cache-v1-
       - name: Build strategy gate and daily citation preview
         # One line, not two: release:daily-citation-intelligence:preview begins with
         # `npm run strategy:gate`, so running it first ran the 100k runway build twice
@@ -65,6 +81,28 @@ jobs:
         env:
           VALIDATION_SHARD: ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
         run: npm run release:ci-validate
+      - name: Save the build-result cache
+        # One shard saves, not all of them: a single key written by SHARD_COUNT
+        # parallel jobs is a race, and the post-step form would run it in every one.
+        # Shard 2 is chosen off the measured assignment: the balancer
+        # (run_validation_registry.js, longest-weight-first) puts the two heaviest
+        # validators alone on shards 0 and 1 (canonical-data-immutability 53s,
+        # build-result-cache-integrity 49s) and splits the remaining ~50 into the
+        # rest at ~30s each, so shard 0 is the critical path and shard 2 has the room
+        # to carry the upload. Each shard job prints its own assignment
+        # ("VALIDATION SHARD i/N: ... heaviest <id> <n>s"), so a future weight change
+        # that moves the heavy work onto shard 2 is visible in the log.
+        # `build:cached:prune` keeps the store at the newest five entries (~77 MB
+        # each), so the cache cannot grow without bound across runs.
+        # Search Readiness h5.
+        if: success() && matrix.shard == 2
+        run: npm run build:cached:prune
+      - name: Store the build-result cache
+        if: success() && matrix.shard == 2
+        uses: actions/cache/save@v4
+        with:
+          path: .build-cache
+          key: build-cache-v1-${{ github.sha }}
       - name: Upload shard evidence
         if: success()
         uses: actions/upload-artifact@v7
@@ -113,6 +151,22 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      - name: Restore the build-result cache
+        # The lane's site-build stage runs `npm run build:cached`, so this is what
+        # makes it a no-op. Keyed on the commit: the shard that saves it below
+        # finishes before the aggregate job starts (needs: shard), so the aggregate
+        # restores this run's own entry instead of rebuilding all ~2,400 pages a
+        # second time in series on the critical path. The prefix restore-key lets a
+        # rebase retry or a re-run whose hashed input surface did not move hit a
+        # previous run's entry; the wrapper verifies every entry against its own
+        # input hash and falls back to a real build on any doubt, so a stale or
+        # wrong-commit restore cannot be used. Search Readiness h5.
+        uses: actions/cache/restore@v4
+        with:
+          path: .build-cache
+          key: build-cache-v1-${{ github.sha }}
+          restore-keys: |
+            build-cache-v1-
       - name: Build strategy gate and daily citation preview
         # One line, not two: release:daily-citation-intelligence:preview begins with
         # `npm run strategy:gate`, so running it first ran the 100k runway build twice
