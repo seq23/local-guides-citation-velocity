@@ -1,5 +1,11 @@
 .DS_Store
-node_modules/
+# No trailing slash on purpose: "node_modules/" matches a DIRECTORY only, so a
+# worktree that symlinks node_modules (scripts/ops/audit-worktree.sh in boss-os
+# does) left the symlink unignored, and `git add -A` tracked it. That is how a
+# node_modules entry reached the source snapshot twice - see commit 57d997df7,
+# "Remove tracked node_modules from source snapshot" - and phase-tree-hygiene
+# hard-fails on it. Without the slash it matches the directory and the symlink.
+node_modules
 .build/
 dist/
 .build-cache/

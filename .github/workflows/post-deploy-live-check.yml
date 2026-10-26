@@ -1,0 +1,47 @@
+name: post-deploy live check
+
+# What the edge serves, checked from outside, after a deploy reaches it.
+# A build-time validator cannot see the edge: /sitemaps/sitemap_util.xml answered
+# a 404 HTML page for nine days while every validator was green, and Search
+# Console reported an error against it every one of those days.
+on:
+  # Cloudflare Pages builds this repository on a push to the default branch.
+  # The deploy is not instant, so the check waits for the new bytes to be live.
+  push:
+    branches: [main]
+  schedule:
+    # 07:10 UTC daily: catches an edge that drifts without a commit behind it.
+    - cron: '10 7 * * *'
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Host to check
+        required: false
+        default: theindustryguides.com
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-deploy-live-check
+  cancel-in-progress: false
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    # A fault detector, not a budget: the whole check is a few dozen requests.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Wait for the deploy to reach the edge
+        if: github.event_name == 'push'
+        run: sleep 150
+
+      - name: Post-deploy live check
+        env:
+          LIVE_HOST: ${{ github.event.inputs.host || 'theindustryguides.com' }}
+        run: node scripts/live/post_deploy_live_check.mjs

@@ -25,7 +25,7 @@
     "baseline:rendered-size": "node scripts/release/update_rendered_size_baseline.js",
     "batch-g:prepare": "npm run strategy:opportunities && npm run strategy:release-queue",
     "bootstrap:live": "node scripts/release/bootstrap_live_content.js --confirm-recovery-bootstrap",
-    "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/apply_medicaid_dental_fee_data.js && ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/feeds/build_promotion_candidates_feed.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js && node scripts/install_site_head_assets.js",
+    "build": "ALLOW_CANONICAL_DATA_REGEN=1 node scripts/apply_medicaid_dental_fee_data.js && ALLOW_CANONICAL_DATA_REGEN=1 node scripts/build_site.js && node scripts/feeds/build_promotion_candidates_feed.js && node scripts/build_pages_dist.js && node scripts/install_clarity.js && node scripts/install_site_head_assets.js && node scripts/install_served_head_contract.js",
     "build:answer-blocks": "node scripts/build_answer_blocks.js",
     "build:cached": "node scripts/build_cache_wrapper.js",
     "build:cached:prune": "node scripts/build_cache_wrapper.js --prune",
@@ -231,7 +231,8 @@
     "validation:matrix": "node scripts/validation/generate_validation_matrix.js",
     "workflow:inventory": "node scripts/workflows/build_workflow_yaml_inventory.js",
     "measure:velocity-health": "node scripts/authority_scale/measure_velocity_health.mjs",
-    "migrate:cross-vertical-rows": "node scripts/citation_velocity/migrate_cross_vertical_rows.js"
+    "migrate:cross-vertical-rows": "node scripts/citation_velocity/migrate_cross_vertical_rows.js",
+    "served-head-contract:install": "node scripts/install_served_head_contract.js"
   },
   "engines": {
     "node": "24.x"
