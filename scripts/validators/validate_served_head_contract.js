@@ -46,6 +46,7 @@ function walk(dir, out = []) {
 
 const DIST = path.resolve(ROOT, process.env.PAGES_OUT_DIR || 'dist');
 const stops = [];
+const concentrationExempt = [];
 if (!fs.existsSync(DIST)) stops.push(`${path.relative(ROOT, DIST)}/ does not exist; nothing was graded. Run npm run build first.`);
 
 const errors = [];
@@ -129,24 +130,39 @@ for (const abs of pages) {
     if (host === c.SITE_HOST) continue;
     ext.push({ host, key: `${u.origin}${u.pathname.replace(/\/+$/, '')}` });
   }
-  // The cap applies only to insight and article pages that no routing contract
-  // governs. Three HARD_FAIL contracts require repeated links to one canonical
-  // host elsewhere (four intake links per matched piece, the homepage's six
-  // cards), which 25% of a page's outbound links cannot accommodate. Named, not
-  // hidden: see link_cap_exempt_reason and the page list in the report.
+  // The cap reaches every served route now. It used to reach only /insights/ and
+  // /medium-articles/ pages that no routing contract governed - 206 of 1,068
+  // graded pages - and the breach it exists to catch lived on the other 862.
+  //
+  // Two exemptions remain, each because another HARD_FAIL contract pins the
+  // exact links and each named here rather than hidden:
+  //   - the homepage and the eight senior-living guides (isCappableRoute);
+  //   - the two dentistry safety-net guides, which velocity-canonical-anchor-links
+  //     pins to SIX DISTINCT metro anchors on one canonical host. Six different
+  //     destinations is what that page is FOR, so the concentration clause cannot
+  //     apply to it; the per-URL clause still does, and still fails if one metro
+  //     is linked twice.
   if (!c.isCappableRoute(route, governed)) {
     capExempt.push(`/${rel}`);
   } else {
-    if (ext.length >= 4) {
+    const multiTarget = c.isMultiTargetRoute(route);
+    if (ext.length >= 4 && !multiTarget) {
       const by = {};
       for (const e of ext) by[e.host] = (by[e.host] || 0) + 1;
       for (const [host, n] of Object.entries(by)) {
         if (hosts.has(host) && n / ext.length > 0.25) add('link_concentration', `${host} has ${n} of ${ext.length} outbound links`);
       }
     }
-    const perHost = {};
-    for (const e of ext) if (hosts.has(e.host)) perHost[e.host] = (perHost[e.host] || 0) + 1;
-    for (const [h, n] of Object.entries(perHost)) if (n > 1) add('repeated_portfolio_link', `${h} linked ${n} times on one page; the cap is one`);
+    if (multiTarget) {
+      concentrationExempt.push(`/${rel}`);
+      const perKey = {};
+      for (const e of ext) if (hosts.has(e.host)) perKey[e.key] = (perKey[e.key] || 0) + 1;
+      for (const [k, n] of Object.entries(perKey)) if (n > 1) add('repeated_portfolio_url', `${k} linked ${n} times on one page; the cap is one per destination here`);
+    } else {
+      const perHost = {};
+      for (const e of ext) if (hosts.has(e.host)) perHost[e.host] = (perHost[e.host] || 0) + 1;
+      for (const [h, n] of Object.entries(perHost)) if (n > 1) add('repeated_portfolio_link', `${h} linked ${n} times on one page; the cap is one`);
+    }
   }
 
   // j2: a companion piece that mentions a canonical intake must still LINK one,
@@ -214,7 +230,9 @@ const report = {
     howto_without_provable_steps_pages: howToUnprovable,
     link_cap_exempt: capExempt.length,
     link_cap_exempt_pages: capExempt.slice(0, 40),
-    link_cap_exempt_reason: 'The cap applies only to insight and article pages no routing contract governs. velocity-canonical-anchor-links requires four /request-assistance/ links on each of 845 matched pieces and umbrella-homepage-shape requires the homepage cards to link each canonical home, intake and three question pages; a quarter of a page\'s outbound links cannot hold four required links to one host. All four state pages the 2026-10-25 audit flagged for g3 are governed pages, so g3 stays reported for them: changing the lead funnel is an owner decision. The insight pages, where the footprint was worst (one canonical URL linked eight times, 73% of outbound links), are capped.'
+    link_cap_exempt_reason: 'The cap reaches every served route. Exempt: the homepage (umbrella-homepage-shape matches its six cards literally) and the eight senior-living guides (four intake links each is the owner\'s own rule). Before 2026-10-26 the cap reached only /insights/ and /medium-articles/ pages no routing contract governed, which was 206 of 1,068 graded pages, and 862 pages carried a portfolio host over a quarter of their outbound links - four copies of ONE intake URL per page, satisfying a count that asked for four links and got four of the same one. The count is replaced by a stricter served-page pin in velocity-canonical-anchor-links (exactly one followed, attributed outbound intake anchor, and every capped CTA must reach it in-page).',
+    concentration_exempt: concentrationExempt,
+    concentration_exempt_reason: 'The two dentistry safety-net guides are pinned by velocity-canonical-anchor-links to six DISTINCT metro anchors on dentistryguides.com - a reader in Houston needs the Houston one - so a quarter-of-outbound-links rule cannot apply to a page whose purpose is that directory. The per-URL clause still applies to them and still fails if one metro is linked twice.',
   },
   error_count: errors.length,
   errors_by_issue: byIssue,

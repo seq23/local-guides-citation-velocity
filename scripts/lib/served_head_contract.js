@@ -277,7 +277,7 @@ function preferredLinkPerHost(html, hosts) {
   return pick;
 }
 
-function capPortfolioLinks(html, portfolioHosts, { exempt = false } = {}) {
+function capPortfolioLinks(html, portfolioHosts, { exempt = false, perUrl = false } = {}) {
   const hosts = new Set(portfolioHosts || []);
   if (!hosts.size || exempt) return html;
   // Which link survives per host is chosen BEFORE any is capped: the intake, if
@@ -294,9 +294,24 @@ function capPortfolioLinks(html, portfolioHosts, { exempt = false } = {}) {
     try { u = new URL(decodeEntities(href), SITE_BASE); } catch { return whole; }
     const host = u.hostname.replace(/^www\./, '');
     if (!hosts.has(host)) return whole;
-    if (!linked.has(host) && href === keep.get(host)) { linked.add(host); return whole; }
+    // Per-URL mode keys on the destination, so a second DISTINCT url on the same
+    // host survives and only a repeat of one url is capped.
+    const key = perUrl ? `${u.origin}${u.pathname}` : host;
+    const anchorId = `find-a-provider-${String(key).replace(/^https?:\/\//, '').replace(/[^a-z0-9]+/gi, '-').replace(/-+$/, '')}`;
+    if (!linked.has(key) && (perUrl || href === keep.get(host))) {
+      linked.add(key);
+      // The surviving anchor is the jump target for every copy capped below it,
+      // so a capped CTA stays something a reader can click.
+      return /\bid=/i.test(attrs) ? whole : whole.replace(/^<a\b/i, `<a id="${anchorId}"`);
+    }
     const cls = (attrs.match(/\bclass=(["'])([\s\S]*?)\1/i) || [])[2] || '';
-    return `<span class="${escAttr(cls)}" data-link-capped="true">${inner}</span>`;
+    // An in-page href, not a <span>: `links()` ignores a bare #fragment, so this
+    // costs the page nothing in outbound links, and the reader who scrolled to
+    // the closing CTA still gets to the live one instead of a dead button. When
+    // the kept link comes LATER in the document than this copy (preferredLinkPerHost
+    // picks the intake wherever it is), the jump still resolves - the id is on the
+    // kept anchor either way.
+    return `<a class="${escAttr(cls)}" href="#${anchorId}" data-link-capped="true">${inner}</a>`;
   });
 }
 
@@ -360,11 +375,65 @@ function isGovernedRoute(route, governed) {
   return governed.has(r);
 }
 
-// The cap's scope: an insight or article page that no routing contract governs.
-const CAPPABLE_ROUTE = /^\/(insights|medium-articles)\//;
-function isCappableRoute(route, governed) {
+/**
+ * The cap's scope: every served route but two named exemptions.
+ *
+ * It used to be /insights/ and /medium-articles/ only, and not even all of
+ * those - any route a canonical-guide match governed was skipped, which was 845
+ * pieces plus every state page. Measured on the built tree, 862 of 1,068 graded
+ * pages had a portfolio host over a quarter of their outbound links, so the
+ * guard that exists to catch exactly that reached 206 pages and the breach lived
+ * on the other 862. The reason given on 2026-10-25 was that
+ * velocity-canonical-anchor-links required FOUR /request-assistance/ links per
+ * matched piece and a quarter of a page's links cannot hold four to one host -
+ * true, and the conclusion drawn from it ("changing the lead funnel is an owner
+ * decision") left the item permanently reported and never fixed.
+ *
+ * It is decided here instead, from what the page actually does. The four links
+ * were four copies of ONE url: /trt/states/oregon/trt-legality/ shipped five
+ * identical "Find a Provider" anchors to hormonesivhair.com/request-assistance/
+ * and two identical guide links. Four copies of one destination add no route a
+ * reader did not already have and no reachability the first copy did not give;
+ * they add the footprint g3 names. So the page keeps ONE followed outbound
+ * anchor per portfolio host - the intake, chosen by preferredLinkPerHost - and
+ * every later copy becomes an in-page jump to it, so no CTA goes dead and the
+ * reader can still act from the bottom of the page. MIN_INTAKE_LINKS moves with
+ * it, to a pin that asserts more than a count (see
+ * validate_velocity_canonical_anchor_links.js).
+ *
+ * Two exemptions, each because another contract pins the exact links:
+ *   - The senior-living guides. Four intake links each is the owner's own rule,
+ *     stated in priority order in validate_velocity_canonical_anchor_links.js,
+ *     and theirs is the one funnel an agent does not redesign.
+ *   - The homepage, whose six cards umbrella-homepage-shape matches literally.
+ */
+const SENIOR_FAMILY = 'SENIOR-LIVING-GUIDES';
+// The two safety-net guides velocity-canonical-anchor-links pins to SIX DISTINCT
+// metro anchors on dentistryguides.com. Six different destinations is not the
+// footprint g3 describes - it is the page's whole purpose, a reader in Houston
+// needs the Houston anchor - so these two cap per URL instead of per host: a
+// repeated link to the SAME metro is still capped, a second metro is not.
+const MULTI_TARGET_ROUTES = new Set(['/dentistry/free-dental-clinics', '/dentistry/dental-school-clinics']);
+function isMultiTargetRoute(route) {
+  return MULTI_TARGET_ROUTES.has(String(route || '').replace(/\/+$/, '') || '/');
+}
+let seniorRoutesCache = null;
+function seniorLivingRoutes() {
+  if (seniorRoutesCache) return seniorRoutesCache;
+  const out = new Set();
+  const specs = path.join(ROOT, 'data', 'page_families', 'velocity_page_specs.json');
+  try {
+    for (const x of (JSON.parse(fs.readFileSync(specs, 'utf8')).pages || [])) {
+      if (x.page_family === SENIOR_FAMILY) out.add(String(x.slug || '').replace(/\/+$/, '') || '/');
+    }
+  } catch { /* an unreadable spec file is that validator's finding, not this pass's */ }
+  seniorRoutesCache = out;
+  return out;
+}
+function isCappableRoute(route /* , governed */) {
   const r = String(route || '').replace(/\/+$/, '') || '/';
-  return CAPPABLE_ROUTE.test(`${r}/`) && !isGovernedRoute(r, governed);
+  if (r === '/') return false;
+  return !seniorLivingRoutes().has(r);
 }
 
 /**
@@ -438,7 +507,7 @@ function applyAll(html, { portfolioHosts = [], org = null, exemptFromCap = false
   // Stamp before capping: the cap picks the surviving link by path, and a stamped
   // intake must still read as the intake when it does.
   out = stampIntakeTracking(out, portfolioHosts, route);
-  out = capPortfolioLinks(out, portfolioHosts, { exempt: exemptFromCap });
+  out = capPortfolioLinks(out, portfolioHosts, { exempt: exemptFromCap, perUrl: isMultiTargetRoute(route) });
   out = ensureOrderedSteps(out);
   return out;
 }
@@ -449,5 +518,5 @@ module.exports = {
   MIN_TITLE_CHARS, MAX_TITLE_CHARS, MIN_DESCRIPTION_CHARS, MAX_DESCRIPTION_CHARS,
   titleOf, descOf, canonicalOf, bodyOf, decodeEntities,
   normalizeSnippet, ensureSocialTags, consolidateOrganization, ensureOwnershipDisclosure,
-  capPortfolioLinks, stampIntakeTracking, preferredLinkPerHost, INTAKE_PATH, governedRoutes, isGovernedRoute, isCappableRoute, CAPPABLE_ROUTE, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, applyAll
+  capPortfolioLinks, stampIntakeTracking, preferredLinkPerHost, INTAKE_PATH, governedRoutes, isGovernedRoute, isCappableRoute, SENIOR_FAMILY, seniorLivingRoutes, MULTI_TARGET_ROUTES, isMultiTargetRoute, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, applyAll
 };

@@ -11,6 +11,15 @@ permissions:
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
+  # OUTSIDE the working tree, deliberately, and a literal path because neither
+  # workflow-level nor job-level env may read the `runner` context. The default is
+  # a gitignored .build-cache/ in the repo root, which is fine for a developer but
+  # not for a lane that walks the repo: a cache entry holds a copy of the rendered
+  # tree, and search-quality-basics read those copies as duplicate indexable
+  # content and failed the whole gate. Gitignoring a directory does not hide it
+  # from a filesystem walker. Keeping the store off the tree means no validator can
+  # ever see it, whatever a future walker's skip list says. Search Readiness h5.
+  BUILD_CACHE_DIR: /tmp/velocity-build-cache
   # The release profile is ~180 validators and 7-11 minutes on one runner; two of
   # them (the clock-independence pair) are more than half of that. This is the
   # merge gate, so it runs as SHARD_COUNT parallel slices balanced by measured
@@ -67,7 +76,7 @@ jobs:
         # wrong-commit restore cannot be used. Search Readiness h5.
         uses: actions/cache/restore@v4
         with:
-          path: .build-cache
+          path: /tmp/velocity-build-cache
           key: build-cache-v1-${{ github.sha }}
           restore-keys: |
             build-cache-v1-
@@ -101,7 +110,7 @@ jobs:
         if: success() && matrix.shard == 2
         uses: actions/cache/save@v4
         with:
-          path: .build-cache
+          path: /tmp/velocity-build-cache
           key: build-cache-v1-${{ github.sha }}
       - name: Upload shard evidence
         if: success()
@@ -163,7 +172,7 @@ jobs:
         # wrong-commit restore cannot be used. Search Readiness h5.
         uses: actions/cache/restore@v4
         with:
-          path: .build-cache
+          path: /tmp/velocity-build-cache
           key: build-cache-v1-${{ github.sha }}
           restore-keys: |
             build-cache-v1-
