@@ -37,7 +37,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          # Full history stays: the attestation reads it and
+          # validate_lane_git_history_depth requires fetch-depth: 0 on any workflow
+          # that can reach a history-reading script. Historic BLOBS are fetched on
+          # demand instead - nothing in the release or advisory profile reads the
+          # bytes of an old commit, and this repo rewrites ~2,100 HTML pages per
+          # release, so those blobs were most of the checkout. Search Readiness h5.
           fetch-depth: 0
+          filter: blob:none
       - name: Setup Node 24
         uses: actions/setup-node@v7
         with:
@@ -46,9 +53,11 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
       - name: Build strategy gate and daily citation preview
-        run: |
-          npm run strategy:gate
-          npm run release:daily-citation-intelligence:preview
+        # One line, not two: release:daily-citation-intelligence:preview begins with
+        # `npm run strategy:gate`, so running it first ran the 100k runway build twice
+        # in every one of the five jobs - about 25 seconds each, twice over on the
+        # critical path (a shard, then the aggregate). Search Readiness h5.
+        run: npm run release:daily-citation-intelligence:preview
       - name: Build and validate this shard of the release profile
         env:
           VALIDATION_SHARD: ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
@@ -85,7 +94,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          # Full history stays: the attestation reads it and
+          # validate_lane_git_history_depth requires fetch-depth: 0 on any workflow
+          # that can reach a history-reading script. Historic BLOBS are fetched on
+          # demand instead - nothing in the release or advisory profile reads the
+          # bytes of an old commit, and this repo rewrites ~2,100 HTML pages per
+          # release, so those blobs were most of the checkout. Search Readiness h5.
           fetch-depth: 0
+          filter: blob:none
       - name: Setup Node 24
         uses: actions/setup-node@v7
         with:
@@ -94,9 +110,11 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
       - name: Build strategy gate and daily citation preview
-        run: |
-          npm run strategy:gate
-          npm run release:daily-citation-intelligence:preview
+        # One line, not two: release:daily-citation-intelligence:preview begins with
+        # `npm run strategy:gate`, so running it first ran the 100k runway build twice
+        # in every one of the five jobs - about 25 seconds each, twice over on the
+        # critical path (a shard, then the aggregate). Search Readiness h5.
+        run: npm run release:daily-citation-intelligence:preview
       - name: Download shard evidence
         uses: actions/download-artifact@v7
         with:
