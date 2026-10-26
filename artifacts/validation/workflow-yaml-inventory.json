@@ -1,8 +1,8 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-10-25T11:51:57.165Z",
-  "workflow_count": 11,
+  "generated_at": "2026-10-26T07:09:38.779Z",
+  "workflow_count": 12,
   "workflows": [
     {
       "path": ".github/workflows/ci-health-recovery.yml",
@@ -134,6 +134,35 @@
       "required_artifacts": [
         "artifact path declared inline or by action"
       ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/post-deploy-live-check.yml",
+      "name": "post-deploy live check",
+      "trigger": [
+        "schedule",
+        "workflow_dispatch",
+        "push"
+      ],
+      "primary_command": "unknown",
+      "repo_lane": "manual-maintenance",
+      "current_status": "keep",
+      "reason": "Non-canonical workflow requires review.",
+      "allowed_runtime_mutations": [],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [],
       "validation_owner": "validation registry and workflow topology validators"
     },
     {
@@ -323,8 +352,9 @@
         "validate:",
         "needs: shard",
         "runs-on: ubuntu-latest",
-        "# Normal is ~3 minutes (setup + build + merge + attestation + upload); 2x that.",
-        "timeout-minutes: 10",
+        "# Measured on run 40261574048: 2.2 minutes (16s checkout, 39s gate+preview,",
+        "# 53s merge and tail stages, 11s artifact upload). ~2.7x that.",
+        "timeout-minutes: 6",
         "steps:",
         "-",
         ".",
