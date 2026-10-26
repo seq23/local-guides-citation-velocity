@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-10-25T12:03:52.277Z",
+  "generated_at": "2026-10-26T07:07:40.156Z",
   "status": "PASS",
-  "workflow_count": 11,
+  "workflow_count": 12,
   "errors": [],
   "warnings": [],
   "lifecycle_checks": [
@@ -131,6 +131,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/install_served_head_contract.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/validation/run_validation_registry.js",
               "ok": true
             },
@@ -216,6 +221,33 @@
             {
               "type": "file",
               "path": "scripts/search_console/gsc_portfolio_report.py",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        }
+      ]
+    },
+    {
+      "workflow": "post-deploy-live-check.yml",
+      "command_count": 2,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "sleep 150",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "node scripts/live/post_deploy_live_check.mjs",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/live/post_deploy_live_check.mjs",
               "ok": true
             }
           ],
@@ -722,17 +754,12 @@
           "transitive_npm_scripts": []
         },
         {
-          "command": "npm run strategy:gate\nnpm run release:daily-citation-intelligence:preview",
+          "command": "npm run release:daily-citation-intelligence:preview",
           "status": "PASS",
           "checks": [
             {
               "type": "npm_script",
               "name": "release:daily-citation-intelligence:preview",
-              "ok": true
-            },
-            {
-              "type": "npm_script",
-              "name": "strategy:gate",
               "ok": true
             },
             {
@@ -762,8 +789,7 @@
             }
           ],
           "direct_npm_scripts": [
-            "release:daily-citation-intelligence:preview",
-            "strategy:gate"
+            "release:daily-citation-intelligence:preview"
           ],
           "transitive_npm_scripts": [
             "citation:100k-runway",
@@ -1339,6 +1365,11 @@
             },
             {
               "type": "file",
+              "path": "scripts/install_served_head_contract.js",
+              "ok": true
+            },
+            {
+              "type": "file",
               "path": "scripts/build_cache_wrapper.js",
               "ok": true
             },
@@ -1501,6 +1532,11 @@
             {
               "type": "file",
               "path": "scripts/install_site_head_assets.js",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/install_served_head_contract.js",
               "ok": true
             },
             {
