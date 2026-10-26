@@ -13,7 +13,11 @@
  *       every model $0 on every pricing field; snapshot older than its max age is
  *       a WARNING (refresh with --refresh), never a blocker;
  *   (c) probe workflows: no schedule: trigger, a workflow_dispatch boolean input
- *       confirm_paid defaulting false, and a guard step that refuses otherwise.
+ *       confirm_paid defaulting false, and a guard step that refuses otherwise;
+ *   (d) the rule is written where the next agent finds it: docs/cost/zero-paid-llm.md
+ *       exists and CLAUDE.md carries the "nothing paid" line and points at that doc.
+ *       A policy only this file knows is a wish - the next person to open the repo
+ *       reads CLAUDE.md, so the line has to be there and has to be read by code.
  */
 const fs = require('fs');
 const path = require('path');
@@ -21,6 +25,8 @@ const path = require('path');
 const ROUTER = 'scripts/lib/free_llm_router.mjs';
 const ROUTING = 'config/llm_routing.json';
 const SELF = 'scripts/lib/zero_paid_llm_check.js';
+const POLICY_DOC = 'docs/cost/zero-paid-llm.md';
+const HOUSE_RULES = 'CLAUDE.md';
 // Text that means "this line reaches a model provider".
 const MODEL_REACH = /openrouter\.ai|OPENROUTER_API_KEY|chat\/completions|api\.openai\.com|anthropic\.com|ANTHROPIC_API_KEY|OPENAI_API_KEY|generativelanguage\.googleapis|GEMINI_API_KEY|GOOGLE_GEMINI_API_KEY|perplexity\.ai|PERPLEXITY_API_KEY|SERPAPI_API_KEY|serpapi\.com|semrush|ahrefs|APIFY_TOKEN|api\.apify/i;
 const ENDPOINT = /openrouter\.ai\/api\/v1\/chat\/completions|api\.openai\.com|api\.anthropic\.com|generativelanguage\.googleapis\.com|api\.perplexity\.ai|serpapi\.com\/search/;
@@ -150,6 +156,17 @@ function check(io, { reg, now = Date.now() } = {}) {
     if (!/CONFIRM_PAID:\s*\$\{\{\s*inputs\.confirm_paid\s*\}\}/.test(yml)) failures.push(`${rel} does not pass CONFIRM_PAID from inputs.confirm_paid to the probe`);
   }
   if (!probeWorkflows.length) failures.push('no probe workflows registered; the check would govern nothing');
+
+  // ------------------------------------------------- (d) the written policy
+  if (!io.exists(POLICY_DOC)) failures.push(`${POLICY_DOC} missing; the zero-paid policy has no written record`);
+  if (!io.exists(HOUSE_RULES)) failures.push(`${HOUSE_RULES} missing; the zero-paid rule has nowhere the next agent will read it`);
+  else {
+    const rules = io.read(HOUSE_RULES);
+    if (!/nothing paid/i.test(rules)) failures.push(`${HOUSE_RULES} does not say "nothing paid"`);
+    if (!rules.includes(POLICY_DOC)) failures.push(`${HOUSE_RULES} does not point at ${POLICY_DOC}`);
+    stats.house_rules_bytes = rules.length;
+  }
+
   return { failures, warnings, stats };
 }
 
@@ -173,6 +190,9 @@ function selfTest(root, reg) {
     ['probe workflow regains a schedule', { [pw]: base.read(pw).replace(/^on:\s*\n/m, "on:\n  schedule:\n    - cron: '0 0 * * *'\n") }],
     ['probe workflow loses confirm_paid', { [pw]: base.read(pw).replace(/confirm_paid/g, 'confirm_x') }],
     ['a script calls a model endpoint outside the router', { 'scripts/zz_fixture.mjs': "await fetch('https://openrouter.ai/api/v1/chat/completions')" }],
+    ['CLAUDE.md loses the "nothing paid" line', { [HOUSE_RULES]: base.read(HOUSE_RULES).replace(/nothing paid/gi, 'kept cheap') }],
+    ['CLAUDE.md stops pointing at the policy doc', { [HOUSE_RULES]: base.read(HOUSE_RULES).split(POLICY_DOC).join('docs/cost/elsewhere.md') }],
+    ['the policy doc is deleted', { [POLICY_DOC]: null }],
   ];
   const missed = [];
   for (const [name, ov] of cases) if (!check(mk(ov), { reg }).failures.length) missed.push(name);
@@ -181,4 +201,4 @@ function selfTest(root, reg) {
   return { cases: cases.length + 1, missed };
 }
 
-module.exports = { check, selfTest, repoIo, ROUTER, ROUTING };
+module.exports = { check, selfTest, repoIo, ROUTER, ROUTING, POLICY_DOC, HOUSE_RULES };

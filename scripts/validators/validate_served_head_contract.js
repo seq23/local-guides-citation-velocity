@@ -52,6 +52,8 @@ const errors = [];
 const hosts = new Set(portfolioHosts());
 let graded = 0;
 let sameAsMissing = 0;
+let intakePages = 0;
+let intakeTracked = 0;
 const howToUnprovable = [];
 const capExempt = [];
 const governed = c.governedRoutes();
@@ -147,6 +149,25 @@ for (const abs of pages) {
     for (const [h, n] of Object.entries(perHost)) if (n > 1) add('repeated_portfolio_link', `${h} linked ${n} times on one page; the cap is one`);
   }
 
+  // j2: a companion piece that mentions a canonical intake must still LINK one,
+  // and that link must be attributable.
+  //
+  // The link cap turned every intake href on seven insight pages into plain text
+  // because the guide link happened to come first, so the piece named the lead
+  // surface and gave the reader no way to reach it. Graded on the served bytes,
+  // which is where the cap runs. The homepage is excluded: umbrella-homepage-shape
+  // matches each card's intake href as a literal string and owns that shape.
+  if (route !== '/' && /request-assistance/.test(html)) {
+    intakePages += 1;
+    const tracked = outbound.some((h) => {
+      let u;
+      try { u = new URL(h, c.SITE_BASE); } catch { return false; }
+      return hosts.has(u.hostname.replace(/^www\./, '')) && c.INTAKE_PATH.test(u.pathname) && /(^|&)(utm_|ref=|src=|source=)/.test(u.search.slice(1));
+    });
+    if (tracked) intakeTracked += 1;
+    else add('intake_not_linked_or_untracked', 'names a canonical intake but carries no <a> to one with tracking parameters');
+  }
+
   // d2: a how-to carries an ordered list; an "X vs Y" carries a table.
   //
   // A how-to with no <ol> is a failure only where the steps are PROVABLE - the
@@ -164,6 +185,12 @@ for (const abs of pages) {
   if (/\bvs\.?\b|\bversus\b/i.test(title) && !/<table\b/i.test(html)) add('comparison_without_table', 'title says vs; no <table>');
 }
 
+// Rule 0 for j2: a tree where no page names an intake would pass the clause above
+// by inspecting nothing. Measured 2026-10-25: 1,969 of 2,137 served pages do.
+const MIN_INTAKE_PAGES = 800;
+if (!stops.length && intakePages < MIN_INTAKE_PAGES) {
+  stops.push(`only ${intakePages} served page(s) name a canonical intake; expected at least ${MIN_INTAKE_PAGES}. The intake routing clause inspected nothing.`);
+}
 if (!stops.length && graded < MIN_PAGES) {
   stops.push(`only ${graded} page(s) graded; expected at least ${MIN_PAGES}. The tree is unbuilt or truncated, so nothing was proven.`);
 }
@@ -174,6 +201,8 @@ const report = {
   validator: 'served-head-contract',
   ok: !errors.length && !stops.length,
   graded_pages: graded,
+  intake_pages: intakePages,
+  intake_pages_tracked: intakeTracked,
   bands: {
     title: [c.MIN_TITLE_CHARS, c.MAX_TITLE_CHARS],
     description: [c.MIN_DESCRIPTION_CHARS, c.MAX_DESCRIPTION_CHARS]
@@ -207,4 +236,4 @@ if (errors.length) {
   console.error('Fix the generator or scripts/lib/served_head_contract.js, never the rendered page.');
   process.exit(1);
 }
-console.log(`SERVED HEAD CONTRACT PASS: ${graded} served pages; title ${c.MIN_TITLE_CHARS}-${c.MAX_TITLE_CHARS}, description ${c.MIN_DESCRIPTION_CHARS}-${c.MAX_DESCRIPTION_CHARS}, complete social set, Organization with logo, ownership disclosure where a commonly owned site is linked, no portfolio domain over a quarter of a page's outbound links (reported, not failed: ${sameAsMissing} page(s) with no verified Organization sameAs, ${howToUnprovable.length} how-to page(s) whose own content proves no steps, ${capExempt.length} page(s) exempt from the link cap by the canonical-anchor contract).`);
+console.log(`SERVED HEAD CONTRACT PASS: ${graded} served pages; title ${c.MIN_TITLE_CHARS}-${c.MAX_TITLE_CHARS}, description ${c.MIN_DESCRIPTION_CHARS}-${c.MAX_DESCRIPTION_CHARS}, complete social set, Organization with logo, ownership disclosure where a commonly owned site is linked, no portfolio domain over a quarter of a page's outbound links (reported, not failed: ${sameAsMissing} page(s) with no verified Organization sameAs, ${howToUnprovable.length} how-to page(s) whose own content proves no steps, ${capExempt.length} page(s) exempt from the link cap by the canonical-anchor contract); ${intakeTracked}/${intakePages} page(s) naming a canonical intake carry a tracked link to one.`);

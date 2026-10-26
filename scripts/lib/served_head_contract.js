@@ -223,9 +223,65 @@ function ensureOwnershipDisclosure(html) {
  * outbound is 25%, which is inside the cap; pages with fewer than four outbound
  * links are not graded at all.
  */
+/**
+ * j2: a companion piece's link to a canonical intake says where the reader came from.
+ *
+ * Search Readiness j2 wants the canonical intake reachable from every companion
+ * piece AND attributable - the canonical is where the lead is captured, and a bare
+ * https://dentistryguides.com/request-assistance/ arrives with no idea which piece
+ * sent it, so nothing on the canonical side can tell a working route from a dead one.
+ *
+ * Only an intake URL that carries NO query of its own is stamped. The senior-living
+ * contract builds its own intake URLs with vertical/src/page_slug parameters that
+ * velocity-canonical-anchor-links matches exactly; appending to those would be
+ * rewriting another contract's links. The homepage is left alone for the same
+ * reason - umbrella-homepage-shape matches each card's intake href as a literal.
+ */
+const INTAKE_PATH = /^\/request-assistance\/?$/;
+
+function stampIntakeTracking(html, portfolioHosts, route) {
+  const hosts = new Set(portfolioHosts || []);
+  const r = String(route || '').replace(/\/+$/, '');
+  if (!hosts.size || !r || r === '/') return html;
+  const content = r.replace(/^\/+/, '');
+  return html.replace(/<a\b([^>]*)>/gi, (whole, attrs) => {
+    const m = attrs.match(/\bhref=(["'])([\s\S]*?)\1/i);
+    if (!m) return whole;
+    const raw = decodeEntities(m[2]);
+    let u;
+    try { u = new URL(raw, SITE_BASE); } catch { return whole; }
+    if (!hosts.has(u.hostname.replace(/^www\./, '')) || !INTAKE_PATH.test(u.pathname)) return whole;
+    if (u.search || u.hash) return whole;
+    const stamped = `${raw}?utm_source=${SITE_HOST}&utm_medium=referral&utm_campaign=companion&utm_content=${encodeURIComponent(content)}`;
+    return whole.replace(m[0], `href=${m[1]}${escAttr(stamped)}${m[1]}`);
+  });
+}
+
+/** A portfolio host's intake link, if the page has one: what the cap must keep. */
+function preferredLinkPerHost(html, hosts) {
+  const pick = new Map();
+  for (const m of html.matchAll(/<a\b([^>]*)>/gi)) {
+    const href = (m[1].match(/\bhref=(["'])([\s\S]*?)\1/i) || [])[2];
+    if (!href) continue;
+    let u;
+    try { u = new URL(decodeEntities(href), SITE_BASE); } catch { continue; }
+    const host = u.hostname.replace(/^www\./, '');
+    if (!hosts.has(host)) continue;
+    if (!pick.has(host)) pick.set(host, href);
+    else if (INTAKE_PATH.test(u.pathname) && !INTAKE_PATH.test(new URL(decodeEntities(pick.get(host)), SITE_BASE).pathname)) pick.set(host, href);
+  }
+  return pick;
+}
+
 function capPortfolioLinks(html, portfolioHosts, { exempt = false } = {}) {
   const hosts = new Set(portfolioHosts || []);
   if (!hosts.size || exempt) return html;
+  // Which link survives per host is chosen BEFORE any is capped: the intake, if
+  // the page has one. Keeping the first link instead left seven insight pages
+  // with the guide link and every intake link turned into plain text, so the
+  // pieces had no route to the lead surface at all (Search Readiness j2,
+  // measured 2026-10-25 on /insights/trt-006-..., three capped intake links).
+  const keep = preferredLinkPerHost(html, hosts);
   const linked = new Set();
   return html.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (whole, attrs, inner) => {
     const href = (attrs.match(/\bhref=(["'])([\s\S]*?)\1/i) || [])[2];
@@ -234,7 +290,7 @@ function capPortfolioLinks(html, portfolioHosts, { exempt = false } = {}) {
     try { u = new URL(decodeEntities(href), SITE_BASE); } catch { return whole; }
     const host = u.hostname.replace(/^www\./, '');
     if (!hosts.has(host)) return whole;
-    if (!linked.has(host)) { linked.add(host); return whole; }
+    if (!linked.has(host) && href === keep.get(host)) { linked.add(host); return whole; }
     const cls = (attrs.match(/\bclass=(["'])([\s\S]*?)\1/i) || [])[2] || '';
     return `<span class="${escAttr(cls)}" data-link-capped="true">${inner}</span>`;
   });
@@ -368,13 +424,16 @@ function ensureOrderedSteps(html) {
   return bodyEnd >= 0 ? html.slice(0, bodyEnd) + block + html.slice(bodyEnd) : html;
 }
 
-function applyAll(html, { portfolioHosts = [], org = null, exemptFromCap = false } = {}) {
+function applyAll(html, { portfolioHosts = [], org = null, exemptFromCap = false, route = null } = {}) {
   if (!/<html/i.test(html)) return html;
   let out = html;
   out = normalizeSnippet(out);
   out = ensureSocialTags(out);
   out = consolidateOrganization(out, org);
   out = ensureOwnershipDisclosure(out);
+  // Stamp before capping: the cap picks the surviving link by path, and a stamped
+  // intake must still read as the intake when it does.
+  out = stampIntakeTracking(out, portfolioHosts, route);
   out = capPortfolioLinks(out, portfolioHosts, { exempt: exemptFromCap });
   out = ensureOrderedSteps(out);
   return out;
@@ -386,5 +445,5 @@ module.exports = {
   MIN_TITLE_CHARS, MAX_TITLE_CHARS, MIN_DESCRIPTION_CHARS, MAX_DESCRIPTION_CHARS,
   titleOf, descOf, canonicalOf, bodyOf, decodeEntities,
   normalizeSnippet, ensureSocialTags, consolidateOrganization, ensureOwnershipDisclosure,
-  capPortfolioLinks, governedRoutes, isGovernedRoute, isCappableRoute, CAPPABLE_ROUTE, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, applyAll
+  capPortfolioLinks, stampIntakeTracking, preferredLinkPerHost, INTAKE_PATH, governedRoutes, isGovernedRoute, isCappableRoute, CAPPABLE_ROUTE, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, applyAll
 };
