@@ -5905,7 +5905,7 @@
     },
     {
       "id": "search-snippet-floors",
-      "title": "Served pages carry a title of at least 30 and a meta description of at least 110 characters (warning only)",
+      "title": "Served pages carry a title of at least 30 and a meta description of at least 120 characters (warning only)",
       "path": "scripts/validators/validate_search_snippet_floors.js",
       "command": "node scripts/validators/validate_search_snippet_floors.js",
       "status": "ACTIVE",
@@ -5926,7 +5926,7 @@
         "metadata",
         "content-quality"
       ],
-      "risk_prevented": "Bing Webmaster, 2026-09-25: 86 titles under 30 characters (\"About\", \"Atlas\", \"USCIS: Cost\", \"Minoxidil cost | Insight\") and 43 meta descriptions under 100 on theindustryguides.com. Each came from a generator that printed a record's short label straight into the head. The generators now fit both values through scripts/lib/search_snippet.js; this proves every sitemap route agrees, reads the same constants, and refuses to pass having graded fewer than 1,500 pages. Ceilings (70/160) are counted in the report, never failed.",
+      "risk_prevented": "Bing Webmaster, 2026-09-25: 86 titles under 30 characters (\"About\", \"Atlas\", \"USCIS: Cost\", \"Minoxidil cost | Insight\") and 43 meta descriptions under 100 on theindustryguides.com. Each came from a generator that printed a record's short label straight into the head. The generators now fit both values through scripts/lib/search_snippet.js; this proves every sitemap route agrees, reads the same constants, and refuses to pass having graded fewer than 1,500 pages. Ceilings are now held too, over the SERVED tree, by served-head-contract: this validator reads the frozen repo-root pages and keeps the floors; the publish-time contract trims the ceilings in dist/.",
       "why_existing_checks_do_not_cover": "search-quality-basics and page-release-law assert the title and description exist (page-release-law: 3 and 20 characters); neither has a floor a search engine would accept.",
       "estimated_runtime_seconds": 5,
       "timeout_seconds": 120,
@@ -5945,6 +5945,91 @@
       "mutates_files": [
         "artifacts/validation/search-snippet-floors.json"
       ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "served-head-contract",
+      "title": "The served tree keeps the head and disclosure contract: title 30-65, description 120-160, complete social set, Organization with logo, ownership disclosure, capped link concentration",
+      "path": "scripts/validators/validate_served_head_contract.js",
+      "command": "node scripts/validators/validate_served_head_contract.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "seo",
+        "metadata",
+        "schema",
+        "disclosure",
+        "content-quality"
+      ],
+      "risk_prevented": "Search Readiness audit of theindustryguides.com, 2026-10-25, measured in dist/: 414 titles over 65 characters, 1,327 meta descriptions over 160, 1,261 pages with no og:title, 1,262 without twitter:card summary_large_image, 2,137 with no common-ownership line and 2,137 with no Organization logo, plus one insight page linking a single canonical URL eight times (8 of 11 outbound links). 2,116 of the 2,136 admitted routes are frozen accepted bytes, so a generator-only fix cannot reach them; scripts/install_served_head_contract.js fixes them at publish time and this validator holds the result. It shares scripts/lib/served_head_contract.js with the installer, so the rule has one definition, and it refuses to pass having graded fewer than 1,500 pages.",
+      "why_existing_checks_do_not_cover": "search-snippet-floors reads the frozen repo-root pages and only enforces floors, so it cannot see a ceiling breach or anything the publish-time passes add; no validator read dist/ - the bytes the edge actually serves - for social tags, the Organization logo, the ownership disclosure or outbound-link concentration.",
+      "estimated_runtime_seconds": 20,
+      "timeout_seconds": 300,
+      "evidence_file": "artifacts/validation/served-head-contract.json",
+      "failure_action": "record finding and continue. Fix at the source: the bands live in scripts/lib/search_snippet.js, the transforms in scripts/lib/served_head_contract.js, and the generators are scripts/build_site.js (renderLayout, templates/layout.html) and scripts/lib/publish_contract.js. Never edit a rendered page.",
+      "depends_on": [],
+      "requires_files": [
+        "dist/index.html"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/served-head-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/served-head-contract.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
+      "id": "verified-same-as-publication",
+      "title": "A VERIFIED sameAs record in the authority registry reaches the published Organization node",
+      "path": "scripts/tests/test_verified_same_as_publishes.js",
+      "command": "node scripts/tests/test_verified_same_as_publishes.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 3",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "schema",
+        "authority",
+        "governance"
+      ],
+      "risk_prevented": "data/authority/verified_same_as_registry.json carries the rule that every sameAs URL must be registered there before publication, and five validators policed it, but NO generator read it: the registry was write-only, so a verified profile could be registered and still appear on no page. Search Readiness c1 fails on sameAs for all 2,136 pages and the only honest fix is a registered verified profile, which must therefore actually publish. scripts/lib/network_schema.js reads the registry now and this test proves the path in both directions - a complete VERIFIED record reaches the rendered graph; an incomplete or RETIRED one does not - and restores the file.",
+      "why_existing_checks_do_not_cover": "network-crawler-contract, citation-dominance-strategy and strategy-integrity-contract all assert the registry's SHAPE and forbid unregistered sameAs values. None of them asserts that a registered value is published, which is the half that did not exist.",
+      "estimated_runtime_seconds": 3,
+      "timeout_seconds": 60,
+      "evidence_file": null,
+      "failure_action": "record finding and continue. The reader is verifiedSameAs() in scripts/lib/network_schema.js; the published node is networkSchemaNodes()[0], which scripts/lib/served_head_contract.js also uses.",
+      "depends_on": [],
+      "requires_files": [
+        "data/authority/verified_same_as_registry.json",
+        "data/network/network_identity_registry.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [],
+      "mutates_files": [],
       "enforce_no_source_mutation": true
     },
     {
