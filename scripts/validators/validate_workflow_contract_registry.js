@@ -79,6 +79,44 @@ const laneTests = [];
   if (t.status !== 0) errors.push(`query-evidence-refresh.yml runs scripts/selfheal/run_lane_selfheal.mjs, whose commit-surface contract failed: ${`${t.stdout}${t.stderr}`.trim().split('\n').slice(0, 4).join(' | ')}`);
 }
 
+// THE MERGE GATE STAYS UNDER FIVE MINUTES (Search Readiness h5, 2026-10-25).
+// Measured on run 40258366849: 7.5 minutes against a five-minute target, and two
+// causes were pure repetition rather than work. Both are pinned here, on the
+// release profile, because a workflow whose shape silently rots is the same harm
+// as one pointing at nothing - and validate_workflow_contract.js, where the rest
+// of the gate's shape lives, is INFO and in no profile, so nothing would read it.
+//
+//   1. No job runs `npm run strategy:gate` on its own line next to
+//      release:daily-citation-intelligence:preview, which begins with exactly
+//      that command: the 100k runway build ran twice in every one of five jobs.
+//   2. Every checkout in the gate is full-history AND blobless. fetch-depth: 0 is
+//      required (the attestation reads git history; validate_lane_git_history_depth
+//      enforces it) but nothing the release or advisory profile runs reads the
+//      BYTES of an old commit, and this repo rewrites ~2,100 HTML pages per
+//      release, so historic blobs were most of a 45-second checkout, paid twice
+//      on the critical path.
+const GATE = 'validate-repo.yml';
+{
+  const gateRel = `.github/workflows/${GATE}`;
+  if (!exists(gateRel)) errors.push(`${GATE} missing; the merge gate has no shape to check`);
+  else {
+    const gate = read(gateRel);
+    for (const step of gate.split(/\n(?=\s*- name:)/)) {
+      const runs = (step.match(/run:[\s\S]*/) || [''])[0];
+      if (/^\s*npm run strategy:gate\s*$/m.test(runs) && /release:daily-citation-intelligence:preview/.test(runs)) {
+        errors.push(`${GATE} runs \`npm run strategy:gate\` beside the preview that already runs it; the runway build is paid twice in every job`);
+      }
+    }
+    const checkouts = gate.match(/uses:\s*actions\/checkout@[^\n]*\n(?:\s{8,}[^\n]*\n)*/g) || [];
+    // Rule 0: zero checkouts means the pattern stopped matching, not that the gate is clean.
+    if (checkouts.length < 2) errors.push(`${GATE} has ${checkouts.length} checkout block(s); expected one per job, so this check inspected nothing`);
+    for (const [i, co] of checkouts.entries()) {
+      if (!/fetch-depth:\s*0/.test(co)) errors.push(`${GATE} checkout ${i} is not fetch-depth: 0; the attestation reads git history`);
+      if (!/filter:\s*blob:none/.test(co)) errors.push(`${GATE} checkout ${i} fetches historic blobs the gate never reads; add filter: blob:none`);
+    }
+  }
+}
+
 const result = { id: 'workflow-contract-registry', status: errors.length ? 'FAIL' : 'PASS',
   workflows_checked: entries.length, scripts_checked: scriptsChecked, lane_contract_tests: laneTests, errors };
 fs.mkdirSync(path.join(ROOT, path.dirname(OUT)), { recursive: true });

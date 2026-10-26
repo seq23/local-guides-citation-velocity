@@ -53,20 +53,21 @@ function main() {
   let changed = 0;
   const governed = c.governedRoutes();
   if (!governed.size) { console.error('served-head-contract: no governed route read from data/page_families/velocity_page_specs.json; the cap exemption would reach nothing'); process.exit(1); }
-  const counts = { title_trimmed: 0, description_fitted: 0, social_added: 0, ownership_added: 0, links_capped: 0, steps_ordered: 0, cap_exempt: 0 };
+  const counts = { title_trimmed: 0, description_fitted: 0, social_added: 0, ownership_added: 0, links_capped: 0, intake_tracked: 0, steps_ordered: 0, cap_exempt: 0 };
   for (const p of pages) {
     const before = fs.readFileSync(p, 'utf8');
     const beforeTitle = c.titleOf(before), beforeDesc = c.descOf(before);
     const route = routeFor(path.relative(outDir, p));
     const exemptFromCap = !c.isCappableRoute(route, governed);
     if (exemptFromCap) counts.cap_exempt += 1;
-    const after = c.applyAll(before, { portfolioHosts: hosts, org, exemptFromCap });
+    const after = c.applyAll(before, { portfolioHosts: hosts, org, exemptFromCap, route });
     if (after === before) continue;
     if (c.titleOf(after) !== beforeTitle) counts.title_trimmed += 1;
     if (c.descOf(after) !== beforeDesc) counts.description_fitted += 1;
     if (/og:site_name/.test(after) && !/og:site_name/.test(before)) counts.social_added += 1;
     if (after.includes(c.OWNERSHIP_MARKER) && !before.includes(c.OWNERSHIP_MARKER)) counts.ownership_added += 1;
     if (/data-link-capped/.test(after)) counts.links_capped += 1;
+    if (/request-assistance\/\?utm_source=/.test(after) && !/request-assistance\/\?utm_source=/.test(before)) counts.intake_tracked += 1;
     if (/<ol\b/i.test(after) && !/<ol\b/i.test(before)) counts.steps_ordered += 1;
     fs.writeFileSync(p, after);
     changed += 1;
