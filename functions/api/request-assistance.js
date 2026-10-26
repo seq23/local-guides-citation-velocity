@@ -229,6 +229,25 @@ async function relayLeadByEmail({ env, record, stored, reason }) {
   return { ok: true };
 }
 
+// Owner ruling, 26 Oct 2026: submissions from blocked email domains are
+// dropped quietly. The list lives only in the BLOCKED_LEAD_DOMAINS Pages env
+// var (comma-separated); no domain is ever written into this public repo.
+// Matching is case-insensitive on the exact domain or any subdomain of it.
+// Unset or empty means nothing is blocked.
+function blockedLeadDomain(email, env) {
+  const raw = String((env && env.BLOCKED_LEAD_DOMAINS) || '');
+  const list = raw.split(',').map((d) => d.trim().toLowerCase().replace(/^@+/, '').replace(/\.+$/, '')).filter(Boolean);
+  if (!list.length) return null;
+  const at = String(email || '').lastIndexOf('@');
+  if (at < 0) return null;
+  const domain = String(email).slice(at + 1).trim().toLowerCase().replace(/\.+$/, '');
+  if (!domain) return null;
+  for (const d of list) {
+    if (domain === d || domain.endsWith('.' + d)) return domain;
+  }
+  return null;
+}
+
 export async function onRequestPost(context) {
   try {
     const req = context.request;
@@ -286,6 +305,14 @@ export async function onRequestPost(context) {
         return '';
       }
     })();
+
+    const blockedDomain = email ? blockedLeadDomain(email, env) : null;
+    if (blockedDomain) {
+      // Same answer the honeypot gives, so the sender learns nothing. No
+      // Airtable write, no relay email; one log line, no personal data.
+      console.log(`BLOCKED_LEAD domain=${blockedDomain} source=${host}`);
+      return json({ ok: true });
+    }
 
     const record = {
       provider_type,

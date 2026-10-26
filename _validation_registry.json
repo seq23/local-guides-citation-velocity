@@ -4089,6 +4089,47 @@
       "unit_attribution_measured": "13 Oct 2026: keying the citation runway seed back to \"uscis\" (scripts/citation_intelligence/build_100k_citation_runway.js) and regenerating made the validator fail (exit 1, 21 errors: 50 \"uscis\" values in data/measurement/free_win_self_heal_queue.json and 1,000 per runway shard); restored, regenerated, exit 0 with 102,743 canonical values across 35 emitted files. Before the emitter fixes it failed on releases/fanout_query_clusters.personal_injury.json and .uscis.json and on 609 \"personal_injury\" values in .build/fanout_manifest.json."
     },
     {
+      "id": "blocked-lead-domains",
+      "title": "Lead submissions from BLOCKED_LEAD_DOMAINS are dropped quietly; all others are stored",
+      "path": "scripts/validators/validate_blocked_lead_domains.js",
+      "command": "node scripts/validators/validate_blocked_lead_domains.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 3",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "lead-intake",
+        "functions",
+        "runtime"
+      ],
+      "risk_prevented": "26 Oct 2026 owner ruling: guide-site form submissions from blocked email domains (the BLOCKED_LEAD_DOMAINS Pages env var, comma-separated, never written in this repo) are dropped quietly - no Airtable write, no relay email, the honeypot's bare { ok: true }, one BLOCKED_LEAD log line. Fails when a blocked exact domain or subdomain reaches Airtable or Resend, when the response or log differs, or when an unlisted, look-alike or unset-env submission is not stored and relayed (a real lead silently lost).",
+      "why_existing_checks_do_not_cover": "No other validator executes functions/api/request-assistance.js; brand-separation only scans its text. This runs onRequestPost with a stubbed fetch over 10 cases on fake .test domains.",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 60,
+      "evidence_file": null,
+      "failure_action": "fix blockedLeadDomain / the block check in functions/api/request-assistance.js and re-run",
+      "depends_on": [],
+      "requires_files": [
+        "functions/api/request-assistance.js"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [],
+      "mutates_files": [],
+      "enforce_no_source_mutation": true,
+      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
+      "severity_note": "STRONG_WARNING, not HARD_FAIL: the HARD_FAIL cap (40) is full, and a blocked sender getting through is a nuisance, not a release-blocking harm."
+    },
+    {
       "id": "umbrella-homepage-shape",
       "title": "The homepage routes to the six canonical guide sites first: hero, then six vertical cards with verified links, no keyword-inventory grid",
       "path": "scripts/validators/validate_umbrella_homepage_shape.js",
