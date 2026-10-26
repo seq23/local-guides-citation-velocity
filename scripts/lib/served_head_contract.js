@@ -144,18 +144,22 @@ function ensureSocialTags(html) {
 }
 
 /**
- * c1: the Organization node carries name, url and logo.
+ * c1: the Organization node carries name, url, logo and sameAs.
  *
  * The audit reads the FIRST Organization-shaped node in the graph. On an insight
  * page that was the Article's inline `publisher` ({name, url} only), so the fully
  * described network Organization further down the graph was never reached. One
  * node is now described and the publisher refers to it by @id.
  *
- * sameAs is deliberately not invented here: data/network/
- * network_identity_registry.json prohibits "unverified sameAs URLs" and
- * data/authority/verified_same_as_registry.json holds no records, so any value
- * added would be a claim this repository forbids. It is added the moment a
- * verified profile is registered.
+ * sameAs is still not invented here, and now it does not have to be: it comes
+ * from the published node like every other field. data/authority/
+ * verified_same_as_registry.json carries two FIRST_PARTY_ENTITY_PAGE records
+ * verified live on 26 Oct 2026 (/about, /methodology), and
+ * validate_network_crawler_contract.js hard-fails a published URL that is not a
+ * VERIFIED record satisfying its declared basis - so an invented profile still
+ * cannot reach a page, and an empty sameAs can no longer sit here as a safe
+ * default. The entity publishes no social profile; that search, and its result,
+ * are recorded in the registry rather than left to be redone.
  */
 function organizationNode() {
   // The same node build_site.js publishes, including any VERIFIED sameAs, so the
