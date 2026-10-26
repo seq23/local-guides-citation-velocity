@@ -44,6 +44,14 @@ exactly once and passed. Shard weights come from measured durations in
 `npm run ci:refresh-shard-weights -- <run-id>` after a run whose timings moved,
 or the balancer packs one shard twice as heavy as the rest.
 
+**Nothing the gate can do once is done five times.** The build and the daily
+citation preview were each run in every one of the `SHARD_COUNT`+1 jobs, and both
+sat on the critical path twice over - the slowest shard, then the aggregate that
+waits on it. The preview now runs on shard 1 only (it is still exercised on every
+PR, just not five times), and the build is cached per commit as below. A measured
+6.2-minute gate came down to about three and a half; `ci:refresh-shard-weights`
+keeps the shards even underneath that.
+
 **The gate builds the site once per commit, not once per job.** The release lane's
 `site-build` stage runs `npm run build:cached`
 ([`scripts/lib/build_cache.js`](scripts/lib/build_cache.js)), shard 2 saves the
