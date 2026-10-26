@@ -80,5 +80,17 @@
       "query-class-occupancy-probe.yml"
     ],
     "receipt_workflow": ".github/workflows/query-evidence-refresh.yml"
+  },
+  "build_result_cache": {
+    "registered_on": "2026-10-26",
+    "note": "Search Readiness h5: the merge gate builds the site ONCE per commit instead of once per job. validate_site_hygiene.js runs scripts/lib/build_cache_contract_check.js against this block (the lane builds through the wrapper; the wrapper still refuses a store inside the checkout and an entry it cannot read back complete; the gate sets BUILD_CACHE_DIR outside the checkout and caches that same path; the wall-clock-stamped generated ledgers stay out of the hashed input surface) and replays its hostile fixtures every run. Folded into the site-hygiene blocker so the 40-blocker cap holds, exactly as zero_paid_llm was. The byte-identity proof over the cache is build-result-cache-integrity, which is audit-only because four lane stages after site-build write into data/ and move the input hash.",
+    "lane": "scripts/release/run_staged_release.js",
+    "wrapper": "scripts/build_cache_wrapper.js",
+    "cache_lib": "scripts/lib/build_cache.js",
+    "gate": ".github/workflows/validate-repo.yml",
+    "checker": "scripts/lib/build_cache_contract_check.js",
+    "input_exclude_prefixes": [
+      "data/signals/"
+    ]
   }
 }

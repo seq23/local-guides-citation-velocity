@@ -2152,8 +2152,7 @@
       "tier": "Tier 8",
       "scope": "CONTAINER",
       "profiles": [
-        "audit",
-        "release"
+        "audit"
       ],
       "tags": [
         "build",
@@ -2162,7 +2161,7 @@
         "expensive"
       ],
       "risk_prevented": "A stale or corrupted cache entry restoring the wrong bytes onto a `npm run build:cached` no-op run - the entire 2,070-page site regenerated from scratch on every CI invocation was this repo's actual cost before this cache existed, and a cache that is fast but wrong is worse than no cache at all. This validator requires a cache entry for the CURRENT input hash, rejects one that never came from a completed build (readEntryMeta refuses a missing/false build_completed stamp or a mismatched input_hash before any file is touched), and then hashes every git-tracked file plus the cache-managed build dirs on both the current tree and an isolated, cache-disabled ground-truth rebuild - not a sample - and fails naming the exact files that differ.",
-      "why_existing_checks_do_not_cover": "deterministic-build proves two independent builds of the same source agree with each other. It says nothing about the cache: a cache entry could be stale, partially written, or restored against the wrong input hash and deterministic-build would never see it, because it never runs `npm run build:cached` or inspects .build-cache/ at all.",
+      "why_existing_checks_do_not_cover": "deterministic-build proves two independent builds of the same source agree with each other. It says nothing about the cache: a cache entry could be stale, partially written, or restored against the wrong input hash and deterministic-build would never see it, because it never runs `npm run build:cached` or inspects .build-cache/ at all. It is audit-only and not on the merge gate, deliberately: the gate runs four stages after site-build that write into data/, which is part of the cache's hashed input surface, so by validation time the hash has moved and this validator looks for an entry no build ever used. The gate's guard over the same mechanism is the wrapper itself: scripts/build_cache_wrapper.js refuses to exit 0 on an entry it cannot read back complete, or with the store inside the repo tree under CI, and the lane runs it as its site-build stage - which generated-content-finalization-contract pins. That needs no blocker of its own.",
       "estimated_runtime_seconds": 49,
       "timeout_seconds": 600,
       "evidence_file": "artifacts/validation/build-result-cache-integrity.json",

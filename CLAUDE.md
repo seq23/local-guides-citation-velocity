@@ -56,7 +56,22 @@ a second time in series. Two rules hold this up, and a test reads each:
   rewrites `data/signals/**` with a real `generated_at`, so those paths are in
   `INPUT_EXCLUDE_PREFIXES`. Hash a generated ledger as input and every job gets a
   different key for the same commit, which is a cache that can never hit.
-- `build-result-cache-integrity` is in the `release` profile, not just `audit`,
-  because the gate now depends on the cache. It refuses to pass without an entry
-  for the current input hash and hashes every git-tracked file plus the build dirs
-  against an isolated, cache-disabled ground-truth build.
+- Two guards, because the gate depends on the cache and the heavy one cannot run
+  inside the lane. On the gate: the wrapper itself refuses a store inside the
+  checkout and an entry it cannot read back complete, and the `build_result_cache`
+  block of `data/seo/site_hygiene_registry.json` — read by the `site-hygiene`
+  blocker through [`scripts/lib/build_cache_contract_check.js`](scripts/lib/build_cache_contract_check.js),
+  hostile fixtures replayed every run — pins that the lane still builds through
+  the wrapper, that both refusals are still there, and that the gate still points
+  the store off the checkout. Folded in there rather than registered as its own
+  blocker because the release profile is capped at 40 on purpose: every blocker is
+  a way for main to go red. `build-result-cache-integrity`, the byte-identity
+  proof, stays `audit`-only: the lane runs four stages after site-build that write
+  into `data/`, part of the hashed input surface, so inside the lane it looks for
+  an entry under a hash no build ever used.
+
+- The store never lives in the checkout under CI. The gate sets
+  `BUILD_CACHE_DIR=/tmp/velocity-build-cache`, because a cache entry holds a copy
+  of the rendered tree and `search-quality-basics` read those copies as duplicate
+  indexable content. Gitignoring a directory does not hide it from a filesystem
+  walker.
