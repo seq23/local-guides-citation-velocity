@@ -45,6 +45,20 @@ const ROOT = path.resolve(__dirname, '..', '..');
  * blanket 404 or 403 to our egress is not a dead page — ftc.gov and medicaid.ms.gov both looked
  * "broken" on 2026-10-16 and were not (ftc.gov 404s its own root from here; medicaid.ms.gov was
  * serving a "temporary site" notice during a hosting outage). Those are deliberately NOT pinned.
+ *
+ * medicaid.ms.gov RECONFIRMED STILL IN THAT OUTAGE on 2026-10-22, so its URLs stay unpinned and
+ * unrepaired. The 2026-10-22 site-audit crawl re-reported two of them as 404 —
+ * /providers/administrative-code/ and the July 2026 dental fee-schedule .xlsx under /wp-content/.
+ * A root 200 is NOT the all-clear the usual host_control check assumes here: the root is itself
+ * the outage placeholder, titled "Mississippi Division of Medicaid | Temporary Site" and carrying
+ * "Website outage notice: ... currently down due to a temporary outage affecting our web-hosting
+ * vendor". EVERY path on that host 404s behind it — /providers/, /about-us/, a nonsense control
+ * path, and even previously-live /wp-content/uploads/*.pdf files — so nothing can be shown to have
+ * died, and the real pages are expected back when the vendor restores them. Repointing those two
+ * citations at the placeholder root, or at the Secretary of State's administrative-code index,
+ * would trade correct primary-source provenance on regulated Medicaid pages for a transient
+ * outage; that is the false-claim risk this pin's own hard_fail_basis exists to prevent. Re-verify
+ * the host root's title before treating any medicaid.ms.gov 404 as a defect.
  */
 const RETIRED = [
   { retired: 'https://boards.bsd.dli.mt.gov/psychology/',
@@ -79,6 +93,10 @@ const RETIRED = [
     live: 'https://www.mmis.georgia.gov/portal/PubAccess.Provider%20Information/Fee%20Schedules/tabId/19/Default.aspx',
     publisher: 'Georgia DCH dental fee schedule (GAMMIS)', host_control: '200',
     evidence: 'the quarterly PDF filename carries a publication timestamp GAMMIS rotates, so a direct link rots; retired URL 404 (same body length as a control 404 on that host), portal Fee Schedules page 200, 2026-10-16' },
+  { retired: 'https://www.hhs.nd.gov/sites/default/files/documents/rate-2026-july-dental-fee-schedule.xlsx',
+    live: 'https://www.hhs.nd.gov/healthcare/medicaid/provider/fee-schedules',
+    publisher: 'North Dakota HHS Medicaid dental fee schedule', host_control: '200',
+    evidence: 'same rotating-filename class as the Georgia row: the .xlsx name carries its July 2026 effective period, so ND HHS rotates it each revision and a direct link rots; retired URL 404, the Medicaid provider fee-schedules index 200 and carries the current dental schedule, host root and /healthcare/medicaid/provider both 200, browser UA, 2026-10-22' },
 ];
 
 // Where the URLs live: durable source first, then what the build renders from it.
