@@ -27,8 +27,11 @@ jobs:
   shard:
     name: shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    # Normal is ~6 minutes (setup + build + a ~3.5-minute slice); 2x that.
-    timeout-minutes: 15
+    # Measured on run 40261574048: the slowest shard is 3.1 minutes (15s checkout,
+    # 50s gate+preview, 113s build + its slice). The ceiling is a fault detector,
+    # not a budget, so ~2.5x that - 15 minutes let a hung job burn five times the
+    # normal run before anyone saw it.
+    timeout-minutes: 8
     strategy:
       fail-fast: false
       matrix:
@@ -88,8 +91,9 @@ jobs:
   validate:
     needs: shard
     runs-on: ubuntu-latest
-    # Normal is ~3 minutes (setup + build + merge + attestation + upload); 2x that.
-    timeout-minutes: 10
+    # Measured on run 40261574048: 2.2 minutes (16s checkout, 39s gate+preview,
+    # 53s merge and tail stages, 11s artifact upload). ~2.7x that.
+    timeout-minutes: 6
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
