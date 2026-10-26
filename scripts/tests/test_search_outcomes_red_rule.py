@@ -8,7 +8,10 @@ No network, no secrets. Pins (search_outcomes_weekly.py, MATERIAL_DROP):
     report's 28-day figure (weddingbudgetspreadsheet.com: 57 -> 23, 55 in W42);
   - any material 28-day fall goes RED, and a week drop with the 28-day also
     falling goes RED; small samples and noise-sized drops do not;
-  - every repo named as an owner is read for coverage files (hicks was not).
+  - every repo named as an owner is read for coverage files (hicks was not);
+  - every repo that writes index_coverage.json is read, listed or not: the
+    listed writers (hicks, how-we-know, dailystory were all missed) are pinned,
+    and discovery reads an unlisted writer end to end through read_repo_files.
 """
 import json
 import os
@@ -79,6 +82,56 @@ for repo in set(w.FALLBACK_OWNER.values()) | set(w.EXPECTED_PROPERTIES.values())
         errors.append(f"{repo} owns a property but is not in COVERAGE_REPOS")
 if "hicks-consulting-canonical" not in w.COVERAGE_REPOS:
     errors.append("hicks-consulting-canonical (commits index_coverage.json daily) is missing from COVERAGE_REPOS")
+# Every repo that wrote index_coverage.json on 26 Oct 2026 (gh tree scan of all seq23 repos).
+KNOWN_WRITERS = {"local-guides-generator", "approvalprep", "sprylabs-hpc-site", "how-we-know",
+                 "hicks-consulting-canonical", "WPP-llm", "p-n-p", "dream-wedding-builder",
+                 "local-guides-citation-velocity", "dailystory", "authority-backlink-network",
+                 "horse-legal-guide-velocity", "dianne-place-recovery-services"}
+for repo in sorted(KNOWN_WRITERS - set(w.COVERAGE_REPOS)):
+    errors.append(f"{repo} commits index_coverage.json but is missing from COVERAGE_REPOS")
+
+# Discovery: an unlisted writer is found and read; a non-writer, an archived repo and a fork are not.
+COV_DOC = {"property": "sc-domain:new.example", "summary": {"by_coverage_state": {"Submitted and indexed": 9, "Discovered - currently not indexed": 1}}}
+FAKE = {
+    f"users/{w.OWNER}/repos?type=owner&per_page=100&page=1": (200, [
+        {"name": "listed-repo"}, {"name": "unlisted-writer"}, {"name": "no-coverage"},
+        {"name": "old", "archived": True}, {"name": "copy", "fork": True}]),
+    f"repos/{w.OWNER}/unlisted-writer": (200, {"default_branch": "main"}),
+    f"repos/{w.OWNER}/unlisted-writer/git/trees/main?recursive=1": (200, {"tree": [{"path": "data/index_coverage.json"}]}),
+    f"repos/{w.OWNER}/no-coverage": (200, {"default_branch": "main"}),
+    f"repos/{w.OWNER}/no-coverage/git/trees/main?recursive=1": (200, {"tree": [{"path": "node_modules/x/index_coverage.json"}, {"path": "a.json"}]}),
+    f"repos/{w.OWNER}/listed-repo": (200, {"default_branch": "main"}),
+    f"repos/{w.OWNER}/listed-repo/git/trees/main?recursive=1": (200, {"tree": []}),
+}
+calls = []
+
+
+def fake_gh(path, method="GET", body=None):
+    calls.append(path)
+    return FAKE.get(path, (404, None))
+
+
+extras, note = w.discover_coverage_writers(["listed-repo"], fake_gh)
+if extras != ["unlisted-writer"] or note:
+    errors.append(f"discover_coverage_writers must find only unlisted-writer: {extras} {note!r}")
+if any(c.startswith((f"repos/{w.OWNER}/old", f"repos/{w.OWNER}/copy", f"repos/{w.OWNER}/listed-repo")) for c in calls):
+    errors.append("discovery must skip archived repos, forks and repos already listed")
+if w.discover_coverage_writers([], lambda *a, **k: (500, None)) != ([], f"NOTICE: could not list {w.OWNER} repos; reading COVERAGE_REPOS only"):
+    errors.append("an unreadable repo listing must fall back to COVERAGE_REPOS with a NOTICE")
+_saved = (w.gh, w.raw_json, w.ref_week_ago, w.COVERAGE_REPOS)
+try:
+    w.gh, w.COVERAGE_REPOS = fake_gh, ["listed-repo"]
+    w.raw_json = lambda repo, ref, path: COV_DOC if repo == "unlisted-writer" else None
+    w.ref_week_ago = lambda *a: None
+    hosts, notes = w.read_repo_files(__import__("datetime").datetime(2026, 10, 26, tzinfo=__import__("datetime").timezone.utc))
+finally:
+    w.gh, w.raw_json, w.ref_week_ago, w.COVERAGE_REPOS = _saved
+got = hosts.get("new.example") or {}
+if got.get("owner") != "unlisted-writer" or got.get("share_now") != 0.9:
+    errors.append(f"read_repo_files must read the discovered writer's coverage: {got}")
+if "discovery" not in notes.get("unlisted-writer", ""):
+    errors.append(f"the repo note must say the writer was found by discovery: {notes.get('unlisted-writer')}")
+
 if len(w.COVERAGE_REPOS) != len(set(w.COVERAGE_REPOS)):
     errors.append("COVERAGE_REPOS has duplicates")
 if "d28_prior" not in w.windows(__import__("datetime").date(2026, 10, 26)):

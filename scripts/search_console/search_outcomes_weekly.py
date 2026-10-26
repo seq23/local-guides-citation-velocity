@@ -64,7 +64,7 @@ _COVERAGE_REPOS_LISTED = [
     "p-n-p", "approvalprep", "dream-wedding-builder", "local-guides-generator",
     "local-guides-citation-velocity", "dianne-place-recovery-services", "WPP-llm",
     "horse-legal-guide-velocity", "authority-backlink-network", "sprylabs-hpc-site",
-    "hicks-consulting-canonical",
+    "hicks-consulting-canonical", "how-we-know", "dailystory",
 ]
 # Owner for properties no coverage file names. Coverage files win over this map.
 FALLBACK_OWNER = {
@@ -298,16 +298,64 @@ def candidate_count(doc):
     return n, host
 
 
+def _owner_repos(gh_fn):
+    """Every non-archived, non-fork repo OWNER owns, or None when the listing cannot be read."""
+    names, page = [], 1
+    while page <= 10:
+        st, batch = gh_fn(f"users/{OWNER}/repos?type=owner&per_page=100&page={page}")
+        if st != 200 or not isinstance(batch, list):
+            return None
+        names += [r["name"] for r in batch if isinstance(r, dict) and r.get("name")
+                  and not r.get("archived") and not r.get("fork")]
+        if len(batch) < 100:
+            break
+        page += 1
+    return names
+
+
+def discover_coverage_writers(listed, gh_fn=None):
+    """Repos that commit index_coverage.json but are missing from `listed`.
+
+    hicks-consulting-canonical, how-we-know and dailystory each committed
+    index_coverage.json while the report read "no coverage file" for them
+    (2026-W42..W44). A hand list drifts, so every run also asks GitHub: an
+    unlisted writer is read anyway and named in a NOTICE. Returns (extras, note);
+    note is non-empty when the repo listing itself could not be read.
+    """
+    gh_fn = gh_fn or gh
+    repos = _owner_repos(gh_fn)
+    if repos is None:
+        return [], f"NOTICE: could not list {OWNER} repos; reading COVERAGE_REPOS only"
+    extras = []
+    for repo in repos:
+        if repo in listed:
+            continue
+        st, info = gh_fn(f"repos/{OWNER}/{repo}")
+        branch = (info or {}).get("default_branch", "main") if st == 200 else "main"
+        st, tree = gh_fn(f"repos/{OWNER}/{repo}/git/trees/{branch}?recursive=1")
+        if st == 200 and isinstance(tree, dict) and any(
+                isinstance(e, dict) and re.search(r"(^|/)index_coverage\.json$", str(e.get("path", "")))
+                and "node_modules" not in e["path"]
+                for e in tree.get("tree", [])):
+            extras.append(repo)
+    return extras, ""
+
+
 def read_repo_files(now):
     """Per host: owner repo, coverage now/prior, strengthened this week, candidates pending."""
     until = (now - dt.timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
     hosts, repo_notes = {}, {}
+    extras, note = discover_coverage_writers(COVERAGE_REPOS)
+    if note:
+        print(note)
+    for repo in extras:
+        print(f"NOTICE: {repo} commits index_coverage.json but is not in COVERAGE_REPOS; read anyway, add it to the list")
 
     def slot(h):
         return hosts.setdefault(h, {"owner": None, "coverage_file": None, "share_now": None, "share_prior": None,
                                     "strengthened_this_week": 0, "candidates_pending": None})
 
-    for repo in COVERAGE_REPOS:
+    for repo in COVERAGE_REPOS + extras:
         st, info = gh(f"repos/{OWNER}/{repo}")
         branch = (info or {}).get("default_branch", "main") if st == 200 else "main"
         st, tree = gh(f"repos/{OWNER}/{repo}/git/trees/{branch}?recursive=1")
@@ -317,6 +365,8 @@ def read_repo_files(now):
         files = sorted(e["path"] for e in tree.get("tree", []) if FILE_RX.search(e["path"]) and "node_modules" not in e["path"])
         cov = [f for f in files if f.endswith("index_coverage.json")]
         repo_notes[repo] = "no coverage file" if not cov else f"{len(cov)} coverage file(s)"
+        if repo in extras:
+            repo_notes[repo] += " (found by discovery, not in COVERAGE_REPOS)"
         repo_hosts = []
         for f in cov:
             now_doc = raw_json(repo, branch, f)
