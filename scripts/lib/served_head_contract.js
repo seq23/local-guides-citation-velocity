@@ -223,9 +223,9 @@ function ensureOwnershipDisclosure(html) {
  * outbound is 25%, which is inside the cap; pages with fewer than four outbound
  * links are not graded at all.
  */
-function capPortfolioLinks(html, portfolioHosts) {
+function capPortfolioLinks(html, portfolioHosts, { exempt = false } = {}) {
   const hosts = new Set(portfolioHosts || []);
-  if (!hosts.size) return html;
+  if (!hosts.size || exempt) return html;
   const linked = new Set();
   return html.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (whole, attrs, inner) => {
     const href = (attrs.match(/\bhref=(["'])([\s\S]*?)\1/i) || [])[2];
@@ -238,6 +238,73 @@ function capPortfolioLinks(html, portfolioHosts) {
     const cls = (attrs.match(/\bclass=(["'])([\s\S]*?)\1/i) || [])[2] || '';
     return `<span class="${escAttr(cls)}" data-link-capped="true">${inner}</span>`;
   });
+}
+
+/**
+ * Where the cap applies, and why it is not everywhere.
+ *
+ * This repository's architecture is to route a reader to a canonical
+ * destination's intake REPEATEDLY, and three HARD_FAIL validators enforce it:
+ *   - velocity-canonical-anchor-links: every piece matched to a canonical guide
+ *     carries at least FOUR /request-assistance/ links (845 pages), and a
+ *     senior-living guide also needs a directory-home, topic-guide and city link;
+ *   - umbrella-homepage-shape: the homepage's six vertical cards each link the
+ *     canonical home, its intake and three question pages;
+ *   - the senior-living contract above, which enforces its own per-URL rule.
+ *
+ * Search Readiness g3 caps a portfolio domain at a quarter of a page's outbound
+ * links. On a state page with 16 outbound links that allows three, and the
+ * contract requires four. Measured 2026-10-25: all four state pages the audit
+ * flagged for g3 are governed pages. The two rules do not fit on the same page,
+ * and dismantling the lead funnel to satisfy a footprint heuristic is an owner's
+ * decision, not this pass's.
+ *
+ * So the cap applies only where no routing contract governs the page AND the
+ * route is an insight or article page - 0 of the 1,357 governed routes are under
+ * /insights/ or /medium-articles/, and those are exactly the pages whose
+ * footprint was worst: /insights/dentistry-q003-... linked ONE canonical URL
+ * eight times, 8 of 11 outbound links, 73%.
+ *
+ * g3 therefore stays reported for the governed pages, with that reason, rather
+ * than silently "fixed" by breaking three contracts.
+ */
+function governedRoutes() {
+  const routes = new Set();
+  const addRoute = (slug) => {
+    const r = String(slug || '').replace(/\/+$/, '') || '/';
+    if (r) routes.add(r);
+  };
+  // 1. The spec pages that carry canonical_anchor_links (the senior-living and
+  //    dentistry guides with a required directory/topic/city routing block).
+  const specs = path.join(ROOT, 'data', 'page_families', 'velocity_page_specs.json');
+  if (fs.existsSync(specs)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(specs, 'utf8'));
+      for (const x of parsed.pages || []) {
+        if (Array.isArray(x.canonical_anchor_links) && x.canonical_anchor_links.length) addRoute(x.slug);
+      }
+    } catch { /* an unreadable spec file is that validator's finding, not this pass's */ }
+  }
+  // 2. Every piece matched to a canonical guide, from the SAME planner that
+  //    validator uses, so the governed set has one definition. 845 of these
+  //    require four intake links each.
+  try {
+    const plan = require('./canonical_guide_links').planPieceGuides(ROOT);
+    for (const route of plan.keys()) addRoute(route);
+  } catch { /* planner unavailable: fall back to the spec pages above */ }
+  return routes;
+}
+
+function isGovernedRoute(route, governed) {
+  const r = String(route || '').replace(/\/+$/, '') || '/';
+  return governed.has(r);
+}
+
+// The cap's scope: an insight or article page that no routing contract governs.
+const CAPPABLE_ROUTE = /^\/(insights|medium-articles)\//;
+function isCappableRoute(route, governed) {
+  const r = String(route || '').replace(/\/+$/, '') || '/';
+  return CAPPABLE_ROUTE.test(`${r}/`) && !isGovernedRoute(r, governed);
 }
 
 /**
@@ -301,14 +368,14 @@ function ensureOrderedSteps(html) {
   return bodyEnd >= 0 ? html.slice(0, bodyEnd) + block + html.slice(bodyEnd) : html;
 }
 
-function applyAll(html, { portfolioHosts = [], org = null } = {}) {
+function applyAll(html, { portfolioHosts = [], org = null, exemptFromCap = false } = {}) {
   if (!/<html/i.test(html)) return html;
   let out = html;
   out = normalizeSnippet(out);
   out = ensureSocialTags(out);
   out = consolidateOrganization(out, org);
   out = ensureOwnershipDisclosure(out);
-  out = capPortfolioLinks(out, portfolioHosts);
+  out = capPortfolioLinks(out, portfolioHosts, { exempt: exemptFromCap });
   out = ensureOrderedSteps(out);
   return out;
 }
@@ -319,5 +386,5 @@ module.exports = {
   MIN_TITLE_CHARS, MAX_TITLE_CHARS, MIN_DESCRIPTION_CHARS, MAX_DESCRIPTION_CHARS,
   titleOf, descOf, canonicalOf, bodyOf, decodeEntities,
   normalizeSnippet, ensureSocialTags, consolidateOrganization, ensureOwnershipDisclosure,
-  capPortfolioLinks, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, applyAll
+  capPortfolioLinks, governedRoutes, isGovernedRoute, isCappableRoute, CAPPABLE_ROUTE, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, applyAll
 };

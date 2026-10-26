@@ -26,6 +26,13 @@ function portfolioHosts() {
   return [...new Set(hosts)].filter((h) => h !== c.SITE_HOST);
 }
 
+// dist/x/index.html -> /x ; dist/index.html -> / ; dist/x.html -> /x
+function routeFor(rel) {
+  const r = String(rel).replace(/\\/g, '/');
+  if (r === 'index.html') return '/';
+  return `/${r.replace(/\/index\.html$/, '').replace(/\.html$/, '')}`;
+}
+
 function walk(dir, out = []) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, ent.name);
@@ -44,11 +51,16 @@ function main() {
   const org = c.organizationNode();
   if (!org.logo) { console.error('served-head-contract: the network Organization has no logo; add it to data/network/network_identity_registry.json'); process.exit(1); }
   let changed = 0;
-  const counts = { title_trimmed: 0, description_fitted: 0, social_added: 0, ownership_added: 0, links_capped: 0, steps_ordered: 0 };
+  const governed = c.governedRoutes();
+  if (!governed.size) { console.error('served-head-contract: no governed route read from data/page_families/velocity_page_specs.json; the cap exemption would reach nothing'); process.exit(1); }
+  const counts = { title_trimmed: 0, description_fitted: 0, social_added: 0, ownership_added: 0, links_capped: 0, steps_ordered: 0, cap_exempt: 0 };
   for (const p of pages) {
     const before = fs.readFileSync(p, 'utf8');
     const beforeTitle = c.titleOf(before), beforeDesc = c.descOf(before);
-    const after = c.applyAll(before, { portfolioHosts: hosts, org });
+    const route = routeFor(path.relative(outDir, p));
+    const exemptFromCap = !c.isCappableRoute(route, governed);
+    if (exemptFromCap) counts.cap_exempt += 1;
+    const after = c.applyAll(before, { portfolioHosts: hosts, org, exemptFromCap });
     if (after === before) continue;
     if (c.titleOf(after) !== beforeTitle) counts.title_trimmed += 1;
     if (c.descOf(after) !== beforeDesc) counts.description_fitted += 1;

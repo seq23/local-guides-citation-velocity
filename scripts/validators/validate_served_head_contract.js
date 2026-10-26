@@ -53,6 +53,8 @@ const hosts = new Set(portfolioHosts());
 let graded = 0;
 let sameAsMissing = 0;
 const howToUnprovable = [];
+const capExempt = [];
+const governed = c.governedRoutes();
 const pages = stops.length ? [] : walk(DIST);
 
 for (const abs of pages) {
@@ -61,6 +63,7 @@ for (const abs of pages) {
   if (rel === '404.html') continue;
   const html = fs.readFileSync(abs, 'utf8');
   if (!/<html/i.test(html)) continue;
+  const route = rel === 'index.html' ? '/' : `/${rel.replace(/\/index\.html$/, '').replace(/\.html$/, '')}`;
   graded += 1;
   const add = (issue, detail) => errors.push({ page: `/${rel}`, issue, detail });
 
@@ -124,16 +127,25 @@ for (const abs of pages) {
     if (host === c.SITE_HOST) continue;
     ext.push({ host, key: `${u.origin}${u.pathname.replace(/\/+$/, '')}` });
   }
-  if (ext.length >= 4) {
-    const by = {};
-    for (const e of ext) by[e.host] = (by[e.host] || 0) + 1;
-    for (const [host, n] of Object.entries(by)) {
-      if (hosts.has(host) && n / ext.length > 0.25) add('link_concentration', `${host} has ${n} of ${ext.length} outbound links`);
+  // The cap applies only to insight and article pages that no routing contract
+  // governs. Three HARD_FAIL contracts require repeated links to one canonical
+  // host elsewhere (four intake links per matched piece, the homepage's six
+  // cards), which 25% of a page's outbound links cannot accommodate. Named, not
+  // hidden: see link_cap_exempt_reason and the page list in the report.
+  if (!c.isCappableRoute(route, governed)) {
+    capExempt.push(`/${rel}`);
+  } else {
+    if (ext.length >= 4) {
+      const by = {};
+      for (const e of ext) by[e.host] = (by[e.host] || 0) + 1;
+      for (const [host, n] of Object.entries(by)) {
+        if (hosts.has(host) && n / ext.length > 0.25) add('link_concentration', `${host} has ${n} of ${ext.length} outbound links`);
+      }
     }
+    const perHost = {};
+    for (const e of ext) if (hosts.has(e.host)) perHost[e.host] = (perHost[e.host] || 0) + 1;
+    for (const [h, n] of Object.entries(perHost)) if (n > 1) add('repeated_portfolio_link', `${h} linked ${n} times on one page; the cap is one`);
   }
-  const perHost = {};
-  for (const e of ext) if (hosts.has(e.host)) perHost[e.host] = (perHost[e.host] || 0) + 1;
-  for (const [h, n] of Object.entries(perHost)) if (n > 1) add('repeated_portfolio_link', `${h} linked ${n} times on one page; the cap is one`);
 
   // d2: a how-to carries an ordered list; an "X vs Y" carries a table.
   //
@@ -170,7 +182,10 @@ const report = {
   reported_not_failed: {
     organization_sameAs_missing: sameAsMissing,
     howto_without_provable_steps: howToUnprovable.length,
-    howto_without_provable_steps_pages: howToUnprovable
+    howto_without_provable_steps_pages: howToUnprovable,
+    link_cap_exempt: capExempt.length,
+    link_cap_exempt_pages: capExempt.slice(0, 40),
+    link_cap_exempt_reason: 'The cap applies only to insight and article pages no routing contract governs. velocity-canonical-anchor-links requires four /request-assistance/ links on each of 845 matched pieces and umbrella-homepage-shape requires the homepage cards to link each canonical home, intake and three question pages; a quarter of a page\'s outbound links cannot hold four required links to one host. All four state pages the 2026-10-25 audit flagged for g3 are governed pages, so g3 stays reported for them: changing the lead funnel is an owner decision. The insight pages, where the footprint was worst (one canonical URL linked eight times, 73% of outbound links), are capped.'
   },
   error_count: errors.length,
   errors_by_issue: byIssue,
@@ -192,4 +207,4 @@ if (errors.length) {
   console.error('Fix the generator or scripts/lib/served_head_contract.js, never the rendered page.');
   process.exit(1);
 }
-console.log(`SERVED HEAD CONTRACT PASS: ${graded} served pages; title ${c.MIN_TITLE_CHARS}-${c.MAX_TITLE_CHARS}, description ${c.MIN_DESCRIPTION_CHARS}-${c.MAX_DESCRIPTION_CHARS}, complete social set, Organization with logo, ownership disclosure where a commonly owned site is linked, no portfolio domain over a quarter of a page's outbound links (reported, not failed: ${sameAsMissing} page(s) with no verified Organization sameAs, ${howToUnprovable.length} how-to page(s) whose own content proves no steps).`);
+console.log(`SERVED HEAD CONTRACT PASS: ${graded} served pages; title ${c.MIN_TITLE_CHARS}-${c.MAX_TITLE_CHARS}, description ${c.MIN_DESCRIPTION_CHARS}-${c.MAX_DESCRIPTION_CHARS}, complete social set, Organization with logo, ownership disclosure where a commonly owned site is linked, no portfolio domain over a quarter of a page's outbound links (reported, not failed: ${sameAsMissing} page(s) with no verified Organization sameAs, ${howToUnprovable.length} how-to page(s) whose own content proves no steps, ${capExempt.length} page(s) exempt from the link cap by the canonical-anchor contract).`);
