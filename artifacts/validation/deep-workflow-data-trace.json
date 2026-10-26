@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-10-26T07:20:19.246Z",
+  "generated_at": "2026-10-26T07:54:55.673Z",
   "status": "PASS",
   "workflow_count": 12,
   "errors": [],
@@ -743,7 +743,7 @@
     },
     {
       "workflow": "validate-repo.yml",
-      "command_count": 5,
+      "command_count": 6,
       "status": "PASS",
       "commands": [
         {
@@ -820,6 +820,28 @@
           ],
           "transitive_npm_scripts": [
             "release:ci-validate"
+          ]
+        },
+        {
+          "command": "npm run build:cached:prune",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "npm_script",
+              "name": "build:cached:prune",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/build_cache_wrapper.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [
+            "build:cached:prune"
+          ],
+          "transitive_npm_scripts": [
+            "build:cached:prune"
           ]
         },
         {
