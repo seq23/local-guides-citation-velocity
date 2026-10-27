@@ -60,6 +60,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { loadMediumSourceEntries, VERTICAL_CONFIG } = require('../lib/publish_contract');
 
 const ROOT = process.cwd();
 const HOST = 'https://theindustryguides.com';
@@ -213,7 +214,15 @@ if (!submitted.size && sitemapFiles.length) {
 const variants = (route) => (route.endsWith('.html') ? [route, route.slice(0, -'.html'.length)] : [route, `${route}.html`]);
 const knownTo = (lookup, route) => variants(route).some((v) => lookup.has(v));
 
-const counts = { examined: pages.length, submitted: 0, noindex: 0, redirect: 0, error_page: 0, declared: 0, undeclared: 0 };
+// Syndicated copies are served under /medium-articles/ and intentionally give
+// their canonical to the original guide. Only this explicit source family and
+// its registered canonical hosts qualify; arbitrary off-host canonicals on
+// ordinary pages must still fail the admission gate.
+const canonicalOrigins = new Set(Object.values(VERTICAL_CONFIG).map((vertical) => vertical.domain));
+const syndicatedRoutes = new Map(loadMediumSourceEntries().filter((entry) => {
+  try { return canonicalOrigins.has(new URL(entry.canonical_url).origin); } catch { return false; }
+}).map((entry) => [entry.publish_path, entry.canonical_url]));
+const counts = { examined: pages.length, submitted: 0, noindex: 0, redirect: 0, syndicated: 0, error_page: 0, declared: 0, undeclared: 0 };
 const undeclared = [];
 
 for (const page of pages) {
@@ -222,6 +231,11 @@ for (const page of pages) {
   if (knownTo(redirects, page.route)) { counts.redirect += 1; continue; }
   const html = readText(page.rel) || '';
   if (NOINDEX_RE.test(html)) { counts.noindex += 1; continue; }
+  // The loader has a fallback for missing tags; that fallback must never
+  // license an unsubmitted page. Require the explicit tag in this artifact.
+  const canonicalTag = (html.match(/<link\b[^>]*>/gi) || []).find((tag) => /\brel=(["'])canonical\1/i.test(tag));
+  const canonical = canonicalTag?.match(/\bhref=(["'])(.*?)\1/i)?.[2];
+  if (canonical && syndicatedRoutes.get(page.route) === canonical) { counts.syndicated += 1; continue; }
   if (knownTo(declared, page.route)) { counts.declared += 1; continue; }
   counts.undeclared += 1;
   undeclared.push(page.route);
@@ -272,6 +286,7 @@ console.log(`  rendered indexable pages examined : ${counts.examined}`);
 console.log(`  in a sitemap shard               : ${counts.submitted}`);
 console.log(`  withheld by noindex              : ${counts.noindex}`);
 console.log(`  withheld as 301 redirect source  : ${counts.redirect}`);
+console.log(`  canonical on original guide host : ${counts.syndicated}`);
 console.log(`  error page                       : ${counts.error_page}`);
 console.log(`  advertised but not rendered      : ${advertisedNotRendered.length}`);
 console.log('');

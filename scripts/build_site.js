@@ -3189,7 +3189,13 @@ ${m}`;
   const advertisedRedirectSources = loadRedirectSourceRoutes();
   const isRedirectSourceSlug = (slug) => advertisedRedirectSources.has(normalizeRoute(slug))
     || advertisedRedirectSources.has(normalizeRoute(publicPath(slug)));
-  const publicWritten = written.filter((entry) => isPubliclyAdmitted(entry.slug) && !isRedirectSourceSlug(entry.slug));
+  // Frozen accepted copies also enter `written` above. Filter at the shared
+  // discovery boundary, so they cannot re-enter the sitemap through that path.
+  const syndicatedMediumRoutes = new Set(mediumItems
+    .filter((item) => item.canonical_url !== siteBase + publicPath(item.publish_path))
+    .map((item) => normalizeRoute(item.publish_path)));
+  const publicWritten = written.filter((entry) => isPubliclyAdmitted(entry.slug)
+    && !isRedirectSourceSlug(entry.slug) && !syndicatedMediumRoutes.has(normalizeRoute(entry.slug)));
   // Rendered and advertised are now decided by one function, so they cannot
   // drift. What they still disagree on is reported rather than hidden: a page
   // written to disk that no sitemap, feed or llms export names is work that
@@ -3291,7 +3297,10 @@ ${m}`;
     canonical_domain: item.canonical_domain
   })));
   const publicUrlCandidates = publicWritten.map(p=>({loc:publicUrl(p.url), lastmod: p.lastmod || nowISODate(), slug:p.slug, surface: p.surface || 'page', canonical_domain: p.canonical_domain || 'theindustryguides.com'}))
-    .concat(mediumPublished.filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug))));
+    // Syndicated copies deliberately canonicalize to the original guide on its
+    // own host. They stay served and linked from the archive, but submitting
+    // them as canonical URLs caused Ahrefs' 13 non-canonical sitemap errors.
+    .concat(mediumPublished.filter((entry) => admittedPublicRoutes.has(normalizeRoute(entry.slug)) && !syndicatedMediumRoutes.has(normalizeRoute(entry.slug))));
   const publicUrlMap = new Map();
   for (const entry of publicUrlCandidates) publicUrlMap.set(normalizeRoute(entry.slug), entry);
   const allUrls = [...publicUrlMap.values()].sort((a, b) => String(a.slug).localeCompare(String(b.slug)));

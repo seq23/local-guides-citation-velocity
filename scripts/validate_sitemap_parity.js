@@ -56,6 +56,14 @@ for (const url of invUrls) {
   if (!url.startsWith(HOST + '/')) fail(`published inventory URL is off-host: ${url}`);
   const filePath = urlToFile(url);
   if (!fs.existsSync(filePath)) fail(`published inventory URL missing local file: ${url} -> ${path.relative(ROOT, filePath)}`);
+  else {
+    // Inventory and sitemap share a producer, so agreeing with each other is
+    // insufficient: compare the URL to the actual rendered canonical too.
+    const html = fs.readFileSync(filePath, 'utf8');
+    const tag = (html.match(/<link\b[^>]*>/gi) || []).find((value) => /\brel=(["'])canonical\1/i.test(value));
+    const canonical = tag?.match(/\bhref=(["'])(.*?)\1/i)?.[2];
+    if (canonical !== url) fail(`sitemap URL is not self-canonical: ${url} -> ${canonical || '(missing)'}`);
+  }
 }
 for (const url of sitemapUrls) {
   if (!invSet.has(url)) fail(`sitemap URL absent from published inventory: ${url}`);
