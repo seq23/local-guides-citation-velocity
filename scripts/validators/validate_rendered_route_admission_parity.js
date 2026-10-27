@@ -219,9 +219,9 @@ const knownTo = (lookup, route) => variants(route).some((v) => lookup.has(v));
 // its registered canonical hosts qualify; arbitrary off-host canonicals on
 // ordinary pages must still fail the admission gate.
 const canonicalOrigins = new Set(Object.values(VERTICAL_CONFIG).map((vertical) => vertical.domain));
-const syndicatedRoutes = new Set(loadMediumSourceEntries().filter((entry) => {
+const syndicatedRoutes = new Map(loadMediumSourceEntries().filter((entry) => {
   try { return canonicalOrigins.has(new URL(entry.canonical_url).origin); } catch { return false; }
-}).map((entry) => entry.publish_path));
+}).map((entry) => [entry.publish_path, entry.canonical_url]));
 const counts = { examined: pages.length, submitted: 0, noindex: 0, redirect: 0, syndicated: 0, error_page: 0, declared: 0, undeclared: 0 };
 const undeclared = [];
 
@@ -231,7 +231,11 @@ for (const page of pages) {
   if (knownTo(redirects, page.route)) { counts.redirect += 1; continue; }
   const html = readText(page.rel) || '';
   if (NOINDEX_RE.test(html)) { counts.noindex += 1; continue; }
-  if (syndicatedRoutes.has(page.route)) { counts.syndicated += 1; continue; }
+  // The loader has a fallback for missing tags; that fallback must never
+  // license an unsubmitted page. Require the explicit tag in this artifact.
+  const canonicalTag = (html.match(/<link\b[^>]*>/gi) || []).find((tag) => /\brel=(["'])canonical\1/i.test(tag));
+  const canonical = canonicalTag?.match(/\bhref=(["'])(.*?)\1/i)?.[2];
+  if (canonical && syndicatedRoutes.get(page.route) === canonical) { counts.syndicated += 1; continue; }
   if (knownTo(declared, page.route)) { counts.declared += 1; continue; }
   counts.undeclared += 1;
   undeclared.push(page.route);
