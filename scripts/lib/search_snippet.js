@@ -98,13 +98,31 @@ function fitTitle(title, { qualifier = '' } = {}) {
   if (base.includes(SITE_NAME) && base.length >= MIN_TITLE_CHARS && base.length <= MAX_TITLE_CHARS) return base;
   if (base === SITE_NAME) return `${SITE_NAME} | Source-Backed Guides`;
   const suffix = ` | ${SITE_NAME}`;
-  let topic = sentenceStart(base
+  let topic = (base
     .replace(/\s*\|\s*(The Industry Guides|Insight)\s*$/i, '')
     .replace(/^The Industry Guides\s*\|\s*/i, ''));
   if (!topic) topic = 'Source-Backed Guides';
   const q = clean(qualifier) || 'Guide';
   if (topic.length + suffix.length < MIN_TITLE_CHARS) topic += ` | ${q}`;
-  return `${trimTo(topic, MAX_TITLE_CHARS - suffix.length)}${suffix}`;
+  const room = MAX_TITLE_CHARS - suffix.length;
+  // Drop only the optional how-to framing when it makes room for the subject.
+  if (topic.length > room) topic = topic.replace(/^How to /, '');
+  if (topic.length > room) {
+    // Long questions share their opening but name their subject at the end.
+    // Preserve both ends rather than turn distinct topics into identical titles.
+    const lead = trimTo(topic, Math.floor(room * 0.6));
+    const tailRoom = room - lead.length - 3;
+    const from = topic.length - tailRoom;
+    let tail = topic.slice(from);
+    if (from > 0 && /\S/.test(topic[from - 1]) && /\S/.test(tail[0])) tail = tail.slice(tail.indexOf(' ') + 1);
+    tail = tail.trim();
+    // A topic qualifier such as "Dentistry: Cost & Insurance" identifies the
+    // vertical. Keeping only its generic ending would merge sibling topics.
+    const qualifier = topic.split(' — ').at(-1);
+    if (topic.includes(' — ') && qualifier.includes(':') && !tail.includes(qualifier.split(':')[0])) tail = trimTo(qualifier, tailRoom);
+    topic = `${lead} … ${tail}`;
+  }
+  return `${topic}${suffix}`;
 }
 
 /**

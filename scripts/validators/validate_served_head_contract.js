@@ -51,6 +51,13 @@ const stops = [];
 if (!fs.existsSync(DIST)) stops.push(`${path.relative(ROOT, DIST)}/ does not exist; nothing was graded. Run npm run build first.`);
 
 const errors = [];
+// Different subjects and vertical qualifiers must survive the brand budget.
+for (const pair of [
+  ['What mistakes cause problems with dental insurance verification?', 'What mistakes cause problems with neuropsych evaluation costs?'],
+  ['How to compare pricing without walking into the wrong fit — Dentistry: Cost & Insurance | Insight', 'How to compare pricing without walking into the wrong fit — TRT: Cost & Insurance | Insight'],
+]) {
+  if (fitTitle(pair[0]) === fitTitle(pair[1])) errors.push({ page: 'fixture', issue: 'title_topic_collision', detail: pair.join(' / ') });
+}
 const clarityProof = claritySelfTest();
 for (const detail of clarityProof.errors) errors.push({ page: 'fixture', issue: 'clarity_regression', detail });
 for (const original of [

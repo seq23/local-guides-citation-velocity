@@ -6,7 +6,7 @@ function conversionPage(html) {
   const markup = String(html).replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<(script|style|template)\b[^>]*>[\s\S]*?<\/\1>/gi, '');
   if (/<form\b[^>]*>/i.test(markup)) return true;
-  for (const m of markup.matchAll(/<a\b[^>]*\bhref\s*=\s*(["'])([\s\S]*?)\1/gi)) {
+  for (const m of markup.matchAll(/<a\b[^>]*\s+href\s*=\s*(["'])([\s\S]*?)\1/gi)) {
     let url;
     try { url = new URL(m[2].replace(/&amp;/g, '&'), 'https://theindustryguides.com'); } catch { continue; }
     if (!/^https?:$/.test(url.protocol)) continue;
@@ -37,6 +37,7 @@ function selfTest() {
     ['inert form', '<template><form></form></template>', false],
     ['script text', '<script>var example="<form>";</script>', false],
     ['purchase domain in prose', '<p>gumroad.com</p>', false],
+    ['inert purchase attribute', '<a data-href="https://buy.stripe.com/example">Preview</a>', false],
   ];
   const errors = [];
   for (const [name, body, expected] of cases) {
