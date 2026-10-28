@@ -30,6 +30,8 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const OUT = path.join(ROOT, 'artifacts', 'validation', 'served-head-contract.json');
 const c = require('../lib/served_head_contract');
 const { portfolioHosts } = require('../install_served_head_contract');
+const { conversionPage, selfTest: claritySelfTest } = require('../lib/clarity_page');
+const { fitTitle } = require('../lib/search_snippet');
 
 // Measured 2026-10-25: 2,137 pages in dist/. The floor is far below that and far
 // above what a truncated or unbuilt tree exposes.
@@ -49,6 +51,29 @@ const stops = [];
 if (!fs.existsSync(DIST)) stops.push(`${path.relative(ROOT, DIST)}/ does not exist; nothing was graded. Run npm run build first.`);
 
 const errors = [];
+// Different subjects and vertical qualifiers must survive the brand budget.
+for (const pair of [
+  ['What mistakes cause problems with dental insurance verification?', 'What mistakes cause problems with neuropsych evaluation costs?'],
+  ['How to compare pricing without walking into the wrong fit — Dentistry: Cost & Insurance | Insight', 'How to compare pricing without walking into the wrong fit — TRT: Cost & Insurance | Insight'],
+]) {
+  if (fitTitle(pair[0]) === fitTitle(pair[1])) errors.push({ page: 'fixture', issue: 'title_topic_collision', detail: pair.join(' / ') });
+}
+const clarityProof = claritySelfTest();
+for (const detail of clarityProof.errors) errors.push({ page: 'fixture', issue: 'clarity_regression', detail });
+for (const original of [
+  'Maryland Medicaid Dental Coverage Guide',
+  'What Records Help Before An Autism Evaluation | Insight',
+  'Is It Too Late To Switch Lawyers Before Settlement Or Trial',
+  'Telehealth TRT Rules in Ohio | The Industry Guides',
+  'A very long topic with many words that previously removed the site brand from the end | The Industry Guides',
+  'The Industry Guides',
+]) {
+  const fitted = fitTitle(original);
+  if (!fitted.includes(c.SITE_NAME) || fitted.length < c.MIN_TITLE_CHARS || fitted.length > c.MAX_TITLE_CHARS || fitTitle(fitted) !== fitted) {
+    errors.push({ page: 'fixture', issue: 'title_brand_regression', detail: original });
+  }
+}
+
 const hosts = new Set(portfolioHosts());
 let graded = 0;
 let sameAsMissing = 0;
@@ -74,6 +99,10 @@ for (const abs of pages) {
   if (!title) add('title_missing', 'no <title>');
   else if (title.length < c.MIN_TITLE_CHARS) add('title_below_floor', `${title.length} < ${c.MIN_TITLE_CHARS}: "${title}"`);
   else if (title.length > c.MAX_TITLE_CHARS) add('title_over_ceiling', `${title.length} > ${c.MAX_TITLE_CHARS}: "${title}"`);
+
+  // b10 + e9: publication identity survives trimming; recording is scoped.
+  if (title && !title.includes(c.SITE_NAME)) add('title_brand_missing', title);
+  if (/data-clarity-loader|clarity\.ms\/tag\//i.test(html) && !conversionPage(html)) add('clarity_without_conversion', 'no form or purchase link');
 
   // b2: exactly one description, 120-160.
   const descTags = (html.match(/<meta\b[^>]*>/gi) || []).filter((t) => /\bname=(["'])description\1/i.test(t));

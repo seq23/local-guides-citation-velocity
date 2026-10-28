@@ -16,18 +16,8 @@ const { headingFor } = require('./answer_shape');
 const { mergeSchema } = require('./network_schema');
 const { fitTitle, MIN_TITLE_CHARS, MAX_TITLE_CHARS } = require('./search_snippet');
 
-// "Wrong date | Insight" is 20 characters: an insight title is the bare query, and
-// "| Insight" says nothing about which of five verticals it belongs to. When the
-// plain form is under the floor, name the vertical in the qualifier instead.
+// The shared fitter preserves the publication name in every insight title.
 function insightHeadTitle(item) {
-  const bare = String(item.title || '').trim();
-  const plain = `${bare} | Insight`;
-  // Over the ceiling, " | Insight" is the first thing to go: it says nothing a
-  // reader needs and the bare query is the title. Measured 2026-10-25:
-  // "What mistakes cause problems with dental insurance verification? | Insight"
-  // is 74 characters, and the query alone is 64.
-  if (plain.length > MAX_TITLE_CHARS) return fitTitle(bare);
-  if (plain.length >= MIN_TITLE_CHARS) return plain;
   const label = String(item.vertical_label || '').trim();
   return fitTitle(item.title, { qualifier: label ? `${label} Insight` : 'Insight' });
 }

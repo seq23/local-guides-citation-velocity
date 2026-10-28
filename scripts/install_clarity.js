@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Install the Microsoft Clarity tag into every published page.
+ * Install Microsoft Clarity only on pages with a form or purchase link.
  *
  * The Clarity projects already existed - one per property - but no tag was ever
  * installed, so every project sat on "Almost there!" and none of them recorded a
@@ -22,6 +22,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const CONFIG = path.join(ROOT, 'data/clarity_projects.json');
 const MARKER = 'data-clarity-loader';
+const { installClarity } = require('./lib/clarity_page');
 
 if (!fs.existsSync(CONFIG)) {
   console.error(`clarity: missing ${path.relative(ROOT, CONFIG)}`);
@@ -67,19 +68,12 @@ function walk(dir, depth) {
     const rel = path.relative(outDir, abs).replace(/\\/g, '/');
     if (skipFiles.has(rel) || skipFiles.has(entry.name)) { skipped += 1; continue; }
     const html = fs.readFileSync(abs, 'utf8');
-    // Pages carrying the older inline loader are upgraded rather than skipped.
-    // Leaving them would leave a tag the CSP refuses to execute, which is
-    // indistinguishable from having no tag at all.
-    const inlineLoader = new RegExp(`<script ${MARKER}>[\\s\\S]*?<\\/script>`, 'i');
-    if (inlineLoader.test(html)) {
-      fs.writeFileSync(abs, html.replace(inlineLoader, snippet));
-      upgraded += 1;
-      continue;
-    }
-    if (html.includes(MARKER)) { already += 1; continue; }
-    if (!/<\/head>/i.test(html)) { skipped += 1; continue; }
-    fs.writeFileSync(abs, html.replace(/<\/head>/i, `${snippet}</head>`));
-    touched += 1;
+    const after = installClarity(html, snippet);
+    if (after === html) { already += 1; continue; }
+    fs.writeFileSync(abs, after);
+    if (after.includes(MARKER)) touched += 1;
+    else upgraded += 1; // removed a tag from a page without a conversion step
+
   }
 }
 // The loader must exist at the same origin it is requested from, so write it
@@ -96,4 +90,4 @@ for (const base of new Set([ROOT, outDir])) {
 
 walk(outDir, 0);
 
-console.log(`clarity: installed on ${touched} page(s); upgraded ${upgraded} from the inline loader; ${already} already correct; ${skipped} skipped`);
+console.log(`clarity: installed on ${touched} page(s); removed from ${upgraded} non-conversion page(s); ${already} already correct; ${skipped} skipped`);
