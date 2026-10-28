@@ -18,6 +18,7 @@
  *   indexnow_key       - the key file is committed at the root and is a valid key file
  *   registration       - every registered build step still runs in `npm run build`
  *   zero_paid_llm      - no scheduled paid model call; $0-only routing; probes dispatch-only
+ *   build_result_cache - the gate builds once per commit; the wrapper keeps its refusals
  * Pages: dist/ when present (what ships), else every admitted rendered page passed
  * through the installer in memory, so CI without a dist still proves the tags land.
  */
@@ -233,6 +234,27 @@ else if (read(kf).trim() !== kf.replace(/\.txt$/, '')) fail('indexnow_key', `${k
     const pins = /free_llm_router: (\d+) behaviour pins pass/.exec(rt.stdout || '');
     if (rt.status !== 0 || !pins || Number(pins[1]) < 18) fail('zero_paid_llm', `router behaviour pins failed: ${((rt.stderr || '') + (rt.stdout || '')).trim().split('\n').slice(-6).join(' | ').slice(0, 600)}`);
     if (!r.failures.length && !proof.missed.length && rt.status === 0 && pins) console.log(`  zero_paid_llm: ${pins[1]} router behaviour pins; ${r.stats.scheduled_workflows} scheduled workflows reach no paid model; ${r.stats.probe_workflows} probe workflow dispatch-only behind confirm_paid; ${r.stats.models} $0 models; ${proof.cases} negative proofs caught`);
+  }
+}
+
+// build-result cache (Search Readiness h5): the merge gate builds the site once
+// per commit, which holds only while the lane goes through the wrapper, the
+// wrapper keeps its two refusals, the gate keeps the store off the checkout and
+// the generated ledgers stay out of the hashed input surface. Rules in
+// scripts/lib/build_cache_contract_check.js, block in the registry; hostile
+// fixtures replay every run. Folded in here for the same reason zero_paid_llm is:
+// the release profile is capped at 40 blockers on purpose.
+{
+  const bc = reg.build_result_cache;
+  if (!bc) fail('build_result_cache', 'block missing from the registry');
+  else {
+    const { check, selfTest } = require('../lib/build_cache_contract_check.js');
+    const r = check(undefined, { reg: bc });
+    for (const f of r.failures) fail('build_result_cache', f);
+    for (const w of r.warnings) console.log(`  !! SITE HYGIENE WARNING [build_result_cache]: ${w}`);
+    const proof = selfTest({ reg: bc });
+    for (const m of proof.missed) fail('build_result_cache', `negative proof no longer caught: ${m}`);
+    if (!r.failures.length && !proof.missed.length) console.log(`  build_result_cache: the lane builds through the wrapper, both refusals present, the gate's store is off the checkout; ${proof.cases} negative proofs caught`);
   }
 }
 

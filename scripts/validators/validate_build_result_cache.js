@@ -129,8 +129,21 @@ function main() {
     fs.cpSync(ROOT, tmp, { recursive: true, filter: (src) => { const r = path.relative(ROOT, src); if (!r) return true; return !r.split(path.sep).some((x) => excludes.has(x)); } });
     // build_site.js reads artifacts/validation/frozen-content-recoverability.json
     // (see validate_deterministic_build.js for the same restoration and why).
+    //
+    // Every excluded directory is enumerated, not just artifacts/. The copy filter
+    // above drops whole directory names, but the comparison surface is every
+    // git-tracked file in the repo - so a TRACKED file inside an excluded directory
+    // was absent from the ground-truth tree and reported as a difference forever,
+    // with nothing to do with the cache. reports/search_outcomes/*.json|md (the
+    // committed weekly search-outcome reports) are exactly that: six tracked files
+    // that failed this validator on every run, which is why it never graduated out
+    // of the `audit` profile. The excludes set is the single source of this list, so
+    // a directory added there cannot reintroduce the defect.
     let tracked = [];
-    try { tracked = cp.execSync('git ls-files -z artifacts', { cwd: ROOT, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).split('\0').filter(Boolean); } catch { /* no git history to enumerate: proceed with nothing restored */ }
+    try {
+      tracked = cp.execFileSync('git', ['ls-files', '-z', '--', ...excludes], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+        .split('\0').filter(Boolean);
+    } catch { /* no git history to enumerate: proceed with nothing restored */ }
     for (const relp of tracked) {
       const src = path.join(ROOT, relp);
       if (!fs.existsSync(src)) continue;

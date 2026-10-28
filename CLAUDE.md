@@ -43,3 +43,43 @@ exactly once and passed. Shard weights come from measured durations in
 `_validation_registry.json` (`estimated_runtime_seconds`); refresh them with
 `npm run ci:refresh-shard-weights -- <run-id>` after a run whose timings moved,
 or the balancer packs one shard twice as heavy as the rest.
+
+**Nothing the gate can do once is done five times.** The build and the daily
+citation preview were each run in every one of the `SHARD_COUNT`+1 jobs, and both
+sat on the critical path twice over - the slowest shard, then the aggregate that
+waits on it. The preview now runs on shard 1 only (it is still exercised on every
+PR, just not five times), and the build is cached per commit as below. A measured
+6.2-minute gate came down to about three and a half; `ci:refresh-shard-weights`
+keeps the shards even underneath that.
+
+**The gate builds the site once per commit, not once per job.** The release lane's
+`site-build` stage runs `npm run build:cached`
+([`scripts/lib/build_cache.js`](scripts/lib/build_cache.js)), shard 2 saves the
+resulting `.build-cache` entry, and the aggregate job — which runs after every
+shard, on the critical path — restores it instead of regenerating all ~2,400 pages
+a second time in series. Two rules hold this up, and a test reads each:
+
+- Nothing wall-clock-stamped may enter the cache's hashed input surface. The gate
+  runs `release:daily-citation-intelligence:preview` in every job first, and that
+  rewrites `data/signals/**` with a real `generated_at`, so those paths are in
+  `INPUT_EXCLUDE_PREFIXES`. Hash a generated ledger as input and every job gets a
+  different key for the same commit, which is a cache that can never hit.
+- Two guards, because the gate depends on the cache and the heavy one cannot run
+  inside the lane. On the gate: the wrapper itself refuses a store inside the
+  checkout and an entry it cannot read back complete, and the `build_result_cache`
+  block of `data/seo/site_hygiene_registry.json` — read by the `site-hygiene`
+  blocker through [`scripts/lib/build_cache_contract_check.js`](scripts/lib/build_cache_contract_check.js),
+  hostile fixtures replayed every run — pins that the lane still builds through
+  the wrapper, that both refusals are still there, and that the gate still points
+  the store off the checkout. Folded in there rather than registered as its own
+  blocker because the release profile is capped at 40 on purpose: every blocker is
+  a way for main to go red. `build-result-cache-integrity`, the byte-identity
+  proof, stays `audit`-only: the lane runs four stages after site-build that write
+  into `data/`, part of the hashed input surface, so inside the lane it looks for
+  an entry under a hash no build ever used.
+
+- The store never lives in the checkout under CI. The gate sets
+  `BUILD_CACHE_DIR=/tmp/velocity-build-cache`, because a cache entry holds a copy
+  of the rendered tree and `search-quality-basics` read those copies as duplicate
+  indexable content. Gitignoring a directory does not hide it from a filesystem
+  walker.

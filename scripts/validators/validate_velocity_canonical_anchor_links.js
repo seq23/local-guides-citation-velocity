@@ -64,6 +64,27 @@ const SENIOR_REQUIRED = {
 };
 const SENIOR_INTAKE_PARAMS = { pt: 'Senior Living Community', intent: 'direct_match', button: 'primary_cta', vertical: 'senior-living', page_kind: 'velocity', market: 'velocity' };
 const MIN_INTAKE_LINKS = 4;
+// Search Readiness g3, 2026-10-26. The senior-living family keeps MIN_INTAKE_LINKS
+// (four is the owner's own rule, stated in priority order above). The other 845
+// matched pieces do not, and the count was never what mattered: /trt/states/oregon/
+// trt-legality/ satisfied it with FIVE identical anchors to one URL, which is the
+// footprint g3 names and no extra route for a reader. Measured on the built tree,
+// 862 of 1,068 graded pages had a portfolio host over a quarter of their outbound
+// links because of it.
+//
+// What replaces the count is stricter, not looser - it asserts properties the
+// count never did:
+//   1. The SERVED page carries EXACTLY ONE followed outbound anchor to the
+//      canonical intake. Not "at least": a second one is now a failure, because
+//      the second one is the defect.
+//   2. That anchor carries the utm attribution (j2), so the canonical side can
+//      tell a working route from a dead one.
+//   3. It is the jump target for every CTA capped below it, so no capped CTA is
+//      a dead button - the count permitted five live buttons and would equally
+//      have permitted five dead ones.
+// The COMMITTED tree is not capped (the cap is a publish-time pass over dist/),
+// so it is held to "at least one" - the floor the served page then sharpens.
+const SERVED_INTAKE_ANCHORS = 1;
 const FIRST_WORDS = 150;
 
 const errors = [];
@@ -301,8 +322,25 @@ if (guidePlan) {
       const host = piece.site.replace(/\./g, '\\.');
       const anchors = [...html.matchAll(new RegExp(`<a\\s+([^>]*?)href="(https://${host}[^"]*)"([^>]*)>`, 'g'))].map((m) => ({ attrs: `${m[1]} ${m[3]}`, href: m[2].replaceAll('&amp;', '&') }));
       for (const a of anchors) if (/rel="[^"]*(nofollow|sponsored|ugc)/.test(a.attrs)) errors.push(`${route}:canonical_link_not_followed:${a.href}:${rel}`);
-      const intake = anchors.filter((a) => { try { return new URL(a.href).pathname === '/request-assistance/'; } catch { return false; } }).length;
-      if (intake < MIN_INTAKE_LINKS) errors.push(`${route}:intake_links_below_${MIN_INTAKE_LINKS}:${intake}:${rel}`);
+      const intakeAnchors = anchors.filter((a) => { try { return new URL(a.href).pathname === '/request-assistance/'; } catch { return false; } });
+      const intake = intakeAnchors.length;
+      const served = dir !== ROOT;
+      if (served) {
+        if (intake !== SERVED_INTAKE_ANCHORS) errors.push(`${route}:served_intake_anchors_not_${SERVED_INTAKE_ANCHORS}:${intake}:${rel}`);
+        for (const a of intakeAnchors) {
+          if (!/[?&]utm_source=/.test(a.href)) errors.push(`${route}:served_intake_anchor_not_attributed:${a.href}:${rel}`);
+        }
+        // Every CTA the cap turned into an in-page jump must reach an id that is
+        // really on the page. A jump to a missing anchor is a dead button wearing
+        // a link, which is what this pin exists to stop.
+        for (const m of html.matchAll(/<a\b[^>]*\bhref="#([^"]+)"[^>]*\bdata-link-capped="true"/g)) {
+          if (!new RegExp(`\\bid="${m[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`).test(html)) {
+            errors.push(`${route}:capped_cta_jumps_to_missing_anchor:#${m[1]}:${rel}`);
+          }
+        }
+      } else if (intake < 1) {
+        errors.push(`${route}:intake_links_below_1:${intake}:${rel}`);
+      }
       const inline = html.match(/<p class="canonical-guide-inline" data-canonical-guide-inline="(\d+)">([\s\S]*?)<\/p>/);
       const closing = html.match(/<section class="card canonical-guide-closing"[^>]*>([\s\S]*?)<\/section>/);
       if (dir !== ROOT) continue; // the counts below are reported once, from the committed output

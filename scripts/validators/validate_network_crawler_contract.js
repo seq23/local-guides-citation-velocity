@@ -31,10 +31,46 @@ function collectSameAs(value,out=[]){
   }
   return out;
 }
-for(const url of collectSameAs({organization:identity.organization,website:identity.website})){
+// A sameAs URL has to be VERIFIED, and "VERIFIED" has to mean something. The
+// registry's allowed_bases say what a record may rest on, and this proves each
+// record satisfies the one it claims: a FIRST_PARTY_ENTITY_PAGE must be on the
+// entity's own host (so it cannot smuggle in an unowned domain), and a
+// THIRD_PARTY_PROFILE must have a source_url OFF that host (so a profile cannot
+// be claimed by resemblance, which is how `dentistryguides` and
+// `thedentistryguides` become one entity by accident). Without this, "status":
+// "VERIFIED" was a string anything could write.
+const ENTITY_HOST=String(sameAsRegistry.entity_host||'theindustryguides.com');
+const ALLOWED_BASES=new Set(Object.keys(sameAsRegistry.allowed_bases||{}));
+if(!ALLOWED_BASES.size)errors.push('same_as_registry_declares_no_allowed_bases');
+const hostOf=(u)=>{try{return new URL(u).hostname.replace(/^www\./,'');}catch{return null;}};
+const onEntityHost=(u)=>hostOf(u)===ENTITY_HOST;
+for(const r of sameAsRegistry.records||[]){
+  if(r.status!=='VERIFIED')continue;
+  for(const field of sameAsRegistry.required_for_verified||[])if(!r[field])errors.push(`same_as_record_missing_${field}:${r.url||'(no url)'}`);
+  if(!ALLOWED_BASES.has(r.basis)){errors.push(`same_as_basis_not_allowed:${r.url}:${r.basis}`);continue;}
+  if(r.basis==='FIRST_PARTY_ENTITY_PAGE'){
+    if(!onEntityHost(r.url))errors.push(`first_party_same_as_off_entity_host:${r.url}`);
+    if(!onEntityHost(r.source_url))errors.push(`first_party_same_as_source_off_entity_host:${r.source_url}`);
+  }
+  if(r.basis==='THIRD_PARTY_PROFILE'&&onEntityHost(r.source_url))errors.push(`third_party_same_as_cites_own_host:${r.source_url}`);
+}
+// The DERIVED node, not the raw registry entry: scripts/lib/network_schema.js is
+// what every page renders, and it fills sameAs from the VERIFIED records. Reading
+// identity.organization here would pass on a hand-written value the derivation
+// then overrides, and fail on the real published one.
+const publishedOrg=require('../lib/network_schema').networkSchemaNodes()[0]||{};
+const publishedSameAs=collectSameAs({organization:publishedOrg,website:identity.website});
+for(const url of publishedSameAs){
   if(!/^https:\/\//.test(url))errors.push(`sameAs_not_https:${url}`);
   if(!verifiedSameAs.has(url))errors.push(`sameAs_not_verified:${url}`);
 }
+// Search Readiness c1: the audit fails the whole site when the Organization it
+// reads has no sameAs, and consolidateOrganization copies this node's value onto
+// every page's Organization-shaped node. An empty field here is therefore the
+// defect itself, not a safe default - 13 sampled URLs failed c1 on 26 Oct 2026
+// for exactly this.
+if(!publishedOrg.sameAs||!publishedOrg.sameAs.length)errors.push('organization_has_no_sameAs');
+for(const key of ['name','url','logo'])if(!publishedOrg[key])errors.push(`organization_missing_${key}`);
 function fileFor(route){if(route==='/')return path.join(ROOT,'index.html');if(route.endsWith('.html'))return path.join(ROOT,route.replace(/^\//,''));return path.join(ROOT,route.replace(/^\//,'').replace(/\/$/,''),'index.html');}
 let checked=0;
 for(const p of admission.pages||[]){
@@ -49,7 +85,9 @@ const report={
   search_agents_required:['Googlebot','Bingbot','OAI-SearchBot'],
   explicit_choice_agents:['GPTBot','ChatGPT-User','ClaudeBot','PerplexityBot','Google-Extended'],
   same_as_policy:'Allowed only when present in data/authority/verified_same_as_registry.json with status VERIFIED.',
-  verified_same_as_count:verifiedSameAs.size,routes_checked:checked,errors,warnings
+  verified_same_as_count:verifiedSameAs.size,published_same_as:publishedSameAs,
+  same_as_bases:[...ALLOWED_BASES],entity_host:ENTITY_HOST,
+  routes_checked:checked,errors,warnings
 };
 fs.mkdirSync(path.join(ROOT,'artifacts','validation'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'artifacts','validation','network-crawler-contract.json'),JSON.stringify(report,null,2)+'\n');

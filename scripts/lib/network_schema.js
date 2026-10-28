@@ -18,26 +18,42 @@ function loadRegistry() {
  * and the rule "every sameAs URL must be registered here before publication" was
  * a wish. This is the path from a registered record to the published node.
  *
- * It holds no records today, so every page's Organization ships without sameAs
- * and Search Readiness c1 reports it. That is the honest state: the umbrella
- * brand has no owned external profile, and inventing one is the first item in the
- * identity registry's own `prohibited` list. Register one record here and it
- * appears on all 2,136 pages on the next build, with no code change.
+ * Since 2026-10-26 it holds two FIRST_PARTY_ENTITY_PAGE records (/about,
+ * /methodology), each verified live, which closes Search Readiness c1 on all
+ * 2,136 pages. The umbrella brand still has no owned external profile - that
+ * search and its result are recorded in the registry so nobody repeats it - and
+ * inventing one is still the first item in the identity registry's own
+ * `prohibited` list. The records are the ONLY source: a sameAs written into
+ * network_identity_registry.json would be a second one this function overrides.
+ *
+ * The required-field list comes from the registry's own `required_for_verified`,
+ * not a copy of it here. It was a copy, and it drifted the moment the registry
+ * added `basis`: a record could declare a field required and still publish
+ * without it, which is the write-only registry defect this whole path exists to
+ * end, one level down.
  */
 function verifiedSameAs(entityId) {
   const registry = loadRegistry();
   const rel = registry.verified_same_as_registry || 'data/authority/verified_same_as_registry.json';
   const abs = path.join(ROOT, rel);
   if (!fs.existsSync(abs)) return [];
-  let records;
-  try { records = JSON.parse(fs.readFileSync(abs, 'utf8')).records; } catch { return []; }
+  let registryFile;
+  try { registryFile = JSON.parse(fs.readFileSync(abs, 'utf8')); } catch { return []; }
+  const required = Array.isArray(registryFile.required_for_verified) && registryFile.required_for_verified.length
+    ? registryFile.required_for_verified
+    : ['entity_id', 'url', 'source_url', 'verified_at', 'recheck_by'];
+  const allowedBases = Object.keys(registryFile.allowed_bases || {});
+  const records = registryFile.records;
   if (!Array.isArray(records)) return [];
-  const required = ['entity_id', 'url', 'source_url', 'verified_at', 'recheck_by'];
   return [...new Set(records
     .filter((r) => r && r.status === 'VERIFIED' && r.entity_id === entityId)
     // The registry states its own required fields; a record missing one is not
     // verified in the sense the registry means, so it is not published.
     .filter((r) => required.every((k) => r[k]))
+    // And when the registry declares what a basis may be, a record claiming one
+    // outside that list is not verified either - otherwise `basis` would be a
+    // field that had to be present and could say anything.
+    .filter((r) => !allowedBases.length || allowedBases.includes(r.basis))
     .map((r) => String(r.url)))];
 }
 

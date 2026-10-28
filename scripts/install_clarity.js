@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Install Microsoft Clarity only on pages with a form or purchase link.
+ * Install Microsoft Clarity on the home page and on pages with a form or
+ * purchase link.
  *
  * The Clarity projects already existed - one per property - but no tag was ever
  * installed, so every project sat on "Almost there!" and none of them recorded a
@@ -22,7 +23,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const CONFIG = path.join(ROOT, 'data/clarity_projects.json');
 const MARKER = 'data-clarity-loader';
-const { installClarity } = require('./lib/clarity_page');
+const { installClarity, isHomePage } = require('./lib/clarity_page');
 
 if (!fs.existsSync(CONFIG)) {
   console.error(`clarity: missing ${path.relative(ROOT, CONFIG)}`);
@@ -68,7 +69,8 @@ function walk(dir, depth) {
     const rel = path.relative(outDir, abs).replace(/\\/g, '/');
     if (skipFiles.has(rel) || skipFiles.has(entry.name)) { skipped += 1; continue; }
     const html = fs.readFileSync(abs, 'utf8');
-    const after = installClarity(html, snippet);
+    // The home page always carries the tag; see lib/clarity_page.js.
+    const after = installClarity(html, snippet, { always: isHomePage(rel) });
     if (after === html) { already += 1; continue; }
     fs.writeFileSync(abs, after);
     if (after.includes(MARKER)) touched += 1;
