@@ -30,7 +30,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const OUT = path.join(ROOT, 'artifacts', 'validation', 'served-head-contract.json');
 const c = require('../lib/served_head_contract');
 const { portfolioHosts } = require('../install_served_head_contract');
-const { conversionPage, isHomePage, selfTest: claritySelfTest } = require('../lib/clarity_page');
+const { conversionPage, selfTest: claritySelfTest } = require('../lib/clarity_page');
 const { fitTitle } = require('../lib/search_snippet');
 
 // Measured 2026-10-25: 2,137 pages in dist/. The floor is far below that and far
@@ -103,15 +103,13 @@ for (const abs of pages) {
 
   // b10 + e9: publication identity survives trimming; recording is scoped.
   if (title && !title.includes(c.SITE_NAME)) add('title_brand_missing', title);
-  // Recording is scoped to conversion steps, and the home page always records.
-  // Both directions are graded: scoping the tag to conversion markup alone
-  // stripped it from the home page on 28 Oct 2026 and Search Readiness e6 and
-  // i8, which read the home page directly, both went red the same morning.
-  const hasClarity = /data-clarity-loader|clarity\.ms\/tag\//i.test(html);
-  if (isHomePage(rel)) {
-    if (!hasClarity) add('clarity_missing_on_home', 'the home page must load Clarity (Search Readiness e6, i8)');
-  } else if (hasClarity && !conversionPage(html)) {
-    add('clarity_without_conversion', 'no form or purchase link');
+  if (/data-clarity-loader|clarity\.ms\/tag\//i.test(html) && !conversionPage(html)) add('clarity_without_conversion', 'no form or purchase link');
+  if (rel === 'index.html') {
+    if (!/<form\b[^>]*data-provider-start\b/.test(html)) add('provider_start_missing', 'homepage has no provider routing form');
+    if (!/data-clarity-loader/.test(html)) add('clarity_missing_on_conversion', 'homepage provider form has no consent-gated loader');
+    for (const marker of ['data-analytics-allow', 'data-analytics-stop', 'data-clarity-mask']) {
+      if (!html.includes(marker)) add('clarity_consent_missing', marker);
+    }
   }
 
   // b2: exactly one description, 120-160.

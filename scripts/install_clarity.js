@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Install Microsoft Clarity on the home page and on pages with a form or
- * purchase link.
+ * Install Microsoft Clarity only on pages with a form or purchase link.
  *
  * The Clarity projects already existed - one per property - but no tag was ever
  * installed, so every project sat on "Almost there!" and none of them recorded a
@@ -23,7 +22,9 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const CONFIG = path.join(ROOT, 'data/clarity_projects.json');
 const MARKER = 'data-clarity-loader';
-const { installClarity, isHomePage } = require('./lib/clarity_page');
+const { installClarity } = require('./lib/clarity_page');
+const { installProviderStart } = require('./lib/provider_start');
+const { clarityRuntime } = require('./lib/clarity_runtime');
 
 if (!fs.existsSync(CONFIG)) {
   console.error(`clarity: missing ${path.relative(ROOT, CONFIG)}`);
@@ -52,13 +53,14 @@ if (!Object.keys(projects).length) {
 // the loader to a same-origin file makes it satisfy 'self' without weakening the
 // policy with 'unsafe-inline'.
 const LOADER_REL = 'assets/clarity-loader.js';
-const loaderJs = `(function(w,d,m){var h=(w.location.hostname||"").toLowerCase().replace(/^www\\./,"");var id=m[h];if(!id)return;w.clarity=w.clarity||function(){(w.clarity.q=w.clarity.q||[]).push(arguments)};var s=d.createElement("script");s.async=1;s.src="https://www.clarity.ms/tag/"+id;var f=d.getElementsByTagName("script")[0];f.parentNode.insertBefore(s,f)})(window,document,${JSON.stringify(projects)})`;
+const loaderJs = `(${clarityRuntime.toString()})(window,document,${JSON.stringify(projects)});`;
 const snippet = `<script ${MARKER} src="/${LOADER_REL}" defer></script>`;
 
 let upgraded = 0;
 let touched = 0;
 let already = 0;
 let skipped = 0;
+const pending = [];
 
 function walk(dir, depth) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -69,15 +71,18 @@ function walk(dir, depth) {
     const rel = path.relative(outDir, abs).replace(/\\/g, '/');
     if (skipFiles.has(rel) || skipFiles.has(entry.name)) { skipped += 1; continue; }
     const html = fs.readFileSync(abs, 'utf8');
-    // The home page always carries the tag; see lib/clarity_page.js.
-    const after = installClarity(html, snippet, { always: isHomePage(rel) });
+    const prepared = rel === 'index.html' ? installProviderStart(html, ROOT) : html;
+    const after = installClarity(prepared, snippet);
     if (after === html) { already += 1; continue; }
-    fs.writeFileSync(abs, after);
+    pending.push([abs, after]);
     if (after.includes(MARKER)) touched += 1;
     else upgraded += 1; // removed a tag from a page without a conversion step
 
   }
 }
+// Validate every transform before writing anything, including the loader.
+walk(outDir, 0);
+
 // The loader must exist at the same origin it is requested from, so write it
 // into the output tree before pages are rewritten to reference it.
 // Written to the source assets directory as well as the output tree. The source
@@ -90,6 +95,6 @@ for (const base of new Set([ROOT, outDir])) {
   fs.writeFileSync(loaderAbs, loaderJs + '\n');
 }
 
-walk(outDir, 0);
+for (const [abs, after] of pending) fs.writeFileSync(abs, after);
 
 console.log(`clarity: installed on ${touched} page(s); removed from ${upgraded} non-conversion page(s); ${already} already correct; ${skipped} skipped`);
