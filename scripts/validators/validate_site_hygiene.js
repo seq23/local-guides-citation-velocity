@@ -160,6 +160,15 @@ for (const s of sels) {
 const clarity = (JSON.parse(read('data/clarity_projects.json')).projects) || {};
 for (const [h, id] of Object.entries(reg.clarity_projects)) if (clarity[h] !== id) fail('clarity', `${h} maps to ${clarity[h]}, registered ${id}`);
 
+// h6: a build cache must be isolated by the full checkout, after source sync.
+// Prefix restores would undo this boundary even with a correct primary key.
+for (const workflow of ['velocity-content-release.yml', 'velocity-full-rebuild.yml']) {
+  const text = read(`.github/workflows/${workflow}`);
+  const cache = text.match(/      - name: Restore build-result cache[\s\S]*?(?=      - name:|$)/);
+  if (!cache || !cache[0].includes("hashFiles('**', '!.github/workflows/**')") || /restore-keys:/.test(cache[0])) fail('build_cache_key', `${workflow} must hash the complete checkout without a fallback`);
+  if (!cache || text.indexOf('git reset --hard origin/main') > cache.index) fail('build_cache_key', `${workflow} must synchronize before cache restore`);
+}
+
 // indexnow
 const kf = reg.indexnow_key_file;
 if (!fs.existsSync(path.join(ROOT, kf))) fail('indexnow_key', `${kf} not committed at the root`);

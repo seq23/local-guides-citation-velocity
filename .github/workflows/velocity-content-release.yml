@@ -90,30 +90,19 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      # This lane calls `npm run build` up to four times per run (absorption,
-      # its two rebase-retry branches, and the release rebase-rebuild loop),
-      # regenerating all ~2,070 pages from scratch every time even when a
-      # rebase-retry changed nothing this lane's own inputs. scripts/lib/build_cache.js
-      # skips the rebuild entirely when its input hash (scripts/, templates/,
-      # content/, data/, package.json, package-lock.json, _redirects, plus the
-      # env vars that affect generation) matches a prior run - the coarse key
-      # here just gives it something durable to restore from; the real
-      # correctness check is the hash comparison inside build:cached itself, so
-      # a restored-but-stale entry from an unrelated older run is a safe MISS,
-      # never a false HIT. restore-keys falls back to the most recent entry
-      # under the same prefix when this exact run has no cache yet.
-      - name: Restore build-result cache
-        uses: actions/cache@v4
-        with:
-          path: .build-cache
-          key: build-result-cache-${{ github.run_id }}
-          restore-keys: |
-            build-result-cache-
       - name: Synchronize source before mutation
         run: |
           git fetch origin main
           git checkout main
           git reset --hard origin/main
+      # h6: hash the complete checkout after synchronization, including tracked
+      # rendered pages and assets. No prefix fallback may restore another commit.
+      # The wrapper still checks its own input/environment hash inside the entry.
+      - name: Restore build-result cache
+        uses: actions/cache@v4
+        with:
+          path: .build-cache
+          key: build-result-cache-${{ runner.os }}-${{ hashFiles('**', '!.github/workflows/**') }}
       - name: Set release date
         run: echo "SOURCE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
       - name: Size the processing budget to the landed backlog

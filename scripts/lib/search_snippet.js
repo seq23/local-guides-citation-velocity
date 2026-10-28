@@ -90,29 +90,21 @@ function trimTo(value, max, { keepWhole = '' } = {}) {
 }
 
 /**
- * A title of at least MIN_TITLE_CHARS. A title that already clears the floor is
- * returned unchanged. A short one is sentence-cased (community questions arrive
- * as lowercase search strings) and given a page qualifier - its vertical, when the
- * caller has one - then the site name, whichever first clears the floor.
+ * b10: every title names the publication, including long titles and frozen
+ * pages normalized at publish time. Reserve the brand before trimming the topic.
  */
 function fitTitle(title, { qualifier = '' } = {}) {
   const base = clean(title);
-  // Over the ceiling: a search result shows roughly MAX_TITLE_CHARS, so trim the
-  // title itself rather than let the result cut it off mid-word.
-  if (base.length > MAX_TITLE_CHARS) return trimTo(base, MAX_TITLE_CHARS);
-  if (base.length >= MIN_TITLE_CHARS) return base;
-  const head = sentenceStart(base);
-  const q = clean(qualifier);
-  const candidates = [
-    q && `${head} | ${q}`,
-    `${head} | ${SITE_NAME}`,
-    q && `${head} | ${q} | ${SITE_NAME}`
-  ].filter(Boolean);
-  // The first candidate that clears the floor without passing MAX_TITLE_CHARS, where
-  // Bing starts reporting "title too long".
-  return candidates.find((c) => c.length >= MIN_TITLE_CHARS && c.length <= MAX_TITLE_CHARS)
-    || candidates.find((c) => c.length >= MIN_TITLE_CHARS)
-    || candidates[candidates.length - 1];
+  if (base.includes(SITE_NAME) && base.length >= MIN_TITLE_CHARS && base.length <= MAX_TITLE_CHARS) return base;
+  if (base === SITE_NAME) return `${SITE_NAME} | Source-Backed Guides`;
+  const suffix = ` | ${SITE_NAME}`;
+  let topic = sentenceStart(base
+    .replace(/\s*\|\s*(The Industry Guides|Insight)\s*$/i, '')
+    .replace(/^The Industry Guides\s*\|\s*/i, ''));
+  if (!topic) topic = 'Source-Backed Guides';
+  const q = clean(qualifier) || 'Guide';
+  if (topic.length + suffix.length < MIN_TITLE_CHARS) topic += ` | ${q}`;
+  return `${trimTo(topic, MAX_TITLE_CHARS - suffix.length)}${suffix}`;
 }
 
 /**
