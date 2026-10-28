@@ -32,7 +32,7 @@ const MARK = ORG_ID;
 const CLINICAL = /((^|[/-])trt([/-]|$)|medical|ssdi|iep-eval|forensic-eval|neuro|dental|dentist|implant|endodont|periodont|orthodont|oral-surge|root-canal|veneer|denture|invisalign|braces|aligner|whitening|wisdom-tooth|cavity|filling|crown|sedation|anesthes|extraction|gum-|hormone|testosteron|estrogen|menopause|hrt-|thyroid|semaglutide|ozempic|peptide|weight-loss|hair-loss|iv-therapy|adhd|autism|cognitive-assess|psychiat|psycholog|civil-surgeon|panel-physician|vaccinat|immuniz|i-693|surgeon|surgery|clinic|physician|doctor|dermat|botox|filler|therapy|treatment-plan)/i;
 
 const AUTHORED = new Set(['Article','BlogPosting','NewsArticle','TechArticle','WebPage','FAQPage','HowTo']);
-const SKIP_DIRS = new Set(['node_modules','.git','dist','artifacts','reports','data','content-bank','scripts','assets','docs','logs','distribution_scripts','atlas','glossary','outputs','proofs','releases','seo','medium','medium-articles','tools','tmp','sitemaps','staging','templates']);
+const SKIP_DIRS = new Set(['node_modules','.git','dist','artifacts','reports','data','content-bank','scripts','assets','docs','logs','distribution_scripts','atlas','glossary','outputs','proofs','releases','seo','medium','medium-articles','tools','tmp','sitemaps','staging','templates','.build','.build-cache']);
 
 function walk(d, o = []) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

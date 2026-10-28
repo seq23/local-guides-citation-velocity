@@ -3,7 +3,7 @@
 const fs=require('fs'),path=require('path'),crypto=require('crypto');
 const ROOT=path.resolve(__dirname,'../..');
 const norm=(p)=>p.replace(/\\/g,'/');
-function walk(dir,out=[]){if(!fs.existsSync(dir))return out;for(const ent of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,ent.name);if(ent.isDirectory()){if(!['node_modules','.git','dist','reports','artifacts'].includes(ent.name))walk(p,out);}else out.push(p);}return out;}
+function walk(dir,out=[]){if(!fs.existsSync(dir))return out;for(const ent of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,ent.name);if(ent.isDirectory()){if(!['node_modules','.git','dist','reports','artifacts','.build','.build-cache'].includes(ent.name))walk(p,out);}else out.push(p);}return out;}
 function strip(html){return html.replace(/<script\b[\s\S]*?<\/script>/gi,' ').replace(/<style\b[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&[a-z0-9#]+;/gi,' ').replace(/\s+/g,' ').trim();}
 function attrTag(html,tag,attr,value){const tags=html.match(new RegExp(`<${tag}\\b[^>]*>`,'gi'))||[];return tags.find(t=>new RegExp(`\\b${attr}=(["'])${value}\\1`,'i').test(t))||'';}
 function attr(tag,name){const m=tag.match(new RegExp(`\\b${name}=(["'])(.*?)\\1`,'i'));return m?m[2].trim():'';}

@@ -24,6 +24,19 @@ The latest supplied baseline ZIP is the starting source of truth. Inside the rep
 5. Velocity-only overhaul registries, page-family data, routing, evidence, and release controls.
 6. Rendered public files, which are generated and must not be hand-edited.
 
+## PUBLIC DOMAIN
+
+`theindustryguides.com` — the velocity and umbrella property for The Industry
+Guides. This repository builds and deploys it; `wrangler.toml` carries the same
+value as `SITE_URL`, and `CLAUDE.md` names it in its first line.
+
+Declared here on 26 October 2026 because it was not. A search-readiness pass
+looking for the repository that owns a flagged domain starts with
+`grep -ril "<domain>" ~/GitHub/*/REPO_IDENTITY.md`, and this file - the one place
+that exists to answer that question - was the one place the domain did not
+appear. The outbound guide domains stay out on purpose: they are
+`local-guides-generator`'s, and this repository only routes to them.
+
 ## CANONICAL UPDATER
 `~/update_repo_from_zip_generic_v3.sh`
 

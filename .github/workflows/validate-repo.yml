@@ -11,6 +11,15 @@ permissions:
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
+  # OUTSIDE the working tree, deliberately, and a literal path because neither
+  # workflow-level nor job-level env may read the `runner` context. The default is
+  # a gitignored .build-cache/ in the repo root, which is fine for a developer but
+  # not for a lane that walks the repo: a cache entry holds a copy of the rendered
+  # tree, and search-quality-basics read those copies as duplicate indexable
+  # content and failed the whole gate. Gitignoring a directory does not hide it
+  # from a filesystem walker. Keeping the store off the tree means no validator can
+  # ever see it, whatever a future walker's skip list says. Search Readiness h5.
+  BUILD_CACHE_DIR: /tmp/velocity-build-cache
   # The release profile is ~180 validators and 7-11 minutes on one runner; two of
   # them (the clock-independence pair) are more than half of that. This is the
   # merge gate, so it runs as SHARD_COUNT parallel slices balanced by measured
@@ -55,16 +64,64 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      - name: Restore the build-result cache
+        # The lane's site-build stage runs `npm run build:cached`, so this is what
+        # makes it a no-op. Keyed on the commit: the shard that saves it below
+        # finishes before the aggregate job starts (needs: shard), so the aggregate
+        # restores this run's own entry instead of rebuilding all ~2,400 pages a
+        # second time in series on the critical path. The prefix restore-key lets a
+        # rebase retry or a re-run whose hashed input surface did not move hit a
+        # previous run's entry; the wrapper verifies every entry against its own
+        # input hash and falls back to a real build on any doubt, so a stale or
+        # wrong-commit restore cannot be used. Search Readiness h5.
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/velocity-build-cache
+          key: build-cache-v1-${{ github.sha }}
+          restore-keys: |
+            build-cache-v1-
       - name: Build strategy gate and daily citation preview
-        # One line, not two: release:daily-citation-intelligence:preview begins with
-        # `npm run strategy:gate`, so running it first ran the 100k runway build twice
-        # in every one of the five jobs - about 25 seconds each, twice over on the
-        # critical path (a shard, then the aggregate). Search Readiness h5.
+        # ONE job, not all five. It takes ~50s and it was on the critical path
+        # twice over (the slowest shard, then the aggregate that waits on it) -
+        # about 100 of the gate's 370 seconds. Measured, run 40290310511: every
+        # shard and the aggregate pass with this step skipped, because the
+        # validators that read its output read the artifacts the repo COMMITS;
+        # re-deriving them inside the gate is also the shape validation-lane-
+        # repairs-nothing exists to discourage. It stays on one shard so the daily
+        # citation lane is still exercised on every PR rather than quietly
+        # untested, and shard 1 is chosen because the balancer leaves it light
+        # (the heaviest validator lands alone on shard 0). Search Readiness h5.
+        if: matrix.shard == 1
         run: npm run release:daily-citation-intelligence:preview
       - name: Build and validate this shard of the release profile
         env:
           VALIDATION_SHARD: ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
         run: npm run release:ci-validate
+      - name: Save the build-result cache
+        # One shard saves, not all of them: a single key written by SHARD_COUNT
+        # parallel jobs is a race, and the post-step form would run it in every one.
+        # Shard 2 is chosen off the measured assignment: the balancer
+        # (run_validation_registry.js, longest-weight-first) puts the heaviest
+        # validator alone on shard 0, so shard 0 is the critical path and shard 2
+        # has room to carry the upload. Each shard job prints its own assignment
+        # ("VALIDATION SHARD i/N: ... heaviest <id> <n>s"), so a future weight
+        # change that moves the heavy work onto shard 2 is visible in the log.
+        #
+        # cache:prune-store touches only the store and does NOT build.
+        # `build:cached:prune` was the obvious call and cost 80 seconds on the
+        # critical path (measured, run 40290310511): it recomputes the input hash,
+        # the lane's later stages have already moved it, so it missed its own
+        # entry and ran a whole second build in order to prune. Keeping the newest
+        # entry (~77 MB) is what stops the store growing without bound across
+        # runs. Search Readiness h5.
+        if: success() && matrix.shard == 2
+        run: npm run cache:prune-store
+      - name: Store the build-result cache
+        if: success() && matrix.shard == 2
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/velocity-build-cache
+          key: build-cache-v1-${{ github.sha }}
       - name: Upload shard evidence
         if: success()
         uses: actions/upload-artifact@v7
@@ -113,12 +170,22 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      - name: Build strategy gate and daily citation preview
-        # One line, not two: release:daily-citation-intelligence:preview begins with
-        # `npm run strategy:gate`, so running it first ran the 100k runway build twice
-        # in every one of the five jobs - about 25 seconds each, twice over on the
-        # critical path (a shard, then the aggregate). Search Readiness h5.
-        run: npm run release:daily-citation-intelligence:preview
+      - name: Restore the build-result cache
+        # The lane's site-build stage runs `npm run build:cached`, so this is what
+        # makes it a no-op. Keyed on the commit: the shard that saves it below
+        # finishes before the aggregate job starts (needs: shard), so the aggregate
+        # restores this run's own entry instead of rebuilding all ~2,400 pages a
+        # second time in series on the critical path. The prefix restore-key lets a
+        # rebase retry or a re-run whose hashed input surface did not move hit a
+        # previous run's entry; the wrapper verifies every entry against its own
+        # input hash and falls back to a real build on any doubt, so a stale or
+        # wrong-commit restore cannot be used. Search Readiness h5.
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/velocity-build-cache
+          key: build-cache-v1-${{ github.sha }}
+          restore-keys: |
+            build-cache-v1-
       - name: Download shard evidence
         uses: actions/download-artifact@v7
         with:
