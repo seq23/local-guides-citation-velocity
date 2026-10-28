@@ -29,7 +29,17 @@ const STOP_AFTER=SHARD?'release-validation':null;
 const stages=[];
 if(mode==='self-heal')stages.push(stage('monitor-metadata-reconcile','node scripts/citation_velocity/reconcile_monitor_ledger.js',2),stage('programmatic-source-self-heal-loop','node scripts/content/run_source_self_heal_loop.js',12));
 stages.push(
- stage('site-build','npm run build',20),
+ // `build:cached`, not `build`: the same build, skipped when nothing in the hashed
+ // input surface changed since the last run (scripts/lib/build_cache.js). The merge
+ // gate runs this lane in SHARD_COUNT+1 jobs on one commit and every one of them
+ // rebuilt all ~2,400 pages from scratch - 41-51 seconds each, and the aggregate
+ // job's copy sits on the critical path AFTER the shards, so the gate paid it twice
+ // in series. The aggregate now restores the entry a shard wrote in the same run
+ // (~2s). On any doubt the wrapper falls back to the real build, and
+ // build-result-cache-integrity (now in the `release` profile, because the gate
+ // depends on the cache) proves the restored tree byte-identical to an isolated,
+ // cache-disabled ground-truth build. Search Readiness h5.
+ stage('site-build','npm run build:cached',20),
  stage('page-admission-registry','node scripts/build_page_admission_registry_2026_06_19.js',5),
  stage('route-and-disposition-registries','node scripts/build_full_scope_route_and_disposition_registries.js',5),
  stage('search-submission-manifest','node scripts/seo/build_search_submission_manifest.js',5),

@@ -29,6 +29,7 @@
     "build:answer-blocks": "node scripts/build_answer_blocks.js",
     "build:cached": "node scripts/build_cache_wrapper.js",
     "build:cached:prune": "node scripts/build_cache_wrapper.js --prune",
+    "cache:prune-store": "node -e \"const c=require('./scripts/lib/build_cache');const r=c.pruneCacheEntries(Number(process.env.BUILD_CACHE_KEEP||1));console.log('[build-cache] store pruned: removed '+r.removed+', kept '+r.kept+' in '+c.cacheDir())\"",
     "build:citation-targets": "node scripts/build_citation_targets.js",
     "build:entity-graph": "node scripts/build_entity_graph.js",
     "build:llm-exports": "node scripts/build_llm_exports.js",

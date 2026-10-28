@@ -63,5 +63,6 @@
     "LegalService on editorial pages"
   ],
   "verified_same_as_registry": "data/authority/verified_same_as_registry.json",
-  "notes_2026_10_25": "logo added for Search Readiness c1 (every page's Organization needs name, url, logo, sameAs). sameAs is still absent on purpose: 'unverified sameAs URLs' is in the prohibited list above and data/authority/verified_same_as_registry.json holds no records, so there is no value that could be added here honestly. Register a verified profile there first and it belongs in this node."
+  "notes_2026_10_25": "logo added for Search Readiness c1 (every page's Organization needs name, url, logo, sameAs).",
+  "notes_2026_10_26": "sameAs is now published, closing Search Readiness c1 - and it is NOT written here. scripts/lib/network_schema.js derives it from the VERIFIED records in data/authority/verified_same_as_registry.json, which is the single source: a value hard-coded in this node would be a second one the derivation silently overrides. That registry now declares what a basis IS (allowed_bases) and carries two FIRST_PARTY_ENTITY_PAGE records verified live on 26 Oct 2026 (/about, /methodology), plus the search proving this entity publishes no third-party profile to register. \"unverified sameAs URLs\" stays prohibited above and is enforced by validate_network_crawler_contract.js, which also fails if the published Organization goes back to having no sameAs at all."
 }
