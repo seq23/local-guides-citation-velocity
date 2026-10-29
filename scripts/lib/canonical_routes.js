@@ -106,6 +106,11 @@ const TOPIC_RULES = {
     { ...ANY, target: G('how-to-choose-a-neuro-evaluation-provider') }
   ],
   'hormonesivhair.com': [
+    // Do not send vitamin C / hydration searches to the testosterone
+    // injections-versus-gels guide merely because their title says "injection".
+    // This is the canonical educational IV/ingredient guide; local clinic
+    // prices remain on the canonical site, not in the velocity directory.
+    t(/vitamin c|iv hydration|iv drip|hydration (?:drip|therapy)|intravenous (?:hydration|vitamin)/, G('iv-hydration-therapy-overview')),
     t(/peptide.*(bad fit|red flag)/, G('peptide-clinic-red-flags')),
     t(/peptides? vs trt/, G('peptides-vs-trt')),
     t(/peptide/, G('peptide-clinic-near-me')),
