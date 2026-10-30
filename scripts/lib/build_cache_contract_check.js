@@ -23,10 +23,15 @@
  *      refusals below, silently, and no test would notice.
  *   2. The wrapper still refuses a store inside the checkout, and an entry it
  *      cannot read back complete. Those two refusals ARE the gate's cache guard.
- *   3. The gate sets BUILD_CACHE_DIR outside the checkout. A cache entry holds a
- *      copy of the rendered tree, and search-quality-basics read those copies as
- *      duplicate indexable content and failed the whole gate. Gitignoring a
- *      directory does not hide it from a filesystem walker.
+ *   3. EVERY workflow that reaches the wrapper sets BUILD_CACHE_DIR outside the
+ *      checkout and caches that same path. A cache entry holds a copy of the
+ *      rendered tree, and search-quality-basics read those copies as duplicate
+ *      indexable content and failed the whole gate. Gitignoring a directory does
+ *      not hide it from a filesystem walker. The set of workflows is DISCOVERED
+ *      from .github/workflows (any file that runs build:cached or restores the
+ *      build-result cache), never a hand list: on 2026-10-29/30 this checked only
+ *      the gate, the wrapper's refusal landed, and the two release lanes that
+ *      still kept .build-cache went red on the refusal two days running.
  *   4. The hashed input surface excludes the wall-clock-stamped generated ledgers
  *      (data/signals/**). The gate runs the citation preview in every job before
  *      the build and it rewrites those files with a real `generated_at`, so
@@ -42,10 +47,28 @@ const WRAPPER = 'scripts/build_cache_wrapper.js';
 const CACHE_LIB = 'scripts/lib/build_cache.js';
 const GATE = '.github/workflows/validate-repo.yml';
 
+const WORKFLOW_DIR = '.github/workflows';
+
 const repoIo = {
   read: (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8'),
   exists: (rel) => fs.existsSync(path.join(ROOT, rel)),
+  list: (rel) => fs.readdirSync(path.join(ROOT, rel)).filter((n) => /\.ya?ml$/.test(n)).map((n) => `${rel}/${n}`),
 };
+
+/** A workflow reaches the wrapper if it runs build:cached or restores the build-result cache. */
+function reachesWrapper(text) {
+  return /npm run build:cached\b/.test(text) || /- name: (Restore|Save) build-result cache/.test(text);
+}
+
+function storeFailures(rel, text) {
+  const m = text.match(/^\s*BUILD_CACHE_DIR:\s*(\S+)\s*$/m);
+  if (!m) return [`${rel} does not set BUILD_CACHE_DIR; the wrapper refuses a store inside the checkout under CI, and a cache entry inside it is read as duplicate content`];
+  if (!m[1].startsWith('/')) return [`${rel} sets BUILD_CACHE_DIR to a non-absolute path (${m[1]}); it must be outside the checkout`];
+  const out = [];
+  if (!text.includes(`path: ${m[1]}`)) out.push(`${rel} caches a different path than BUILD_CACHE_DIR (${m[1]}), so nothing is persisted`);
+  if (/^\s*path:\s*\.build-cache\s*$/m.test(text)) out.push(`${rel} still caches .build-cache inside the checkout`);
+  return out;
+}
 
 function check(io = repoIo, { reg = null } = {}) {
   const failures = [];
@@ -68,12 +91,11 @@ function check(io = repoIo, { reg = null } = {}) {
 
   const gate = read(GATE);
   if (gate === null) failures.push(`${GATE} is missing`);
-  else {
-    const m = gate.match(/^\s*BUILD_CACHE_DIR:\s*(\S+)\s*$/m);
-    if (!m) failures.push(`${GATE} does not set BUILD_CACHE_DIR; a cache entry inside the checkout is read as duplicate content`);
-    else if (!m[1].startsWith('/')) failures.push(`${GATE} sets BUILD_CACHE_DIR to a non-absolute path (${m[1]}); it must be outside the checkout`);
-    else if (!gate.includes(`path: ${m[1]}`)) failures.push(`${GATE} caches a different path than BUILD_CACHE_DIR (${m[1]}), so nothing is persisted`);
-  }
+  let workflows = [];
+  try { workflows = (io.list ? io.list(WORKFLOW_DIR) : []).filter((rel) => { const s = read(rel); return s !== null && reachesWrapper(s); }); } catch { workflows = []; }
+  if (gate !== null && !workflows.includes(GATE)) workflows.unshift(GATE);
+  if (!workflows.length) failures.push(`no workflow under ${WORKFLOW_DIR} reaches the build cache wrapper; this check examined nothing`);
+  for (const rel of workflows) failures.push(...storeFailures(rel, read(rel)));
 
   const lib = read(CACHE_LIB);
   if (lib === null) failures.push(`${CACHE_LIB} is missing`);
@@ -84,13 +106,14 @@ function check(io = repoIo, { reg = null } = {}) {
     if (!lib.includes('INPUT_EXCLUDE_PREFIXES')) failures.push(`${CACHE_LIB} lost INPUT_EXCLUDE_PREFIXES`);
   }
 
-  return { failures, warnings, stats: { lane: LANE, wrapper: WRAPPER, gate: GATE } };
+  return { failures, warnings, stats: { lane: LANE, wrapper: WRAPPER, gate: GATE, workflows } };
 }
 
 /** Break each rule, confirm it is caught. A guard that cannot fail proves nothing. */
 function selfTest({ reg = null } = {}) {
-  const base = { read: repoIo.read, exists: repoIo.exists };
-  const mk = (ov) => ({
+  const base = { read: repoIo.read, exists: repoIo.exists, list: repoIo.list };
+  const mk = (ov, list = base.list) => ({
+    list,
     exists: (rel) => (rel in ov ? ov[rel] !== null : base.exists(rel)),
     read: (rel) => (rel in ov ? (ov[rel] === null ? (() => { throw new Error('missing'); })() : ov[rel]) : base.read(rel)),
   });
@@ -104,9 +127,18 @@ function selfTest({ reg = null } = {}) {
     ['the signal ledgers go back into the hashed input surface', { [CACHE_LIB]: base.read(CACHE_LIB).split("'data/signals/'").join("'data/nothing-like-it/'") }],
     ['the lane file is deleted', { [LANE]: null }],
   ];
+  // Every discovered lane, not only the gate: each one losing its store is caught.
+  const lanes = base.list(WORKFLOW_DIR).filter((rel) => rel !== GATE && reachesWrapper(base.read(rel)));
+  if (!lanes.length) return { cases: cases.length, missed: ['no non-gate workflow reaches the wrapper, so the per-lane proof examined nothing'] };
+  for (const rel of lanes) {
+    cases.push([`${rel} stops setting BUILD_CACHE_DIR`, { [rel]: base.read(rel).replace(/^\s*BUILD_CACHE_DIR:.*$/m, '') }]);
+    cases.push([`${rel} caches .build-cache inside the checkout again`, { [rel]: base.read(rel).split('path: /tmp/velocity-build-cache').join('path: .build-cache') }]);
+  }
   const missed = [];
   for (const [name, ov] of cases) if (!check(mk(ov), { reg }).failures.length) missed.push(name);
+  // Discovery itself: a listing that finds nothing must fail, not pass vacuously.
+  if (!check(mk({ [GATE]: null }, () => []), { reg }).failures.some((f) => f.includes('examined nothing'))) missed.push('workflow discovery that finds nothing');
   return { cases: cases.length, missed };
 }
 
-module.exports = { check, selfTest, repoIo, LANE, WRAPPER, CACHE_LIB, GATE };
+module.exports = { check, selfTest, repoIo, reachesWrapper, LANE, WRAPPER, CACHE_LIB, GATE, WORKFLOW_DIR };

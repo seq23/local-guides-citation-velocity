@@ -254,7 +254,7 @@ else if (read(kf).trim() !== kf.replace(/\.txt$/, '')) fail('indexnow_key', `${k
     for (const w of r.warnings) console.log(`  !! SITE HYGIENE WARNING [build_result_cache]: ${w}`);
     const proof = selfTest({ reg: bc });
     for (const m of proof.missed) fail('build_result_cache', `negative proof no longer caught: ${m}`);
-    if (!r.failures.length && !proof.missed.length) console.log(`  build_result_cache: the lane builds through the wrapper, both refusals present, the gate's store is off the checkout; ${proof.cases} negative proofs caught`);
+    if (!r.failures.length && !proof.missed.length) console.log(`  build_result_cache: the lane builds through the wrapper, both refusals present, ${r.stats.workflows.length} workflows keep the store off the checkout (${r.stats.workflows.join(', ')}); ${proof.cases} negative proofs caught`);
   }
 }
 

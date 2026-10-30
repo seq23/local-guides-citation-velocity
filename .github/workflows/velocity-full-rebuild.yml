@@ -8,6 +8,12 @@ permissions:
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
+  # The build-result cache store lives OUTSIDE the checkout, as in validate-repo.yml.
+  # build_cache_wrapper.js refuses (exit 1) a store inside the tree under CI since
+  # #237, because cache entries are copies of the rendered tree that repo walkers
+  # read as duplicate content. scripts/lib/build_cache_contract_check.js pins this
+  # for every workflow that reaches the wrapper, not only the merge gate.
+  BUILD_CACHE_DIR: /tmp/velocity-build-cache
 
 # Shares the single main-writer group: see query-evidence-refresh.yml. Four
 # workflows in this repo push to main and each used to hold its own group,
@@ -51,7 +57,7 @@ jobs:
       - name: Restore build-result cache
         uses: actions/cache@v4
         with:
-          path: .build-cache
+          path: /tmp/velocity-build-cache
           key: build-result-cache-${{ runner.os }}-${{ hashFiles('**', '!.github/workflows/**') }}
       - name: Set release date
         run: echo "SOURCE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
