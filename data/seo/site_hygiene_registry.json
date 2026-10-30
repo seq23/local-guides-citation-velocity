@@ -92,5 +92,14 @@
     "input_exclude_prefixes": [
       "data/signals/"
     ]
+  },
+  "github_write_retry": {
+    "registered_on": "2026-10-30",
+    "note": "30 Oct 2026: a GitHub HTTP 500 on a bare `gh workflow run` left Velocity Content Release red after it pushed (run 41069439670), and a 500 on POST /issues left CI Health Red Recovery red (run 41071294097). validate_site_hygiene.js runs scripts/lib/github_write_retry_check.js (no bare gh workflow run / gh issue write on any discovered workflow; dispatches go through scripts/ci/dispatch_workflow.js; the alert re-reads inside each retried attempt so a landed-but-500 POST is never duplicated) plus its hostile fixtures, and runs scripts/tests/test_github_write_retry.js, requiring at least min_behaviour_pins passes.",
+    "helper": "scripts/lib/github_write_retry.js",
+    "dispatcher": "scripts/ci/dispatch_workflow.js",
+    "checker": "scripts/lib/github_write_retry_check.js",
+    "tests": "scripts/tests/test_github_write_retry.js",
+    "min_behaviour_pins": 9
   }
 }

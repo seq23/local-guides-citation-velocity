@@ -505,7 +505,11 @@ jobs:
         if: ${{ always() && (steps.absorption.outputs.changed == 'true' || steps.candidate.outputs.changed == 'true') }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run validate-repo.yml --ref main
+        # Through dispatch_workflow.js, not a bare `gh workflow run`: on 30 Oct 2026
+        # (run 41069439670) one HTTP 500 here left a release that had already pushed
+        # red, and its tree was never validated. Bounded retry on 5xx/429, then a
+        # named DISPATCH FAIL.
+        run: node scripts/ci/dispatch_workflow.js validate-repo.yml main
       - name: Upload release diagnostics
         if: always()
         uses: actions/upload-artifact@v7

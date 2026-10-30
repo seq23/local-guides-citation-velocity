@@ -258,6 +258,27 @@ else if (read(kf).trim() !== kf.replace(/\.txt$/, '')) fail('indexnow_key', `${k
   }
 }
 
+// GitHub API writes retry a transient failure, then fail by name (30 Oct 2026:
+// one 500 on a bare `gh workflow run` and one on POST /issues turned two lanes
+// red). Rules in scripts/lib/github_write_retry_check.js, block in the registry,
+// behaviour pinned in scripts/tests/test_github_write_retry.js. Folded in here for
+// the same reason as the two blocks above: the release profile is capped at 40.
+{
+  const gw = reg.github_write_retry;
+  if (!gw) fail('github_write_retry', 'block missing from the registry');
+  else {
+    const { check, selfTest } = require('../lib/github_write_retry_check.js');
+    const r = check();
+    for (const f of r.failures) fail('github_write_retry', f);
+    const proof = selfTest();
+    for (const m of proof.missed) fail('github_write_retry', `negative proof no longer caught: ${m}`);
+    const rt = require('child_process').spawnSync(process.execPath, ['scripts/tests/test_github_write_retry.js'], { cwd: ROOT, encoding: 'utf8' });
+    const pins = /github_write_retry: (\d+) behaviour pins pass/.exec(rt.stdout || '');
+    if (rt.status !== 0 || !pins || Number(pins[1]) < Number(gw.min_behaviour_pins || 1)) fail('github_write_retry', `behaviour pins failed: ${((rt.stderr || '') + (rt.stdout || '')).trim().split('\n').slice(-6).join(' | ').slice(0, 600)}`);
+    if (!r.failures.length && !proof.missed.length && rt.status === 0 && pins) console.log(`  github_write_retry: ${r.stats.workflows} workflows, ${r.stats.dispatch_sites} dispatch sites, no bare GitHub write; ${pins[1]} behaviour pins; ${proof.cases} negative proofs caught`);
+  }
+}
+
 const report = { validator: 'site-hygiene', source, pages: pages.length, definition_words: words, ok: !Object.keys(failures).length, failures };
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(report, null, 2) + '\n');
