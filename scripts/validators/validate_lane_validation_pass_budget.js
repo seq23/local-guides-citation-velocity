@@ -126,11 +126,14 @@ for (const file of files) {
   // own - its `on:` is a push on two paths plus workflow_dispatch - and a push
   // made with GITHUB_TOKEN raises no push event. So the ONLY unattended path
   // from measured demand to publishing is this lane's explicit
-  // `gh workflow run velocity-content-release.yml`, which needs `actions: write`
+  // `node scripts/ci/dispatch_workflow.js velocity-content-release.yml main`, which needs `actions: write`
   // to make. Nothing asserted that line existed. A restructure that dropped it,
   // or dropped the permission, would leave a lane that passes every check in
   // this repo while publishing quietly stops.
-  const dispatches = (text.match(/gh\s+workflow\s+run\s+velocity-content-release\.yml/g) || []).length;
+  // Through scripts/ci/dispatch_workflow.js (bounded retry on a transient 5xx,
+  // then a named DISPATCH FAIL); a bare `gh workflow run` is refused repo-wide by
+  // the github_write_retry block of site-hygiene.
+  const dispatches = (text.match(/^\s*node\s+scripts\/ci\/dispatch_workflow\.js\s+velocity-content-release\.yml\s+main\s*$/gm) || []).length;
   const hasActionsWrite = /actions:\s*write/.test(text);
   // Cheap, and it is what turned two silent nights into a visible fact: the lane
   // must say how much of its timeout it consumed.
@@ -148,7 +151,7 @@ for (const file of files) {
 
   if (!dispatches) {
     errors.push(
-      `${file}:publishing_edge_severed: no executable \`gh workflow run velocity-content-release.yml\`. ` +
+      `${file}:publishing_edge_severed: no executable \`node scripts/ci/dispatch_workflow.js velocity-content-release.yml main\`. ` +
       'That single line is the only unattended path from measured demand to publishing: the release lane has no schedule of its own, ' +
       'and a commit pushed with GITHUB_TOKEN raises no push event to trigger it. Without the dispatch this lane refreshes evidence nobody publishes.'
     );

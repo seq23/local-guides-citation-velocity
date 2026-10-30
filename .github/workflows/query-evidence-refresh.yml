@@ -336,7 +336,7 @@ jobs:
           PENDING=$(node scripts/citation_velocity/count_unabsorbed_agent_runs.mjs)
           if [ "$COUNT" -gt 0 ] || [ "$BACKLOG" -gt 0 ] || [ "$PENDING" -gt 0 ]; then
             echo "measured demand produced $COUNT candidate(s); $BACKLOG route(s) await the release lane in the unbuilt backlog; $PENDING landed agent run(s) are still unabsorbed; dispatching Velocity Content Release"
-            gh workflow run velocity-content-release.yml --ref main
+            node scripts/ci/dispatch_workflow.js velocity-content-release.yml main
           else
             REASON=$(node -e 'try{console.log(require("./data/queries/measured_demand_candidates.json").stop_reason||"unstated")}catch{console.log("candidates file unreadable")}')
             echo "no candidates this run, the unbuilt backlog is empty, and every landed agent run is absorbed; not dispatching. Named stop: $REASON"

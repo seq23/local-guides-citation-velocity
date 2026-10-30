@@ -45,7 +45,6 @@
  * RED" is unchanged, so a standing alert stays findable and closable.
  */
 const L = require('./lib');
-const https = require('https');
 
 const conclusion = process.env.WORKFLOW_CONCLUSION || 'unknown';
 const sha = process.env.WORKFLOW_HEAD_SHA || '';
@@ -145,54 +144,18 @@ const [owner, name] = repo.split('/');
 const title = `[Automation Health] ${lane} CI RED`;
 const body = `Workflow: ${lane}\nExact SHA: ${sha}\nConclusion: ${conclusion}\nRun: ${runUrl}\n\nThis issue is managed by the CI health recovery loop. A later green exact-SHA run of this same workflow may close it.`;
 
-function request(method, urlPath, payload) {
-  return new Promise((resolve, reject) => {
-    const data = payload ? Buffer.from(JSON.stringify(payload)) : null;
-    const req = https.request({
-      hostname: 'api.github.com', path: urlPath, method,
-      headers: {
-        'User-Agent': 'local-guides-ci-health',
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        ...(data ? { 'Content-Type': 'application/json', 'Content-Length': data.length } : {})
-      }
-    }, (res) => {
-      let s = '';
-      res.on('data', (d) => { s += d; });
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve(s ? JSON.parse(s) : {});
-        else reject(new Error(`${method} ${urlPath} -> ${res.statusCode}: ${s.slice(0, 500)}`));
-      });
-    });
-    req.on('error', reject);
-    if (data) req.write(data);
-    req.end();
-  });
-}
-
-// Follow pages. A single unpaginated page of 50 meant that past 50 open
-// labelled issues the standing alert became invisible and a duplicate was
-// opened on every red run.
-async function findAlert() {
-  for (let page = 1; page <= 20; page += 1) {
-    const issues = await request('GET', `/repos/${owner}/${name}/issues?state=open&labels=automation-health&per_page=100&page=${page}`);
-    if (!Array.isArray(issues) || issues.length === 0) return null;
-    const hit = issues.find((x) => x.title === title);
-    if (hit) return hit;
-    if (issues.length < 100) return null;
-  }
-  return null;
-}
+// Transport and bounded transient retry live in scripts/lib/github_write_retry.js;
+// the find-then-write sequence lives in ci_health_issue.js so each retry re-reads
+// before it writes (30 Oct 2026: a 500 on POST /issues turned this lane red).
+const { githubRequest } = require('../lib/github_write_retry.js');
+const { syncAlert } = require('./ci_health_issue.js');
+const request = (method, urlPath, payload) => githubRequest(token, method, urlPath, payload);
 
 (async () => {
-  const issue = await findAlert();
+  const r = await syncAlert(request, { owner, name, title, body, recovered: OBSERVED_SUCCESS, closeBody: `Recovered on exact SHA ${sha}.\nRun: ${runUrl}` });
   if (OBSERVED_SUCCESS) {
-    if (issue) await request('PATCH', `/repos/${owner}/${name}/issues/${issue.number}`, { state: 'closed', body: `Recovered on exact SHA ${sha}.\nRun: ${runUrl}` });
-    console.log(`CI HEALTH RECOVERED [${lane}] ${sha}${issue ? ` (closed alert #${issue.number})` : ' (no standing alert)'}`);
+    console.log(`CI HEALTH RECOVERED [${lane}] ${sha}${r.action === 'closed' ? ` (closed alert #${r.number})` : ' (no standing alert)'}`);
     return;
   }
-  if (issue) await request('PATCH', `/repos/${owner}/${name}/issues/${issue.number}`, { body });
-  else await request('POST', `/repos/${owner}/${name}/issues`, { title, body, labels: ['automation-health'] });
-  console.log(`CI HEALTH RED [${lane}] ${sha}`);
-})().catch((e) => { console.error(e.stack || e.message); process.exit(1); });
+  console.log(`CI HEALTH RED [${lane}] ${sha} (alert ${r.action}${r.number ? ` #${r.number}` : ''})`);
+})().catch((e) => { console.error(`CI HEALTH FAIL: ${e.stack || e.message}`); process.exit(1); });
