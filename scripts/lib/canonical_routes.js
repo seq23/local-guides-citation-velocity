@@ -156,7 +156,7 @@ const TOPIC_RULES = {
     { ...ANY, target: G('how-to-choose') }
   ],
   'uscisexam.com': [
-    t(/cost|price|fee/, G('uscis-medical-exam-cost')),
+    t(/cost|price|fee|include(?:d|s)? (?:blood |lab )?tests?/, G('uscis-medical-exam-cost')),
     t(/vaccin|\btb\b/, G('uscis-vaccination-requirements')),
     t(/rfe|delay|deadline|mistake|correction|valid/, G('uscis-fees-timelines-and-what-to-ask')),
     t(/envelope|seal|i-693/, G('i-693-form-instructions')),
