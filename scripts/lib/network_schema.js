@@ -81,8 +81,13 @@ function organizationFromEntity(entity = loadEntity()) {
     description: entity.description,
     publishingPrinciples: entity.publishingPrinciples,
   };
+  // The parent is a REFERENCE by @id only, never a name: theindustryguides.com
+  // never names Spry Labs on a page (owner rule, 12 Oct 2026, enforced on dist/
+  // by scripts/lib/brand_separation.js), and the 30 Oct 2026 grid decision to
+  // point side businesses at the Spry Labs entity home is met by the @id link,
+  // which the parent's own page describes.
   if (entity.parentOrganization && entity.parentOrganization['@id']) {
-    org.parentOrganization = { '@type': 'Organization', ...entity.parentOrganization };
+    org.parentOrganization = { '@id': entity.parentOrganization['@id'] };
   }
   const subs = (entity.subOrganization || []).map((s) => ({ '@type': 'Organization', '@id': s['@id'], name: s.name, url: s.url }));
   if (subs.length) {

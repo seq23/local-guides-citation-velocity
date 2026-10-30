@@ -107,6 +107,9 @@ function checkNode(node, exp, where) {
   if (!sameList(arr(node.sameAs), exp.sameAs)) errors.push(`${where}:sameAs:${JSON.stringify(arr(node.sameAs))}`);
   const pid = node.parentOrganization && node.parentOrganization['@id'];
   if (pid !== exp.parentId) errors.push(`${where}:parentOrganization:${pid}`);
+  // A reference, never a description: the parent's name must not reach a page
+  // on this host (brand separation, 12 Oct 2026).
+  if (node.parentOrganization && Object.keys(node.parentOrganization).some((k) => k !== '@id')) errors.push(`${where}:parentOrganization_not_an_id_reference:${Object.keys(node.parentOrganization).join(',')}`);
   const subIds = arr(node.subOrganization).map((s) => s && s['@id']);
   if (!sameList(subIds, exp.subIds)) errors.push(`${where}:subOrganization:${JSON.stringify(subIds)}`);
   return errors;
@@ -195,6 +198,7 @@ function hostileFixtures(entity, registry) {
   pageCase('page carries the old network name', (n) => { n.name = 'The Industry Guides Network'; });
   pageCase('page drops parentOrganization', (n) => { delete n.parentOrganization; });
   pageCase('page carries the old brand-only graph', (n) => { delete n.subOrganization; });
+  pageCase('page names the parent instead of referencing it', (n) => { n.parentOrganization = { '@id': n.parentOrganization['@id'], name: 'Parent Fixture' }; });
   pageCase('page logo drifts', (n) => { n.logo = { url: 'https://example.com/logo.png' }; });
   pageCase('inline publisher keeps a stale sameAs', (n) => { n.publisherFixture = { '@type': 'Organization', name: entity.name, sameAs: ['https://stale.example/profile'] }; });
   return escaped;
