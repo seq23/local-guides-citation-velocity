@@ -70,7 +70,9 @@ for(const [i,r] of (sameAsRegistry.records||[]).entries()){
   }
 }
 function collectSameAs(v,out=[]){if(Array.isArray(v)){v.forEach(x=>collectSameAs(x,out));return out;}if(!v||typeof v!=='object')return out;for(const [k,x] of Object.entries(v)){if(k==='sameAs'){(Array.isArray(x)?x:[x]).forEach(u=>typeof u==='string'&&out.push(u));}else collectSameAs(x,out);}return out;}
-for(const url of collectSameAs({organization:network.organization,website:network.website}))if(!verifiedSameAs.has(url))errors.push(`network_sameAs_not_verified:${url}`);
+// The organization node is built from entity.json since 30 Oct 2026; check the node that publishes.
+for(const url of collectSameAs({organization:require('../lib/network_schema').organizationFromEntity(),website:network.website}))if(!verifiedSameAs.has(url))errors.push(`network_sameAs_not_verified:${url}`);
+if(network.organization)errors.push('network_identity_registry_carries_a_second_organization: entity.json is the one source');
 const htmlFiles=[];
 function walk(abs){if(!fs.existsSync(abs))return;for(const ent of fs.readdirSync(abs,{withFileTypes:true})){if(['node_modules','.git','dist','reports','artifacts','.build','.build-cache'].includes(ent.name))continue;const f=path.join(abs,ent.name);if(ent.isDirectory())walk(f);else if(f.endsWith('.html'))htmlFiles.push(f);}}
 walk(ROOT);

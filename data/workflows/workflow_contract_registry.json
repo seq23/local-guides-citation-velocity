@@ -515,6 +515,42 @@
       "upstream": [],
       "downstream": [],
       "failure_boundary": "Exits non-zero when the account reads zero properties or an issue cannot be created. Coverage files that do not exist are reported as 'no coverage file', never a failure. Without RESEND_API_KEY the email step is a NAMED STOP and exits 0; a Resend refusal fails the run. Commits only the report pair, only after validate:release passes on the rebased tree. Discovery makes zero model calls and requests only free hosts (enforced in free_discovery.py and by the search-outcomes-weekly-report validator); a blocked source is recorded as unavailable, and zero candidates from every source is a NAMED STOP carried in the report."
+    },
+    {
+      "file": "entity-backlink-watch.yml",
+      "name": "Entity backlink watch",
+      "lane": "measurement",
+      "triggers": [
+        "schedule:40-13-utc-monday",
+        "workflow_dispatch"
+      ],
+      "manual_ready": true,
+      "mutates_repo": false,
+      "permissions": [
+        "contents: write",
+        "pull-requests: write"
+      ],
+      "timeout_minutes": 10,
+      "commands": [
+        "node scripts/authority/entity_backlink_watch.js --apply"
+      ],
+      "required_inputs": [],
+      "required_secrets": [],
+      "optional_secrets": [],
+      "consumes": [
+        "entity.json sameAs and profiles_pending",
+        "data/authority/verified_same_as_registry.json",
+        "live GET of each profile URL under a browser user agent"
+      ],
+      "produces": [
+        "run summary: per-profile state and NAMED STOPs",
+        "a self-heal PR (never a commit to main) when a profile died or a pending profile became live"
+      ],
+      "upstream": [],
+      "downstream": [
+        "validate-repo.yml (re-proves the entity graph on the self-heal PR)"
+      ],
+      "failure_boundary": "Zero profiles to check fails red. A dead profile or a newly live pending one becomes a PR, never a commit to main; a missing link-back or an unclaimed profile is a NAMED STOP in the run summary and the run stays green; a blocked or rate-limited fetch changes nothing."
     }
   ]
 }

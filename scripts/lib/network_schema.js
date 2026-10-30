@@ -18,13 +18,9 @@ function loadRegistry() {
  * and the rule "every sameAs URL must be registered here before publication" was
  * a wish. This is the path from a registered record to the published node.
  *
- * Since 2026-10-26 it holds two FIRST_PARTY_ENTITY_PAGE records (/about,
- * /methodology), each verified live, which closes Search Readiness c1 on all
- * 2,136 pages. The umbrella brand still has no owned external profile - that
- * search and its result are recorded in the registry so nobody repeats it - and
- * inventing one is still the first item in the identity registry's own
- * `prohibited` list. The records are the ONLY source: a sameAs written into
- * network_identity_registry.json would be a second one this function overrides.
+ * The two FIRST_PARTY_ENTITY_PAGE records (/about, /methodology) of 26 Oct
+ * were retired on 30 Oct 2026: sameAs is third-party profiles only, listed in
+ * entity.json, and organizationFromEntity() below publishes the intersection.
  *
  * The required-field list comes from the registry's own `required_for_verified`,
  * not a copy of it here. It was a copy, and it drifted the moment the registry
@@ -57,14 +53,51 @@ function verifiedSameAs(entityId) {
     .map((r) => String(r.url)))];
 }
 
+const ENTITY_FILE = path.join(ROOT, 'entity.json');
+
+function loadEntity() {
+  return JSON.parse(fs.readFileSync(ENTITY_FILE, 'utf8'));
+}
+
+/**
+ * The published Organization node, built from entity.json (30 Oct 2026 authority
+ * audit). entity.json is the one statement of the entity; the identity registry
+ * no longer carries an organization of its own, so there is no second copy to
+ * drift. sameAs is entity.json's list INTERSECTED with the VERIFIED records, so a
+ * URL written into entity.json without a verified record still cannot publish,
+ * and scripts/lib/entity_graph_check.js fails the build when the two disagree.
+ * An empty list publishes no sameAs key at all: the pending profiles wait in
+ * entity.json.profiles_pending as a named stop, never as a self-reference.
+ */
+function organizationFromEntity(entity = loadEntity()) {
+  const verified = new Set(verifiedSameAs(entity['@id']));
+  const org = {
+    '@type': 'Organization',
+    '@id': entity['@id'],
+    name: entity.name,
+    alternateName: entity.alternateName,
+    url: entity.url,
+    logo: entity.logo,
+    description: entity.description,
+    publishingPrinciples: entity.publishingPrinciples,
+  };
+  if (entity.parentOrganization && entity.parentOrganization['@id']) {
+    org.parentOrganization = { '@type': 'Organization', ...entity.parentOrganization };
+  }
+  const subs = (entity.subOrganization || []).map((s) => ({ '@type': 'Organization', '@id': s['@id'], name: s.name, url: s.url }));
+  if (subs.length) {
+    org.subOrganization = subs;
+    org.brand = subs.map((s) => ({ '@type': 'Brand', name: s.name, url: s.url }));
+  }
+  const same = (entity.sameAs || []).map(String).filter((u) => verified.has(u));
+  if (same.length) org.sameAs = same;
+  for (const k of Object.keys(org)) if (org[k] === undefined || org[k] === null) delete org[k];
+  return org;
+}
+
 function networkSchemaNodes() {
   const registry = loadRegistry();
-  const org = registry.organization ? { ...registry.organization } : null;
-  if (org) {
-    const same = verifiedSameAs(org['@id']);
-    if (same.length) org.sameAs = same;
-  }
-  return [org, registry.website].filter(Boolean);
+  return [organizationFromEntity(), registry.website].filter(Boolean);
 }
 
 function mergeSchema(input) {
@@ -88,4 +121,4 @@ function mergeSchema(input) {
   }) };
 }
 
-module.exports = { loadRegistry, verifiedSameAs, networkSchemaNodes, mergeSchema };
+module.exports = { loadRegistry, loadEntity, ENTITY_FILE, verifiedSameAs, organizationFromEntity, networkSchemaNodes, mergeSchema };

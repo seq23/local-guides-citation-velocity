@@ -1,52 +1,7 @@
 {
   "schema_version": "1.0",
   "effective_date": "2026-06-19",
-  "organization": {
-    "@type": "Organization",
-    "@id": "https://theindustryguides.com/#organization",
-    "name": "The Industry Guides Network",
-    "url": "https://theindustryguides.com/",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "https://theindustryguides.com/icon-512.png",
-      "width": 512,
-      "height": 512,
-      "caption": "The Industry Guides"
-    },
-    "publishingPrinciples": "https://theindustryguides.com/methodology",
-    "brand": [
-      {
-        "@type": "Brand",
-        "name": "USCIS Medical",
-        "url": "https://uscisexam.com/"
-      },
-      {
-        "@type": "Brand",
-        "name": "Neuro Evaluations",
-        "url": "https://neuroevalguides.com/"
-      },
-      {
-        "@type": "Brand",
-        "name": "Personal Injury",
-        "url": "https://theaccidentguides.com/"
-      },
-      {
-        "@type": "Brand",
-        "name": "Dentistry",
-        "url": "https://dentistryguides.com/"
-      },
-      {
-        "@type": "Brand",
-        "name": "TRT & Hair",
-        "url": "https://hormonesivhair.com/"
-      },
-      {
-        "@type": "Brand",
-        "name": "Memphis Senior Care Homes",
-        "url": "https://memphisseniorcarehomes.com/"
-      }
-    ]
-  },
+  "organization_source": "entity.json",
   "website": {
     "@type": "WebSite",
     "@id": "https://theindustryguides.com/#website",
@@ -64,5 +19,6 @@
   ],
   "verified_same_as_registry": "data/authority/verified_same_as_registry.json",
   "notes_2026_10_25": "logo added for Search Readiness c1 (every page's Organization needs name, url, logo, sameAs).",
-  "notes_2026_10_26": "sameAs is now published, closing Search Readiness c1 - and it is NOT written here. scripts/lib/network_schema.js derives it from the VERIFIED records in data/authority/verified_same_as_registry.json, which is the single source: a value hard-coded in this node would be a second one the derivation silently overrides. That registry now declares what a basis IS (allowed_bases) and carries two FIRST_PARTY_ENTITY_PAGE records verified live on 26 Oct 2026 (/about, /methodology), plus the search proving this entity publishes no third-party profile to register. \"unverified sameAs URLs\" stays prohibited above and is enforced by validate_network_crawler_contract.js, which also fails if the published Organization goes back to having no sameAs at all."
+  "notes_2026_10_26": "sameAs is now published, closing Search Readiness c1 - and it is NOT written here. scripts/lib/network_schema.js derives it from the VERIFIED records in data/authority/verified_same_as_registry.json, which is the single source: a value hard-coded in this node would be a second one the derivation silently overrides. That registry now declares what a basis IS (allowed_bases) and carries two FIRST_PARTY_ENTITY_PAGE records verified live on 26 Oct 2026 (/about, /methodology), plus the search proving this entity publishes no third-party profile to register. \"unverified sameAs URLs\" stays prohibited above and is enforced by validate_network_crawler_contract.js, which also fails if the published Organization goes back to having no sameAs at all.",
+  "notes_2026_10_30": "The organization node moved to entity.json (grid authority audit, 30 Oct 2026) and is built from it by scripts/lib/network_schema.js organizationFromEntity(); this file keeps only the website node. The self-referential sameAs (/about, /methodology) is retired: sameAs now lists third-party profiles only, and none exists yet, so the Organization publishes no sameAs until a pending profile in entity.json resolves. scripts/lib/entity_graph_check.js enforces it."
 }

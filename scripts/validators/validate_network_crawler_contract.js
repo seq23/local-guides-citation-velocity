@@ -48,10 +48,7 @@ for(const r of sameAsRegistry.records||[]){
   if(r.status!=='VERIFIED')continue;
   for(const field of sameAsRegistry.required_for_verified||[])if(!r[field])errors.push(`same_as_record_missing_${field}:${r.url||'(no url)'}`);
   if(!ALLOWED_BASES.has(r.basis)){errors.push(`same_as_basis_not_allowed:${r.url}:${r.basis}`);continue;}
-  if(r.basis==='FIRST_PARTY_ENTITY_PAGE'){
-    if(!onEntityHost(r.url))errors.push(`first_party_same_as_off_entity_host:${r.url}`);
-    if(!onEntityHost(r.source_url))errors.push(`first_party_same_as_source_off_entity_host:${r.source_url}`);
-  }
+  if(onEntityHost(r.url))errors.push(`verified_same_as_on_entity_host:${r.url}`);
   if(r.basis==='THIRD_PARTY_PROFILE'&&onEntityHost(r.source_url))errors.push(`third_party_same_as_cites_own_host:${r.source_url}`);
 }
 // The DERIVED node, not the raw registry entry: scripts/lib/network_schema.js is
@@ -64,12 +61,27 @@ for(const url of publishedSameAs){
   if(!/^https:\/\//.test(url))errors.push(`sameAs_not_https:${url}`);
   if(!verifiedSameAs.has(url))errors.push(`sameAs_not_verified:${url}`);
 }
-// Search Readiness c1: the audit fails the whole site when the Organization it
-// reads has no sameAs, and consolidateOrganization copies this node's value onto
-// every page's Organization-shaped node. An empty field here is therefore the
-// defect itself, not a safe default - 13 sampled URLs failed c1 on 26 Oct 2026
-// for exactly this.
-if(!publishedOrg.sameAs||!publishedOrg.sameAs.length)errors.push('organization_has_no_sameAs');
+// The entity graph (grid authority audit, 30 Oct 2026). This pin used to fail
+// an Organization with no sameAs, which is what kept /about and /methodology -
+// pages on our own host - published as "the same entity". The new truth, held
+// at least as strictly: the published sameAs is EXACTLY entity.json's list,
+// every entry a VERIFIED third-party record and every such record listed;
+// nothing on our own host anywhere; parent is Spry Labs; the guides are
+// sub-organizations; and an empty list is allowed only while profiles are
+// pending with an owner action (a named stop, never a self-reference). Zero
+// sameAs AND zero pending still fails. The full served-tree sweep is
+// validate_org_entity_graph.js; this blocker carries the file and node half so drift
+// stops a release (the HARD_FAIL cap of 40 is full).
+{
+  const eg=require('../lib/entity_graph_check');
+  const entity=read('entity.json');
+  for(const e of eg.checkEntityFile(entity,sameAsRegistry))errors.push(`entity_graph:${e}`);
+  const node=eg.checkPageHtml(`<script type="application/ld+json">${JSON.stringify(publishedOrg)}</script>`,entity,'published_organization');
+  for(const e of node.errors)errors.push(`entity_graph:${e}`);
+  if(!node.described)errors.push('entity_graph:published_organization_not_described');
+  for(const name of eg.hostileFixtures(entity,sameAsRegistry))errors.push(`entity_graph:hostile_fixture_passed:${name}`);
+  for(const url of publishedSameAs)if(onEntityHost(url))errors.push(`sameAs_self_reference:${url}`);
+}
 for(const key of ['name','url','logo'])if(!publishedOrg[key])errors.push(`organization_missing_${key}`);
 function fileFor(route){if(route==='/')return path.join(ROOT,'index.html');if(route.endsWith('.html'))return path.join(ROOT,route.replace(/^\//,''));return path.join(ROOT,route.replace(/^\//,'').replace(/\/$/,''),'index.html');}
 let checked=0;
