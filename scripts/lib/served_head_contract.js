@@ -151,35 +151,63 @@ function ensureSocialTags(html) {
  * described network Organization further down the graph was never reached. One
  * node is now described and the publisher refers to it by @id.
  *
- * sameAs is still not invented here, and now it does not have to be: it comes
- * from the published node like every other field. data/authority/
- * verified_same_as_registry.json carries two FIRST_PARTY_ENTITY_PAGE records
- * verified live on 26 Oct 2026 (/about, /methodology), and
- * validate_network_crawler_contract.js hard-fails a published URL that is not a
- * VERIFIED record satisfying its declared basis - so an invented profile still
- * cannot reach a page, and an empty sameAs can no longer sit here as a safe
- * default. The entity publishes no social profile; that search, and its result,
- * are recorded in the registry rather than left to be redone.
+ * Since 30 Oct 2026 the node is built from entity.json (scripts/lib/
+ * network_schema.js organizationFromEntity) and WRITTEN over the described
+ * node on every page, frozen ones included. sameAs is third-party profiles
+ * only, each a VERIFIED record; while none exists the node carries no sameAs
+ * at all and the self-referential /about and /methodology entries are removed
+ * from every page. scripts/lib/entity_graph_check.js proves the served tree.
  */
 function organizationNode() {
   // The same node build_site.js publishes, including any VERIFIED sameAs, so the
   // publish-time layer and the generators cannot disagree about the entity.
   return require('./network_schema').networkSchemaNodes()[0];
 }
+// Keys entity.json owns on the described node. They are WRITTEN, not filled:
+// 2,116 routes are frozen bytes, and the frozen homepage still carries the old
+// brand-only graph and name, so filling only missing keys would leave the old
+// entity in place forever.
+const ENTITY_OWNED_KEYS = ['name', 'alternateName', 'url', 'logo', 'description', 'publishingPrinciples', 'parentOrganization', 'subOrganization', 'brand', 'sameAs'];
 function consolidateOrganization(html, org) {
   const node = org || organizationNode();
   const ORG_TYPES = /^(Organization|LocalBusiness|Corporation|NewsMediaOrganization|ProfessionalService)$/;
+  const onOwnHost = (u) => { try { return new URL(String(u)).hostname.replace(/^www\./, '') === SITE_HOST; } catch { return false; } };
   return html.replace(/<script\b[^>]*type=(["'])application\/ld\+json\1[^>]*>([\s\S]*?)<\/script>/gi, (whole, q, body) => {
     let data;
     try { data = JSON.parse(body); } catch { return whole; }
     let touched = false;
     const isOrg = (n) => n && typeof n === 'object' && [].concat(n['@type'] || []).some((t) => ORG_TYPES.test(String(t)));
+    const setSameAs = (n) => {
+      if (node.sameAs && node.sameAs.length) {
+        if (JSON.stringify(n.sameAs) !== JSON.stringify(node.sameAs)) { n.sameAs = node.sameAs; touched = true; }
+      } else if ('sameAs' in n) { delete n.sameAs; touched = true; }
+    };
     const walk = (n) => {
       if (Array.isArray(n)) return n.forEach(walk);
       if (!n || typeof n !== 'object') return;
       if (isOrg(n)) {
-        for (const key of ['name', 'url', 'logo', 'sameAs']) {
-          if (node[key] && (n[key] === undefined || (Array.isArray(n[key]) && !n[key].length))) { n[key] = node[key]; touched = true; }
+        if (n['@id'] === node['@id']) {
+          // The described node: entity.json is the whole truth for these keys.
+          for (const key of ENTITY_OWNED_KEYS) {
+            if (key === 'sameAs') { setSameAs(n); continue; }
+            if (node[key] === undefined) { if (key in n) { delete n[key]; touched = true; } continue; }
+            if (JSON.stringify(n[key]) !== JSON.stringify(node[key])) { n[key] = node[key]; touched = true; }
+          }
+          return; // its sub-organizations are other entities; leave them as written
+        }
+        if (!n['@id']) {
+          // An inline publisher with no @id is this entity by another route.
+          for (const key of ['name', 'url', 'logo']) {
+            if (node[key] && (n[key] === undefined || (Array.isArray(n[key]) && !n[key].length))) { n[key] = node[key]; touched = true; }
+          }
+          if (n.name === node.name || n.name === 'The Industry Guides Network') {
+            if (n.name !== node.name) { n.name = node.name; touched = true; }
+            setSameAs(n);
+          }
+        } else if (Array.isArray(n.sameAs) && n.sameAs.some(onOwnHost)) {
+          // Another entity's node may never claim to BE a page on this host.
+          n.sameAs = n.sameAs.filter((u) => !onOwnHost(u)); touched = true;
+          if (!n.sameAs.length) delete n.sameAs;
         }
       }
       for (const v of Object.values(n)) walk(v);
@@ -189,6 +217,41 @@ function consolidateOrganization(html, org) {
     const next = JSON.stringify(data);
     return whole.replace(body, () => next);
   });
+}
+
+/**
+ * The "Our guides" entity section on /about, from entity.json subOrganization:
+ * one anchored entry per guide (#our-guides, #guide-<host>) that the backlink
+ * network and anyone else can cite. Written at publish time like the ownership
+ * line, because /about is frozen bytes; it replaces the old bare-domain card so
+ * no guide is linked twice.
+ */
+const OUR_GUIDES_MARKER = 'data-entity-section="our-guides"';
+function ourGuidesHtml(entity) {
+  const subs = entity.subOrganization || [];
+  const items = subs.map((s) => {
+    const host = new URL(s.url).hostname.replace(/^www\./, '');
+    return `<li id="guide-${host.replace(/[^a-z0-9]+/g, '-')}" itemscope itemtype="https://schema.org/Organization"><a href="${s.url}" itemprop="url"><strong itemprop="name">${escAttr(s.name)}</strong></a> &middot; ${escAttr(s.vertical || '')} &middot; <span class="muted">${host}</span></li>`;
+  }).join('');
+  return `<section class="card our-guides" id="our-guides" ${OUR_GUIDES_MARKER}><div class="badge">Our guides</div><h2 class="h2">The guide sites ${escAttr(entity.name)} publishes</h2><p>${escAttr(entity.name)} is the company behind ${subs.length} guide sites. Each one covers a single regulated service category and is where you find a provider when you are ready.</p><ul>${items}</ul></section>`;
+}
+function ensureOurGuidesSection(html, route, entity) {
+  if (!route || !/^\/about(\.html)?\/?$/.test(route)) return html;
+  const ent = entity || require('./network_schema').loadEntity();
+  if (!(ent.subOrganization || []).length) return html;
+  const block = ourGuidesHtml(ent);
+  const existing = /<section class="card our-guides"[^>]*data-entity-section="our-guides"[^>]*>[\s\S]*?<\/section>/i;
+  if (existing.test(html)) return html.replace(existing, () => block);
+  const oldCard = /<section class="card">\s*<div class="badge">Canonical provider destinations<\/div>[\s\S]*?<\/section>/i;
+  if (oldCard.test(html)) html = html.replace(oldCard, '');
+  // First on the page, ahead of the shared canon block: the portfolio-link cap
+  // keeps the FIRST link per host, so the entity section's links are the ones
+  // that stay live and the later ones point at them.
+  const canonTop = html.search(/<section class="card" data-canon-block="top"/i);
+  if (canonTop >= 0) return html.slice(0, canonTop) + block + '\n    ' + html.slice(canonTop);
+  const at = html.search(/<\/main>/i);
+  if (at >= 0) return html.slice(0, at) + block + html.slice(at);
+  return html;
 }
 
 /**
@@ -504,6 +567,7 @@ function applyAll(html, { portfolioHosts = [], org = null, exemptFromCap = false
   out = ensureSocialTags(out);
   out = consolidateOrganization(out, org);
   out = ensureOwnershipDisclosure(out);
+  out = ensureOurGuidesSection(out, route);
   // Stamp before capping: the cap picks the surviving link by path, and a stamped
   // intake must still read as the intake when it does.
   out = stampIntakeTracking(out, portfolioHosts, route);
@@ -518,5 +582,5 @@ module.exports = {
   MIN_TITLE_CHARS, MAX_TITLE_CHARS, MIN_DESCRIPTION_CHARS, MAX_DESCRIPTION_CHARS,
   titleOf, descOf, canonicalOf, bodyOf, decodeEntities,
   normalizeSnippet, ensureSocialTags, consolidateOrganization, ensureOwnershipDisclosure,
-  capPortfolioLinks, stampIntakeTracking, preferredLinkPerHost, INTAKE_PATH, governedRoutes, isGovernedRoute, isCappableRoute, SENIOR_FAMILY, seniorLivingRoutes, MULTI_TARGET_ROUTES, isMultiTargetRoute, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, applyAll
+  capPortfolioLinks, stampIntakeTracking, preferredLinkPerHost, INTAKE_PATH, governedRoutes, isGovernedRoute, isCappableRoute, SENIOR_FAMILY, seniorLivingRoutes, MULTI_TARGET_ROUTES, isMultiTargetRoute, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, ensureOurGuidesSection, ourGuidesHtml, OUR_GUIDES_MARKER, applyAll
 };

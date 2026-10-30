@@ -19,6 +19,11 @@
 // (a TO / LEAD_TO constant: the owner's own inbox). The weekly search-outcomes
 // report went out From os@westpeek.ventures until then. Its sender is pinned like
 // the lead form's, and no sending file may read a sender from the environment.
+//
+// The Organization's parentOrganization (grid authority decision, 30 Oct 2026)
+// is published as a bare @id reference to the Spry Labs entity home and never
+// with a name, so FORBIDDEN still matches nothing on a page; scripts/lib/
+// entity_graph_check.js fails a parent node carrying any key but @id.
 const fs = require('fs');
 const path = require('path');
 

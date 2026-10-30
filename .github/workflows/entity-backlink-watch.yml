@@ -1,0 +1,55 @@
+name: Entity backlink watch
+
+# Weekly: is every sameAs profile in entity.json still live and still naming
+# theindustryguides.com, and has a pending profile (entity.json profiles_pending)
+# come into existence? Grid authority audit, 30 Oct 2026.
+# Self-heal never writes main: a dead profile is removed and a newly live pending
+# profile is promoted on a branch, and this run opens a PR for the merge gate.
+# A missing link-back or an unclaimed profile is a NAMED STOP in the run summary
+# (the owner's login), and the run stays green. Zero profiles to check is red.
+on:
+  schedule:
+    - cron: "40 13 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  NODE_OPTIONS: --max-old-space-size=3072
+
+concurrency:
+  group: entity-backlink-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    # A fault detector, not a budget: a handful of GETs.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Check every profile and plan the self-heal
+        run: node scripts/authority/entity_backlink_watch.js --apply --out="$RUNNER_TEMP/entity-backlink-watch.json"
+      - name: Open a self-heal PR when entity.json changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- entity.json data/authority/verified_same_as_registry.json; then
+            echo "entity.json unchanged; nothing to propose"
+            exit 0
+          fi
+          branch="entity-watch/$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add entity.json data/authority/verified_same_as_registry.json
+          git commit -m "entity-backlink-watch: self-heal sameAs from the weekly profile check"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "entity-backlink-watch: self-heal sameAs ($(date -u +%Y-%m-%d))" \
+            --body "Weekly entity backlink watch. Dead profiles removed from sameAs (their records RETIRED); pending profiles that now resolve and name theindustryguides.com promoted to VERIFIED. Evidence is in run ${GITHUB_RUN_ID}'s summary. The merge gate re-proves the entity graph."

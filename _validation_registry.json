@@ -6036,6 +6036,53 @@
       "enforce_no_source_mutation": true
     },
     {
+      "id": "org-entity-graph",
+      "title": "Served Organization JSON-LD equals entity.json: third-party sameAs only, Spry Labs parent, guides as sub-organizations",
+      "path": "scripts/validators/validate_org_entity_graph.js",
+      "command": "node scripts/validators/validate_org_entity_graph.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "schema",
+        "authority",
+        "sameAs",
+        "entity"
+      ],
+      "risk_prevented": "Grid authority audit, 30 Oct 2026: the Organization sameAs pointed at the site own /about and /methodology, nothing declared a parent or the six guides as sub-organizations, and no check compared the served graph to one statement of the entity. This proves entity.json (sameAs third-party only and each VERIFIED, both ways; parent Spry Labs; sub-organizations with their own @id; pending profiles carrying an owner action), the derived node, and every page in dist/ against it, replaying hostile fixtures every run and failing on zero pages.",
+      "why_existing_checks_do_not_cover": "network-crawler-contract only proved sameAs URLs were registered, and required a non-empty list, which is what kept the self-reference alive. It now carries the file and node half of this contract as the blocker (the HARD_FAIL cap of 40 is full); this runner adds the full served-tree sweep and the evidence file.",
+      "estimated_runtime_seconds": 6,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/org-entity-graph.json",
+      "failure_action": "stop release and repair entity.json, the verified registry or the publish-time Organization layer",
+      "depends_on": [],
+      "requires_files": [
+        "entity.json",
+        "data/authority/verified_same_as_registry.json",
+        "dist/index.html"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/org-entity-graph.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/org-entity-graph.json"
+      ],
+      "enforce_no_source_mutation": true
+    },
+    {
       "id": "verified-same-as-publication",
       "title": "A VERIFIED sameAs record in the authority registry reaches the published Organization node",
       "path": "scripts/validators/validate_verified_same_as_publication.js",
