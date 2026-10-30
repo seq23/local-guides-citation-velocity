@@ -64,6 +64,9 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      - name: Five-vertical canonical routing regression
+        if: matrix.shard == 1
+        run: node scripts/tests/test_five_vertical_routing_coverage.js
       - name: Restore the build-result cache
         # The lane's site-build stage runs `npm run build:cached`, so this is what
         # makes it a no-op. Keyed on the commit: the shard that saves it below
