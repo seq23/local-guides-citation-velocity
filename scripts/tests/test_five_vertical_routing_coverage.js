@@ -12,8 +12,8 @@ const cases = [
   { family: 'ADHD assessment vs component', host: 'neuroevalguides.com', hub: '/neuro/', title: 'What is the difference between an ADHD QbTest and a full evaluation?', cluster: 'situations', target: '/guides/adhd-evaluations-what-to-expect/' },
   { family: 'ADHD treatment after evaluation', host: 'neuroevalguides.com', hub: '/neuro/', title: 'Can an ADHD evaluation help with therapy planning?', cluster: 'therapy-after-evaluation', target: '/guides/how-to-find-an-adhd-therapist-who-fits/' },
   { family: 'Dental special scope', host: 'dentistryguides.com', hub: '/dentistry/', title: 'Does a $99 dental new patient special include a cleaning?', cluster: 'cost-financing', target: '/guides/cost-financing/' },
-  { family: 'Crash records after accident', host: 'theaccidentguides.com', hub: '/personal-injury/', title: 'How do I request a police crash report after a collision?', cluster: 'situations', target: '/guides/car-accidents/' },
-  { family: 'Attorney fee agreements', host: 'theaccidentguides.com', hub: '/personal-injury/', title: 'How do I compare lawyer contingency fees?', cluster: 'cost-fees', target: '/guides/personal-injury-fees-explained/' },
+  { family: 'Crash records after accident', host: 'theaccidentguides.com', hub: '/personal-injury/crash-reports/', title: 'How do I request a police crash report after a collision?', cluster: 'situations', target: '/guides/car-accidents/' },
+  { family: 'Attorney fee agreements', host: 'theaccidentguides.com', hub: '/personal-injury/fee-comparison/', title: 'How do I compare lawyer contingency fees?', cluster: 'cost-fees', target: '/guides/personal-injury-fees-explained/' },
 ];
 let failed = 0;
 const coverage = [];
