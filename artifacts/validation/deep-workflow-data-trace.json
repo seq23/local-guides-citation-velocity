@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-10-30T18:03:02.763Z",
+  "generated_at": "2026-10-31T06:36:07.299Z",
   "status": "PASS",
-  "workflow_count": 12,
+  "workflow_count": 13,
   "errors": [],
   "warnings": [],
   "lifecycle_checks": [
@@ -202,6 +202,33 @@
         },
         {
           "command": "chmod +x distribution_scripts/*.sh\nif [ -f \"$RUNNER_TEMP/gsc-service-account.json\" ] && [ -n \"${GSC_SITE_URL:-}\" ]; then\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\" --creds \"$RUNNER_TEMP/gsc-service-account.json\" --gsc-site \"$GSC_SITE_URL\"\nelse\n./distribution_scripts/deploy_distribution.sh --artifact-dir .build --key \"${INDEXNOW_KEY:-}\"\nfi",
+          "status": "PASS",
+          "checks": [],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        }
+      ]
+    },
+    {
+      "workflow": "entity-backlink-watch.yml",
+      "command_count": 2,
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "node scripts/authority/entity_backlink_watch.js --apply --out=\"$RUNNER_TEMP/entity-backlink-watch.json",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/authority/entity_backlink_watch.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "if git diff --quiet -- entity.json data/authority/verified_same_as_registry.json; then\necho \"entity.json unchanged; nothing to propose\"\nexit 0\nfi\nbranch=\"entity-watch/$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}\"\ngit config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ngit switch -c \"$branch\"\ngit add entity.json data/authority/verified_same_as_registry.json\ngit commit -m \"entity-backlink-watch: self-heal sameAs from the weekly profile check\"\ngit push origin \"$branch\"\ngh pr create --base main --head \"$branch\" \\\n--title \"entity-backlink-watch: self-heal sameAs ($(date -u +%Y-%m-%d))\" \\\n--body \"Weekly entity backlink watch. Dead profiles removed from sameAs (their records RETIRED); pending profiles that now resolve and name theindustryguides.com promoted to VERIFIED. Evidence is in run ${GITHUB_RUN_ID}'s summary. The merge gate re-proves the entity graph.\"",
           "status": "PASS",
           "checks": [],
           "direct_npm_scripts": [],
