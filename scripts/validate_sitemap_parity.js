@@ -68,4 +68,29 @@ for (const url of invUrls) {
 for (const url of sitemapUrls) {
   if (!invSet.has(url)) fail(`sitemap URL absent from published inventory: ${url}`);
 }
+
+// Parity with the sitemap is only half the question. The other half is whether a
+// route the release lane released can reach a sitemap at all: the registry that
+// decides is built from published_urls.json, which is built from what the
+// registry admits, so a released page can render as indexable HTML and be named
+// by no sitemap child, no feed and no llms export. That rule lives in
+// scripts/validators/validate_admission_reachability.js, which was RETIRED with
+// an empty `profiles` list - a guard nothing ran. Thirteen /medium-articles/
+// routes sat in that gap from the 2026-06-19 baseline until 31 October 2026:
+// /medium/ linked every one of them, build_pages_dist.js copies admitted routes
+// only, so each published link answered 404 on the live site.
+//
+// Folded in here rather than registered as its own blocker because the release
+// profile is capped at 40 HARD_FAILs on purpose (CLAUDE.md, "The merge gate"),
+// and "a released page no sitemap can name" is a sitemap-parity defect by any
+// reading. Running it as a child keeps that file the single statement of the
+// rule instead of a second copy drifting here.
+const { spawnSync } = require('child_process');
+const reach = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'validators', 'validate_admission_reachability.js')], { cwd: ROOT, encoding: 'utf8' });
+process.stdout.write(reach.stdout || '');
+if (reach.status !== 0) {
+  process.stderr.write(reach.stderr || '');
+  fail('released-page admission reachability failed (see above): a released, rendered, non-retired route is absent from data/content/page_admission_registry.json, so no sitemap child can name it. Rebuild the registry (node scripts/build_page_admission_registry_2026_06_19.js), retire the route with a 301, or hold it back with publication_status EVIDENCE_ONLY.');
+}
+
 if (!process.exitCode) console.log(`Sitemap parity validation passed (${invUrls.length} URLs across ${sm.children.length} child sitemaps, each URL in exactly one).`);
