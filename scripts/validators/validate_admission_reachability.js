@@ -24,7 +24,14 @@
  * revert, or by a new writer that rebuilds the registry from published_urls
  * alone.
  *
- * Rule 0: it hard-fails if it examined zero live page records.
+ * 2026-10-31: the same gap was found again in the Medium corpus, which has no
+ * content/_live/pages.json record at all. content/_live/medium_articles.json is
+ * its released surface and /medium/ links every item, but only the one route
+ * that predated the baseline was in the registry, so build_pages_dist.js never
+ * copied the other thirteen into dist/ and each published link answered 404.
+ * This validator now re-derives both corpora, so neither can regress.
+ *
+ * Rule 0: it hard-fails if it examined zero released page records.
  */
 const fs = require('fs');
 const path = require('path');
@@ -33,7 +40,12 @@ const ROOT = process.cwd();
 const read = (rel) => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch { return null; } };
 
 const live = read('content/_live/pages.json');
+const medium = read('content/_live/medium_articles.json');
 const registry = read('data/content/page_admission_registry.json');
+if (!medium || !Array.isArray(medium.items) || !medium.items.length) {
+  console.error('ADMISSION REACHABILITY: FAIL - content/_live/medium_articles.json is missing, unreadable or empty, so the Medium corpus was not examined. A guard that passes over no pages is the defect it exists to catch.');
+  process.exit(1);
+}
 if (!live || !Array.isArray(live.pages)) {
   console.error('ADMISSION REACHABILITY: FAIL - content/_live/pages.json is missing or unreadable, so this validator examined zero released pages and cannot pass.');
   process.exit(1);
@@ -67,7 +79,13 @@ const isRendered = (route) => {
 
 const counts = { examined: 0, admitted: 0, evidence_only: 0, retired: 0, not_rendered: 0, unreachable: 0 };
 const unreachable = [];
-for (const page of live.pages) {
+// Both released corpora, one rule. A Medium item carries no publication_status:
+// being in the live manifest IS its release, which is what /medium/ links on.
+const releasedRecords = [
+  ...live.pages,
+  ...medium.items.map((m) => ({ path: m.publish_path, publication_status: 'ADMITTED' }))
+];
+for (const page of releasedRecords) {
   const route = page.path || page.slug;
   if (!route) continue;
   counts.examined += 1;
@@ -81,7 +99,7 @@ for (const page of live.pages) {
 }
 
 console.log('Released-page admission reachability');
-console.log(`  live page records examined       : ${counts.examined}`);
+console.log(`  released page records examined   : ${counts.examined}`);
 console.log(`  ADMITTED, rendered, in registry  : ${counts.admitted}`);
 console.log(`  held back (not ADMITTED)         : ${counts.evidence_only}`);
 console.log(`  retired by a 301                 : ${counts.retired}`);
@@ -90,12 +108,12 @@ console.log(`  UNREACHABLE                      : ${counts.unreachable}`);
 
 if (!counts.examined) {
   console.error('');
-  console.error('VALIDATION FAIL: zero live page records were examined. content/_live/pages.json normally carries hundreds; an empty walk is a broken reader, and a reachability guard that passes over no pages is the defect it exists to catch.');
+  console.error('VALIDATION FAIL: zero released page records were examined. content/_live/pages.json normally carries hundreds and content/_live/medium_articles.json a dozen; an empty walk is a broken reader, and a reachability guard that passes over no pages is the defect it exists to catch.');
   process.exit(1);
 }
 if (unreachable.length) {
   console.error('');
-  console.error(`VALIDATION FAIL: ${unreachable.length} released page(s) are ADMITTED in content/_live/pages.json and rendered as indexable HTML, but absent from data/content/page_admission_registry.json, so no sitemap, feed or llms export names them. They are inert: the work is done and nobody can find it. Rebuild the registry (node scripts/build_page_admission_registry_2026_06_19.js), or retire the route with a 301, or hold it back with publication_status EVIDENCE_ONLY.`);
+  console.error(`VALIDATION FAIL: ${unreachable.length} released page(s) are ADMITTED in content/_live/pages.json or named by content/_live/medium_articles.json, and rendered as indexable HTML, but absent from data/content/page_admission_registry.json, so no sitemap, feed or llms export names them. They are inert: the work is done and nobody can find it. Rebuild the registry (node scripts/build_page_admission_registry_2026_06_19.js), or retire the route with a 301, or hold it back with publication_status EVIDENCE_ONLY.`);
   for (const route of unreachable.slice(0, 20)) console.error(`  ${route}`);
   process.exit(1);
 }

@@ -1,0 +1,90 @@
+{
+  "schema_version": "3.0",
+  "generated_at": "2026-06-23T00:00:00.000Z",
+  "profiles": [],
+  "validator_ids": [
+    "llm-exports",
+    "entity-graph"
+  ],
+  "execution_order": [
+    "llm-exports",
+    "entity-graph"
+  ],
+  "profile_validator_ids": [
+    "llm-exports",
+    "entity-graph"
+  ],
+  "shard": null,
+  "collect_all": false,
+  "strict_warnings": false,
+  "include_local": false,
+  "status": "FAIL",
+  "counts": {
+    "PASS": 1,
+    "FAIL": 1
+  },
+  "results": [
+    {
+      "id": "llm-exports",
+      "title": "LLM export contract",
+      "status": "PASS",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 4",
+      "depends_on": [],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 122,
+      "warning_detected": false,
+      "blocks_release": false,
+      "missing_outputs": [],
+      "source_mutations": [],
+      "forbidden_source_mutations": [],
+      "prepare_results": [
+        {
+          "command": "npm run build:llm-exports",
+          "exit_code": 0,
+          "signal": null
+        }
+      ],
+      "evidence_file": "artifacts/validation/llm-exports.json",
+      "log": "artifacts/validation/runtime/2026-10-31-pid38393/llm-exports.log"
+    },
+    {
+      "id": "entity-graph",
+      "title": "Entity graph export contract",
+      "status": "FAIL",
+      "severity": "HARD_FAIL",
+      "scope": "CONTAINER",
+      "tier": "Tier 4",
+      "depends_on": [
+        "llm-exports"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 112,
+      "warning_detected": false,
+      "blocks_release": true,
+      "missing_outputs": [],
+      "source_mutations": [
+        "content/_shared/concept_registry.json",
+        "content/_shared/entity_registry.json"
+      ],
+      "forbidden_source_mutations": [
+        "content/_shared/concept_registry.json",
+        "content/_shared/entity_registry.json"
+      ],
+      "prepare_results": [
+        {
+          "command": "npm run build:entity-graph",
+          "exit_code": 0,
+          "signal": null
+        }
+      ],
+      "evidence_file": "artifacts/validation/entity-graph.json",
+      "log": "artifacts/validation/runtime/2026-10-31-pid38393/entity-graph.log"
+    }
+  ]
+}

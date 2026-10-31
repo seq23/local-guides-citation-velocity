@@ -45,7 +45,20 @@ const publishedPaths=new Set(publishedInventory.map((x)=>x.path));
 // baseline (2026-10-09: the dentistry safety-net guides) rendered to disk and hit
 // the same fixed point, so the same four-part rule admits it from its own source.
 const velocitySpecPages=(()=>{const rel='data/page_families/velocity_page_specs.json';if(!fs.existsSync(path.join(ROOT,rel)))throw new Error(`missing ${rel}`);return read(rel).pages||[];})();
-const releasedButUnadvertised=[...livePages,...velocitySpecPages]
+// The Medium corpus is the third released corpus, and it hit the same fixed
+// point. content/_live/medium_articles.json is written by build_site.js from the
+// files under medium-articles/, and its own policy line calls them "the
+// crawlable published surface"; /medium/ renders a link to every one of them.
+// But a Medium article has no content/_live/pages.json record and never enters
+// published_urls.json, so only the single route that happened to predate the
+// 2026-06-19 baseline was ADMITTED. build_pages_dist.js copies admitted routes
+// only, so the other thirteen were never written into dist/ and every link the
+// /medium/ hub published to them answered 404 on the live site (confirmed
+// 2026-10-31: /medium-articles/dentistry/clear-aligners/ and twelve siblings).
+// Admitted here from their own source, under the identical four-part rule.
+const mediumCorpusPages=read('content/_live/medium_articles.json').items
+  .map((m)=>({path:m.publish_path,publication_status:'ADMITTED',date_modified:m.lastmod||null}));
+const releasedButUnadvertised=[...livePages,...velocitySpecPages,...mediumCorpusPages]
   .map((p)=>({route:p.slug||p.path,page:p}))
   .filter(({route,page})=>route
     && !publishedPaths.has(route)
