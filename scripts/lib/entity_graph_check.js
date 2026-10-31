@@ -127,6 +127,13 @@ function jsonLdBlocks(html) {
 function checkPageHtml(html, entity, where = 'page') {
   const exp = expectedNode(entity);
   const errors = [];
+  // A no-@id Organization node is this entity by another route when it carries
+  // the entity's name OR the masthead it publishes under. The masthead was
+  // missing from this list, so the Article author node - the FIRST
+  // Organization-shaped node the Search Readiness c1 audit reads - could carry
+  // no sameAs at all and this contract still passed.
+  const byline = require('./network_schema').editorialBylineName();
+  const inlineSelf = new Set([exp.name, ...(byline ? [byline] : [])].filter(Boolean));
   let described = false;
   const walk = (n) => {
     if (Array.isArray(n)) return n.forEach(walk);
@@ -134,7 +141,7 @@ function checkPageHtml(html, entity, where = 'page') {
     if (isOrg(n)) {
       for (const u of arr(n.sameAs)) if (hostOf(String(u)) === ENTITY_HOST) errors.push(`${where}:sameAs_self_reference:${u}`);
       if (n['@id'] === exp['@id'] && n.name) { described = true; errors.push(...checkNode(n, exp, `${where}:organization`)); }
-      else if (!n['@id'] && n.name === exp.name && !sameList(arr(n.sameAs), exp.sameAs)) errors.push(`${where}:publisher_sameAs:${JSON.stringify(arr(n.sameAs))}`);
+      else if (!n['@id'] && inlineSelf.has(n.name) && !sameList(arr(n.sameAs), exp.sameAs)) errors.push(`${where}:publisher_sameAs:${n.name}:${JSON.stringify(arr(n.sameAs))}`);
     }
     for (const v of Object.values(n)) walk(v);
   };
@@ -201,6 +208,16 @@ function hostileFixtures(entity, registry) {
   pageCase('page names the parent instead of referencing it', (n) => { n.parentOrganization = { '@id': n.parentOrganization['@id'], name: 'Parent Fixture' }; });
   pageCase('page logo drifts', (n) => { n.logo = { url: 'https://example.com/logo.png' }; });
   pageCase('inline publisher keeps a stale sameAs', (n) => { n.publisherFixture = { '@type': 'Organization', name: entity.name, sameAs: ['https://stale.example/profile'] }; });
+  // The 31 Oct 2026 c1 failure itself: the Article's author node carries the
+  // masthead, name, url and logo, and no sameAs. It is the first
+  // Organization-shaped node in the graph, so it is the node the audit reads.
+  const byline = require('./network_schema').editorialBylineName();
+  if (byline) {
+    pageCase('inline editorial byline carries no sameAs', (n) => { n.authorFixture = { '@type': 'Organization', name: byline, url: entity.url, logo: entity.logo }; });
+    pageCase('inline editorial byline keeps a stale sameAs', (n) => { n.authorFixture = { '@type': 'Organization', name: byline, sameAs: ['https://stale.example/profile'] }; });
+  } else {
+    escaped.push('no editorial byline declared in reviewer_registry.fallback_byline');
+  }
   return escaped;
 }
 
