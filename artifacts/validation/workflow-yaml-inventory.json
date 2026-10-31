@@ -1,8 +1,8 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-10-30T17:51:49.053Z",
-  "workflow_count": 12,
+  "generated_at": "2026-10-31T06:38:22.454Z",
+  "workflow_count": 13,
   "workflows": [
     {
       "path": ".github/workflows/ci-health-recovery.yml",
@@ -105,6 +105,34 @@
         "reports/indexnow-*.json",
         "artifacts/validation/**"
       ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/entity-backlink-watch.yml",
+      "name": "Entity backlink watch",
+      "trigger": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "primary_command": "unknown",
+      "repo_lane": "manual-maintenance",
+      "current_status": "keep",
+      "reason": "Non-canonical workflow requires review.",
+      "allowed_runtime_mutations": [],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [],
       "validation_owner": "validation registry and workflow topology validators"
     },
     {
