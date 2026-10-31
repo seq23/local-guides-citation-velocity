@@ -170,6 +170,13 @@ function organizationNode() {
 const ENTITY_OWNED_KEYS = ['name', 'alternateName', 'url', 'logo', 'description', 'publishingPrinciples', 'parentOrganization', 'subOrganization', 'brand', 'sameAs'];
 function consolidateOrganization(html, org) {
   const node = org || organizationNode();
+  // The one list of names that mean "this entity", from entity.json itself, and
+  // the masthead it publishes under. Both were literals here before, and the
+  // masthead was missing from them, so the Article author node - the FIRST
+  // Organization-shaped node the audit reads - never received sameAs.
+  const { editorialBylineName, entityAliasNames } = require('./network_schema');
+  const aliasNames = entityAliasNames(node);
+  const bylineName = editorialBylineName();
   const ORG_TYPES = /^(Organization|LocalBusiness|Corporation|NewsMediaOrganization|ProfessionalService)$/;
   const onOwnHost = (u) => { try { return new URL(String(u)).hostname.replace(/^www\./, '') === SITE_HOST; } catch { return false; } };
   return html.replace(/<script\b[^>]*type=(["'])application\/ld\+json\1[^>]*>([\s\S]*?)<\/script>/gi, (whole, q, body) => {
@@ -200,8 +207,13 @@ function consolidateOrganization(html, org) {
           for (const key of ['name', 'url', 'logo']) {
             if (node[key] && (n[key] === undefined || (Array.isArray(n[key]) && !n[key].length))) { n[key] = node[key]; touched = true; }
           }
-          if (n.name === node.name || n.name === 'The Industry Guides Network') {
+          if (aliasNames.has(n.name)) {
             if (n.name !== node.name) { n.name = node.name; touched = true; }
+            setSameAs(n);
+          } else if (bylineName && n.name === bylineName) {
+            // The masthead the corpus is attributed to: the same entity, so the
+            // same VERIFIED sameAs - but it keeps its own name, because the
+            // accountable byline is what the YMYL attribution ledger records.
             setSameAs(n);
           }
         } else if (Array.isArray(n.sameAs) && n.sameAs.some(onOwnHost)) {

@@ -59,6 +59,46 @@ function loadEntity() {
   return JSON.parse(fs.readFileSync(ENTITY_FILE, 'utf8'));
 }
 
+const REVIEWER_REGISTRY = path.join(ROOT, 'data', 'authority', 'reviewer_registry.json');
+
+/**
+ * The editorial byline this corpus is attributed to, read from the one registry
+ * that already declares it (data/authority/reviewer_registry.json
+ * fallback_byline - the same field scripts/apply_ymyl_attribution.mjs writes
+ * onto every page).
+ *
+ * entity.json's founder_note states that this publisher "speaks as an
+ * organisation byline (The Industry Guides Editorial Team)". So a no-@id
+ * Organization node carrying that masthead IS this entity by another route: it
+ * keeps its own name, and it must carry the entity's VERIFIED sameAs.
+ *
+ * It is read here rather than copied into each caller because the fixer
+ * (scripts/lib/served_head_contract.js) and the contract that proves it
+ * (scripts/lib/entity_graph_check.js) each kept their own list of names that
+ * mean "this entity", and neither list named the masthead. That is why Search
+ * Readiness c1 stayed red on 2,100+ pages after the sameAs itself was published
+ * on 31 Oct 2026 (#247): the audit reads the FIRST Organization-shaped node in
+ * the graph, which on these pages is the Article's author - the masthead.
+ */
+function editorialBylineName() {
+  try {
+    const registry = JSON.parse(fs.readFileSync(REVIEWER_REGISTRY, 'utf8'));
+    const name = registry && registry.fallback_byline && registry.fallback_byline.name;
+    return name ? String(name) : null;
+  } catch { return null; }
+}
+
+/**
+ * Names on a no-@id Organization node that mean "this entity under an older or
+ * alias name": they are renamed to entity.name and carry its sameAs. The
+ * masthead above is deliberately NOT one of these - renaming it would strip the
+ * accountable byline data/governance/ymyl_attribution_ledger.json records.
+ */
+function entityAliasNames(node) {
+  const n = node || organizationFromEntity();
+  return new Set([n.name, ...[].concat(n.alternateName || [])].filter(Boolean).map(String));
+}
+
 /**
  * The published Organization node, built from entity.json (30 Oct 2026 authority
  * audit). entity.json is the one statement of the entity; the identity registry
@@ -126,4 +166,4 @@ function mergeSchema(input) {
   }) };
 }
 
-module.exports = { loadRegistry, loadEntity, ENTITY_FILE, verifiedSameAs, organizationFromEntity, networkSchemaNodes, mergeSchema };
+module.exports = { loadRegistry, loadEntity, ENTITY_FILE, verifiedSameAs, organizationFromEntity, networkSchemaNodes, mergeSchema, editorialBylineName, entityAliasNames };
