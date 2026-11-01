@@ -28,6 +28,8 @@ const SELF = 'scripts/lib/zero_paid_llm_check.js';
 const POLICY_DOC = 'docs/cost/zero-paid-llm.md';
 const HOUSE_RULES = 'CLAUDE.md';
 // Text that means "this line reaches a model provider".
+// The shared search-loop engine's reusable workflow, pinned to a major tag.
+const ENGINE_CALL = /^\s*uses:\s*seq23\/search-loop\/\.github\/workflows\/search-loop\.yml@v\d+\s*$/m;
 const MODEL_REACH = /openrouter\.ai|OPENROUTER_API_KEY|chat\/completions|api\.openai\.com|anthropic\.com|ANTHROPIC_API_KEY|OPENAI_API_KEY|generativelanguage\.googleapis|GEMINI_API_KEY|GOOGLE_GEMINI_API_KEY|perplexity\.ai|PERPLEXITY_API_KEY|SERPAPI_API_KEY|serpapi\.com|semrush|ahrefs|APIFY_TOKEN|api\.apify/i;
 const ENDPOINT = /openrouter\.ai\/api\/v1\/chat\/completions|api\.openai\.com|api\.anthropic\.com|generativelanguage\.googleapis\.com|api\.perplexity\.ai|serpapi\.com\/search/;
 
@@ -115,8 +117,13 @@ function check(io, { reg, now = Date.now() } = {}) {
       const hitsProbe = probeScripts.some((s) => expanded.includes(s) || expanded.includes(path.basename(s)));
       const runs = (expanded.match(/run:[\s\S]*/) || [''])[0];
       const viaRouter = /free_llm_router/.test(runs) && !runs.split('\n').some((l) => MODEL_REACH.test(l) && !/free_llm_router|OPENROUTER_API_KEY:/.test(l));
+      // The shared search loop (seq23/search-loop, pinned @vN) is the other $0 route: its
+      // own routing file requires max_cost_usd 0 and fallback_to_paid false, and it fails
+      // loud on any non-zero usage.cost. A job that only CALLS it, passing the key as a
+      // secret, is that route; anything else in the same file that reaches a model is not.
+      const viaEngine = ENGINE_CALL.test(body) && !/^\s*run:/m.test(body) && !body.split('\n').some((l) => MODEL_REACH.test(l) && !/^\s*OPENROUTER_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}\s*$/.test(l));
       if (hitsProbe) failures.push(`${wfDir}/${f} is scheduled and runs a probe in step "${label}"`);
-      else if (MODEL_REACH.test(expanded) && !viaRouter) failures.push(`${wfDir}/${f} is scheduled and reaches a model outside the free router in step "${label}"`);
+      else if (MODEL_REACH.test(expanded) && !viaRouter && !viaEngine) failures.push(`${wfDir}/${f} is scheduled and reaches a model outside the free router in step "${label}"`);
     }
   }
 
@@ -184,6 +191,8 @@ function selfTest(root, reg) {
   const pw = `.github/workflows/${reg.probe_workflows[0]}`;
   const cases = [
     ['scheduled workflow calls a model directly', { '.github/workflows/zz_fixture.yml': "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    steps:\n      - env:\n          OPENROUTER_API_KEY: x\n        run: curl https://openrouter.ai/api/v1/chat/completions\n" }],
+    ['scheduled workflow calls an unpinned or foreign reusable workflow with the key', { '.github/workflows/zz_fixture.yml': "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    uses: someone/search-loop/.github/workflows/search-loop.yml@main\n    secrets:\n      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}\n" }],
+    ['search-loop caller also calls a model itself', { '.github/workflows/zz_fixture.yml': "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    uses: seq23/search-loop/.github/workflows/search-loop.yml@v1\n    with:\n      setup_command: curl https://openrouter.ai/api/v1/chat/completions\n    secrets:\n      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}\n" }],
     ['scheduled workflow runs a probe', { '.github/workflows/zz_fixture.yml': `on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    steps:\n      - run: node ${reg.probe_scripts[0]}\n` }],
     ['paid model in the routing config', { [ROUTING]: JSON.stringify({ ...cfg, models: [...cfg.models, { id: 'openai/gpt-4o-mini', pricing: { prompt: '0.00000015', completion: '0.0000006' } }] }) }],
     ['max_cost_usd above zero', { [ROUTING]: JSON.stringify({ ...cfg, policy: { ...cfg.policy, max_cost_usd: 1 } }) }],

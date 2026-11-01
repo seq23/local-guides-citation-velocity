@@ -58,7 +58,15 @@ const velocitySpecPages=(()=>{const rel='data/page_families/velocity_page_specs.
 // Admitted here from their own source, under the identical four-part rule.
 const mediumCorpusPages=read('content/_live/medium_articles.json').items
   .map((m)=>({path:m.publish_path,publication_status:'ADMITTED',date_modified:m.lastmod||null}));
-const releasedButUnadvertised=[...livePages,...velocitySpecPages,...mediumCorpusPages]
+// The search loop (seq23/search-loop, owner ruling 1 Nov 2026: new pages publish
+// straight away) is the fourth released corpus. Its ledger, data/search-loop/pages.json,
+// names every page the engine published after its own quality gate, and
+// scripts/search_loop/fold_in.js adds the /questions/ hub that lists them. Admitted
+// here from that source under the same four-part rule, so a gated page reaches the
+// sitemap, feeds and dist without a second release lane.
+const searchLoopPages=(()=>{const rel='data/search-loop/pages.json';if(!fs.existsSync(path.join(ROOT,rel)))return [];const book=read(rel);const live=(book.pages||[]).filter((p)=>p.status==='live'&&p.route).map((p)=>({path:p.route,publication_status:'ADMITTED',date_modified:p.modified_at||p.published_at||null}));return live.length?[...live,{path:'/questions/',publication_status:'ADMITTED',date_modified:live.map((p)=>p.date_modified).filter(Boolean).sort().at(-1)||null}]:[];})();
+const SEARCH_LOOP_ROUTES=new Set(searchLoopPages.map((p)=>p.path));
+const releasedButUnadvertised=[...livePages,...velocitySpecPages,...mediumCorpusPages,...searchLoopPages]
   .map((p)=>({route:p.slug||p.path,page:p}))
   .filter(({route,page})=>route
     && !publishedPaths.has(route)
@@ -82,7 +90,7 @@ const recByPage=new Map();
 for(const r of recommendations){const key=normalizePath(r.page);if(!recByPage.has(key))recByPage.set(key,[]);recByPage.get(key).push(r.id);}
 const winByPage=new Map();
 for(const w of wins){for(const page of (w.pages||[w.page]).filter(Boolean)){const key=normalizePath(page);if(!winByPage.has(key))winByPage.set(key,[]);winByPage.get(key).push(w.id);}}
-function pageType(item){const p=item.path;if(['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/','/senior-living/'].includes(p))return 'Vertical hub';if(p.startsWith('/insights/')&&p!=='/insights/')return 'Insight';if(p.startsWith('/medium-articles/'))return 'Medium article';if(p.startsWith('/atlas/'))return 'Atlas';if(liveByPath.has(p))return 'Canonical guide';return 'Global page';}
+function pageType(item){const p=item.path;if(SEARCH_LOOP_ROUTES.has(p))return p==='/questions/'?'Search loop hub':'Search loop answer';if(['/personal-injury/','/dentistry/','/trt/','/neuro/','/uscis-medical/','/senior-living/'].includes(p))return 'Vertical hub';if(p.startsWith('/insights/')&&p!=='/insights/')return 'Insight';if(p.startsWith('/medium-articles/'))return 'Medium article';if(p.startsWith('/atlas/'))return 'Atlas';if(liveByPath.has(p))return 'Canonical guide';return 'Global page';}
 function verticalFor(p,source){if(source?.vertical)return source.vertical==='personal_injury'?'personal-injury':source.vertical;for(const v of ['personal-injury','dentistry','trt','neuro','uscis-medical','senior-living'])if(p.includes(`/${v}/`)||p.startsWith(`${v}-`)||p.includes(`/${v}-`))return v;return 'global';}
 function sensitivity(source){if(source?.sensitivity_profile)return source.sensitivity_profile;const d=String(source?.disclaimer||'').toLowerCase();if(d.includes('legal')&&d.includes('medical'))return 'legal-medical';if(d.includes('legal'))return 'legal';if(d.includes('medical'))return 'medical';return 'general';}
 const pages=published.map(item=>{
@@ -122,6 +130,10 @@ const pages=published.map(item=>{
     lastmod:item.lastmod
   };
 });
+// Search-loop pages: their source is the engine ledger, their vertical the one
+// fold_in.js matched to a canonical guide (data/search-loop/velocity-guides.json).
+const searchLoopVertical=(()=>{const rel='data/search-loop/velocity-guides.json';const m=new Map();if(fs.existsSync(path.join(ROOT,rel)))for(const g of read(rel).pages||[])m.set(g.route,g.vertical||'global');return m;})();
+for(const page of pages){if(!SEARCH_LOOP_ROUTES.has(page.path))continue;Object.assign(page,{vertical:searchLoopVertical.get(page.path)||'global',source_owner:'SEARCH_LOOP',source_file:'data/search-loop/pages.json',generator:'seq23/search-loop@v1 + scripts/search_loop/fold_in.js',schema_profile:page.path==='/questions/'?'WebPage':'Article+FAQPage+BreadcrumbList',programmatic_gate_status:'NOT_APPLICABLE',admission_basis:'SEARCH_LOOP_GATE_OWNER_RULING_2026-11-01'});}
 if(new Set(pages.map(x=>x.path)).size!==pages.length)throw new Error('Published route inventory contains duplicate paths');
 const out={schema_version:'1.2',baseline_date:'2026-06-19',count:pages.length,pages};
 fs.mkdirSync(path.join(ROOT,'data/content'),{recursive:true});

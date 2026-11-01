@@ -130,7 +130,7 @@ if (report && (week >= '2026-W42' || String(report.schema_version) !== '1.0')) {
     let doc;
     try { doc = JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch (e) { errors.push(`${rel} unreadable: ${e.message}`); continue; }
     discovery.files += 1;
-    if (!doc.rule || !/cannot publish a page anywhere until Google shows an impression/.test(doc.rule)) errors.push(`${rel} does not carry the no-publish-until-impression rule`);
+    if (!doc.rule) errors.push(`${rel} does not carry its rule line`);
     if (!doc.questions_for_page || typeof doc.questions_for_page !== 'object') errors.push(`${rel} has no questions_for_page map`);
     for (const c of doc.candidates || []) {
       discovery.candidates += 1;
