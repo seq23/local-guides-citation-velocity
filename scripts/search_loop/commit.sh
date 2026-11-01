@@ -27,6 +27,13 @@ fold_build_validate() {
   fi
 }
 
+# The engine checkout (.search-loop-engine/, a nested git repo) sits inside this tree.
+# The build copies every non-internal directory into dist/, and the release profile
+# scans dist/ and the tree: the engine's own example config then fails brand-separation
+# (first default-branch run, 1 Nov 2026). Nothing below needs the engine, so it leaves
+# the tree before anything is built.
+if [ -d .search-loop-engine ]; then mv .search-loop-engine "${RUNNER_TEMP:-/tmp}/search-loop-engine-$$"; fi
+rm -f .search-loop-run.log
 node scripts/tests/test_search_loop_fold_in.js
 node scripts/search_loop/fold_in.js
 if [ -z "$(git status --porcelain)" ]; then echo "search-loop commit: nothing to commit"; exit 0; fi
