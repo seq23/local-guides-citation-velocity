@@ -5,11 +5,11 @@
  * every Search Console property the service account could read.
  *
  * search-outcomes-weekly.yml commits reports/search_outcomes/<ISO-week>.{md,json}
- * every Monday at 08:00 Chicago (13:00/14:00 UTC). The week this validator
- * requires is the ISO week of (now - 24h): all of Monday still requires LAST
- * week's report, so a PR opened at 01:00 UTC Monday is never red because the
- * scheduled run has not happened yet; from Tuesday 00:00 UTC on, this week's
- * report must be on main. A missing report then means the owner got no answer
+ * every Wednesday at 07:03 Chicago (12:03/13:03 UTC; it was Monday until the owner's
+ * rebalanced week, 1 Nov 2026). The week this validator requires is the ISO week of
+ * (now - 72h): Monday to Wednesday still require LAST week's report, so a PR opened
+ * before the Wednesday run is never red because it has not happened yet; from
+ * Thursday 00:00 UTC on, this week's report must be on main. A missing report then means the owner got no answer
  * to "is the search work helping" that week - the failure this guards.
  *
  * Site count must equal the property count the run recorded, in the JSON twin
@@ -60,7 +60,7 @@ function isoWeek(d) {
 
 const now = process.env.SEARCH_OUTCOMES_NOW ? new Date(process.env.SEARCH_OUTCOMES_NOW) : new Date();
 if (Number.isNaN(now.getTime())) errors.push(`SEARCH_OUTCOMES_NOW is not a date: ${process.env.SEARCH_OUTCOMES_NOW}`);
-const week = isoWeek(new Date(now.getTime() - 24 * 3600 * 1000));
+const week = isoWeek(new Date(now.getTime() - 72 * 3600 * 1000));
 const jsonRel = `${DIR}/${week}.json`;
 const mdRel = `${DIR}/${week}.md`;
 
@@ -106,7 +106,7 @@ if (report && (week >= '2026-W42' || String(report.schema_version) !== '1.0')) {
     if (d.properties_with_seeds !== seeded.length) errors.push(`discovery covered ${d.properties_with_seeds} properties but ${seeded.length} had seeds`);
     if (seeded.length && !d.candidate_count && !d.named_stop) errors.push('discovery found 0 candidates for seeded properties without a NAMED STOP: the step ran inert');
     if (d.named_stop && !(fs.existsSync(path.join(ROOT, mdRel)) && fs.readFileSync(path.join(ROOT, mdRel), 'utf8').includes(d.named_stop))) errors.push(`${mdRel} does not carry the discovery NAMED STOP the owner must see`);
-    if (fs.existsSync(path.join(ROOT, mdRel)) && !/^Discovery: \d+ candidates for \d+ seeds/m.test(fs.readFileSync(path.join(ROOT, mdRel), 'utf8'))) errors.push(`${mdRel} has no Discovery summary line: the Monday email would not carry it`);
+    if (fs.existsSync(path.join(ROOT, mdRel)) && !/^Discovery: \d+ candidates for \d+ seeds/m.test(fs.readFileSync(path.join(ROOT, mdRel), 'utf8'))) errors.push(`${mdRel} has no Discovery summary line: the Spry Labs weekly would not carry it`);
   }
   // Candidates are checked against the dedupe set of THEIR week (data/discovery/<week>/
   // measured_targets_snapshot.json). The top-level snapshot is rewritten by every run, so
@@ -142,17 +142,21 @@ if (report && (week >= '2026-W42' || String(report.schema_version) !== '1.0')) {
   }
 }
 
-// The Monday run is the only writer of the report this gate requires. A failed
-// Monday run with nothing to re-run it held main red for a week's report on
-// 2026-10-20 (W43). The workflow must keep a Monday catch-up that fires before
-// Tuesday 00:00 UTC and a daily catch-up, both guarded on the report being missing.
+// The Wednesday run is the only writer of the report this gate requires. A failed
+// run with nothing to re-run it held main red for a week's report on 2026-10-20
+// (W43). The workflow must keep a Wednesday catch-up that fires before Thursday
+// 00:00 UTC and a Thursday-Sunday catch-up, both guarded on the report being
+// missing. Never Monday or Tuesday: a catch-up there writes the new week early.
 {
   const wf = fs.readFileSync(path.join(ROOT, '.github/workflows/search-outcomes-weekly.yml'), 'utf8');
   const crons = [...wf.matchAll(/cron:\s*"([^"]+)"/g)].map((m) => m[1]);
-  const mondayCatchUp = crons.find((c) => { const [, h, , , dow] = c.split(/\s+/); return dow === '1' && h.split(',').some((x) => Number(x) > 14 && Number(x) <= 23); });
-  const dailyCatchUp = crons.find((c) => { const dow = c.split(/\s+/)[4]; return dow === '0,2-6'; });
-  if (!mondayCatchUp) errors.push('search-outcomes-weekly.yml has no Monday catch-up cron after 14:00 UTC: a failed Monday run leaves main red from Tuesday');
-  if (!dailyCatchUp) errors.push('search-outcomes-weekly.yml has no daily (Sun, Tue-Sat) catch-up cron: a week that slipped is never repaired');
+  const mondayCatchUp = crons.find((c) => { const [, h, , , dow] = c.split(/\s+/); return dow === '3' && h.split(',').some((x) => Number(x) > 14 && Number(x) <= 23); });
+  const dailyCatchUp = crons.find((c) => { const dow = c.split(/\s+/)[4]; return dow === '0,4-6'; });
+  if (!mondayCatchUp) errors.push('search-outcomes-weekly.yml has no Wednesday catch-up cron after 14:00 UTC: a failed Wednesday run leaves main red from Thursday');
+  if (!dailyCatchUp) errors.push('search-outcomes-weekly.yml has no Thursday-Sunday catch-up cron: a week that slipped is never repaired');
+  if (crons.some((c) => /(^|,)[12](,|$)|1-|-2/.test(c.split(/\s+/)[4] ?? ''))) errors.push('search-outcomes-weekly.yml fires on a Monday or Tuesday: that writes the new ISO week before its Wednesday run');
+  if (/RESEND_API_KEY|--mode email/.test(wf)) errors.push('search-outcomes-weekly.yml emails the owner again; the week goes to Boss OS\'s Spry Labs weekly instead (1 Nov 2026)');
+  if (!/name: spry-weekly-summary\s/.test(wf) || !wf.includes('spry_weekly_summary.mjs --self-check')) errors.push('search-outcomes-weekly.yml does not prove and upload the spry-weekly-summary hand-off to Boss OS');
   for (const c of [mondayCatchUp, dailyCatchUp].filter(Boolean)) {
     if (!wf.includes(`"$SCHEDULE" = "${c}"`)) errors.push(`search-outcomes-weekly.yml catch-up cron "${c}" is not routed through the report-missing guard`);
   }
