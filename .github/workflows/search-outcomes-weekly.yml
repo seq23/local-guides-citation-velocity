@@ -1,27 +1,30 @@
 name: Search Outcomes Weekly
 
 # One place that answers "is the search work helping" across the portfolio.
-# Mondays 08:00 America/Chicago: two UTC crons (13:00 in CDT, 14:00 in CST) and
-# a guard step that lets only the one matching Chicago's current offset run.
+# Wednesdays 07:03 America/Chicago (owner's rebalanced week, 1 Nov 2026): two
+# UTC crons (12:03 in CDT, 13:03 in CST) and a guard step that lets only the one
+# matching Chicago's current offset run.
 # Report -> RED issues opened/updated/closed -> free query discovery (seeded only
 # from the report's measured queries; $0, no keys, no model calls) -> artifact ->
 # validated commit of reports/search_outcomes/<ISO-week>.{md,json} and
-# data/discovery/<ISO-week>/ -> email to the owner (carries the Discovery table).
-# Without RESEND_API_KEY the email step is a NAMED STOP; everything else runs.
+# data/discovery/<ISO-week>/ -> spry-weekly-summary.json, uploaded as the
+# artifact `spry-weekly-summary`. NO EMAIL FROM HERE (1 Nov 2026): Boss OS sends
+# the ONE "Spry Labs weekly" email at 08:15 Central with a short section from it.
 #
-# Catch-up: the Monday run is the only writer of this week's report, and the
+# Catch-up: the Wednesday run is the only writer of this week's report, and the
 # release gate (validate_search_outcomes_weekly_report.js) requires it on main
-# from Tuesday 00:00 UTC. On 2026-10-19 the Monday run failed on an unrelated
+# from Thursday 00:00 UTC (it was Monday/Tuesday until 1 Nov 2026). On 2026-10-19 the Monday run failed on an unrelated
 # validator (fixed in #211 an hour later) and nothing re-ran it, so main went
 # red on Tuesday for a missing 2026-W43. The catch-up crons below run ONLY when
-# this ISO week's report is not on main: Monday afternoon retries land it before
-# the gate turns, and the daily one repairs any week that still slipped.
+# this ISO week's report is not on main: Wednesday afternoon retries land it
+# before the gate turns, and the Thursday-Sunday one repairs any week that still
+# slipped. Never Monday or Tuesday: that would write the new week's report early.
 on:
   schedule:
-    - cron: "0 13 * * 1"
-    - cron: "0 14 * * 1"
-    - cron: "0 17,20,23 * * 1"
-    - cron: "30 12 * * 0,2-6"
+    - cron: "3 12 * * 3"
+    - cron: "3 13 * * 3"
+    - cron: "0 17,20,23 * * 3"
+    - cron: "30 12 * * 0,4-6"
   workflow_dispatch:
 
 permissions:
@@ -41,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Guard Monday 08:00 Chicago
+      - name: Guard Wednesday 07:03 Chicago
         id: guard
         env:
           SCHEDULE: ${{ github.event.schedule }}
@@ -50,10 +53,10 @@ jobs:
         run: |
           offset=$(TZ=America/Chicago date +%z)
           run=true
-          if [ "$SCHEDULE" = "0 13 * * 1" ] && [ "$offset" != "-0500" ]; then run=false; fi
-          if [ "$SCHEDULE" = "0 14 * * 1" ] && [ "$offset" != "-0600" ]; then run=false; fi
+          if [ "$SCHEDULE" = "3 12 * * 3" ] && [ "$offset" != "-0500" ]; then run=false; fi
+          if [ "$SCHEDULE" = "3 13 * * 3" ] && [ "$offset" != "-0600" ]; then run=false; fi
           # Catch-up crons: run only if this ISO week's report is missing on main.
-          if [ "$SCHEDULE" = "0 17,20,23 * * 1" ] || [ "$SCHEDULE" = "30 12 * * 0,2-6" ]; then
+          if [ "$SCHEDULE" = "0 17,20,23 * * 3" ] || [ "$SCHEDULE" = "30 12 * * 0,4-6" ]; then
             week=$(date -u +%G-W%V)
             if gh api "repos/$REPO/contents/reports/search_outcomes/$week.json?ref=main" --silent 2>/dev/null; then
               run=false; echo "catch-up: $week report already on main"
@@ -152,9 +155,18 @@ jobs:
             sleep $((attempt * 15))
           done
           exit 1
-      - name: Email the report to the owner
+      - name: Hand the week to Boss OS (the Spry Labs weekly email)
         if: steps.guard.outputs.run == 'true'
         env:
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           WEEK: ${{ steps.report.outputs.week }}
-        run: python3 scripts/search_console/search_outcomes_weekly.py --mode email "reports/search_outcomes/$WEEK.md"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node scripts/search_console/spry_weekly_summary.mjs --self-check
+          node scripts/search_console/spry_weekly_summary.mjs "reports/search_outcomes/$WEEK.json" "$RUNNER_TEMP/spry-weekly-summary.json"
+      - uses: actions/upload-artifact@v7
+        if: steps.guard.outputs.run == 'true'
+        with:
+          name: spry-weekly-summary
+          path: ${{ runner.temp }}/spry-weekly-summary.json
+          if-no-files-found: error
+          retention-days: 30
