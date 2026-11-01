@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-10-31T06:51:28.280Z",
+  "generated_at": "2026-11-01T06:35:07.578Z",
   "status": "PASS",
   "workflow_count": 13,
   "errors": [],
@@ -697,7 +697,7 @@
       "status": "PASS",
       "commands": [
         {
-          "command": "offset=$(TZ=America/Chicago date +%z)\nrun=true\nif [ \"$SCHEDULE\" = \"0 13 * * 1\" ] && [ \"$offset\" != \"-0500\" ]; then run=false; fi\nif [ \"$SCHEDULE\" = \"0 14 * * 1\" ] && [ \"$offset\" != \"-0600\" ]; then run=false; fi\n# Catch-up crons: run only if this ISO week's report is missing on main.\nif [ \"$SCHEDULE\" = \"0 17,20,23 * * 1\" ] || [ \"$SCHEDULE\" = \"30 12 * * 0,2-6\" ]; then\nweek=$(date -u +%G-W%V)\nif gh api \"repos/$REPO/contents/reports/search_outcomes/$week.json?ref=main\" --silent 2>/dev/null; then\nrun=false; echo \"catch-up: $week report already on main\"\nelse\necho \"catch-up: $week report missing on main; running\"\nfi\nfi\necho \"run=$run\" >> \"$GITHUB_OUTPUT\"\necho \"schedule='${SCHEDULE:-dispatch}' chicago_offset=$offset run=$run\"",
+          "command": "offset=$(TZ=America/Chicago date +%z)\nrun=true\nif [ \"$SCHEDULE\" = \"3 12 * * 3\" ] && [ \"$offset\" != \"-0500\" ]; then run=false; fi\nif [ \"$SCHEDULE\" = \"3 13 * * 3\" ] && [ \"$offset\" != \"-0600\" ]; then run=false; fi\n# Catch-up crons: run only if this ISO week's report is missing on main.\nif [ \"$SCHEDULE\" = \"0 17,20,23 * * 3\" ] || [ \"$SCHEDULE\" = \"30 12 * * 0,4-6\" ]; then\nweek=$(date -u +%G-W%V)\nif gh api \"repos/$REPO/contents/reports/search_outcomes/$week.json?ref=main\" --silent 2>/dev/null; then\nrun=false; echo \"catch-up: $week report already on main\"\nelse\necho \"catch-up: $week report missing on main; running\"\nfi\nfi\necho \"run=$run\" >> \"$GITHUB_OUTPUT\"\necho \"schedule='${SCHEDULE:-dispatch}' chicago_offset=$offset run=$run\"",
           "status": "PASS",
           "checks": [],
           "direct_npm_scripts": [],
@@ -759,12 +759,17 @@
           ]
         },
         {
-          "command": "python3 scripts/search_console/search_outcomes_weekly.py --mode email \"reports/search_outcomes/$WEEK.md",
+          "command": "node scripts/search_console/spry_weekly_summary.mjs --self-check\nnode scripts/search_console/spry_weekly_summary.mjs \"reports/search_outcomes/$WEEK.json\" \"$RUNNER_TEMP/spry-weekly-summary.json\"",
           "status": "PASS",
           "checks": [
             {
               "type": "file",
-              "path": "scripts/search_console/search_outcomes_weekly.py",
+              "path": "scripts/search_console/spry_weekly_summary.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/search_console/spry_weekly_summary.mjs",
               "ok": true
             }
           ],
