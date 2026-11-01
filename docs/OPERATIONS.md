@@ -20,6 +20,7 @@ live with the code. Strategy stays in `docs/strategy/`; this page is the "why di
   `validate_validation_registry.js` enforces a `hard_fail_basis` for every blocker and
   **`MAX_HARD_FAIL = 40`**. Never re-add a blocker without a basis; never make a ratchet fail when an
   entry stops reproducing.
+- 1 Nov 2026 (test cleanup): the 149 RETIRED validator files that nothing ran or imported were deleted with their registry entries (224 -> 77 registered; 60 active unchanged). The 17 RETIRED files still kept are imported or spawned by live code (e.g. `validate_admission_reachability.js` by `validate_sitemap_parity.js`, `validate_programmatic_substance.js` by the self-heal loop); delete one only with its caller. `scripts/tests/test_validator_materiality.js` went too (tautologies plus checks `validation-policy`/`validation-registry` already make).
 - A well-formed agent drop arriving is never a failure (only a malformed or foreign one). New pages
   block only on search vitals (`search-quality-basics`: title, meta description, canonical, one h1,
   encoding).
