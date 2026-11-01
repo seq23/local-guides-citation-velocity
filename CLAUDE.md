@@ -10,6 +10,10 @@ validation registry or the release lanes. This file holds the rules that code
 reads. Operational gotchas (release lane re-authoring, validator cull, repro recipes)
 are in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
+## Company brain
+
+Read `~/Brains/spry.md` before any work (business facts, priorities, voice, settled decisions). New business facts go to the brain via Boss OS, not into this repo or memory. Repo how-tos stay in `docs/`.
+
 ## Nothing paid
 
 Owner policy, 11 October 2026: **nothing paid.** No model call, probe, search API
