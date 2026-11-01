@@ -7,7 +7,8 @@ readers to them.
 
 `AGENTS.md` is the long operating manual: read it before changing the build, the
 validation registry or the release lanes. This file holds the rules that code
-reads.
+reads. Operational gotchas (release lane re-authoring, validator cull, repro recipes)
+are in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
 ## Nothing paid
 
