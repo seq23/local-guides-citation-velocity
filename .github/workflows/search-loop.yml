@@ -1,0 +1,58 @@
+name: Search Loop
+
+# The shared search growth engine (seq23/search-loop@v1), owner ruling 1 Nov 2026
+# ("we just want to dominate aeo geo SEO and move fast"): find easy searches weekly,
+# publish one gated short answer per search daily under /questions/ on
+# theindustryguides.com, check every page at 2/4/8 weeks, strengthen / undo / merge,
+# and upload the weekly report artifact "search-loop-week". New pages publish
+# straight away; the old "frozen until a Search Console number" rule no longer
+# applies to them.
+#
+# Six verticals, one site: search-loop.config.json carries the vertical map.
+#   setup        scripts/search_loop/seed_topics.js feeds FIND from the measured seeds
+#                free_discovery.py commits weekly (data/discovery/<week>/), Memphis
+#                senior care first.
+#   post-build   scripts/search_loop/fold_in.js: PI rules on accident pages, the one
+#                action pointed at the matching canonical guide (else the page goes on
+#                data/search-loop/missing-guides.json for local-guides-generator), the
+#                /questions/ hub, admission + freeze so the build serves them.
+#   commit       scripts/search_loop/commit.sh: build, validate:release, push; nothing
+#                is pushed unless the release profile passes on the exact tree.
+# local-guides-generator reads data/search-loop/ here (shares_audience_with), and this
+# config reads its ledger, so the two never target the same search.
+# Throttle every site at once: gh variable set SEARCH_LOOP_MODE --body slow -R seq23/search-loop
+on:
+  schedule:
+    - cron: "41 11 * * *"
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "auto | find | build | check"
+        required: false
+        default: auto
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+# Shares the single main-writer group: see query-evidence-refresh.yml.
+concurrency:
+  group: local-guides-main-writer
+  cancel-in-progress: false
+
+jobs:
+  search-loop:
+    uses: seq23/search-loop/.github/workflows/search-loop.yml@v1
+    with:
+      engine_ref: v1
+      stage: ${{ inputs.stage || 'auto' }}
+      setup_command: npm ci --ignore-scripts && node scripts/search_loop/seed_topics.js
+      node_options: --max-old-space-size=3072
+      post_build_command: node scripts/search_loop/fold_in.js
+      commit_command: bash scripts/search_loop/commit.sh
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+      GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+      INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}

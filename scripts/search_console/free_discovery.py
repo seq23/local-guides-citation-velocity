@@ -35,9 +35,12 @@ calls, paid SERP/PAA scraping, an 11,823-row table read by paid citation monitor
    prove no candidate is a measured target), and appends a Discovery section to the
    weekly report .md/.json so the Monday email carries it.
 
-RULE (written into every file and the report): a candidate cannot publish a page
-anywhere until Google shows an impression for it. Its use now is the FAQ/H2 questions
-on the seed's existing page (`questions_for_page`), which the strengthening passes read.
+RULE (written into every file and the report): candidates are seeds, not pages. On a
+site that runs the shared search loop (owner ruling 1 Nov 2026: new pages publish
+straight away) they feed its FIND stage - for the six guide verticals through
+scripts/search_loop/seed_topics.js - and a page publishes once it passes the engine's
+gate. Their other use is the FAQ/H2 questions on the seed's existing page
+(`questions_for_page`), which the strengthening passes read.
 
 Paid calls: none possible. Every request goes through fetch(), which refuses any host
 outside FREE_HOSTS and counts requests per host into the receipt; the validator
@@ -65,8 +68,9 @@ QUERY_KEYS = {"query", "queries", "top_query", "head_query", "head_term", "targe
 FREE_HOSTS = {"suggestqueries.google.com", "www.google.com", "www.reddit.com", "raw.githubusercontent.com",
               "api.github.com"}
 UA_BROWSERLESS = "lgcv-free-discovery/1.0 (weekly query research from Search Console seeds; +https://github.com/seq23/local-guides-citation-velocity)"
-RULE = ("A candidate cannot publish a page anywhere until Google shows an impression for it. Its use now is the "
-        "FAQ/H2 questions on the seed's existing page (questions_for_page), which the strengthening passes read.")
+RULE = ("Candidates are seeds, not pages. On a site that runs the shared search loop (owner ruling 1 Nov 2026) they "
+        "feed its FIND stage and a page publishes once it passes the engine's gate. Their other use is the FAQ/H2 "
+        "questions on the seed's existing page (questions_for_page), which the strengthening passes read.")
 SUFFIX_LETTERS = "abcde"
 SUFFIX_TOP_SEEDS = 10
 REDDIT_PER_SEED = 25
