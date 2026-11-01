@@ -23,7 +23,7 @@ name: Search Loop
 # Throttle every site at once: gh variable set SEARCH_LOOP_MODE --body slow -R seq23/search-loop
 on:
   schedule:
-    - cron: "41 11 * * *"
+    - cron: "47 13 * * *"  # 13:47 UTC: its own minute (11:41 is sprylabs-hpc-site, 12:53 hicks-consulting-canonical); before local-guides-generator (15:41) reads this ledger
   workflow_dispatch:
     inputs:
       stage:
@@ -56,3 +56,9 @@ jobs:
       GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
       GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
       INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+      # $0 model lanes (engine v1.2.3): Gemini free tier (no-billing project), metered Workers AI
+      # (usage read with the analytics token, model run with the Workers AI token; 600 neurons/day).
+      CLOUDFLARE_API_TOKEN: ${{ secrets.SEARCH_LOOP_CF_USAGE_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SEARCH_LOOP_CF_ACCOUNT_ID }}
+      CLOUDFLARE_WORKERS_AI_TOKEN: ${{ secrets.SEARCH_LOOP_CF_WORKERS_AI_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.SEARCH_LOOP_GEMINI_API_KEY }}

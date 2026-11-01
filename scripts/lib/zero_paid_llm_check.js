@@ -121,7 +121,9 @@ function check(io, { reg, now = Date.now() } = {}) {
       // own routing file requires max_cost_usd 0 and fallback_to_paid false, and it fails
       // loud on any non-zero usage.cost. A job that only CALLS it, passing the key as a
       // secret, is that route; anything else in the same file that reaches a model is not.
-      const viaEngine = ENGINE_CALL.test(body) && !/^\s*run:/m.test(body) && !body.split('\n').some((l) => MODEL_REACH.test(l) && !/^\s*OPENROUTER_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}\s*$/.test(l));
+      // The engine's $0 lanes take OPENROUTER_API_KEY (:free only) and GEMINI_API_KEY (a
+      // no-billing project) as repository secrets; a literal value or any other line is not that route.
+      const viaEngine = ENGINE_CALL.test(body) && !/^\s*run:/m.test(body) && !body.split('\n').some((l) => MODEL_REACH.test(l) && !/^\s*(OPENROUTER_API_KEY|GEMINI_API_KEY):\s*\$\{\{\s*secrets\.[A-Z0-9_]+\s*\}\}\s*$/.test(l));
       if (hitsProbe) failures.push(`${wfDir}/${f} is scheduled and runs a probe in step "${label}"`);
       else if (MODEL_REACH.test(expanded) && !viaRouter && !viaEngine) failures.push(`${wfDir}/${f} is scheduled and reaches a model outside the free router in step "${label}"`);
     }
@@ -192,6 +194,7 @@ function selfTest(root, reg) {
   const cases = [
     ['scheduled workflow calls a model directly', { '.github/workflows/zz_fixture.yml': "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    steps:\n      - env:\n          OPENROUTER_API_KEY: x\n        run: curl https://openrouter.ai/api/v1/chat/completions\n" }],
     ['scheduled workflow calls an unpinned or foreign reusable workflow with the key', { '.github/workflows/zz_fixture.yml': "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    uses: someone/search-loop/.github/workflows/search-loop.yml@main\n    secrets:\n      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}\n" }],
+    ['search-loop caller passes a literal model key instead of a secret', { '.github/workflows/zz_fixture.yml': "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    uses: seq23/search-loop/.github/workflows/search-loop.yml@v1\n    secrets:\n      GEMINI_API_KEY: AIzaLiteralKey\n" }],
     ['search-loop caller also calls a model itself', { '.github/workflows/zz_fixture.yml': "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    uses: seq23/search-loop/.github/workflows/search-loop.yml@v1\n    with:\n      setup_command: curl https://openrouter.ai/api/v1/chat/completions\n    secrets:\n      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}\n" }],
     ['scheduled workflow runs a probe', { '.github/workflows/zz_fixture.yml': `on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    steps:\n      - run: node ${reg.probe_scripts[0]}\n` }],
     ['paid model in the routing config', { [ROUTING]: JSON.stringify({ ...cfg, models: [...cfg.models, { id: 'openai/gpt-4o-mini', pricing: { prompt: '0.00000015', completion: '0.0000006' } }] }) }],
