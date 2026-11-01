@@ -9,7 +9,6 @@ This repo now has a Search Intelligence lane that is separate from Agent Runs. I
 - `npm run search:intelligence:closed-loop` — regenerate the 240-query truth layer, diagnoses, candidates, retests, feedback, and scorecard without source mutation.
 - `npm run search:intelligence:self-heal` — run the same loop and apply only `READY_AUTO_REPAIR` candidates that contain an explicit safe patch. Current healthy baseline has zero repair candidates.
 - `npm run validate:search-intelligence` — run the registered Search Intelligence contract, Agent separation, truth, safety, and workflow validators.
-- `npm run test:validator-materiality` — run the 15-case anti-petty-blocker hostile test pack.
 - `npm run test:search-intelligence` — run the 9-case self-healing/truth/separation hostile test pack.
 - `npm run deep:phase-0-16` — run the deep Phase 0-16 container validation chain.
 
