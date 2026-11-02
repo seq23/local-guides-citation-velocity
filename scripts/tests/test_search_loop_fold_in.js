@@ -16,7 +16,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { classify, matchGuide, chooseAction, piProblems, setAction, withoutRelatedLink } = require('../search_loop/fold_in');
+const { classify, matchGuide, chooseAction, piProblems, setAction, withoutRelatedLink, withRedirectsResolved } = require('../search_loop/fold_in');
 const { topicsFor } = require('../search_loop/seed_topics');
 
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -113,4 +113,22 @@ pin('under the cap the first choice is unchanged, and when every URL is full the
 });
 
 if (n < 14) { console.error(`search-loop fold-in tests: only ${n} pins ran`); process.exit(1); }
+// Search Loop run 41537218641: a new question page linked a 301 source and
+// rendered-internal-hrefs failed the release. Fold-in re-points it at the final target.
+pin('a question-page link to a 301 source is re-pointed at its final destination', () => {
+  const redirects = new Map([
+    ['/dentistry/guides/dallas-dental-implant-cost/', '/dentistry/community-questions/all-on-4-dental-implants-price-2026/'],
+    ['/old-a/', '/old-b/'], ['/old-b/', '/final/'], ['/loop-x/', '/loop-y/'], ['/loop-y/', '/loop-x/'],
+  ]);
+  const html = '<a href="/dentistry/guides/dallas-dental-implant-cost/#cost">x</a><a href="https://theindustryguides.com/old-a/">y</a><a href="/dentistry/">z</a><a href="https://other.example/old-a/">w</a><a href="/loop-x/">v</a>';
+  const out = withRedirectsResolved(html, redirects, 'https://theindustryguides.com');
+  assert.ok(out.includes('href="/dentistry/community-questions/all-on-4-dental-implants-price-2026/#cost"'), out);
+  assert.ok(out.includes('href="https://theindustryguides.com/final/"'), 'chains followed to the end');
+  assert.ok(out.includes('href="/dentistry/"') && out.includes('href="https://other.example/old-a/"'), 'non-redirecting and foreign links untouched');
+  assert.ok(!out.includes('dallas-dental-implant-cost'));
+  // Negative proof: without the redirect table the 301 source survives, which is the failure.
+  assert.ok(withRedirectsResolved(html, new Map(), 'https://theindustryguides.com').includes('href="/dentistry/guides/dallas-dental-implant-cost/#cost"'));
+  assert.strictEqual(withRedirectsResolved(out, redirects, 'https://theindustryguides.com'), out, 'idempotent');
+});
+
 console.log(`search-loop fold-in tests: ${n} pins passed`);

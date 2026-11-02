@@ -22,6 +22,10 @@
  *      (velocity.missing_guides_file) that local-guides-generator's agent reads.
  *   3. Related links placed on a host that cannot deliver them (not admitted, or a 301
  *      source in _redirects) are taken back out: a link no crawler is served is not one.
+ *   3b. Any internal link on a question page whose target is a 301 source in _redirects
+ *      is re-pointed at the redirect's final destination (rendered-internal-hrefs fails
+ *      a served link that answers 301; Search Loop run 41537218641:
+ *      /questions/dental-implant-cost-per-tooth/ -> /dentistry/guides/dallas-dental-implant-cost/).
  *   4. The /questions/ hub (every live page, by vertical) is regenerated.
  *   5. The admission registry is rebuilt (its fourth corpus is this ledger), and every
  *      new page, the hub and every host the engine edited are frozen at their new bytes,
@@ -191,6 +195,32 @@ function redirectSources() {
   return s;
 }
 
+/**
+ * Every internal href (root-relative or on baseUrl) that is a 301 source is re-pointed
+ * at its final destination, following chains (bounded, loop-safe). Fragment and query
+ * survive. A link that does not redirect is left byte-for-byte alone.
+ */
+function withRedirectsResolved(html, redirects, baseUrl = '') {
+  const key = (p) => p.replace(/\/+$/, '') || '/';
+  const table = new Map([...redirects].map(([from, to]) => [key(from), to]));
+  const finalOf = (route) => {
+    let cur = route; const seen = new Set();
+    while (table.has(key(cur)) && !seen.has(key(cur)) && seen.size < 10) { seen.add(key(cur)); cur = table.get(key(cur)); }
+    return cur === route ? null : cur;
+  };
+  const base = String(baseUrl || '').replace(/\/+$/, '');
+  return String(html).replace(/(\bhref=)(["'])([^"']*)\2/gi, (all, attr, q, href) => {
+    let rest = href; let prefix = '';
+    if (base && rest.startsWith(base + '/')) { prefix = base; rest = rest.slice(base.length); }
+    if (!rest.startsWith('/') || rest.startsWith('//')) return all;
+    const m = rest.match(/^([^?#]*)(.*)$/);
+    const to = finalOf(m[1]);
+    if (!to) return all;
+    const out = /^https?:\/\//.test(to) ? to : `${prefix}${to}`;
+    return `${attr}${q}${out}${m[2]}${q}`;
+  });
+}
+
 // The site's Organization and WebSite nodes, read from a rendered vertical hub so
 // there is one definition (build_site.js writes them); every served page must carry
 // both @ids (validate_network_crawler_contract.js).
@@ -315,7 +345,7 @@ function run(opts = {}) {
     const action = v ? chooseAction(page.query, v, snapshot, cfg, used) : { href: `${cfg.base_url}/`, label: cfg.action.label, guide: null };
     const { href, label, guide } = action;
     if (action.capped) { census.at_cap += 1; console.log(`NAMED NOTE [CANONICAL_URLS_AT_CAP] ${page.route}: every ${v.canonical_domain} URL is at its sitewide cap; the action points at ${href}`); }
-    const next = withEditorialMarks(withSiteEntities(setAction(html, href, label) || html, cfg.base_url));
+    const next = withRedirectsResolved(withEditorialMarks(withSiteEntities(setAction(html, href, label) || html, cfg.base_url)), redirects, cfg.base_url);
     if (next && next !== html) { fs.writeFileSync(file, next); html = next; }
     page.hash = sha256(html);
     page.vertical = vid || 'global';
@@ -408,7 +438,7 @@ function run(opts = {}) {
   return census;
 }
 
-module.exports = { run, classify, matchGuide, chooseAction, localityRoutes, piProblems, setAction, withoutRelatedLink };
+module.exports = { run, classify, matchGuide, chooseAction, localityRoutes, piProblems, setAction, withoutRelatedLink, withRedirectsResolved };
 
 if (require.main === module) {
   try { run({ skipAdmission: process.argv.includes('--skip-admission') }); }
