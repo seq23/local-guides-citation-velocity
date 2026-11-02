@@ -50,6 +50,20 @@ function isServedHtmlRel(rel, admitted) {
 }
 
 // Every served HTML file, as absolute paths under `root` (never under dist/).
+// G3 (Search Readiness): no single URL of a capped host is linked more than this many
+// times across the served tree. One definition: validate_velocity_canonical_anchor_links.js
+// enforces it and scripts/search_loop/fold_in.js allocates question-page actions under it.
+const SITEWIDE_URL_CAPS = Object.freeze({ 'memphisseniorcarehomes.com': 10 });
+
+// Every outbound anchor href, counted the way the validator counts them.
+function countOutboundHrefs(html, counts) {
+  for (const m of html.matchAll(/<a\s[^>]*href="(https?:\/\/[^"]+)"/g)) {
+    let u; try { u = new URL(m[1].replaceAll('&amp;', '&')); } catch { continue; }
+    counts.set(u.href, (counts.get(u.href) || 0) + 1);
+  }
+  return counts;
+}
+
 function servedHtmlFiles(root) {
   const admitted = admittedRoutes(root);
   const out = [];
@@ -65,4 +79,4 @@ function servedHtmlFiles(root) {
   return out.sort();
 }
 
-module.exports = { INTERNAL_DIRS, admittedRoutes, routeForHtmlRel, isInternalRel, isServedHtmlRel, servedHtmlFiles };
+module.exports = { SITEWIDE_URL_CAPS, countOutboundHrefs, INTERNAL_DIRS, admittedRoutes, routeForHtmlRel, isInternalRel, isServedHtmlRel, servedHtmlFiles };

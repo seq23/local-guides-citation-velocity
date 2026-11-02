@@ -8,6 +8,7 @@
  *   - a search is classified to its vertical and matched to a canonical guide only on a
  *     specific word, never on the vertical's vocabulary alone (else: missing guide);
  *   - the page's one action is re-pointed, and related links come back out cleanly;
+ *   - no question-page action pushes a capped canonical URL past its sitewide cap (G3);
  *   - topics put Memphis senior care first and take measured seeds per vertical.
  * Every pin is also proven against a broken input (a check that cannot fail is not one).
  */
@@ -15,7 +16,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { classify, matchGuide, piProblems, setAction, withoutRelatedLink } = require('../search_loop/fold_in');
+const { classify, matchGuide, chooseAction, piProblems, setAction, withoutRelatedLink } = require('../search_loop/fold_in');
 const { topicsFor } = require('../search_loop/seed_topics');
 
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -78,5 +79,38 @@ pin('topics: senior care first, measured seeds per vertical, excluded words neve
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-if (n < 12) { console.error(`search-loop fold-in tests: only ${n} pins ran`); process.exit(1); }
+// G3 cap (run 41456376345): the senior home was already linked 10 times sitewide, and
+// unmatched senior questions all pointed at it, so the release profile counted 13.
+const realSnap = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'canonical_route_snapshot.json'), 'utf8'));
+const SENIOR_HOME = 'https://memphisseniorcarehomes.com/';
+const unmatched = ['assisted living memphis tn', 'senior living memphis tn', 'senior care memphis tn', 'memory care memphis tn', 'senior services memphis tn', 'assisted living memphis area', 'senior care germantown tn', 'assisted living bartlett tn', 'nursing home memphis', 'elder care memphis', 'senior care cordova', 'aging parent memphis', 'dementia care memphis tn'];
+pin('unmatched senior questions never push a canonical URL past its sitewide cap', () => {
+  const cap = 10;
+  const caps = { 'memphisseniorcarehomes.com': cap };
+  const atCap = () => new Map([[SENIOR_HOME, cap]]);
+  // Fixture proof: these searches have no matching guide, so the old rule sent every one home.
+  const homeBound = unmatched.filter((q) => !matchGuide(q, byId['senior-living'], realSnap));
+  assert.ok(homeBound.length >= 3, `fixture lost its unmatched searches (${homeBound.length})`);
+  const used = atCap();
+  const picks = homeBound.map((q) => chooseAction(q, byId['senior-living'], realSnap, cfg, used, caps));
+  assert.strictEqual(picks.length, homeBound.length);
+  assert.ok(picks.every((p) => p.href !== SENIOR_HOME), 'a question still points at the full home URL');
+  for (const [u, k] of used) assert.ok(k <= cap, `${u} linked ${k} times, cap ${cap}`);
+  assert.strictEqual(chooseAction('assisted living memphis tn', byId['senior-living'], realSnap, cfg, atCap(), caps).href, 'https://memphisseniorcarehomes.com/memphis-tn/');
+  // Negative proof: with the cap off, the same searches go home and break it.
+  const naive = atCap();
+  for (const q of homeBound) chooseAction(q, byId['senior-living'], realSnap, cfg, naive, {});
+  assert.ok(naive.get(SENIOR_HOME) > cap, 'the uncapped rule should have pushed the home over the cap');
+});
+pin('under the cap the first choice is unchanged, and when every URL is full the page stays on this site', () => {
+  assert.strictEqual(chooseAction('assisted living memphis tn', byId['senior-living'], realSnap, cfg, new Map()).href, SENIOR_HOME);
+  assert.strictEqual(chooseAction('how much does assisted living cost in memphis', byId['senior-living'], snapshot, cfg, new Map()).href, 'https://memphisseniorcarehomes.com/guides/assisted-living-cost-memphis/');
+  const full = new Map((realSnap.domains['memphisseniorcarehomes.com'] || []).map((r) => [new URL(`https://memphisseniorcarehomes.com${r}`).href, 10]));
+  const p = chooseAction('assisted living memphis tn', byId['senior-living'], realSnap, cfg, full);
+  assert.ok(p.capped && p.href === `${cfg.base_url}/senior-living/`, p.href);
+  // Uncapped hosts keep their first choice however often it is linked.
+  assert.strictEqual(chooseAction('what happens at a uscis medical exam', byId['uscis-medical'], snapshot, cfg, new Map([['https://uscisexam.com/', 5000]])).href, 'https://uscisexam.com/');
+});
+
+if (n < 14) { console.error(`search-loop fold-in tests: only ${n} pins ran`); process.exit(1); }
 console.log(`search-loop fold-in tests: ${n} pins passed`);
