@@ -15,8 +15,11 @@
  *   2,137 with no ownership line   2,137 with no Organization logo
  *
  * Severity is STRONG_WARNING by owner rule (no content blockers, 2026-09-23): a
- * head value is a search-quality defect, not a broken route. It still exits 1 on
- * a breach, and it refuses to pass having graded nothing (Rule 0).
+ * head value is a search-quality defect, not a broken route. Lengths follow the
+ * 2 Nov 2026 ruling (scripts/lib/floor_rule.js): over a ceiling never fails - the
+ * installer trims titles and descriptions through fitTitle / fitDescription - and
+ * under a floor fails only below 75% of it; both are counted as notes otherwise.
+ * It refuses to pass having graded nothing (Rule 0).
  *
  * sameAs is reported, never failed: data/network/network_identity_registry.json
  * prohibits unverified sameAs URLs and data/authority/verified_same_as_registry.json
@@ -32,6 +35,7 @@ const c = require('../lib/served_head_contract');
 const { portfolioHosts } = require('../install_served_head_contract');
 const { conversionPage, selfTest: claritySelfTest } = require('../lib/clarity_page');
 const { fitTitle } = require('../lib/search_snippet');
+const floorRule = require('../lib/floor_rule');
 
 // Measured 2026-10-25: 2,137 pages in dist/. The floor is far below that and far
 // above what a truncated or unbuilt tree exposes.
@@ -52,6 +56,8 @@ const concentrationExempt = [];
 if (!fs.existsSync(DIST)) stops.push(`${path.relative(ROOT, DIST)}/ does not exist; nothing was graded. Run npm run build first.`);
 
 const errors = [];
+for (const broken of floorRule.selfTest()) errors.push({ page: 'fixture', issue: 'floor_rule_regression', detail: broken });
+const lengthNotes = { title_over_ceiling: 0, title_near_floor: 0, description_over_ceiling: 0, description_near_floor: 0 };
 // Different subjects and vertical qualifiers must survive the brand budget.
 for (const pair of [
   ['What mistakes cause problems with dental insurance verification?', 'What mistakes cause problems with neuropsych evaluation costs?'],
@@ -98,8 +104,9 @@ for (const abs of pages) {
   // b1: title 30-65.
   const title = c.titleOf(html);
   if (!title) add('title_missing', 'no <title>');
-  else if (title.length < c.MIN_TITLE_CHARS) add('title_below_floor', `${title.length} < ${c.MIN_TITLE_CHARS}: "${title}"`);
-  else if (title.length > c.MAX_TITLE_CHARS) add('title_over_ceiling', `${title.length} > ${c.MAX_TITLE_CHARS}: "${title}"`);
+  else if (floorRule.belowHardFloor(title.length, c.MIN_TITLE_CHARS)) add('title_below_floor', `${title.length} < ${floorRule.hardFloor(c.MIN_TITLE_CHARS)} (75% of ${c.MIN_TITLE_CHARS}): "${title}"`);
+  else if (title.length < c.MIN_TITLE_CHARS) lengthNotes.title_near_floor += 1;
+  else if (title.length > c.MAX_TITLE_CHARS) lengthNotes.title_over_ceiling += 1;
 
   // b10 + e9: publication identity survives trimming; recording is scoped.
   if (title && !title.includes(c.SITE_NAME)) add('title_brand_missing', title);
@@ -117,8 +124,9 @@ for (const abs of pages) {
   if (descTags.length !== 1) add('description_count', `${descTags.length} meta description tag(s)`);
   else {
     const d = c.descOf(html);
-    if (d.length < c.MIN_DESCRIPTION_CHARS) add('description_below_floor', `${d.length} < ${c.MIN_DESCRIPTION_CHARS}: "${d}"`);
-    else if (d.length > c.MAX_DESCRIPTION_CHARS) add('description_over_ceiling', `${d.length} > ${c.MAX_DESCRIPTION_CHARS}`);
+    if (floorRule.belowHardFloor(d.length, c.MIN_DESCRIPTION_CHARS)) add('description_below_floor', `${d.length} < ${floorRule.hardFloor(c.MIN_DESCRIPTION_CHARS)} (75% of ${c.MIN_DESCRIPTION_CHARS}): "${d}"`);
+    else if (d.length < c.MIN_DESCRIPTION_CHARS) lengthNotes.description_near_floor += 1;
+    else if (d.length > c.MAX_DESCRIPTION_CHARS) lengthNotes.description_over_ceiling += 1;
   }
 
   // b6: the complete social set, on our own host, with a large card.
@@ -261,6 +269,8 @@ const report = {
   },
   portfolio_hosts: [...hosts],
   reported_not_failed: {
+    length_notes: lengthNotes,
+    length_rule: 'Owner ruling 2 Nov 2026 (scripts/lib/floor_rule.js): over a ceiling never fails (the installer trims); under a floor fails only below 75% of it.',
     organization_sameAs_missing: sameAsMissing,
     howto_without_provable_steps: howToUnprovable.length,
     howto_without_provable_steps_pages: howToUnprovable,
