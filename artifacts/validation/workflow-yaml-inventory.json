@@ -1,8 +1,8 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-11-01T06:37:24.704Z",
-  "workflow_count": 13,
+  "generated_at": "2026-11-02T06:48:43.500Z",
+  "workflow_count": 14,
   "workflows": [
     {
       "path": ".github/workflows/ci-health-recovery.yml",
@@ -245,8 +245,7 @@
         "_artifact_validation_manifest.json",
         "data/migrations/2026-10-07_model_names_out_of_query_fields.json",
         "data/signals/query_class_occupancy_highwater.json",
-        "content/_shared/content_state.json",
-        "feeds/promotion-candidates.json"
+        "content/_shared/content_state.json"
       ],
       "forbidden_runtime_mutations": [
         ".github/**",
@@ -299,10 +298,37 @@
       ],
       "required_artifacts": [
         "data/search_intelligence/**",
-        "artifacts/validation/search-intelligence-*.json",
-        "artifacts/validation/validator-materiality-hostile.json"
+        "artifacts/validation/search-intelligence-*.json"
       ],
       "validation_owner": "citation/search-intelligence validators"
+    },
+    {
+      "path": ".github/workflows/search-loop.yml",
+      "name": "Search Loop",
+      "trigger": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "primary_command": "unknown",
+      "repo_lane": "manual-maintenance",
+      "current_status": "keep",
+      "reason": "Non-canonical workflow requires review.",
+      "allowed_runtime_mutations": [],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [],
+      "validation_owner": "validation registry and workflow topology validators"
     },
     {
       "path": ".github/workflows/search-outcomes-weekly.yml",
