@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 const fs=require('fs'),path=require('path');
+// Word floors fail only below 75% of the floor; over any length never fails (owner ruling 2 Nov 2026, scripts/lib/floor_rule.js).
+const {belowHardFloor}=require('../lib/floor_rule');
 const ROOT=path.resolve(__dirname,'../..');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const errors=[],warnings=[];
@@ -30,10 +32,10 @@ for(const p of statePages){
  if(!String(p.dated_primary_fact||'').includes(p.state.name)||!String(p.dated_primary_fact||'').match(/20\d{2}-\d{2}-\d{2}/))errors.push(`${p.slug}:dated_fact_not_state_specific`);
  const sectionCount=(p.sections||[]).length;if(sectionCount<3)errors.push(`${p.slug}:insufficient_decision_sections:${sectionCount}`);else if(sectionCount!==5)warnings.push(`${p.slug}:section_count_advisory:${sectionCount}`);
  let projected=wc([p.title,p.description,p.dated_primary_fact,...(p.sections||[]).flatMap(s=>[s.q,s.a,...(s.checklist||[]),...(s.red_flags||[])])].join(' '));
- if(projected<250)errors.push(`${p.slug}:unusably_thin_projected_words:${projected}`);else if(projected<650)warnings.push(`${p.slug}:projected_depth_advisory:${projected}`);
- if(!Number.isInteger(p.self_healing?.projected_word_count)||p.self_healing.projected_word_count<250)errors.push(`${p.slug}:self_healing_unusable_words:${p.self_healing?.projected_word_count}`);else if(p.self_healing.projected_word_count<650)warnings.push(`${p.slug}:self_healing_depth_advisory:${p.self_healing.projected_word_count}`);
+ if(belowHardFloor(projected,250))errors.push(`${p.slug}:unusably_thin_projected_words:${projected}`);else if(projected<650)warnings.push(`${p.slug}:projected_depth_advisory:${projected}`);
+ if(!Number.isInteger(p.self_healing?.projected_word_count)||belowHardFloor(p.self_healing.projected_word_count,250))errors.push(`${p.slug}:self_healing_unusable_words:${p.self_healing?.projected_word_count}`);else if(p.self_healing.projected_word_count<650)warnings.push(`${p.slug}:self_healing_depth_advisory:${p.self_healing.projected_word_count}`);
  for(const [i,s] of (p.sections||[]).entries()){
-  const words=wc(s.a);if(words<20||words>250)errors.push(`${p.slug}:section_${i+1}_unusable_length:${words}`);else if(words<45||words>110)warnings.push(`${p.slug}:section_${i+1}_length_advisory:${words}`);
+  const words=wc(s.a);if(belowHardFloor(words,20))errors.push(`${p.slug}:section_${i+1}_unusable_length:${words}`);else if(words<45||words>110)warnings.push(`${p.slug}:section_${i+1}_length_advisory:${words}`);
   if(!String(s.a).includes(p.state.name))errors.push(`${p.slug}:faq_${i+1}_not_state_specific`);
   if(/start with the current governing source|use the primary federal or state source identified on this page|source registry was reviewed/i.test(s.a))errors.push(`${p.slug}:faq_${i+1}_legacy_generic`);
   answers.push({route:p.slug,index:i+1,text:s.a});add(exact,s.a,p.slug);add(patterns,norm(s.a),p.slug);
@@ -50,12 +52,12 @@ for(const p of automaticPages){
  if((p.source_urls||[]).length<1)errors.push(`${p.slug}:automatic_source_urls_missing`);
  if(!String(p.dated_primary_fact||'').match(/20\d{2}-\d{2}-\d{2}/))errors.push(`${p.slug}:automatic_dated_fact_missing`);
  const projected=wc([p.title,p.description,p.bodyHtml,p.dated_primary_fact,...(p.sections||[]).flatMap(s=>[s.q,s.a,...(s.checklist||[]),...(s.red_flags||[])])].join(' '));
- if(projected<200)errors.push(`${p.slug}:automatic_unusably_thin:${projected}`);else if(projected<450)warnings.push(`${p.slug}:automatic_depth_advisory:${projected}`);
+ if(belowHardFloor(projected,200))errors.push(`${p.slug}:automatic_unusably_thin:${projected}`);else if(projected<450)warnings.push(`${p.slug}:automatic_depth_advisory:${projected}`);
  if(p.self_healing?.status!=='REPAIRED_AND_RESCORED'||p.self_healing?.stage!=='SOURCE_READY')errors.push(`${p.slug}:automatic_self_heal_status`);
- if(!Number.isInteger(p.self_healing?.projected_word_count)||p.self_healing.projected_word_count<200)errors.push(`${p.slug}:automatic_self_healing_unusable_words:${p.self_healing?.projected_word_count}`);else if(p.self_healing.projected_word_count<450)warnings.push(`${p.slug}:automatic_self_healing_depth_advisory:${p.self_healing.projected_word_count}`);
+ if(!Number.isInteger(p.self_healing?.projected_word_count)||belowHardFloor(p.self_healing.projected_word_count,200))errors.push(`${p.slug}:automatic_self_healing_unusable_words:${p.self_healing?.projected_word_count}`);else if(p.self_healing.projected_word_count<450)warnings.push(`${p.slug}:automatic_self_healing_depth_advisory:${p.self_healing.projected_word_count}`);
  if(!p.content_atom?.atom_id||!p.content_atom?.uniqueness_key)errors.push(`${p.slug}:automatic_page_atom_missing`);
  for(const [i,section] of (p.sections||[]).entries()){
-  const count=wc(section.a);if(count<20||count>250)errors.push(`${p.slug}:automatic_section_${i+1}_unusable_length:${count}`);else if(count<45||count>110)warnings.push(`${p.slug}:automatic_section_${i+1}_length_advisory:${count}`);
+  const count=wc(section.a);if(belowHardFloor(count,20))errors.push(`${p.slug}:automatic_section_${i+1}_unusable_length:${count}`);else if(count<45||count>110)warnings.push(`${p.slug}:automatic_section_${i+1}_length_advisory:${count}`);
   if(!section.content_atom?.atom_id||!section.content_atom?.uniqueness_key)errors.push(`${p.slug}:automatic_faq_${i+1}_atom_missing`);
   if(!String(section.a||'').toLowerCase().includes(String(p.title||'').replace(/[?]+$/,'').toLowerCase().slice(0,24)))errors.push(`${p.slug}:automatic_faq_${i+1}_topic_specificity`);
   automaticAnswers.push({route:p.slug,index:i+1,text:section.a});add(automaticExact,section.a,p.slug);add(automaticPatterns,norm(section.a),p.slug);

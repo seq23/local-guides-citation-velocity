@@ -1984,7 +1984,7 @@
         "evidence",
         "self-healing"
       ],
-      "risk_prevented": "Scaled pages could ship without state-specific evidence, minimum usable decision content, or unique answers; editorial length targets are advisory.",
+      "risk_prevented": "Scaled pages could ship without state-specific evidence, minimum usable decision content, or unique answers; word floors fail only below 75% of the floor, over-length never fails, editorial length targets are advisory.",
       "why_existing_checks_do_not_cover": "The atom gate checks structural uniqueness but not source depth, similarity concentration, or state-page word counts.",
       "estimated_runtime_seconds": 15,
       "timeout_seconds": 120,
@@ -2510,7 +2510,7 @@
     },
     {
       "id": "search-snippet-floors",
-      "title": "Served pages carry a title of at least 30 and a meta description of at least 120 characters (warning only)",
+      "title": "Served pages carry a title of at least 30 and a meta description of at least 120 characters; fails only below 75% of each floor (23 / 90), shortfalls above that and any length over a ceiling are notes (warning only)",
       "path": "scripts/validators/validate_search_snippet_floors.js",
       "command": "node scripts/validators/validate_search_snippet_floors.js",
       "status": "ACTIVE",
@@ -2554,7 +2554,7 @@
     },
     {
       "id": "served-head-contract",
-      "title": "The served tree keeps the head and disclosure contract: title 30-65, description 120-160, complete social set, Organization with logo, ownership disclosure, capped link concentration",
+      "title": "The served tree keeps the head and disclosure contract: title 30-65, description 120-160 (fails only below 75% of a floor; over a ceiling never fails, the installer trims), complete social set, Organization with logo, ownership disclosure, capped link concentration",
       "path": "scripts/validators/validate_served_head_contract.js",
       "command": "node scripts/validators/validate_served_head_contract.js",
       "status": "ACTIVE",

@@ -2,6 +2,9 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { belowHardFloor, hardFloor } = require('./lib/floor_rule');
+// 120 words is the target; a page fails only below 75% of it (owner ruling 2 Nov 2026).
+const MIN_WORDS = 120;
 
 const ROOT = path.resolve(__dirname, '..');
 const dir = path.join(ROOT,'insights');
@@ -21,7 +24,7 @@ for (const f of files) {
   if (!/bottom/.test(html)) errors.push(f+" no bottom marker");
 
   const wc = html.replace(/<[^>]+>/g,' ').split(/\s+/).filter(Boolean).length;
-  if (wc < 120) errors.push(f+" too short");
+  if (belowHardFloor(wc, MIN_WORDS)) errors.push(`${f} too short: ${wc} words < ${hardFloor(MIN_WORDS)} (75% of ${MIN_WORDS})`);
 }
 
 if (errors.length){
