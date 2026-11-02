@@ -38,6 +38,7 @@ const crypto = require('crypto');
 const cp = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
+const { SITEWIDE_URL_CAPS, countOutboundHrefs, servedHtmlFiles } = require('../lib/served_tree.js');
 const CFG_REL = 'search-loop.config.json';
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const readJson = (rel, fb) => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch { return fb; } };
@@ -102,6 +103,62 @@ function matchGuide(query, vertical, snapshot) {
     if (shared >= 2 && specific >= 1 && score >= 0.5 && (!best || score > best.score || (score === best.score && route.length < best.route.length))) best = { route, score: Math.round(score * 100) / 100 };
   }
   return best;
+}
+
+// ---- the page's one action, under the sitewide per-URL cap (G3) ----
+// A capped host (served_tree.SITEWIDE_URL_CAPS) may not have any one URL linked more
+// than its cap across the served tree. The first choice is unchanged: the matched guide,
+// else the canonical home. When that URL is already at the cap (run 41456376345: the
+// home was linked 10 times by the senior hubs and pieces, and three unmatched senior
+// questions made it 13), the page takes the next canonical URL that is still under it -
+// a city route named in the search, then the guides sharing the most words - and only
+// when every one is full does it point at this site's own vertical hub. `used` is the
+// sitewide count (everything but question-page actions) and is updated as pages take URLs.
+const ACTION_RE = /<p class="site-action"><a class="button" href="[^"]*">[\s\S]*?<\/a><\/p>/;
+function localityRoutes(query, vertical, snapshot) {
+  const q = new Set(words(query));
+  return ((snapshot.domains || {})[vertical.canonical_domain] || [])
+    .filter((r) => /^\/[a-z0-9-]+\/$/.test(r) && r !== '/guides/')
+    .map((r) => ({ r, w: words(r.replace(/\//g, ' ')) }))
+    .filter(({ w }) => w.length && w.every((x) => q.has(x)))
+    .sort((a, b) => b.w.length - a.w.length || a.r.localeCompare(b.r))
+    .map(({ r }) => r);
+}
+function looseGuides(query, vertical, snapshot) {
+  const q = [...new Set(words(query).map(stem))];
+  return guidesFor(vertical.canonical_domain, snapshot)
+    .map((r) => { const slug = new Set(words(r.replace(/^\/guides\//, '')).map(stem)); return { r, shared: q.filter((w) => slug.has(w)).length }; })
+    .filter((g) => g.shared > 0)
+    .sort((a, b) => b.shared - a.shared || a.r.length - b.r.length || a.r.localeCompare(b.r))
+    .map(({ r }) => r);
+}
+function chooseAction(query, vertical, snapshot, cfg, used, caps = SITEWIDE_URL_CAPS) {
+  const guide = matchGuide(query, vertical, snapshot);
+  const cap = caps[vertical.canonical_domain];
+  const routes = [guide ? guide.route : '/'];
+  if (cap !== undefined) routes.push(...localityRoutes(query, vertical, snapshot), ...looseGuides(query, vertical, snapshot), '/');
+  for (const r of [...new Set(routes)]) {
+    const href = new URL(`https://${vertical.canonical_domain}${r}`).href;
+    if (cap === undefined || (used.get(href) || 0) < cap) {
+      used.set(href, (used.get(href) || 0) + 1);
+      return { href, label: `Read the full guide on ${vertical.canonical_domain}`, guide };
+    }
+  }
+  return { href: `${cfg.base_url}/${vertical.id}/`, label: cfg.action.label, guide, capped: true };
+}
+function sitewideCounts(livePages) {
+  const questionRels = new Set(livePages.map((p) => p.rel || routeToRel(p.route)));
+  const counts = new Map();
+  for (const f of servedHtmlFiles(ROOT)) {
+    const rel = path.relative(ROOT, f).replace(/\\/g, '/');
+    if (!rel.startsWith('questions/') && !questionRels.has(rel)) countOutboundHrefs(fs.readFileSync(f, 'utf8'), counts);
+  }
+  // Question pages count everything but their own action (that is what is being chosen).
+  for (const rel of questionRels) {
+    const f = path.join(ROOT, rel);
+    if (fs.existsSync(f)) countOutboundHrefs(fs.readFileSync(f, 'utf8').replace(ACTION_RE, ''), counts);
+  }
+  return counts;
 }
 
 function slugify(q) { return words(q).join('-').slice(0, 80); }
@@ -211,7 +268,7 @@ function run(opts = {}) {
   const verticals = V.verticals || [];
   const ledgerRel = `${cfg.ledger_dir || 'data/search-loop'}/pages.json`;
   const book = readJson(ledgerRel, null);
-  const census = { live: 0, pi_dropped: 0, matched: 0, missing: 0, unclassified: 0, hosts_unlinked: 0, frozen: 0, retired: 0 };
+  const census = { live: 0, pi_dropped: 0, matched: 0, missing: 0, unclassified: 0, at_cap: 0, hosts_unlinked: 0, frozen: 0, retired: 0 };
   if (!book || !Array.isArray(book.pages)) {
     console.log('search-loop fold-in: NAMED NOTE [NO_LEDGER] data/search-loop/pages.json does not exist yet; nothing to fold in');
     return census;
@@ -230,6 +287,7 @@ function run(opts = {}) {
   const missingPrev = new Map((readJson(V.missing_guides_file, { items: [] }).items || []).map((i) => [i.query, i]));
   const missing = [];
   const keep = [];
+  const used = sitewideCounts(book.pages.filter((p) => p.status === 'live'));
   for (const page of book.pages) {
     if (page.status !== 'live') { keep.push(page); continue; }
     const file = path.join(ROOT, page.rel || routeToRel(page.route));
@@ -254,9 +312,9 @@ function run(opts = {}) {
       census.pi_dropped += 1;
       continue;
     }
-    const guide = v ? matchGuide(page.query, v, snapshot) : null;
-    const href = v ? `https://${v.canonical_domain}${guide ? guide.route : '/'}` : `${cfg.base_url}/`;
-    const label = v ? `Read the full guide on ${v.canonical_domain}` : cfg.action.label;
+    const action = v ? chooseAction(page.query, v, snapshot, cfg, used) : { href: `${cfg.base_url}/`, label: cfg.action.label, guide: null };
+    const { href, label, guide } = action;
+    if (action.capped) { census.at_cap += 1; console.log(`NAMED NOTE [CANONICAL_URLS_AT_CAP] ${page.route}: every ${v.canonical_domain} URL is at its sitewide cap; the action points at ${href}`); }
     const next = withEditorialMarks(withSiteEntities(setAction(html, href, label) || html, cfg.base_url));
     if (next && next !== html) { fs.writeFileSync(file, next); html = next; }
     page.hash = sha256(html);
@@ -346,11 +404,11 @@ function run(opts = {}) {
     if (contract && contract.counts) { contract.counts.approved_route_retirements = ret.retirements.filter((r) => r.status === 'ACTIVE_301').length; writeJson(contractRel, contract); }
   }
 
-  console.log(`search-loop fold-in: live=${census.live} pi_dropped=${census.pi_dropped} matched_guides=${census.matched} missing_guides=${census.missing} unclassified=${census.unclassified} hosts_unlinked=${census.hosts_unlinked} frozen=${census.frozen} retired=${census.retired}`);
+  console.log(`search-loop fold-in: live=${census.live} pi_dropped=${census.pi_dropped} matched_guides=${census.matched} missing_guides=${census.missing} unclassified=${census.unclassified} at_cap=${census.at_cap} hosts_unlinked=${census.hosts_unlinked} frozen=${census.frozen} retired=${census.retired}`);
   return census;
 }
 
-module.exports = { run, classify, matchGuide, piProblems, setAction, withoutRelatedLink };
+module.exports = { run, classify, matchGuide, chooseAction, localityRoutes, piProblems, setAction, withoutRelatedLink };
 
 if (require.main === module) {
   try { run({ skipAdmission: process.argv.includes('--skip-admission') }); }
