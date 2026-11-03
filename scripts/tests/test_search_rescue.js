@@ -11,13 +11,18 @@ for (const row of rescue.policy.retirements) {
 }
 assert.equal(rescue.allowed('/questions/unreviewed-new-page/'), false);
 const { inventoryCoverage } = require('../lib/public_inventory_coverage');
-const coverageFixture = { admitted: ['/hub/'], rendered: ['/hub/'], retirements: [{ source_path: '/old/', target_path: '/hub/', status: 'ACTIVE_301' }], redirects: [['/old/', '/hub/', '301']], minimum: 2 };
+const coverageFixture = { admitted: ['/hub/'], rendered: ['/hub/'], retirements: [{ source_path: '/old/', target_path: '/hub/', status: 'ACTIVE_301' }], redirects: [['/old/', '/hub/', '301']], sitemap: ['https://example.com/hub/'] };
 assert.deepEqual(inventoryCoverage(coverageFixture).issues, []);
 assert.ok(inventoryCoverage({ ...coverageFixture, rendered: [] }).issues.length);
 assert.ok(inventoryCoverage({ ...coverageFixture, redirects: [] }).issues.length);
 assert.ok(inventoryCoverage({ ...coverageFixture, redirects: [['/old/', '/hub/', '302']] }).issues.length);
 assert.ok(inventoryCoverage({ ...coverageFixture, admitted: [] }).issues.length);
 assert.ok(inventoryCoverage({ ...coverageFixture, retirements: [] }).issues.length);
+// The floor follows the sitemap: an empty sitemap, or a listed page that is not built or not admitted, fails.
+assert.ok(inventoryCoverage({ ...coverageFixture, sitemap: [] }).issues.some(i => /sitemap lists no pages/.test(i)));
+assert.ok(inventoryCoverage({ ...coverageFixture, sitemap: ['/hub/', '/missing/'] }).issues.some(i => /\/missing/.test(i)));
+assert.ok(inventoryCoverage({ ...coverageFixture, admitted: ['/hub/', '/missing/'], sitemap: ['/hub/', '/missing/'] }).issues.some(i => /missing from indexable tree: \/missing/.test(i)));
+assert.throws(() => inventoryCoverage({ ...coverageFixture, minimum: 2000 }), /fixed page minimum is retired/);
 const html = '<html><head></head><body><main><aside>Old preamble</aside><h1>Topic</h1><p data-definition="true">A source-backed definition.</p><section data-direct-answer="true"><p>A factual answer.</p></section><a href="/trt/states/alabama/trt-legality/">State rule</a></main></body></html>';
 const meta = { route: '/trt/', date: '2026-11-02', published: '2026-06-19', description: 'Description' };
 const result = shape(html, meta);

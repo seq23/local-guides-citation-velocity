@@ -13,26 +13,11 @@ const sitemapText=['sitemap.xml',...(fs.existsSync(path.join(ROOT,'sitemaps'))?w
 const admission=fs.existsSync(path.join(ROOT,'data/content/page_admission_registry.json'))?fs.readFileSync(path.join(ROOT,'data/content/page_admission_registry.json'),'utf8'):'';
 const errors=[],warnings=[],indexable=[];
 // ------------------------------------------------------------------- Rule 0
-// What this used to do, and why that was wrong
-// --------------------------------------------
-// walk() below sweeps the repo for .html and grades whatever it finds. On the
-// real tree that is 2166 indexable pages. On a truncated or half-checked-out
-// tree it found 6, printed "SEARCH QUALITY BASICS PASS: 6 indexable HTML pages"
-// and exited 0 - reproduced verbatim in a sandbox. Every page that was not there
-// was silently counted as compliant: the same green line covers "2166 pages all
-// carry a title, description, canonical and one h1" and "I could see six files".
-// Titles, canonicals and duplicate detection are exactly the checks that a
-// truncated tree makes look perfect, because absence is indistinguishable from
-// compliance when nothing counts what was examined.
-//
-// The fix is a FLOOR, not a loosened assertion. The counts below were measured
-// on the real tree on 2026-08-29 (`node scripts/validators/validate_search_quality_basics.js`
-// reported "2166 indexable HTML pages; 193 redirect sources checked"). MIN_* are
-// set below the measured values so ordinary publishing churn does not trip them,
-// but far above what a truncated tree exposes. Changing them must be deliberate:
-// re-measure by running this validator and reading the counts it prints.
-const MEASURED_INDEXABLE_2026_08_29=2166;
-const MIN_INDEXABLE_PAGES=1900;
+// walk() sweeps the repo for .html; a truncated tree once printed "PASS: 6 indexable
+// HTML pages". The page floor now follows the site's own sitemap and admission
+// ledger (scripts/lib/public_inventory_coverage.js): every listed page must be
+// built, and an empty sitemap or ledger fails. No fixed page count (owner ruling
+// 3 Nov 2026). Redirect sources keep their measured floor: consolidation only adds them.
 const MEASURED_REDIRECT_SOURCES_2026_08_29=193;
 const MIN_REDIRECT_SOURCES=150;
 const stops=[];
@@ -107,13 +92,13 @@ for(const page of indexable){
 for(const files of exact.values())if(files.length>1)errors.push(`exact_duplicate_indexable_content:${files.join(',')}`);
 // Page Release Law §2A permits consolidation, but never silent disappearance.
 // Check every admitted file and every retirement's exact 301 before counting
-// either toward the unchanged historical anti-truncation floor.
+// either toward the sitemap-following floor.
 const coverage = require('../lib/public_inventory_coverage').inventoryCoverage({
   admitted: JSON.parse(admission).pages.map(p => p.path),
   rendered: indexable.map(p => p.route),
   retirements: JSON.parse(fs.readFileSync(path.join(ROOT, 'data/release/route_retirements.json'), 'utf8')).retirements,
   redirects: redirectText.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => l.split(/\s+/)),
-  minimum: MIN_INDEXABLE_PAGES
+  sitemap: require('../lib/public_inventory_coverage').sitemapRoutes(ROOT)
 });
 stops.push(...coverage.issues);
 if(redirects.size<MIN_REDIRECT_SOURCES)stops.push(`only ${redirects.size} redirect source(s) read from _redirects; expected at least ${MIN_REDIRECT_SOURCES} (measured ${MEASURED_REDIRECT_SOURCES_2026_08_29} on 2026-08-29).`);

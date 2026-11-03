@@ -37,9 +37,8 @@ const { conversionPage, selfTest: claritySelfTest } = require('../lib/clarity_pa
 const { fitTitle } = require('../lib/search_snippet');
 const floorRule = require('../lib/floor_rule');
 
-// Measured 2026-10-25: 2,137 pages in dist/. The floor is far below that and far
-// above what a truncated or unbuilt tree exposes.
-const MIN_PAGES = 1500;
+// The page floor is the sitemap's own route count (public_inventory_coverage.js):
+// every listed page must be graded in dist/.
 const admission = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/content/page_admission_registry.json'), 'utf8')).pages;
 const identity = route => route.replace(/\.html$/, '').replace(/\/$/, '') || '/';
 const expectedIntake = new Set(admission.filter(p => p.vertical !== 'global' || p.page_type === 'Insight').map(p => identity(p.path)));
@@ -261,7 +260,8 @@ if (!stops.length) {
   const coverage = require('../lib/public_inventory_coverage').inventoryCoverage({
     admitted: admission.map(p => p.path), rendered: gradedRoutes,
     retirements: JSON.parse(fs.readFileSync(path.join(ROOT, 'data/release/route_retirements.json'), 'utf8')).retirements,
-    redirects: fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8').split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => l.split(/\s+/)), minimum: MIN_PAGES
+    redirects: fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8').split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => l.split(/\s+/)),
+    sitemap: require('../lib/public_inventory_coverage').sitemapRoutes(ROOT)
   });
   stops.push(...coverage.issues);
 }
