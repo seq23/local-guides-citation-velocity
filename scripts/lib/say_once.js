@@ -43,6 +43,22 @@
  * carries no tags: trimming around an inline link is how a template pass mangles
  * one. Nothing here writes a sentence the page did not already carry.
  *
+ * AND NO PAGE LOSES A WORD IT HAS NOWHERE ELSE. This is the invariant that makes the
+ * pass safe, and it was added because the repo's own rendered-output-shrink-guard
+ * caught it missing: /dentistry/free-dental-clinics/ lists one line per city, and
+ * every line ends in the same tail -- "Free and low-cost dental clinics in Houston,
+ * TX - 4 verified entries, each with address, phone, eligibility, how to get an
+ * appointment and cost". The tail repeats, so the line looked like filler; but the
+ * line is ONE sentence, so cutting it took Houston, Los Angeles and Miami with it,
+ * along with source names and review dates elsewhere. Repeated template text is not
+ * worth one city.
+ *
+ * So before any sentence is given up, every word in it must still appear somewhere
+ * else in <main>. A candidate that would take the last copy of a word is refused and
+ * the next candidate is tried, which leaves the page over the cap rather than
+ * thinner than it should be -- the validator reports that, and reporting a repeat is
+ * cheaper than losing a fact.
+ *
  * Proven by scripts/tests/test_say_once.js; guarded on the served tree by
  * scripts/validators/check_page_quality_sample.js.
  */
@@ -229,7 +245,30 @@ function sayOnce(html, { cap = SLOT_MAX, n = SLOT_WORDS, passes = 600 } = {}) {
       const candidates = [];
       for (const b of found) candidates.push(...carriers(b, phrase, n));
       candidates.sort((a, b) => b.block.rank - a.block.rank || b.block.start - a.block.start);
-      const giveUp = candidates.slice(0, Math.max(0, times - cap));
+      // Spend candidates one at a time against a live word budget, so a cut is only
+      // taken when nothing in it is the page's last copy of that word.
+      const budget = new Map();
+      for (const word of wordsIn(plain(main))) budget.set(word, (budget.get(word) || 0) + 1);
+      const giveUp = [];
+      for (const candidate of candidates) {
+        if (giveUp.length >= Math.max(0, times - cap)) break;
+        // THE DEFINITION IS NEVER CUT. It is the page's load-bearing paragraph and
+        // the repo holds it to 40-60 words in "X is ..." form
+        // (velocity-canonical-anchor-links). On the Tennessee senior-living page the
+        // title appeared four times -- the H1, two provider-CTA headings and the
+        // definition -- and headings are not cuttable, so the definition was the only
+        // carrier this pass could reach and it took the whole sentence out, leaving
+        // "See <link>". That validator caught it. A page left one over the cap is
+        // reported by the ratchet; a page left without its definition is broken.
+        if (candidate.block.home === 'definition') continue;
+        const counts = new Map();
+        for (const word of wordsIn(candidate.span.text)) counts.set(word, (counts.get(word) || 0) + 1);
+        let safe = true;
+        for (const [word, used] of counts) if ((budget.get(word) || 0) <= used) { safe = false; break; }
+        if (!safe) continue;
+        for (const [word, used] of counts) budget.set(word, budget.get(word) - used);
+        giveUp.push(candidate);
+      }
       if (giveUp.length) { cutThisPass = giveUp; break; }
     }
     if (!cutThisPass) return out;
@@ -278,7 +317,7 @@ function sayOnce(html, { cap = SLOT_MAX, n = SLOT_WORDS, passes = 600 } = {}) {
  * appearance and loses the rest, and a list item that contains its own heading whole
  * is dropped. Nothing that says something new is touched.
  */
-function dropRepeatedFurniture(html) {
+function dropRepeatedFurniture(html, title = '') {
   let out = String(html);
 
   // 1. The same heading-and-list pair, more than once: keep the first.
@@ -310,13 +349,17 @@ function dropRepeatedFurniture(html) {
       if (b.tag !== 'li') continue;
       const before = main.slice(0, b.start - base);
       const heads = [...before.matchAll(/<(h[1-4]|button)\b[^>]*>([\s\S]*?)<\/\1>/gi)];
-      if (!heads.length) continue;
-      const heading = normalize(plain(heads[heads.length - 1][2]));
-      if (heading.split(' ').length < 5) continue;
       const item = normalize(plain(b.html));
-      if (!item.includes(heading)) continue;
-      // It restates the heading; drop it only if it adds almost nothing of its own.
-      if (item.split(' ').length - heading.split(' ').length > 6) continue;
+      // Its own heading, or the page's title: "Frame: State the exact decision behind
+      // <the whole page title>" is the same scaffolding bullet whichever of the two it
+      // echoes, and on the Tennessee senior-living page it was the title.
+      const echoes = [];
+      if (heads.length) echoes.push(normalize(plain(heads[heads.length - 1][2])));
+      if (title) echoes.push(normalize(plain(title)));
+      const echo = echoes.find((candidate) => candidate.split(' ').length >= 5 && item.includes(candidate));
+      if (!echo) continue;
+      // It restates one of them; drop it only if it adds almost nothing of its own.
+      if (item.split(' ').length - echo.split(' ').length > 6) continue;
       cut.push(b);
     }
     for (const b of cut.sort((a, b) => b.start - a.start)) out = out.slice(0, b.start) + out.slice(b.end);
@@ -324,4 +367,57 @@ function dropRepeatedFurniture(html) {
   return out;
 }
 
-module.exports = { sayOnce, dropRepeatedFurniture, plain, sentences, normalize, wordsIn, windowsOf, SLOT_WORDS, SLOT_MAX };
+
+/**
+ * THE TITLE ECHO. Section headings were generated by pasting the page's whole title
+ * into a question stem, so /neuropsych-eval-vs-iq-test-vs-psych-eval/ said
+ * "neuropsych evaluation vs psychological evaluation vs iq test" eighteen times --
+ * once in the H1, then in every H2 and every jump link -- and the Tennessee
+ * senior-living page said its title four times, one over the cap.
+ *
+ * The H1 directly above has already said it, so an H2 reading "What is the core
+ * difference in Assisted living vs memory care vs a senior care home in Tennessee"
+ * carries exactly as much as "What is the core difference?" and reads better for it.
+ * The title is removed from headings and jump links, with any preposition left
+ * dangling in front of it, and ONLY when what remains is still a question of three
+ * or more words -- a heading that is nothing but the title keeps it, because an
+ * empty heading is worse than a repeated one.
+ *
+ * The H1 itself is never touched, and neither are element ids or anchors: this
+ * rewrites visible text only, so the table of contents still lands where it did.
+ */
+function trimTitleEcho(html, title) {
+  const words = wordsIn(title);
+  if (words.length < 6) return String(html);
+  // The provider CTA headings are built from the title with its place clause cut off
+  // ("Assisted Living vs Memory Care vs a Senior Care Home" from "... in Tennessee"),
+  // so matching the whole title missed them and left the Tennessee page one over the
+  // cap. Try the longest prefix of six words or more the heading actually contains,
+  // so a truncated echo is still an echo.
+  //
+  // The phrase is spliced out of the ORIGINAL text, never rebuilt from the word list:
+  // an earlier version rebuilt from `wordsIn`, which is lower-cased, and turned
+  // "What should I know about ..." into "What should i know about ...". A pass that
+  // fixes a repeat by breaking every heading's capitals is not a fix.
+  const patterns = [];
+  for (let len = words.length; len >= 6; len--) {
+    const slice = words.slice(0, len).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    patterns.push(new RegExp(`(?:\\b(?:in|for|of|about|with|on|to|and|the|a|an)\\s+)?\\b${slice.join('[^A-Za-z0-9]+')}\\b[^A-Za-z0-9]*`, 'i'));
+  }
+  const tidy = (text) => {
+    const pattern = patterns.find((candidate) => candidate.test(text));
+    if (!pattern) return null;
+    let kept = text.replace(pattern, ' ').replace(/\s{2,}/g, ' ').trim();
+    kept = kept.replace(/\s+([,.;:?!])/g, '$1').replace(/[\s,;:]+$/, '');
+    if (wordsIn(kept).length < 3) return null;
+    if (!/[.?!]$/.test(kept)) kept = `${kept}?`;
+    return kept;
+  };
+  return String(html).replace(/<(h[2-4]|a)\b([^>]*)>([^<]+)<\/\1>/gi, (all, tag, attrs, text) => {
+    if (tag.toLowerCase() === 'a' && !/\bhref=["']#/.test(attrs)) return all;
+    const next = tidy(text);
+    return next ? `<${tag}${attrs}>${next}</${tag}>` : all;
+  });
+}
+
+module.exports = { sayOnce, dropRepeatedFurniture, trimTitleEcho, plain, sentences, normalize, wordsIn, windowsOf, SLOT_WORDS, SLOT_MAX };

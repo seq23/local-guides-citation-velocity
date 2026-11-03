@@ -2,7 +2,7 @@
 // Shared presentation rule: facts and FAQ answers come from the page's existing
 // source-backed content. No synthetic prices, timeframes, authors or review dates.
 const { resolveLinks } = require('./search_rescue');
-const { sayOnce, dropRepeatedFurniture, normalize } = require('./say_once');
+const { sayOnce, dropRepeatedFurniture, trimTitleEcho, normalize } = require('./say_once');
 const openings = require('../../config/search_rescue_openings.json');
 const esc = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
 const plain = s => String(s).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -94,8 +94,36 @@ function showSchemaFaq(html) {
   return rebuilt.replace(/<\/main>/i, `<section class="card" data-faq="true" data-schema-faq="true"><h2>Frequently asked questions</h2>${items}</section></main>`);
 }
 
+/**
+ * The opening definition on a page the content shaper does not touch.
+ *
+ * `shape()` only runs on content pages (`isContent` in apply_search_rescue.js), so
+ * the site's global pages -- /glossary/, /tools/ and friends -- never had an opening
+ * written for them. /glossary/ opened on "Short definitions in plain English. For
+ * official local guides and directories, use the canonical domains.": 23 words that
+ * define nothing, which is what Search Readiness b4 and d1 failed it for on 3 Nov
+ * 2026, and it was the one page of the five sampled that no template fix reached.
+ *
+ * A Quick answer block, a provider CTA and a rebuilt FAQ would all be wrong on a
+ * glossary or a methodology note, so this adds the one thing those pages were
+ * missing and nothing else: the definition paragraph, from the same
+ * config/search_rescue_openings.json the content pages already read, inserted
+ * straight after the H1. A route with no entry there is returned untouched, so this
+ * can never invent an opening for a page nobody has written one for.
+ */
+function withOpeningDefinition(html, route) {
+  const override = openings[route];
+  if (!override || !override.definition) return html;
+  const paragraph = `<p class="definition" data-definition="true">${esc(override.definition)}</p>`;
+  const existing = html.match(/<p\b[^>]*(?:data-definition=["']true["']|class=["'][^"']*definition[^"']*["'])[^>]*>[\s\S]*?<\/p>/i);
+  if (existing) return html.replace(existing[0], paragraph);
+  const h1 = html.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/i);
+  if (!h1) return html;
+  return html.replace(h1[0], `${h1[0]}${paragraph}`);
+}
+
 function shape(html, { route, description, date, published, title }) {
-  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 17, opening: openings[route] })).digest('hex');
+  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 22, opening: openings[route] })).digest('hex');
   if (html.includes(`data-search-rescue-input="${inputHash}"`)) return resolveLinks(html);
   const preservedInline = (html.match(/<p class="canonical-guide-inline"[^>]*>[\s\S]*?<\/p>/i) || [''])[0];
   const preservedAnswer = html.match(/(?:data-direct-answer=["']true["'][^>]*>|class=["'][^"']*answer-box[^"']*["'][^>]*>)[\s\S]*?<p\b[^>]*>([\s\S]*?)<\/p>/i);
@@ -189,6 +217,7 @@ function shape(html, { route, description, date, published, title }) {
   const stamp = `<p class="editorial-byline" data-editorial-byline="true">By <a href="/about">The Industry Guides</a>${published ? ` · Published <time datetime="${esc(published)}">${esc(published)}</time>` : ''} · Updated <time datetime="${esc(date)}">${esc(date)}</time></p>`;
   next = next.replace(/<\/main>/i, `${stamp}</main>`);
   // Last, so it sees every slot this function and the page builder produced.
-  return resolveLinks(sayOnce(dropRepeatedFurniture(next)));
+  const pageTitle = plain(title || h1);
+  return resolveLinks(sayOnce(dropRepeatedFurniture(trimTitleEcho(next, pageTitle), pageTitle)));
 }
-module.exports = { shape, plain };
+module.exports = { shape, withOpeningDefinition, plain };

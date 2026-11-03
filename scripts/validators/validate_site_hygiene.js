@@ -17,6 +17,7 @@
  *   clarity            - the Clarity map holds the registered host -> id
  *   indexnow_key       - the key file is committed at the root and is a valid key file
  *   registration       - every registered build step still runs in `npm run build`
+ *   page_quality_slots - no 8-word window more than three times in one <main>, ratcheted
  *   zero_paid_llm      - no scheduled paid model call; $0-only routing; probes dispatch-only
  *   build_result_cache - the gate builds once per commit; the wrapper keeps its refusals
  * Pages: dist/ when present (what ships), else every admitted rendered page passed
@@ -214,6 +215,25 @@ else if (read(kf).trim() !== kf.replace(/\.txt$/, '')) fail('indexnow_key', `${k
 }
 
 // zero paid LLM (owner policy 11 Oct 2026: "nothing should be paid ... cut the
+// page_quality_slots (Search Readiness q1, 3 Nov 2026): no 8-word window more than
+// three times in one <main>, ratcheted per served page. Rules and hostile fixtures in
+// scripts/lib/page_quality_slots_check.js, block in the registry. Folded in here
+// rather than registered as its own blocker because the release profile is capped at
+// 40 HARD_FAILs on purpose.
+{
+  const pq = reg.page_quality_slots;
+  if (!pq) fail('page_quality_slots', 'block missing from the registry');
+  else {
+    const { check, selfTest } = require('../lib/page_quality_slots_check.js');
+    const r = check(ROOT, { reg: pq });
+    for (const f of r.failures) fail('page_quality_slots', f);
+    for (const w of r.warnings) console.log(`  !! SITE HYGIENE WARNING [page_quality_slots]: ${w}`);
+    const proof = selfTest();
+    for (const m of proof.missed) fail('page_quality_slots', `negative proof no longer caught: ${m}`);
+    if (!r.failures.length && !proof.missed.length) console.log(`  page_quality_slots: ${r.stats.examined} served pages examined, ${r.stats.over_cap} still over the cap, none worse than baseline; ${proof.cases} negative proofs caught`);
+  }
+}
+
 // probes and make them free"): rules in scripts/lib/zero_paid_llm_check.js, block
 // in the registry. Hostile fixtures replay every run, so a guard that stopped
 // catching a scheduled paid call fails here rather than passing quietly.
