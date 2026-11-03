@@ -105,7 +105,17 @@ for(const page of indexable){
   const list=exact.get(hash)||[];list.push(page.rel);exact.set(hash,list);
 }
 for(const files of exact.values())if(files.length>1)errors.push(`exact_duplicate_indexable_content:${files.join(',')}`);
-if(indexable.length<MIN_INDEXABLE_PAGES)stops.push(`only ${indexable.length} indexable HTML page(s) found; expected at least ${MIN_INDEXABLE_PAGES} (the real tree measured ${MEASURED_INDEXABLE_2026_08_29} on 2026-08-29). The tree is unbuilt or truncated, so this check graded almost nothing.`);
+// Page Release Law §2A permits consolidation, but never silent disappearance.
+// Check every admitted file and every retirement's exact 301 before counting
+// either toward the unchanged historical anti-truncation floor.
+const coverage = require('../lib/public_inventory_coverage').inventoryCoverage({
+  admitted: JSON.parse(admission).pages.map(p => p.path),
+  rendered: indexable.map(p => p.route),
+  retirements: JSON.parse(fs.readFileSync(path.join(ROOT, 'data/release/route_retirements.json'), 'utf8')).retirements,
+  redirects: redirectText.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => l.split(/\s+/)),
+  minimum: MIN_INDEXABLE_PAGES
+});
+stops.push(...coverage.issues);
 if(redirects.size<MIN_REDIRECT_SOURCES)stops.push(`only ${redirects.size} redirect source(s) read from _redirects; expected at least ${MIN_REDIRECT_SOURCES} (measured ${MEASURED_REDIRECT_SOURCES_2026_08_29} on 2026-08-29).`);
 if(stops.length){
   fs.mkdirSync(path.join(ROOT,'artifacts/validation'),{recursive:true});

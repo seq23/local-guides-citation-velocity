@@ -75,7 +75,7 @@ const releasedButUnadvertised=[...livePages,...velocitySpecPages,...mediumCorpus
     && isRendered(route))
   .map(({route,page})=>({url:`https://theindustryguides.com${route}`,path:route,lastmod:page.date_modified||null,surface:'page',canonical_domain:'theindustryguides.com'}));
 if(releasedButUnadvertised.length)console.log(`PAGE ADMISSION REGISTRY: admitting ${releasedButUnadvertised.length} released route(s) that the published-URL inventory does not yet name`);
-const published=[...publishedInventory,...releasedButUnadvertised];
+const published=[...publishedInventory,...releasedButUnadvertised].filter(p => require('./lib/search_rescue').allowed(p.path));
 const insights=read('content/_live/insights.json').items;
 const medium=read('content/_live/medium_articles.json').items;
 const recommendations=read('data/citation_velocity/recommendations.json').recommendations;

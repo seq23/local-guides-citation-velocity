@@ -1819,7 +1819,7 @@ function writeSupplementalContent({ written, contentState, siteBase }) {
     if (name.endsWith('.html') && name !== 'index.html') fs.rmSync(path.join(ROOT, 'medium', name), { force: true });
   }
   for (const name of fs.readdirSync(path.join(ROOT, 'insights'))) {
-    if (name.endsWith('.html') && name !== 'index.html') fs.rmSync(path.join(ROOT, 'insights', name), { force: true });
+    if (name.endsWith('.html') && name !== 'index.html' && require('./lib/search_rescue').allowed(`/insights/${name}`)) fs.rmSync(path.join(ROOT, 'insights', name), { force: true });
   }
   const mediumItems = loadMediumSourceEntries();
   writeUtf8(MEDIUM_MANIFEST_PATH, JSON.stringify({
@@ -1898,8 +1898,8 @@ if (!item.cluster_path) {
     const bodyHtml = enforceValidationSiteContractsOnHtml(renderInsightPage(item));
     assertGeneratedHtmlBeforeWrite({ kind: 'insight', slug: item.publish_path, html: bodyHtml, minWords: 280, requireCanonBlocks: true });
     const contentHash = sha256(stripLastUpdated(bodyHtml));
-    contentState[item.publish_path] = { hash: contentHash, source_hash: sourceHash, lastmod };
-    writeUtf8(outPath, bodyHtml);
+    if (require('./lib/search_rescue').allowed(item.publish_path)) contentState[item.publish_path] = { hash: contentHash, source_hash: sourceHash, lastmod };
+    if (require('./lib/search_rescue').allowed(item.publish_path)) writeUtf8(outPath, bodyHtml);
     supplementalWritten.push({
       slug: item.publish_path,
       url: siteBase + item.publish_path,
@@ -2367,6 +2367,7 @@ function seedHeadingPlan(){
 }
 
 function main(){
+  require('./lib/search_rescue').prepare();
   const canonMap = loadJson(CANON_MAP);
   const siteBase = canonMap.site_base;
   seedHeadingPlan();
@@ -2587,7 +2588,10 @@ for (const [vertical, meta] of Object.entries(registry)) {
   // so they are removed from every pool a link is chosen from.
   const redirectSourceRoutes = loadRedirectSourceRoutes();
   const isServedRoute = (slug) => !redirectSourceRoutes.has(normalizeRoute(slug));
-  const linkablePages = atlasPages.filter((page) => isServedRoute(page.slug || page.path));
+  // Comparisons and state guides share a publication set even though their
+  // canonical inputs live in separate corpora. Rank all surviving siblings.
+  const siblingSources = [...atlasPages, ...(loadJson(path.join(ROOT, 'data', 'page_families', 'velocity_page_specs.json')).pages || []), ...buildMergedInsightItems().map(item => ({ ...item, slug: item.publish_path }))];
+  const linkablePages = [...new Map(siblingSources.filter((page) => isServedRoute(page.slug || page.path)).map(page => [page.slug || page.path, { ...page, slug: page.slug || page.path }])).values()];
   const linkCoverage = buildLinkCoveragePlan(linkablePages);
   // The frozen-output law needs the affected routes named before the rebuild
   // that changes them, so the plan is written where it can be read first.
@@ -3080,7 +3084,7 @@ ${m}`;
     const lastmod = (prev && prev.hash === contentHash && prev.lastmod) ? prev.lastmod : today;
 
     // Persist state
-    contentState[routePath] = { hash: contentHash, lastmod };
+    if (require('./lib/search_rescue').allowed(routePath)) contentState[routePath] = { hash: contentHash, lastmod };
 
     // Render with stable last-updated stamp
     const bodyHtmlStamped = setLastUpdated(p.bodyHtml, lastmod);
@@ -3090,7 +3094,7 @@ ${m}`;
       assertGeneratedHtmlBeforeWrite({ kind: 'page', slug: routePath, html: normalizedHtml, minWords: 80, requireCanonBlocks: false });
     }
     const outPath = slugToPath(routePath);
-    writeUtf8(outPath, normalizedHtml);
+    if (require('./lib/search_rescue').allowed(routePath)) writeUtf8(outPath, normalizedHtml);
     written.push({ slug: routePath || p.slug, url:absUrl, title:p.title, description:p.description, lastmod });
   });
 
@@ -3450,6 +3454,7 @@ ${m}`;
 
   // Final immutable-output guard: all non-authorized accepted routes are restored byte-for-byte from the frozen cache after every generator/postprocessor mutation.
   const frozenRestore = restoreFrozenPages();
+  require('./apply_search_rescue').apply();
   console.log(`Frozen accepted output guard: restored=${frozenRestore.restored}; already=${frozenRestore.already}; skipped_mutable=${frozenRestore.skipped}`);
 
   console.log(`Built ${written.length} pages.`);

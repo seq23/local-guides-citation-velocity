@@ -86,7 +86,13 @@ for (const route of sitemapPaths()) {
 }
 
 const stops = [];
-if (graded < MIN_PAGES) stops.push(`only ${graded} served page(s) graded; expected at least ${MIN_PAGES}. The sitemap is missing or the tree is unbuilt, so nothing was proven.`);
+const coverage = require('../lib/public_inventory_coverage').inventoryCoverage({
+  admitted: JSON.parse(fs.readFileSync(path.join(ROOT, 'data/content/page_admission_registry.json'), 'utf8')).pages.map(p => p.path),
+  rendered: sitemapPaths().filter(p => !unresolved.includes(p)),
+  retirements: JSON.parse(fs.readFileSync(path.join(ROOT, 'data/release/route_retirements.json'), 'utf8')).retirements,
+  redirects: fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8').split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => l.split(/\s+/)), minimum: MIN_PAGES
+});
+stops.push(...coverage.issues);
 const report = {
   validator: 'search-snippet-floors',
   ok: !errors.length && !stops.length,

@@ -331,7 +331,8 @@ function stampIntakeTracking(html, portfolioHosts, route) {
     try { u = new URL(raw, SITE_BASE); } catch { return whole; }
     if (!hosts.has(u.hostname.replace(/^www\./, '')) || !INTAKE_PATH.test(u.pathname)) return whole;
     if (u.search || u.hash) return whole;
-    const stamped = `${raw}?utm_source=${SITE_HOST}&utm_medium=referral&utm_campaign=companion&utm_content=${encodeURIComponent(content)}`;
+    const kind = content.startsWith('insights/') ? 'insight' : 'guide';
+    const stamped = `${raw}?utm_source=${SITE_HOST}&utm_medium=referral&utm_campaign=companion&utm_content=${encodeURIComponent(content)}&page_kind=${kind}&slug=${encodeURIComponent(content)}`;
     return whole.replace(m[0], `href=${m[1]}${escAttr(stamped)}${m[1]}`);
   });
 }

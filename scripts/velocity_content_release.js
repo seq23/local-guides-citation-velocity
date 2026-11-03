@@ -83,7 +83,10 @@ const configuredTiers = Array.isArray(velocityDecision.configured_scale_tiers) ?
 if (configuredTiers.length && !configuredTiers.includes(dailyCeiling)) namedStop('CEILING_OUTSIDE_CONFIGURED_TIERS', `the effective ceiling ${dailyCeiling} is not a member of the configured scale tiers [${configuredTiers.join(', ')}].`);
 const alreadyToday = (publicationLedger.runs||[]).filter((r)=>String(r.date||'')===DATE).reduce((n,r)=>n+Number(r.created||0),0);
 const remainingToday = Math.max(0,dailyCeiling-alreadyToday);
-const admittedForBuild = (releaseQueue.records || []).filter((x)=>x.eligible === true && x.decision === 'SAFE_AUTOPUBLISH' && x.lifecycle_state === 'ADMITTED_FOR_BUILD');
+const rescuePolicy = require('./lib/search_rescue');
+const rescueHeld = (releaseQueue.records || []).filter(x => x.eligible === true && !rescuePolicy.allowed(x.target_route || ''));
+if (rescueHeld.length) console.log(`NAMED STOP [SEARCH_RESCUE_EXPANSION_PAUSED]: held ${rescueHeld.length} unreviewed routes; existing survivors may improve.`);
+const admittedForBuild = (releaseQueue.records || []).filter((x)=>x.eligible === true && x.decision === 'SAFE_AUTOPUBLISH' && x.lifecycle_state === 'ADMITTED_FOR_BUILD' && rescuePolicy.allowed(x.target_route || ''));
 
 // THE DEMAND GATE IS APPLIED HERE, NOT ONLY DOWNSTREAM.
 //

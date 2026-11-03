@@ -20,13 +20,13 @@ const path = require('path');
 
 const INTERNAL_DIRS = new Set([
   '.build', '.build-cache', '.cache', '.git', '.github', '.wrangler', 'artifacts', 'content',
-  'data', 'distribution_scripts', 'docs', 'logs', 'node_modules', 'reports', 'scripts',
+  'data', 'distribution_scripts', 'docs', 'functions', 'config', 'logs', 'node_modules', 'reports', 'scripts',
   'staging', 'templates', 'tmp'
 ]);
 
 function admittedRoutes(root) {
   const payload = JSON.parse(fs.readFileSync(path.join(root, 'data', 'content', 'page_admission_registry.json'), 'utf8'));
-  return new Set((payload.pages || []).filter((p) => p.publication_status === 'ADMITTED').map((p) => p.path));
+  return new Set((payload.pages || []).filter((p) => p.publication_status === 'ADMITTED' && require('./search_rescue').allowed(p.path)).map((p) => p.path));
 }
 
 function routeForHtmlRel(rel) {
