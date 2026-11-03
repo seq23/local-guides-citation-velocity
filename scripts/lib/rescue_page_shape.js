@@ -2,7 +2,7 @@
 // Shared presentation rule: facts and FAQ answers come from the page's existing
 // source-backed content. No synthetic prices, timeframes, authors or review dates.
 const { resolveLinks } = require('./search_rescue');
-const { sayOnce, dropRepeatedFurniture } = require('./say_once');
+const { sayOnce, dropRepeatedFurniture, normalize } = require('./say_once');
 const openings = require('../../config/search_rescue_openings.json');
 const esc = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
 const plain = s => String(s).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -22,8 +22,80 @@ function removeSections(html, openingPattern) {
   }
   return html;
 }
+/**
+ * A FAQPage that claims questions the page never shows.
+ *
+ * Search Readiness b5 ("a visible FAQ when FAQPage schema exists") failed
+ * /senior-living/ on 2 of its 3 schema questions, /uscis-medical/ on 6 of 12. The
+ * schema was built from the page's own answer records, but only the first question
+ * was ever rendered, so the markup promised an answer engine a FAQ the reader could
+ * not find -- which is the one thing Google's FAQ guidance says not to do.
+ *
+ * The answers are already on the page, in its schema, drawn from its own content, so
+ * this renders the ones that are missing rather than trimming the schema down to the
+ * one that showed: a question worth declaring is worth showing, and dropping two
+ * real answers to make a checklist pass would make the page worse. Nothing is
+ * invented -- every question and answer here comes out of the page's own JSON-LD.
+ */
+function showSchemaFaq(html) {
+  const visible = plain(String(html).replace(/<script[\s\S]*?<\/script>/gi, ' ')).toLowerCase();
+  const questions = [];
+  for (const block of String(html).matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    let data; try { data = JSON.parse(block[1]); } catch { continue; }
+    const stack = [data];
+    while (stack.length) {
+      const node = stack.pop();
+      if (Array.isArray(node)) { stack.push(...node); continue; }
+      if (!node || typeof node !== 'object') continue;
+      if (Array.isArray(node['@graph'])) stack.push(...node['@graph']);
+      if (![].concat(node['@type'] || []).includes('FAQPage')) continue;
+      for (const q of [].concat(node.mainEntity || [])) {
+        const name = String(q?.name || '').replace(/\s+/g, ' ').trim();
+        const answer = String(q?.acceptedAnswer?.text || '').replace(/\s+/g, ' ').trim();
+        if (name && answer) questions.push({ name, answer });
+      }
+    }
+  }
+  // ONE QUESTION PER ANSWER. /uscis-medical/ declared twelve questions and gave six
+  // of them the same answer word for word, so rendering each missing one put that
+  // answer on the page six times and traded a b5 failure for a filler failure.
+  // A second question with an answer already on the page is not a second answer; it
+  // is the same answer asked for twice, and the page keeps the first.
+  const byAnswer = new Set();
+  const distinct = [];
+  for (const q of questions) {
+    const key = normalize(q.answer);
+    if (byAnswer.has(key)) continue;
+    byAnswer.add(key);
+    distinct.push(q);
+  }
+  // The sampler looks for the first 60 characters of the question, so match on that.
+  const missing = distinct.filter((q) => !visible.includes(q.name.toLowerCase().slice(0, 60)));
+  const items = missing
+    .map((q) => `<section class="qa-block" data-faq="true"><h3>${esc(q.name)}</h3><p>${esc(q.answer)}</p></section>`)
+    .join('');
+  // The schema now says exactly what the page shows, both drawn from `distinct`, so
+  // the two cannot promise an answer engine a question the reader cannot find.
+  const rebuilt = String(html).replace(/<script\b([^>]*type=["']application\/ld\+json["'][^>]*)>([\s\S]*?)<\/script>/gi, (all, attrs, raw) => {
+    let data; try { data = JSON.parse(raw); } catch { return all; }
+    let touched = false;
+    const visit = (node) => {
+      if (!node || typeof node !== 'object') return;
+      if ([].concat(node['@type'] || []).includes('FAQPage') && Array.isArray(node.mainEntity)) {
+        node.mainEntity = distinct.map((q) => ({ '@type': 'Question', name: q.name, acceptedAnswer: { '@type': 'Answer', text: q.answer } }));
+        touched = true;
+      }
+      Object.values(node).forEach((v) => { if (Array.isArray(v)) v.forEach(visit); else if (v && typeof v === 'object') visit(v); });
+    };
+    visit(data);
+    return touched ? `<script${attrs}>${JSON.stringify(data).replaceAll('<', '\\u003c')}</script>` : all;
+  });
+  if (!items) return rebuilt;
+  return rebuilt.replace(/<\/main>/i, `<section class="card" data-faq="true" data-schema-faq="true"><h2>Frequently asked questions</h2>${items}</section></main>`);
+}
+
 function shape(html, { route, description, date, published, title }) {
-  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 12, opening: openings[route] })).digest('hex');
+  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 17, opening: openings[route] })).digest('hex');
   if (html.includes(`data-search-rescue-input="${inputHash}"`)) return resolveLinks(html);
   const preservedInline = (html.match(/<p class="canonical-guide-inline"[^>]*>[\s\S]*?<\/p>/i) || [''])[0];
   const preservedAnswer = html.match(/(?:data-direct-answer=["']true["'][^>]*>|class=["'][^"']*answer-box[^"']*["'][^>]*>)[\s\S]*?<p\b[^>]*>([\s\S]*?)<\/p>/i);
@@ -79,6 +151,8 @@ function shape(html, { route, description, date, published, title }) {
     next = next.replace(/<\/main>/i, visible + '</main>');
   }
   next = next.replace(/<section class="qa-block">/g, '<section class="qa-block" data-faq="true">');
+  // Every question the page's own FAQPage schema declares is rendered for the reader.
+  next = showSchemaFaq(next);
   next = next.replace(/<h2([^>]*)>([^<]+)<\/h2>/g, (all, attrs, text) => {
     const names = { 'Primary sources': 'Which sources support this guide?', 'Related guides': 'What should I read next?', 'Decision checklist': 'What should I check before deciding?', 'Red flags': 'Which warning signs should I check?', 'Decision questions': 'What questions should I ask?', 'Verify the rule before acting': 'How can I verify the rule before acting?', 'What this page recommends': 'What does this page recommend?', 'Related decision paths people also use': 'Which related decisions should I consider?', 'Where this question fits': 'How does this question fit the wider topic?', 'Related questions in this cluster': 'What related questions should I ask?', 'Next questions people ask': 'What should I ask next?' };
     const heading = text.trim();

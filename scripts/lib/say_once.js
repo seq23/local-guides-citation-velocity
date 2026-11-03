@@ -159,6 +159,35 @@ function inner(block) {
 }
 
 /**
+ * The sentences in one block that a phrase can be taken out of.
+ *
+ * A window does not respect sentence boundaries. /uscis-medical/ repeated
+ * "what is included in the quote are vaccine" six times, and it spans the end of
+ * "What is included in the quote?" and the start of "Are vaccine records reviewed
+ * before the visit?" -- two sentences, so no single sentence contained the phrase
+ * and an earlier version of this pass found nothing to cut on that page at all.
+ *
+ * So the block's sentences are walked as one word stream, each word remembering
+ * which sentence it came from, and a matching window is attributed to the sentence
+ * its LAST word falls in: removing that sentence is what breaks the phrase, and
+ * taking the tail rather than the head leaves the sentence a reader has already
+ * started. One candidate per occurrence.
+ */
+function carriers(block, phrase, n) {
+  const list = spans(inner(block));
+  const words = [];
+  const owner = [];
+  for (const span of list) for (const word of wordsIn(span.text)) { words.push(word); owner.push(span); }
+  const out = [];
+  for (let i = 0; i + n <= words.length; i++) {
+    if (words.slice(i, i + n).join(' ') !== phrase) continue;
+    const span = owner[i + n - 1];
+    if (!out.some((c) => c.span === span)) out.push({ block, span });
+  }
+  return out;
+}
+
+/**
  * Remove repeated phrases from a rendered page until no 8-word window appears more
  * than `cap` times in <main>.
  *
@@ -168,7 +197,7 @@ function inner(block) {
  * validator rather than cut further, because at that point the repetition is the
  * page's own content and not a template slot.
  */
-function sayOnce(html, { cap = SLOT_MAX, n = SLOT_WORDS, passes = 40 } = {}) {
+function sayOnce(html, { cap = SLOT_MAX, n = SLOT_WORDS, passes = 600 } = {}) {
   let out = String(html);
   for (let pass = 0; pass < passes; pass++) {
     const mainMatch = out.match(/<main\b[^>]*>([\s\S]*)<\/main>/i);
@@ -180,24 +209,31 @@ function sayOnce(html, { cap = SLOT_MAX, n = SLOT_WORDS, passes = 40 } = {}) {
     for (const w of windowsOf(wordsIn(plain(main)), n)) counts.set(w, (counts.get(w) || 0) + 1);
     const over = [...counts].filter(([, c]) => c > cap).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
     if (!over.length) return out;
-    const [phrase, times] = over[0];
 
     const found = blocks(main, base);
     for (const b of found) {
       b.home = homeOf(main, b.start - base, b);
       b.rank = b.home ? HOME_ORDER.indexOf(b.home) : HOME_ORDER.length;
     }
-    // Candidate sentences carrying the phrase: least important first, latest first
-    // within a rank, so the copy a reader meets last is the copy that goes.
-    const candidates = [];
-    for (const b of found) {
-      for (const span of spans(inner(b))) {
-        if (windowsOf(wordsIn(span.text), n).includes(phrase)) candidates.push({ block: b, span });
-      }
+
+    // Not every repeat can be cut here. A phrase that only exists because a window
+    // runs out of a heading and into the list beneath it has no sentence to remove,
+    // and an earlier version of this loop RETURNED on the first such phrase -- so a
+    // page whose worst repeat was uncuttable kept every repeat that was. 142 windows
+    // were over the cap on /uscis-medical/ and not one of them was touched. Walk the
+    // list instead, and only give up when no phrase on it has a sentence to give.
+    let cutThisPass = null;
+    for (const [phrase, times] of over) {
+      // Candidate sentences carrying the phrase: least important first, latest first
+      // within a rank, so the copy a reader meets last is the copy that goes.
+      const candidates = [];
+      for (const b of found) candidates.push(...carriers(b, phrase, n));
+      candidates.sort((a, b) => b.block.rank - a.block.rank || b.block.start - a.block.start);
+      const giveUp = candidates.slice(0, Math.max(0, times - cap));
+      if (giveUp.length) { cutThisPass = giveUp; break; }
     }
-    candidates.sort((a, b) => b.block.rank - a.block.rank || b.block.start - a.block.start);
-    const giveUp = candidates.slice(0, Math.max(0, times - cap));
-    if (!giveUp.length) return out;
+    if (!cutThisPass) return out;
+    const giveUp = cutThisPass;
 
     // Group the cuts by block, then rewrite the blocks from the end of the document.
     const byBlock = new Map();
