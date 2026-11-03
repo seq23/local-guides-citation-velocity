@@ -57,7 +57,7 @@ const rel = (p) => path.join(ROOT, p);
 // every previously written entry without needing to touch the input surface.
 const SCHEMA_VERSION = 1;
 
-const INPUT_PATHS = ['scripts', 'templates', 'content', 'data', 'package.json', 'package-lock.json', '_redirects'];
+const INPUT_PATHS = ['scripts', 'templates', 'content', 'data', 'config', 'package.json', 'package-lock.json', '_redirects'];
 const ENV_KEYS = ['ALLOW_CANONICAL_DATA_REGEN', 'VELOCITY_CONTENT_SOURCE', 'SOURCE_DATE'];
 // build_site.js both READS and WRITES this file (loadContentState/saveContentState):
 // it is a generation ledger (per-route rendered-hash + lastmod), not an

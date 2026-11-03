@@ -40,6 +40,9 @@ const floorRule = require('../lib/floor_rule');
 // Measured 2026-10-25: 2,137 pages in dist/. The floor is far below that and far
 // above what a truncated or unbuilt tree exposes.
 const MIN_PAGES = 1500;
+const admission = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/content/page_admission_registry.json'), 'utf8')).pages;
+const identity = route => route.replace(/\.html$/, '').replace(/\/$/, '') || '/';
+const expectedIntake = new Set(admission.filter(p => p.vertical !== 'global' || p.page_type === 'Insight').map(p => identity(p.path)));
 
 function walk(dir, out = []) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -90,6 +93,7 @@ const howToUnprovable = [];
 const capExempt = [];
 const governed = c.governedRoutes();
 const pages = stops.length ? [] : walk(DIST);
+const gradedRoutes = [];
 
 for (const abs of pages) {
   const rel = path.relative(DIST, abs).replace(/\\/g, '/');
@@ -99,7 +103,9 @@ for (const abs of pages) {
   if (!/<html/i.test(html)) continue;
   const route = rel === 'index.html' ? '/' : `/${rel.replace(/\/index\.html$/, '').replace(/\.html$/, '')}`;
   graded += 1;
+  gradedRoutes.push(route);
   const add = (issue, detail) => errors.push({ page: `/${rel}`, issue, detail });
+  if (expectedIntake.has(identity(route)) && !/request-assistance/.test(html)) add('intake_missing', 'editorial page has no canonical intake next step');
 
   // b1: title 30-65.
   const title = c.titleOf(html);
@@ -247,12 +253,17 @@ for (const abs of pages) {
 
 // Rule 0 for j2: a tree where no page names an intake would pass the clause above
 // by inspecting nothing. Measured 2026-10-25: 1,969 of 2,137 served pages do.
-const MIN_INTAKE_PAGES = 800;
+const MIN_INTAKE_PAGES = expectedIntake.size;
 if (!stops.length && intakePages < MIN_INTAKE_PAGES) {
   stops.push(`only ${intakePages} served page(s) name a canonical intake; expected at least ${MIN_INTAKE_PAGES}. The intake routing clause inspected nothing.`);
 }
-if (!stops.length && graded < MIN_PAGES) {
-  stops.push(`only ${graded} page(s) graded; expected at least ${MIN_PAGES}. The tree is unbuilt or truncated, so nothing was proven.`);
+if (!stops.length) {
+  const coverage = require('../lib/public_inventory_coverage').inventoryCoverage({
+    admitted: admission.map(p => p.path), rendered: gradedRoutes,
+    retirements: JSON.parse(fs.readFileSync(path.join(ROOT, 'data/release/route_retirements.json'), 'utf8')).retirements,
+    redirects: fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8').split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => l.split(/\s+/)), minimum: MIN_PAGES
+  });
+  stops.push(...coverage.issues);
 }
 
 const byIssue = {};

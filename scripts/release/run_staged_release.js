@@ -9,7 +9,7 @@ const NODE_OPTIONS=process.env.NODE_OPTIONS||'--max-old-space-size=3072';
 const CHECKPOINT=path.join(ROOT,'artifacts/validation/release-pipeline-checkpoint.json');
 const REPORT=path.join(ROOT,'artifacts/validation/release-pipeline-report.json');
 const LOG_ROOT=path.join(ROOT,'logs/release-pipeline');
-const durableRoots=['.github/workflows','scripts','templates','content/_staged','content/_shared','data/citation_velocity','data/evidence','data/page_families','data/workflows','data/overhaul'];
+const durableRoots=['.github/workflows','scripts','templates','config','content/_staged','content/_shared','data/citation_velocity','data/evidence','data/page_families','data/workflows','data/overhaul'];
 const durableFiles=['package.json','package-lock.json','_validation_registry.json','_repo_validation_matrix.json','_browser_suite_contract.json','_public_route_manifest.json','REPO_IDENTITY.md','.nvmrc'];
 function readReleaseDate(){
  const dates=[];const add=v=>{const d=String(v||'').slice(0,10);if(/^\d{4}-\d{2}-\d{2}$/.test(d))dates.push(d);};

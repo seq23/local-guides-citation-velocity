@@ -24,7 +24,7 @@ for(const dir of [path.join(ROOT,'insights'),path.join(ROOT,'dist','insights')])
 // /atlas/senior-living/ and three senior-living insights were rendered and linked
 // but never admitted, so they 404'd live while every source-tree check passed.
 const admitted=require('./lib/served_tree').admittedRoutes(ROOT);
-const redirectSources=new Set();try{for(const line of fs.readFileSync(path.join(ROOT,'_redirects'),'utf8').split('\n')){const t=line.trim();if(t&&!t.startsWith('#')&&t.startsWith('/'))redirectSources.add(t.split(/\s+/)[0]);}}catch{}
+const redirectSources=new Set();try{for(const line of fs.readFileSync(path.join(ROOT,'_redirects'),'utf8').split('\n')){const t=line.trim();if(t&&!t.startsWith('#')&&t.startsWith('/')){const source=t.split(/\s+/)[0];redirectSources.add(source);redirectSources.add(source.replace(/\.html$/,''));}}}catch{}
 function internalResolves(p){if(redirectSources.has(p)||redirectSources.has(p.replace(/\/$/,'')))return true;if(p.endsWith('/'))return admitted.has(p);if(p.endsWith('.html'))return admitted.has(p);const leaf=p.split('/').pop();if(leaf.includes('.'))return fs.existsSync(path.join(ROOT,decodeURIComponent(p)));return admitted.has(`${p}.html`)||admitted.has(`${p}/`);}
 routeCheck.internal_checked=0;routeCheck.internal_dead=[];
 {const dir=path.join(ROOT,'insights');for(const f of fs.readdirSync(dir)){if(!f.endsWith('.html'))continue;const html=fs.readFileSync(path.join(dir,f),'utf8');for(const m of html.matchAll(/href="((?:https:\/\/theindustryguides\.com)?\/(?!\/)[^"#?]*)/g)){const p=m[1].replace(/^https:\/\/theindustryguides\.com/,'')||'/';routeCheck.internal_checked++;if(!internalResolves(p))routeCheck.internal_dead.push({file:`insights/${f}`,href:p});}}}

@@ -84,7 +84,8 @@ function copyFile(abs) {
   const rel = toRel(abs);
   const dest = path.join(DIST, rel);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.copyFileSync(abs, dest);
+  if (rel === '_redirects') fs.writeFileSync(dest, require('./lib/search_rescue').deploymentRedirects(fs.readFileSync(abs, 'utf8')));
+  else fs.copyFileSync(abs, dest);
 }
 function walk(dir, visitor) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {

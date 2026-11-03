@@ -37,7 +37,7 @@ function admittedRoutes() {
   if (admittedCache) return admittedCache;
   const file = path.join(ROOT, 'data', 'content', 'page_admission_registry.json');
   const doc = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { pages: [] };
-  admittedCache = new Set((doc.pages || []).map((p) => normalizeRoute(p.path)));
+  admittedCache = new Set((doc.pages || []).filter(p => require('./search_rescue').allowed(p.path)).map((p) => normalizeRoute(p.path)));
   return admittedCache;
 }
 
