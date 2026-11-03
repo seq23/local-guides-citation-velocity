@@ -248,6 +248,84 @@ function blockedLeadDomain(email, env) {
   return null;
 }
 
+// ---------------------------------------------------------------- lead gate
+// Security sweep, 3 Nov 2026: this endpoint took anonymous posts behind a honeypot
+// only, so a script could flood the owner's inbox and the Airtable table. Every post
+// now needs a Cloudflare Turnstile token (header x-turnstile-token, or body field
+// cf-turnstile-response) from the shared "local-guides-leads" widget (hostnames
+// include theindustryguides.com; the browser side is local-guides-generator's
+// assets/lead-guard.js), and is limited per IP per day and per site per day in the
+// LEAD_LIMITS KV namespace (bound in wrangler.toml). Same rules and numbers as
+// local-guides-generator lib/lead_guard.mjs; kept inline because this handler is
+// loaded byte-for-byte by scripts/tests/*.
+//   no token 400 · rejected token 403 · LOCAL_GUIDES_TURNSTILE_SECRET_KEY unset 503
+//   (fails closed, NAMED STOP log line) · over a limit 429 · LEAD_LIMITS unbound:
+//   logged, Turnstile still gates. Counters move only for a lead that passed validation.
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const LEAD_CONTACT = 'hello@theindustryguides.com';
+export const LEAD_LIMITS_PER_IP = 6;
+export const LEAD_LIMITS_DAILY = 150;
+
+async function dayHash(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf), (x) => x.toString(16).padStart(2, '0')).join('').slice(0, 32);
+}
+
+async function guardLead(req, env, body) {
+  const token = String(req.headers.get('x-turnstile-token') || body['cf-turnstile-response'] || body.turnstile_token || '').trim().slice(0, 4096);
+  const retry = `Please reload the page and try again, or email ${LEAD_CONTACT}.`;
+  if (!token) return { ok: false, status: 400, body: { ok: false, error: 'bot_check', message: retry } };
+  const secret = String(env.LOCAL_GUIDES_TURNSTILE_SECRET_KEY || '').trim();
+  if (!secret) {
+    console.error('NAMED STOP [TURNSTILE_SECRET_MISSING] request-assistance: LOCAL_GUIDES_TURNSTILE_SECRET_KEY is not set on this Pages project; lead posts are refused until it is (vault: LOCAL_GUIDES_TURNSTILE_SECRET_KEY).');
+    return { ok: false, status: 503, body: { ok: false, error: 'bot_check_unavailable', message: `The form is unavailable right now. Please email ${LEAD_CONTACT}.` } };
+  }
+  const ip = String(req.headers.get('cf-connecting-ip') || String(req.headers.get('x-forwarded-for') || '').split(',')[0] || '').trim() || 'unknown';
+  let verdict;
+  try {
+    const form = new URLSearchParams({ secret, response: token });
+    if (ip !== 'unknown') form.set('remoteip', ip);
+    const res = await fetch(TURNSTILE_VERIFY_URL, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: form.toString() });
+    verdict = await res.json();
+  } catch (err) {
+    console.error('request-assistance: Turnstile siteverify unreachable', String((err && err.message) || err));
+    return { ok: false, status: 503, body: { ok: false, error: 'bot_check_unavailable', message: `Please try again in a minute, or email ${LEAD_CONTACT}.` } };
+  }
+  if (!verdict || verdict.success !== true) return { ok: false, status: 403, body: { ok: false, error: 'bot_check', message: retry } };
+  const kv = env.LEAD_LIMITS;
+  const noop = async () => {};
+  if (!kv || typeof kv.get !== 'function') {
+    console.error('LEAD_LIMITS_UNBOUND request-assistance: no LEAD_LIMITS KV binding; per-IP and daily limits are off (Turnstile still gates).');
+    return { ok: true, count: noop };
+  }
+  const d = new Date().toISOString().slice(0, 10);
+  let host = 'unknown';
+  try { host = new URL(req.url).host.toLowerCase().replace(/^www\./, ''); } catch (_) { /* keep unknown */ }
+  const ipKey = `ip:request-assistance:${d}:${await dayHash(`${d}|${ip}|request-assistance`)}`;
+  const dayKey = `day:request-assistance:${host}:${d}`;
+  try {
+    const [ipN, dayN] = (await Promise.all([kv.get(ipKey), kv.get(dayKey)])).map((v) => Number(v || 0) || 0);
+    if (ipN >= LEAD_LIMITS_PER_IP || dayN >= LEAD_LIMITS_DAILY) {
+      if (dayN >= LEAD_LIMITS_DAILY) console.error(`request-assistance: daily ceiling ${LEAD_LIMITS_DAILY} reached on ${host}`);
+      return { ok: false, status: 429, headers: { 'retry-after': '3600' }, body: { ok: false, error: 'rate_limited', message: `Too many requests from here today. Please email ${LEAD_CONTACT} and we will help you directly.` } };
+    }
+    let counted = false;
+    const count = async () => {
+      if (counted) return;
+      counted = true;
+      try {
+        await Promise.all([kv.put(ipKey, String(ipN + 1), { expirationTtl: 172800 }), kv.put(dayKey, String(dayN + 1), { expirationTtl: 172800 })]);
+      } catch (err) {
+        console.error('request-assistance: LEAD_LIMITS write failed', String((err && err.message) || err));
+      }
+    };
+    return { ok: true, count };
+  } catch (err) {
+    console.error('request-assistance: LEAD_LIMITS read failed', String((err && err.message) || err));
+    return { ok: true, count: noop };
+  }
+}
+
 export async function onRequestPost(context) {
   try {
     const req = context.request;
@@ -265,6 +343,9 @@ export async function onRequestPost(context) {
       // Bot: pretend success to avoid training.
       return json({ ok: true });
     }
+
+    const guard = await guardLead(req, env, body);
+    if (!guard.ok) return json(guard.body, { status: guard.status, headers: guard.headers || {} });
 
     const provider_type = String(body.provider_type || '').trim();
     const email = String(body.email || '').trim();
@@ -313,6 +394,8 @@ export async function onRequestPost(context) {
       console.log(`BLOCKED_LEAD domain=${blockedDomain} source=${host}`);
       return json({ ok: true });
     }
+
+    await guard.count();
 
     const record = {
       provider_type,
