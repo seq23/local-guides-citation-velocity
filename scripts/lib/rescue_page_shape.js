@@ -2,7 +2,7 @@
 // Shared presentation rule: facts and FAQ answers come from the page's existing
 // source-backed content. No synthetic prices, timeframes, authors or review dates.
 const { resolveLinks } = require('./search_rescue');
-const { sayOnce } = require('./say_once');
+const { sayOnce, dropRepeatedFurniture } = require('./say_once');
 const openings = require('../../config/search_rescue_openings.json');
 const esc = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
 const plain = s => String(s).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -23,7 +23,7 @@ function removeSections(html, openingPattern) {
   return html;
 }
 function shape(html, { route, description, date, published, title }) {
-  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 11, opening: openings[route] })).digest('hex');
+  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 12, opening: openings[route] })).digest('hex');
   if (html.includes(`data-search-rescue-input="${inputHash}"`)) return resolveLinks(html);
   const preservedInline = (html.match(/<p class="canonical-guide-inline"[^>]*>[\s\S]*?<\/p>/i) || [''])[0];
   const preservedAnswer = html.match(/(?:data-direct-answer=["']true["'][^>]*>|class=["'][^"']*answer-box[^"']*["'][^>]*>)[\s\S]*?<p\b[^>]*>([\s\S]*?)<\/p>/i);
@@ -115,6 +115,6 @@ function shape(html, { route, description, date, published, title }) {
   const stamp = `<p class="editorial-byline" data-editorial-byline="true">By <a href="/about">The Industry Guides</a>${published ? ` · Published <time datetime="${esc(published)}">${esc(published)}</time>` : ''} · Updated <time datetime="${esc(date)}">${esc(date)}</time></p>`;
   next = next.replace(/<\/main>/i, `${stamp}</main>`);
   // Last, so it sees every slot this function and the page builder produced.
-  return resolveLinks(sayOnce(next));
+  return resolveLinks(sayOnce(dropRepeatedFurniture(next)));
 }
 module.exports = { shape, plain };

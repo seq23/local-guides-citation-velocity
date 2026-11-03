@@ -217,4 +217,75 @@ function sayOnce(html, { cap = SLOT_MAX, n = SLOT_WORDS, passes = 40 } = {}) {
   return out;
 }
 
-module.exports = { sayOnce, plain, sentences, normalize, wordsIn, windowsOf, SLOT_WORDS, SLOT_MAX };
+
+/**
+ * FURNITURE — the repeats that are not sentences at all.
+ *
+ * `sayOnce` works on sentences inside <p> and <li>, and two of the shapes it leaves
+ * behind on theindustryguides.com only exist because a window crosses from a heading
+ * into the list under it:
+ *
+ *   1. Every decision section carries the SAME three red flags, so
+ *      "red flags no current primary source is cited" appears five times on
+ *      /settlement-demand-vs-lawsuit-filing/ -- one heading-plus-list pair repeated
+ *      verbatim down the page. A warning list that is identical under every section
+ *      is a property of the page, not of the section.
+ *
+ *   2. Each section's checklist opens with "Define the exact decision behind <its own
+ *      question>", directly beneath a heading that just asked that question. It is
+ *      the filler `ensureSpecificItems` in content_atom.js adds when a section has
+ *      fewer than three checklist items, and it reaches the reader as a bullet that
+ *      restates the heading above it.
+ *
+ * Both are removed by what they are rather than by their text, so neither depends on
+ * the wording staying put: an identical heading-and-list pair keeps its first
+ * appearance and loses the rest, and a list item that contains its own heading whole
+ * is dropped. Nothing that says something new is touched.
+ */
+function dropRepeatedFurniture(html) {
+  let out = String(html);
+
+  // 1. The same heading-and-list pair, more than once: keep the first.
+  {
+    const mainMatch = out.match(/<main\b[^>]*>([\s\S]*)<\/main>/i);
+    if (!mainMatch) return out;
+    const base = mainMatch.index + mainMatch[0].indexOf(mainMatch[1]);
+    const main = mainMatch[1];
+    const pairs = [...main.matchAll(/<(h[23])\b[^>]*>([\s\S]*?)<\/\1>\s*<(ul|ol)\b[^>]*>([\s\S]*?)<\/\3>/gi)];
+    const seen = new Set();
+    const cut = [];
+    for (const m of pairs) {
+      const key = `${normalize(plain(m[2]))}|${normalize(plain(m[4]))}`;
+      if (!normalize(plain(m[4]))) continue;
+      if (seen.has(key)) cut.push({ start: base + m.index, end: base + m.index + m[0].length });
+      else seen.add(key);
+    }
+    for (const c of cut.sort((a, b) => b.start - a.start)) out = out.slice(0, c.start) + out.slice(c.end);
+  }
+
+  // 2. A list item that contains its own heading whole, and little else.
+  {
+    const mainMatch = out.match(/<main\b[^>]*>([\s\S]*)<\/main>/i);
+    if (!mainMatch) return out;
+    const base = mainMatch.index + mainMatch[0].indexOf(mainMatch[1]);
+    const main = mainMatch[1];
+    const cut = [];
+    for (const b of blocks(main, base)) {
+      if (b.tag !== 'li') continue;
+      const before = main.slice(0, b.start - base);
+      const heads = [...before.matchAll(/<(h[1-4]|button)\b[^>]*>([\s\S]*?)<\/\1>/gi)];
+      if (!heads.length) continue;
+      const heading = normalize(plain(heads[heads.length - 1][2]));
+      if (heading.split(' ').length < 5) continue;
+      const item = normalize(plain(b.html));
+      if (!item.includes(heading)) continue;
+      // It restates the heading; drop it only if it adds almost nothing of its own.
+      if (item.split(' ').length - heading.split(' ').length > 6) continue;
+      cut.push(b);
+    }
+    for (const b of cut.sort((a, b) => b.start - a.start)) out = out.slice(0, b.start) + out.slice(b.end);
+  }
+  return out;
+}
+
+module.exports = { sayOnce, dropRepeatedFurniture, plain, sentences, normalize, wordsIn, windowsOf, SLOT_WORDS, SLOT_MAX };
