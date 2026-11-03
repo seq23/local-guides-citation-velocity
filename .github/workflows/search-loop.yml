@@ -43,12 +43,26 @@ concurrency:
 
 jobs:
   search-loop:
-    # Search rescue: expansion is paused until the reviewed survivor set recovers.
-    if: ${{ false }}
+    # Search rescue: expansion is still paused, but the job no longer sits behind
+    # `if: ${{ false }}`. Disabling it outright also stopped the MEASURING, and the
+    # week report is the only place two Search Readiness items are read from: f8
+    # (the outcome-gated cap) and f11 (AI-referral visits and AI-bot reads). The
+    # report froze at 2026-W45 and both items failed for want of a number nobody
+    # was collecting - a paused job reported as a site defect.
+    #
+    # So this site runs MEASURE-ONLY. `stage: check` runs the check phase alone
+    # (bin/search-loop.mjs: FIND is gated on stage find|auto|build, BUILD on
+    # auto|build), so nothing is discovered and nothing is published, and the week
+    # report is still written with cap, held_by_cap, redirected, ai_visitors and
+    # ai_bot_hits. Two further brakes stay on underneath it: search-loop.config.json
+    # sets cap.max_live_pages to the 13 pages already live, so room is 0 and BUILD
+    # would publish nothing even if it ran, and the engine only publishes from the
+    # default branch. A deliberate `workflow_dispatch` with stage=auto is the escape
+    # hatch for whoever lifts the rescue; the schedule never takes it.
     uses: seq23/search-loop/.github/workflows/search-loop.yml@v1
     with:
       engine_ref: v1
-      stage: ${{ inputs.stage || 'auto' }}
+      stage: ${{ inputs.stage || 'check' }}
       setup_command: npm ci --ignore-scripts && node scripts/search_loop/seed_topics.js
       node_options: --max-old-space-size=3072
       post_build_command: node scripts/search_loop/fold_in.js
@@ -60,6 +74,15 @@ jobs:
       INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
       # $0 model lanes (engine v1.2.3): Gemini free tier (no-billing project), metered Workers AI
       # (usage read with the analytics token, model run with the Workers AI token; 600 neurons/day).
+      #
+      # f11: the engine reads AI-referral visits and AI-bot reads from this SAME
+      # token (src/analytics.mjs cloudflareDay), against the zone named in
+      # search-loop.config.json analytics.zone. It needs Zone:Read AND
+      # Zone Analytics:Read; without the second it reports
+      # "Cloudflare analytics refused the query: ..." rather than a number, which is
+      # a named stop with the missing scope in it, not a silent zero. No token in
+      # the Boss OS vault carried zone.analytics.read when this was probed on
+      # 3 Nov 2026, so the first measure-only run is what proves this one does.
       CLOUDFLARE_API_TOKEN: ${{ secrets.SEARCH_LOOP_CF_USAGE_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SEARCH_LOOP_CF_ACCOUNT_ID }}
       CLOUDFLARE_WORKERS_AI_TOKEN: ${{ secrets.SEARCH_LOOP_CF_WORKERS_AI_TOKEN }}
