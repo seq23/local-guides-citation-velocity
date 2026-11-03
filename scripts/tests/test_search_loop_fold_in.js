@@ -131,4 +131,61 @@ pin('a question-page link to a 301 source is re-pointed at its final destination
   assert.strictEqual(withRedirectsResolved(out, redirects, 'https://theindustryguides.com'), out, 'idempotent');
 });
 
+
+/**
+ * Search Readiness f8 (the outcome-gated cap) and f11 (AI-referral visits and
+ * AI-bot reads), both measured failing 3 Nov 2026 and both read from the WEEK
+ * REPORT, which only exists if the engine runs.
+ *
+ * The cause was not the engine's age (seq23/search-loop@v1 resolves to v1.4.0,
+ * which emits cap, held_by_cap and redirected on every report). It was this repo:
+ * the caller sat behind `if: ${ false }` for the search rescue, so no report had
+ * been written since 2026-W45, and the config still carried the `pace` key that
+ * v1.3.0 retired, with analytics switched off. A paused job was being reported as
+ * a site defect.
+ *
+ * These pins hold the three decisions that fix it. Each is proven against a broken
+ * input, because a check that cannot fail is not one.
+ */
+pin('f8/f11: the search loop stays measure-only, capped, and measuring', () => {
+
+  // f8: the cap exists and the run guard stays inside the owner's 10-a-day.
+  assert.ok(cfg.cap, 'search-loop.config.json must carry a cap (f8)');
+  assert.ok(Number.isInteger(cfg.cap.max_live_pages) && cfg.cap.max_live_pages >= 10,
+    `f8 wants max_live_pages as a whole number of at least 10, got ${JSON.stringify(cfg.cap.max_live_pages)}`);
+  assert.ok(cfg.cap.max_per_day <= 10,
+    `f8 caps the run guard at 10 a day, got ${cfg.cap.max_per_day}`);
+  assert.ok(!('pace' in cfg), 'pace is retired in engine v1.3.0; the cap replaces it');
+
+  // f11: a free analytics source is named, or there is no number to report.
+  assert.ok(cfg.analytics && cfg.analytics.ai_referrals !== 'none' && cfg.analytics.ai_bot_hits !== 'none',
+    'f11 needs analytics.ai_referrals and ai_bot_hits set to a reader, not "none"');
+  assert.equal(cfg.analytics.zone, 'theindustryguides.com', 'the Cloudflare reader needs this site\'s zone');
+
+  // The caller must still RUN, and must not publish while the rescue is on. Pinned
+  // as text because the two failure shapes are both one line of YAML: `if: false`
+  // (measures nothing) and a default stage of `auto` (publishes during a rescue).
+  const wf = fs.readFileSync(path.join(ROOT, '.github/workflows/search-loop.yml'), 'utf8');
+  assert.ok(!/^\s*if:\s*\$\{\{\s*false\s*\}\}/m.test(wf),
+    'the search-loop caller is disabled again: the week report stops and f8/f11 fail for want of a number');
+  assert.match(wf, /stage:\s*\$\{\{\s*inputs\.stage\s*\|\|\s*'check'\s*\}\}/,
+    'the schedule must run stage=check (measure-only) while the search rescue is on');
+
+  // Negative proofs: each pin rejects the exact shape it exists to catch.
+  assert.throws(() => {
+    const broken = { ...cfg, cap: { ...cfg.cap, max_per_day: 11 } };
+    assert.ok(broken.cap.max_per_day <= 10);
+  }, /AssertionError/, 'max_per_day over 10 must fail');
+  assert.throws(() => {
+    const broken = { ...cfg, analytics: { ai_referrals: 'none', ai_bot_hits: 'none' } };
+    assert.ok(broken.analytics.ai_referrals !== 'none' && broken.analytics.ai_bot_hits !== 'none');
+  }, /AssertionError/, 'analytics switched back to none must fail');
+  assert.throws(() => {
+    assert.ok(!/^\s*if:\s*\$\{\{\s*false\s*\}\}/m.test('jobs:\n  x:\n    if: ${{ false }}\n'));
+  }, /AssertionError/, 're-disabling the caller must fail');
+  assert.throws(() => {
+    assert.match("stage: ${{ inputs.stage || 'auto' }}", /stage:\s*\$\{\{\s*inputs\.stage\s*\|\|\s*'check'\s*\}\}/);
+  }, /AssertionError/, 'a default stage of auto must fail');
+});
+
 console.log(`search-loop fold-in tests: ${n} pins passed`);

@@ -73,3 +73,75 @@ assert.ok(parsed.every(([from,, status]) => !/[*:]/.test(from) && status === '30
   }
   console.log(`Search rescue behaviour: PASS (${kept.size} survivors, ${rescue.policy.retirements.length} permanent consolidations)`);
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+// Search Readiness b9, c2 and j2 on the two rescue directory hubs (/insights/,
+// /atlas/), all three measured failing on 3 Nov 2026. The shape is asserted here,
+// at the generator, because the hubs are rebuilt by directory() on every build and
+// a page edit would be overwritten by the next one.
+//
+// Thin, breadcrumb-less and with no route to a lead surface is what this page WAS:
+// 214 words, no BreadcrumbList, not one canonical intake link. These assertions
+// fail if it goes back.
+{
+  const { directory, VERTICALS, HOME_LINK_SATURATED } = require('../apply_search_rescue');
+  const SATURATED_HOME = 'memphisseniorcarehomes.com';
+  const visibleWords = html => {
+    const main = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html);
+    assert.ok(main, 'directory() must emit a <main>');
+    return main[1].replace(/<[^>]+>/g, ' ').split(/\s+/).filter(w => /[a-z0-9]/i.test(w)).length;
+  };
+  const frame = '<html><head><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"CollectionPage","@id":"x"},{"@type":"ItemList"}]}</script></head><body><main><h1>old</h1><p>thin</p></main></body></html>';
+  const pages = [
+    { path: '/insights/', page_type: 'Insight' },
+    { path: '/insights/a-published-insight', page_type: 'Insight', primary_query: 'a published insight' },
+    { path: '/insights/another-published-insight', page_type: 'Insight', primary_query: 'another published insight' }
+  ];
+
+  assert.ok(VERTICALS.length === 6, 'six verticals, one per canonical guide site');
+  // Rule 0: a directory with nothing in it must refuse, not publish an empty hub.
+  assert.throws(() => directory(frame, { path: '/insights/' }, [{ path: '/insights/', page_type: 'Insight' }]), /empty directory/);
+
+  for (const path of ['/insights/', '/atlas/']) {
+    const out = directory(frame, { path }, pages);
+    const words = visibleWords(out);
+    // b9: 300 words is the checklist floor for a content page. The generator clears
+    // it from its own copy, not from the length of the link list, so a week with
+    // few survivors cannot drop the hub back under the floor.
+    assert.ok(words >= 300, `${path}: b9 wants 300+ visible words, generator produced ${words}`);
+    // c2: exactly one BreadcrumbList, in the graph that already describes the page.
+    assert.equal((out.match(/"BreadcrumbList"/g) || []).length, 1, `${path}: c2 wants one BreadcrumbList`);
+    assert.ok(out.includes(`#breadcrumbs`), `${path}: breadcrumb node needs its @id`);
+
+    const hrefs = [...out.matchAll(/href="([^"]+)"/g)].map(m => m[1].replaceAll('&amp;', '&'));
+    for (const v of VERTICALS) {
+      // j2: every field's intake is reachable from the hub. The utm attribution is
+      // stamped at publish time (install_served_head_contract.js) onto exactly the
+      // query-less intake URLs emitted here, so these must stay query-less.
+      assert.ok(hrefs.includes(`https://${v.domain}/request-assistance/`),
+        `${path}: j2 wants an untracked-at-build intake link for ${v.domain}`);
+      const home = `https://${v.domain}/`;
+      if (v.domain !== SATURATED_HOME) assert.ok(hrefs.includes(home), `${path}: j2 wants the canonical home for ${v.domain}`);
+    }
+    // The sitewide cap is a fact about the REST of the site, not a knob: pinned as
+    // a literal so emptying HOME_LINK_SATURATED cannot make this assertion agree
+    // with itself. https://memphisseniorcarehomes.com/ is contract-required on ten
+    // pages (homepage card, senior hub, eight senior guides) and
+    // velocity-canonical-anchor-links caps any one of its URLs at ten sitewide, so
+    // an eleventh link from either hub turns the merge gate red.
+    assert.ok(!hrefs.includes(`https://${SATURATED_HOME}/`),
+      `${path}: ${SATURATED_HOME} home is at its sitewide cap of 10; linking it here turns velocity-canonical-anchor-links red`);
+    assert.ok(HOME_LINK_SATURATED.has(SATURATED_HOME),
+      `${SATURATED_HOME} must stay in HOME_LINK_SATURATED or the generator will link its home again`);
+    // j2 still needs a canonical home on the page: the other five carry it.
+    assert.ok(hrefs.some(h => VERTICALS.some(v => v.domain !== SATURATED_HOME && h === `https://${v.domain}/`)),
+      `${path}: j2 wants at least one canonical home link`);
+    // g3: no single portfolio domain over a quarter of the hub's outbound links.
+    const out_hosts = hrefs.filter(h => h.startsWith('http') && new URL(h).hostname !== 'theindustryguides.com')
+      .map(h => new URL(h).hostname);
+    assert.ok(out_hosts.length > 0, `${path}: expected outbound portfolio links`);
+    const worst = Math.max(...Object.values(out_hosts.reduce((a, h) => (a[h] = (a[h] || 0) + 1, a), {})));
+    assert.ok(worst / out_hosts.length <= 0.25,
+      `${path}: g3 caps one domain at a quarter of ${out_hosts.length} outbound links, worst is ${worst}`);
+  }
+  console.log('Search rescue directory shape: PASS (b9 words, c2 breadcrumb, j2 intake + canonical home, g3 share)');
+}

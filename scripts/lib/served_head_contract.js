@@ -489,7 +489,15 @@ const SENIOR_FAMILY = 'SENIOR-LIVING-GUIDES';
 // footprint g3 describes - it is the page's whole purpose, a reader in Houston
 // needs the Houston anchor - so these two cap per URL instead of per host: a
 // repeated link to the SAME metro is still capped, a second metro is not.
-const MULTI_TARGET_ROUTES = new Set(['/dentistry/free-dental-clinics', '/dentistry/dental-school-clinics']);
+// The two directory hubs belong here for the same reason. /insights/ and /atlas/
+// span all six verticals, so each one carries SIX canonical homes and SIX
+// canonical intakes - twelve distinct destinations, one per field per purpose.
+// Per-host capping keeps one anchor per host and turns the other into an in-page
+// jump, which took the canonical HOME link off both pages and left j2 failing on
+// /insights/ with no tracked intake at all (measured 3 Nov 2026). Per URL, a
+// repeat of one destination is still capped and a different field is not - and
+// six hosts at two links each is 2 of 12 outbound per domain, inside g3's quarter.
+const MULTI_TARGET_ROUTES = new Set(['/dentistry/free-dental-clinics', '/dentistry/dental-school-clinics', '/insights', '/atlas']);
 function isMultiTargetRoute(route) {
   return MULTI_TARGET_ROUTES.has(String(route || '').replace(/\/+$/, '') || '/');
 }
