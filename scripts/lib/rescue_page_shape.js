@@ -2,6 +2,7 @@
 // Shared presentation rule: facts and FAQ answers come from the page's existing
 // source-backed content. No synthetic prices, timeframes, authors or review dates.
 const { resolveLinks } = require('./search_rescue');
+const { sayOnce } = require('./say_once');
 const openings = require('../../config/search_rescue_openings.json');
 const esc = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
 const plain = s => String(s).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -22,7 +23,7 @@ function removeSections(html, openingPattern) {
   return html;
 }
 function shape(html, { route, description, date, published, title }) {
-  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 7, opening: openings[route] })).digest('hex');
+  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 11, opening: openings[route] })).digest('hex');
   if (html.includes(`data-search-rescue-input="${inputHash}"`)) return resolveLinks(html);
   const preservedInline = (html.match(/<p class="canonical-guide-inline"[^>]*>[\s\S]*?<\/p>/i) || [''])[0];
   const preservedAnswer = html.match(/(?:data-direct-answer=["']true["'][^>]*>|class=["'][^"']*answer-box[^"']*["'][^>]*>)[\s\S]*?<p\b[^>]*>([\s\S]*?)<\/p>/i);
@@ -38,6 +39,10 @@ function shape(html, { route, description, date, published, title }) {
   const regionalSenior = route.startsWith('/senior-living/') && route !== '/senior-living/';
   const definitionClass = regionalSenior ? 'muted' : 'definition';
   const intro = override ? `<p class="${definitionClass}" data-definition="true">${esc(override.definition)}</p>` : definition ? definition[0].replace(/<p\b[^>]*>/i, `<p class="${definitionClass}" data-definition="true">`) : `<p class="${definitionClass}" data-definition="true">${esc(description)}</p>`;
+  // The Quick answer is rendered in full here and trimmed by `sayOnce` at the end
+  // of this function: it is ranked below the slots that own a sentence, so what
+  // survives is whatever the definition and the page's own sections did not
+  // already say. An emptied paragraph is dropped and the section stays.
   const summary = override ? esc(override.answer) : answer ? answer[1] : preservedAnswer ? preservedAnswer[1] : esc(description);
   const guideInline = preservedInline;
   let next = html;
@@ -60,7 +65,7 @@ function shape(html, { route, description, date, published, title }) {
     next = next.replace(article[0], main[0] + article[2]);
     opening = article[2];
   }
-  next = next.replace(opening, `${opening}${h1}${intro}<section class="quick-answer answer-box" data-direct-answer="true" data-search-rescue-shape="4" data-search-rescue-input="${inputHash}"><h2>Quick answer</h2><p>${summary}</p>${guideInline}<p><strong>What this guide is best for:</strong> preparing questions about ${esc(plain(title || h1))} before making a decision.</p>${checks}</section>${preamble ? preamble[1] : ''}${beforeArticle}`);
+  next = next.replace(opening, `${opening}${h1}${intro}<section class="quick-answer answer-box" data-direct-answer="true" data-search-rescue-shape="4" data-search-rescue-input="${inputHash}"><h2>Quick answer</h2>${summary ? `<p>${summary}</p>` : ''}${guideInline}<p><strong>What this guide is best for:</strong> preparing questions about ${esc(plain(title || h1))} before making a decision.</p>${checks}</section>${preamble ? preamble[1] : ''}${beforeArticle}`);
   // Replace the insight family's generic five-question template with visible,
   // source-backed questions. Schema is rebuilt from these same answer records.
   const faq = override?.checks && route.startsWith('/insights/') ? [
@@ -109,6 +114,7 @@ function shape(html, { route, description, date, published, title }) {
   });
   const stamp = `<p class="editorial-byline" data-editorial-byline="true">By <a href="/about">The Industry Guides</a>${published ? ` · Published <time datetime="${esc(published)}">${esc(published)}</time>` : ''} · Updated <time datetime="${esc(date)}">${esc(date)}</time></p>`;
   next = next.replace(/<\/main>/i, `${stamp}</main>`);
-  return resolveLinks(next);
+  // Last, so it sees every slot this function and the page builder produced.
+  return resolveLinks(sayOnce(next));
 }
 module.exports = { shape, plain };
