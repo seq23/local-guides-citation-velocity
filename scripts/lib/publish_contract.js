@@ -474,13 +474,71 @@ function buildInsightInventory() {
   return ensureUniqueInsightMetadata(dedupeInsightAtoms(out));
 }
 
+/**
+ * What an archive page carries, and why each part is there.
+ *
+ * Search Readiness, 3 Nov 2026, measured on the served /insights/ page: 217
+ * visible words (b9 wants 300), no BreadcrumbList (c2), and ZERO outbound links
+ * of any kind, so no tracked route to a canonical intake (j2). All three are
+ * properties of this one renderer, which builds /insights/ and /medium/, so all
+ * three are fixed here rather than on the two rendered pages.
+ *
+ * j2: the archive spans six verticals, so no single canonical intake is "the"
+ * one. The routing block below names every vertical and links BOTH its canonical
+ * home and its bare /request-assistance/ intake. Bare on purpose: a query-free
+ * intake href is the only shape stampIntakeTracking() stamps, so the utm
+ * attribution j2 asks for is added at publish time by the one pass that owns it
+ * (scripts/lib/served_head_contract.js), not duplicated here.
+ *
+ * g3: twelve portfolio links pre-cap, six hosts, two each. capPortfolioLinks()
+ * then keeps ONE followed anchor per host - preferredLinkPerHost() picks the
+ * intake - and turns the home link into an in-page jump to it, so the served
+ * page carries six outbound links across six hosts: one sixth each, inside g3's
+ * quarter. The reader still sees both links and both still go somewhere.
+ */
+const ARCHIVE_ROUTING = [
+  ['senior-living', 'families comparing assisted living, memory care and senior care homes around Memphis and the Mississippi and Arkansas line'],
+  ['dentistry', 'dental patients working out coverage, clinic options and what a quoted treatment actually involves'],
+  ['personal_injury', 'people working through a claim after a car or other accident, and what the process asks of them'],
+  ['neuro', 'adults and parents arranging an ADHD, autism or neuropsychological evaluation'],
+  ['trt', 'adults looking into testosterone, hormone or hair-loss treatment and what a first appointment covers'],
+  ['uscis-medical', 'immigrants preparing for the USCIS medical exam and Form I-693']
+];
+
+function archiveRoutingHtml() {
+  const rows = ARCHIVE_ROUTING.map(([key, who]) => {
+    const cfg = VERTICAL_CONFIG[key];
+    if (!cfg) return '';
+    const host = cfg.domain.replace(/^https?:\/\//, '');
+    return `<li><strong>${htmlEscape(cfg.label)}</strong> &mdash; for ${htmlEscape(who)}. The guide site is <a href="${htmlEscape(cfg.domain + '/')}">${htmlEscape(host)}</a>, and its intake form is <a href="${htmlEscape(cfg.domain + '/request-assistance/')}">request assistance on ${htmlEscape(host)}</a>.</li>`;
+  }).filter(Boolean).join('');
+  return `<section class="card" data-archive-routing="true"><h2 class="h2">Where each question is answered</h2><p>The Industry Guides publishes the short version. The guide site for the vertical publishes the long version, keeps the local detail current, and is where a request for help is actually read by someone. Open the guide site before you act on anything local &mdash; a price, an opening, a filing window or a provider &mdash; and use its intake form rather than this archive when you want a person to reply.</p><ul>${rows}</ul></section>`;
+}
+
+function archiveHowToUseHtml(title, description) {
+  const t = htmlEscape(String(title || '').toLowerCase());
+  return `<section class="qa-block"><h2 class="h2">How to use this archive</h2><p>Each entry below is one question answered on its own page, in a few hundred words, with the source it rests on named on the page. The list is ordered by topic rather than by date, because the question a reader arrives with is almost never the newest one. Scan it for the question that matches yours, open that page, and read the answer and the source before you go further.</p><p>Nothing in this ${t} archive is advice, and nothing here is a ranking. There are no best-of lists, no scores and no recommendations of individual providers, because a page cannot know a reader's situation. What a page can do is set out what a decision involves, what a term means, what a step normally costs in time or paperwork, and which questions are worth asking before committing &mdash; and then name the guide site that keeps that detail current for the vertical.</p><p>If a page and its guide site disagree, the guide site is right: it is the canonical source for its vertical and it is updated first. If a page here is missing the question you came with, the guide site's own index is the better place to look next, and its intake form is where to ask when the answer is not published anywhere.</p></section>`;
+}
+
+function archiveBreadcrumb(title, archiveUrl) {
+  return {
+    '@type': 'BreadcrumbList',
+    '@id': `${archiveUrl}#breadcrumb`,
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_BASE}/` },
+      { '@type': 'ListItem', position: 2, name: title, item: archiveUrl }
+    ]
+  };
+}
+
 function renderArchivePage({ title, description, archivePath, items, itemHref, schemaType = 'CollectionPage' }) {
   const lowerTitle = String(title || '').toLowerCase();
   // theindustryguides.com/request-assistance/ does not exist - it is not an
   // admitted route and has no redirect, so this CTA was a 404. The per-vertical
-  // request surfaces live on the five canonical guide domains, and an archive
-  // page spans all five, so no single one of them is correct here. The homepage
-  // #vertical-routes section is the router: it lists all five request surfaces.
+  // request surfaces live on the six canonical guide domains, and an archive
+  // page spans all six, so no single one of them is correct for this button.
+  // The homepage #vertical-routes section is the router, and the routing block
+  // above lists every guide site's intake directly.
   const canonicalTargetUrl = `${SITE_BASE}/#vertical-routes`;
   const canonicalDomains = CANONICAL_DOMAINS.join(', ');
   const itemList = items.map((item) => {
@@ -515,7 +573,7 @@ function renderArchivePage({ title, description, archivePath, items, itemHref, s
 <title>${htmlEscape(title)} | The Industry Guides</title>
 <meta name="description" content="${htmlEscape(description)}"/>
 <link rel="canonical" href="${htmlEscape(archiveUrl)}"/>
-<script type="application/ld+json">${JSON.stringify(mergeSchema(schema))}</script>
+<script type="application/ld+json">${JSON.stringify(mergeSchema([schema, archiveBreadcrumb(title, archiveUrl)]))}</script>
 </head>
 <body>
 <!-- CANON_TOP -->
@@ -530,6 +588,8 @@ function renderArchivePage({ title, description, archivePath, items, itemHref, s
   <article>
     <h1>${htmlEscape(title)}</h1>
     ${renderQaBlock(`What is this ${title.toLowerCase()} archive for?`, `${description} The Industry Guides is the umbrella publisher, while ${canonicalDomains} remain the canonical domains for live local workflow, pricing questions, timing, and provider-routing next steps.`)}
+    ${archiveHowToUseHtml(title, description)}
+    ${archiveRoutingHtml()}
     <ul>${itemList}</ul>
   </article>
 </main>
