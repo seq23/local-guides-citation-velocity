@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const rescue = require('./lib/search_rescue');
 const frozen = require('./lib/frozen_pages');
-const { shape } = require('./lib/rescue_page_shape');
+const { shape, withOpeningDefinition } = require('./lib/rescue_page_shape');
 const ROOT = path.resolve(__dirname, '..');
 const escapeHtml = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
 const SITE = 'https://theindustryguides.com';
@@ -144,7 +144,7 @@ function apply() {
     const description = source?.description || (current.match(/<meta\b[^>]*name="description"[^>]*content="([^"]+)"/) || [])[1];
     const published = source?.date_published || (current.match(/"datePublished"\s*:\s*"(\d{4}-\d{2}-\d{2})[^\"]*"/) || [])[1];
     const isContent = page.vertical !== 'global' || page.page_type === 'Insight';
-    const html = ['/insights/', '/atlas/'].includes(page.path) ? rescue.resolveLinks(directory(current, page, admission.pages)) : isContent ? shape(current, { route: page.path, description: description || page.primary_query, date: '2026-11-02', published, title: source?.title || page.primary_query }) : rescue.resolveLinks(current);
+    const html = ['/insights/', '/atlas/'].includes(page.path) ? rescue.resolveLinks(directory(current, page, admission.pages)) : isContent ? shape(current, { route: page.path, description: description || page.primary_query, date: '2026-11-02', published, title: source?.title || page.primary_query }) : rescue.resolveLinks(withOpeningDefinition(current, page.path));
     candidates.push({ file, html, route: page.path });
   }
   // Whole-set preflight: no partial content update if a survivor is missing.

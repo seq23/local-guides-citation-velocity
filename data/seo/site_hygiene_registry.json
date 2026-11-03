@@ -101,5 +101,14 @@
     "checker": "scripts/lib/github_write_retry_check.js",
     "tests": "scripts/tests/test_github_write_retry.js",
     "min_behaviour_pins": 9
+  },
+  "page_quality_slots": {
+    "registered_on": "2026-11-03",
+    "note": "Search Readiness q1: the render layer no longer gives one stored sentence a slot in every block. validate_site_hygiene.js runs scripts/lib/page_quality_slots_check.js against this block and replays its hostile fixtures every run. It applies the quality sampler's own measure -- no 8-word window more than three times in one <main> -- to every admitted route the sampler can pick, and RATCHETS it against data/seo/page_quality_baseline.json: a page over its recorded worst count fails, and a page with a repeat the baseline does not know about fails. A ratchet rather than a floor because sixteen served pages are still over the cap for reasons this repair does not reach (one guidance sentence fills 268 table cells on /personal-injury/ and 117 on /dentistry/, and the row cannot be dropped because its first cell is the only place some ledgered markers appear). Zero pages examined is a failure, never a pass. Refresh an intended improvement with npm run ratchet:page-quality. Folded into the site-hygiene blocker so the 40-blocker cap holds. Repair proven by scripts/tests/test_say_once.js; the render pass is scripts/lib/say_once.js.",
+    "checker": "scripts/lib/page_quality_slots_check.js",
+    "baseline": "data/seo/page_quality_baseline.json",
+    "registry": "data/content/page_admission_registry.json",
+    "slot_words": 8,
+    "slot_max": 3
   }
 }

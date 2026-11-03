@@ -919,13 +919,101 @@ function pickFanoutQuestions(rows, limit){
   let total = 0;
   // A piece with few places (East Arkansas: two cities) shows more phrasings per place.
   const perGroup = Math.min(15, Math.max(6, Math.ceil(limit / Math.max(1, groups.size))));
+  // EVERY GROUP USED TO TAKE ITS FIRST COMPILED QUERY, and the compiled universe is
+  // ordered head phrase first, so each locality's first query was the SAME question
+  // with a different town in it. /senior-living/assisted-living-vs-memory-care-vs-
+  // senior-care-home-tennessee/ asked "Where can I find a care home in <town>?" ten
+  // times running, which is what Search Readiness q1 failed it for on 3 Nov 2026:
+  // "where can i find a care home in" is exactly eight words, so it is a repeated
+  // slot phrase however many different towns follow it.
+  //
+  // The compiled file holds 2,966 questions across many head phrases, so the variety
+  // is already there and nothing has to be written: each group takes the candidate
+  // whose stem has been used least as a primary so far. Ties keep compiled order, so
+  // the pick stays deterministic and a build is still reproducible. The towns are
+  // untouched -- every locality still gets its own answered question and its own
+  // canonical link, which is what hyperlocal coverage (j9) is counted on.
+  const stemOf = (row) => wordsOfQuestion(row).slice(0, 8).join(' ');
+  const stemUse = new Map();
+  const queryStem = (row) => String(row.query || row.normalized_query || '').toLowerCase().split(/\s+/).slice(0, 4).join(' ');
+  const queryUse = new Map();
+  // Every word and ZIP this page has already shown, so a later pick can be judged on
+  // what it ADDS rather than only on how its stem reads.
+  const placed = new Set();
+  const tokensOfRow = (row) => String(`${row.query || ''} ${row.question || ''}`).toLowerCase().match(/[a-z0-9][\w'\u2019-]*/g) || [];
   for (const list of groups.values()) {
     if (total >= limit) break;
-    const take = list.slice(0, Math.min(perGroup, limit - total));
-    out.push({ primary: take[0], variants: take.slice(1) });
-    total += take.length;
+    const room = Math.min(perGroup, limit - total);
+    // A LEAD'S QUERY TEXT IS NOT VISIBLE -- only its question, its answer and the
+    // variants' query text are. So promoting a ZIP-bearing query to lead takes that
+    // ZIP off the page: 38103, 38117, 38119, 38120, 38134 and 38138 vanished from four
+    // Memphis pages that way, each still in a data-fanout-query attribute and in none
+    // of the words a reader or a crawler reads. The stem still decides, and a query
+    // carrying a ZIP breaks the tie DOWNWARD so it stays a variant and stays visible.
+    const hasZip = (row) => /\d/.test(String(row.query || row.normalized_query || ''));
+    const lead = list.reduce((best, row) => {
+      const rowUse = stemUse.get(stemOf(row)) || 0;
+      const bestUse = stemUse.get(stemOf(best)) || 0;
+      if (rowUse !== bestUse) return rowUse < bestUse ? row : best;
+      if (hasZip(row) !== hasZip(best)) return hasZip(best) ? row : best;
+      return best;
+    }, list[0]);
+    stemUse.set(stemOf(lead), (stemUse.get(stemOf(lead)) || 0) + 1);
+    // The "Also searched" line clusters the same way the primaries did, and its first
+    // variant sits right after the "(linked above)" span, so one head phrase leading
+    // every group put "linked above also searched 24-hour care for elderly" on the
+    // Tennessee page five times. Variants are ordered by the same least-used rule --
+    // real compiled queries throughout, only the order changes.
+    // FOUR WORDS, not five. Keyed on five, every stem was unique -- a locality's
+    // queries carry its ZIP ("24-hour care for elderly 38002", "... 38016"), so the
+    // counter never saw a repeat and the order never moved. The window that was
+    // failing is "linked above also searched 24-hour care for elderly": four words
+    // from the "(linked above)" span and the "Also searched:" label, then four from
+    // the variant, so four words of the variant is exactly what has to vary.
+    // VARY THE STEM, BUT NEVER AT THE COST OF COVERAGE. Ordering by stem alone dropped
+    // the ZIP-bearing phrasings off two Memphis pages -- 38117, 38134 and 38138 left
+    // /senior-living/hospital-discharge-to-assisted-living-memphis/ entirely -- and a
+    // ZIP is exactly the local signal these pages are counted on (j9). So a variant is
+    // chosen on its stem FIRST and on how many tokens it puts on the page that are not
+    // there yet SECOND, which keeps every ZIP and town while still breaking the run of
+    // one head phrase.
+    const pool = list.filter((row) => row !== lead);
+    const rest = [];
+    for (const token of tokensOfRow(lead)) placed.add(token);
+    // ONLY THE FIRST VARIANT'S STEM HAS TO VARY. The window that was failing is
+    // "linked above also searched 24-hour care for elderly" -- four words from the
+    // "(linked above)" span and the "Also searched:" label, then four from the FIRST
+    // variant. Ordering every variant by stem spent the page's slots on phrasings and
+    // pushed ZIP-bearing queries off it (38103, 38119, 38120 and others left four
+    // Memphis pages' visible text), and a ZIP is a local signal these pages are
+    // counted on. So the first variant is chosen on its stem, and every one after it
+    // on how many tokens it puts on the page that are not there yet.
+    while (rest.length < Math.max(0, room - 1) && pool.length) {
+      const byStem = rest.length === 0;
+      const next = pool.reduce((best, row) => {
+        if (byStem) {
+          const rowUse = queryUse.get(queryStem(row)) || 0;
+          const bestUse = queryUse.get(queryStem(best)) || 0;
+          if (rowUse !== bestUse) return rowUse < bestUse ? row : best;
+        }
+        const rowNew = tokensOfRow(row).filter((t) => !placed.has(t)).length;
+        const bestNew = tokensOfRow(best).filter((t) => !placed.has(t)).length;
+        return rowNew > bestNew ? row : best;
+      }, pool[0]);
+      queryUse.set(queryStem(next), (queryUse.get(queryStem(next)) || 0) + 1);
+      for (const token of tokensOfRow(next)) placed.add(token);
+      rest.push(next);
+      pool.splice(pool.indexOf(next), 1);
+    }
+    out.push({ primary: lead, variants: rest });
+    total += 1 + rest.length;
   }
   return out;
+}
+
+/** A fan-out row's question as the q1 sampler would read it: lower-case words only. */
+function wordsOfQuestion(row){
+  return String((row && row.question) || '').toLowerCase().match(/[a-z0-9][\w'\u2019-]*/g) || [];
 }
 
 function renderLinkedText(text, allowedOrigins, context, opts = {}){
