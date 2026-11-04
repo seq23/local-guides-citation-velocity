@@ -1,15 +1,15 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-11-03
+Release date: 2026-11-04
 Target publish units: 171
-Selected units: 23
-Twin agent units: 23
+Selected units: 26
+Twin agent units: 26
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 148
+Social fallback suppressed: 145
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 8
+Repair units: 11
 New page units: 15
 
 | Source | Operation | Vertical | Target route | Query |
@@ -22,6 +22,7 @@ New page units: 15
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/timeline-validity/index.html | does the i-693 medical exam still expire after two years |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/community-questions/what-does-the-mental-health-evaluation-for-immigration-involve/index.html | will a history of depression or therapy affect my immigration medical |
 | twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | uscis-medical | /uscis-medical/vaccines-labs/index.html | which vaccines are required for adults over 65 for i-693 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | trt | /trt/index.html | best natural supplements to boost lh and fsh before starting trt |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/what-injuries-pay-the-most/ | what injuries pay the most |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/do-i-pay-taxes-on-personal-injury-settlement-money/ | do i pay taxes on personal injury settlement money |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-much-of-a-100k-settlement-will-i-get/ | how much of a 100k settlement will i get |
@@ -34,6 +35,8 @@ New page units: 15
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-much-is-the-average-payout-for-an-afff-firefighting-foam-claim/ | how much is the average payout for an afff firefighting foam claim |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/what-are-the-side-effects-of-ozempic-that-qualify-for-a-lawsuit/ | what are the side effects of ozempic that qualify for a lawsuit |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/is-there-a-deadline-to-join-the-camp-lejeune-lawsuit-in-2026/ | is there a deadline to join the camp lejeune lawsuit in 2026 |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | dentistry | /dentistry/index.html | at what age should my child first see a dentist and what should I expect |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/early-signs-of-ms-in-women-under-40/ | early signs of ms in women under 40 |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | neuro | /neuro/community-questions/why-am-i-having-trouble-swallowing-with-pd/ | why am i having trouble swallowing with pd |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | neuro | /neuro/index.html | why does the light hurt my eyes when i have a headache |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | trt | /trt/guides/best-way-to-compare-trt-clinics-in-2026/ | best way to compare TRT clinics in 2026 |
