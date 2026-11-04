@@ -353,7 +353,7 @@ function preferredLinkPerHost(html, hosts) {
   return pick;
 }
 
-function capPortfolioLinks(html, portfolioHosts, { exempt = false, perUrl = false } = {}) {
+function capPortfolioLinks(html, portfolioHosts, { exempt = false, perUrl = false, secondaryAsText = false } = {}) {
   const hosts = new Set(portfolioHosts || []);
   if (!hosts.size || exempt) return html;
   // Which link survives per host is chosen BEFORE any is capped: the intake, if
@@ -380,6 +380,9 @@ function capPortfolioLinks(html, portfolioHosts, { exempt = false, perUrl = fals
       // so a capped CTA stays something a reader can click.
       return /\bid=/i.test(attrs) ? whole : whole.replace(/^<a\b/i, `<a id="${anchorId}"`);
     }
+    // On senior guides only repeated intake CTAs jump to the intake. A city or
+    // topic label must not masquerade as a link to a different destination.
+    if (secondaryAsText && !INTAKE_PATH.test(u.pathname)) return `<span data-link-capped="true">${inner}</span>`;
     const cls = (attrs.match(/\bclass=(["'])([\s\S]*?)\1/i) || [])[2] || '';
     // An in-page href, not a <span>: `links()` ignores a bare #fragment, so this
     // costs the page nothing in outbound links, and the reader who scrolled to
@@ -391,34 +394,7 @@ function capPortfolioLinks(html, portfolioHosts, { exempt = false, perUrl = fals
   });
 }
 
-/**
- * Where the cap applies, and why it is not everywhere.
- *
- * This repository's architecture is to route a reader to a canonical
- * destination's intake REPEATEDLY, and three HARD_FAIL validators enforce it:
- *   - velocity-canonical-anchor-links: every piece matched to a canonical guide
- *     carries at least FOUR /request-assistance/ links (845 pages), and a
- *     senior-living guide also needs a directory-home, topic-guide and city link;
- *   - umbrella-homepage-shape: the homepage's six vertical cards each link the
- *     canonical home, its intake and three question pages;
- *   - the senior-living contract above, which enforces its own per-URL rule.
- *
- * Search Readiness g3 caps a portfolio domain at a quarter of a page's outbound
- * links. On a state page with 16 outbound links that allows three, and the
- * contract requires four. Measured 2026-10-25: all four state pages the audit
- * flagged for g3 are governed pages. The two rules do not fit on the same page,
- * and dismantling the lead funnel to satisfy a footprint heuristic is an owner's
- * decision, not this pass's.
- *
- * So the cap applies only where no routing contract governs the page AND the
- * route is an insight or article page - 0 of the 1,357 governed routes are under
- * /insights/ or /medium-articles/, and those are exactly the pages whose
- * footprint was worst: /insights/dentistry-q003-... linked ONE canonical URL
- * eight times, 8 of 11 outbound links, 73%.
- *
- * g3 therefore stays reported for the governed pages, with that reason, rather
- * than silently "fixed" by breaking three contracts.
- */
+/** Routes carrying canonical source contracts, retained for source validation. */
 function governedRoutes() {
   const routes = new Set();
   const addRoute = (slug) => {
@@ -451,38 +427,10 @@ function isGovernedRoute(route, governed) {
   return governed.has(r);
 }
 
-/**
- * The cap's scope: every served route but two named exemptions.
- *
- * It used to be /insights/ and /medium-articles/ only, and not even all of
- * those - any route a canonical-guide match governed was skipped, which was 845
- * pieces plus every state page. Measured on the built tree, 862 of 1,068 graded
- * pages had a portfolio host over a quarter of their outbound links, so the
- * guard that exists to catch exactly that reached 206 pages and the breach lived
- * on the other 862. The reason given on 2026-10-25 was that
- * velocity-canonical-anchor-links required FOUR /request-assistance/ links per
- * matched piece and a quarter of a page's links cannot hold four to one host -
- * true, and the conclusion drawn from it ("changing the lead funnel is an owner
- * decision") left the item permanently reported and never fixed.
- *
- * It is decided here instead, from what the page actually does. The four links
- * were four copies of ONE url: /trt/states/oregon/trt-legality/ shipped five
- * identical "Find a Provider" anchors to hormonesivhair.com/request-assistance/
- * and two identical guide links. Four copies of one destination add no route a
- * reader did not already have and no reachability the first copy did not give;
- * they add the footprint g3 names. So the page keeps ONE followed outbound
- * anchor per portfolio host - the intake, chosen by preferredLinkPerHost - and
- * every later copy becomes an in-page jump to it, so no CTA goes dead and the
- * reader can still act from the bottom of the page. MIN_INTAKE_LINKS moves with
- * it, to a pin that asserts more than a count (see
- * validate_velocity_canonical_anchor_links.js).
- *
- * Two exemptions, each because another contract pins the exact links:
- *   - The senior-living guides. Four intake links each is the owner's own rule,
- *     stated in priority order in validate_velocity_canonical_anchor_links.js,
- *     and theirs is the one funnel an agent does not redesign.
- *   - The homepage, whose six cards umbrella-homepage-shape matches literally.
- */
+// Search Readiness g3 (3 Nov 2026): senior guides now share the published
+// one-host cap. Their source retains the topic and city routing records, while
+// the served page keeps one tracked intake and repeated intake CTAs jump to it.
+// Non-intake destination labels remain text, never jumps to an unrelated intake.
 const SENIOR_FAMILY = 'SENIOR-LIVING-GUIDES';
 // The two safety-net guides velocity-canonical-anchor-links pins to SIX DISTINCT
 // metro anchors on dentistryguides.com. Six different destinations is not the
@@ -517,7 +465,7 @@ function seniorLivingRoutes() {
 function isCappableRoute(route /* , governed */) {
   const r = String(route || '').replace(/\/+$/, '') || '/';
   if (r === '/') return false;
-  return !seniorLivingRoutes().has(r);
+  return true;
 }
 
 /**
@@ -592,7 +540,7 @@ function applyAll(html, { portfolioHosts = [], org = null, exemptFromCap = false
   // Stamp before capping: the cap picks the surviving link by path, and a stamped
   // intake must still read as the intake when it does.
   out = stampIntakeTracking(out, portfolioHosts, route);
-  out = capPortfolioLinks(out, portfolioHosts, { exempt: exemptFromCap, perUrl: isMultiTargetRoute(route) });
+  out = capPortfolioLinks(out, portfolioHosts, { exempt: exemptFromCap, perUrl: isMultiTargetRoute(route), secondaryAsText: seniorLivingRoutes().has(String(route || '').replace(/\/+$/, '')) });
   out = ensureOrderedSteps(out);
   return out;
 }

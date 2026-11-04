@@ -30,7 +30,8 @@ const REQUIRED = {
   '/dentistry/dental-school-clinics/': 'dental-school-clinics'
 };
 
-// Senior-living (2026-10-13): the eight Memphis Tri-State guides route to
+// Source routing (2026-10-13; served output uses one attributed intake under
+// the 3 Nov 2026 Search Readiness g3 repair instruction): the eight Memphis Tri-State guides route to
 // memphisseniorcarehomes.com. The owner's rule, in priority order: (1) drive
 // the reader to the canonical intake - at least four /request-assistance/
 // links carrying the routing query, plus the directory home link; (2) link
@@ -146,6 +147,10 @@ for (const page of governed) {
     if (!card) { errors.push(`${page.slug}:rendered_anchor_card_missing:${rel}`); continue; }
     if (Number(card[1]) !== page.canonical_anchor_links.length) errors.push(`${page.slug}:rendered_anchor_count_mismatch:${card[1]}!=${page.canonical_anchor_links.length}:${rel}`);
     for (const link of page.canonical_anchor_links) {
+      if (dir !== ROOT && page.page_family === SENIOR_FAMILY) {
+        if (!card[2].includes(link.label)) errors.push(`${page.slug}:city_label_missing:${link.label}:${rel}`);
+        continue;
+      }
       if (!card[2].includes(`href="${escapeAttr(link.url)}"`)) errors.push(`${page.slug}:rendered_anchor_link_missing:${link.url}:${rel}`);
       else linksChecked++;
     }
@@ -195,24 +200,33 @@ for (const page of seniorPages) {
     const anchors = [...html.matchAll(/<a\s+([^>]*?)href="(https:\/\/memphisseniorcarehomes\.com[^"]*)"([^>]*)>/g)].map((m) => ({ attrs: `${m[1]} ${m[3]}`, href: m[2].replaceAll('&amp;', '&') }));
     for (const a of anchors) if (/rel="[^"]*(nofollow|sponsored|ugc)/.test(a.attrs)) errors.push(`${page.slug}:canonical_link_not_followed:${a.href}:${rel}`);
     const intakeLinks = anchors.filter((a) => { try { const u = new URL(a.href); return u.pathname === '/request-assistance/' && u.searchParams.get('vertical') === 'senior-living' && u.searchParams.get('src') === page.slug; } catch { return false; } });
-    if (intakeLinks.length < MIN_INTAKE_LINKS) errors.push(`${page.slug}:intake_links_below_${MIN_INTAKE_LINKS}:${intakeLinks.length}:${rel}`);
+    const served = dir !== ROOT;
+    if (served) {
+      if (anchors.length !== 1 || intakeLinks.length !== 1) errors.push(`${page.slug}:served_senior_requires_one_intake:${anchors.length}/${intakeLinks.length}:${rel}`);
+      for (const a of intakeLinks) if (new URL(a.href).searchParams.get('page_slug') !== page.slug.replace(/\/$/, '').split('/').pop()) errors.push(`${page.slug}:served_intake_not_attributed:${rel}`);
+      for (const m of html.matchAll(/<a\b[^>]*href="#([^"]+)"[^>]*data-link-capped="true"/g)) {
+        if (!html.includes(`id="${m[1]}"`)) errors.push(`${page.slug}:capped_cta_target_missing:${m[1]}:${rel}`);
+      }
+    }
+    if (!served && intakeLinks.length < MIN_INTAKE_LINKS) errors.push(`${page.slug}:intake_links_below_${MIN_INTAKE_LINKS}:${intakeLinks.length}:${rel}`);
     seniorIntakeLinks += intakeLinks.length;
-    if (!anchors.some((a) => a.href === `${SENIOR_ORIGIN}/`)) errors.push(`${page.slug}:directory_home_link_missing:${rel}`);
+    if (!served && !anchors.some((a) => a.href === `${SENIOR_ORIGIN}/`)) errors.push(`${page.slug}:directory_home_link_missing:${rel}`);
     const guideLinks = new Set(anchors.map((a) => (/^https:\/\/memphisseniorcarehomes\.com\/guides\/([a-z0-9-]+)\/$/.exec(a.href) || [])[1]).filter(Boolean));
     for (const g of guideLinks) if (!SENIOR_GUIDES.includes(g)) errors.push(`${page.slug}:unknown_canonical_guide:${g}:${rel}`);
-    if (!guideLinks.has(want)) errors.push(`${page.slug}:topic_guide_link_missing:/guides/${want}/:${rel}`);
+    if (!served && !guideLinks.has(want)) errors.push(`${page.slug}:topic_guide_link_missing:/guides/${want}/:${rel}`);
     const cityLinks = anchors.filter((a) => SENIOR_CITIES.some((c) => a.href === `${SENIOR_ORIGIN}/${c}/`));
-    if (!cityLinks.length) errors.push(`${page.slug}:city_page_link_missing:${rel}`);
+    if (!served && !cityLinks.length) errors.push(`${page.slug}:city_page_link_missing:${rel}`);
     const article = html.indexOf('<article id="guide-content">');
     if (article < 0) { errors.push(`${page.slug}:article_missing:${rel}`); continue; }
     const body = html.slice(article);
     const first = body.search(/<a\s[^>]*href="https:\/\/memphisseniorcarehomes\.com\/(guides\/[a-z0-9-]+|[a-z-]+)\/"/);
-    if (first < 0 || textWords(body.slice(0, first)).length > FIRST_WORDS) errors.push(`${page.slug}:no_canonical_guide_or_city_link_in_first_${FIRST_WORDS}_words:${rel}`);
+    if (!served && (first < 0 || textWords(body.slice(0, first)).length > FIRST_WORDS)) errors.push(`${page.slug}:no_canonical_guide_or_city_link_in_first_${FIRST_WORDS}_words:${rel}`);
     const closing = body.match(/<section class="card provider-cta closing-cta"[^>]*data-closing-cta="true">([\s\S]*?)<\/section>/);
     if (!closing) errors.push(`${page.slug}:closing_cta_missing:${rel}`);
     else {
-      if (!/href="https:\/\/memphisseniorcarehomes\.com\/request-assistance\/\?/.test(closing[1])) errors.push(`${page.slug}:closing_cta_not_to_intake:${rel}`);
-      if (!closing[1].includes(`href="${SENIOR_ORIGIN}/"`)) errors.push(`${page.slug}:closing_cta_directory_link_missing:${rel}`);
+      if (!served && !/href="https:\/\/memphisseniorcarehomes\.com\/request-assistance\/\?/.test(closing[1])) errors.push(`${page.slug}:closing_cta_not_to_intake:${rel}`);
+      if (served && !/href="#find-a-provider-memphisseniorcarehomes-com"/.test(closing[1])) errors.push(`${page.slug}:closing_cta_jump_missing:${rel}`);
+      if (!served && !closing[1].includes(`href="${SENIOR_ORIGIN}/"`)) errors.push(`${page.slug}:closing_cta_directory_link_missing:${rel}`);
     }
     // G3 per page: a canonical URL other than the page's own intake is linked at most
     // twice (the definition may repeat the 'Read the full guide' box's topic guide).
