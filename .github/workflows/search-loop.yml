@@ -75,27 +75,13 @@ jobs:
       # $0 model lanes (engine v1.2.3): Gemini free tier (no-billing project), metered Workers AI
       # (usage read with the analytics token, model run with the Workers AI token; 600 neurons/day).
       #
-      # f11: the engine reads AI-referral visits and AI-bot reads from this SAME
-      # token (src/analytics.mjs cloudflareDay), against the zone named in
-      # search-loop.config.json analytics.zone.
-      #
-      # NAMED STOP [CF_ZONE_ANALYTICS_SCOPE] - measured, not guessed. Run
-      # 41646487219 (3 Nov 2026, measure-only) reached Cloudflare and was refused:
-      #   "Actor 'com.cloudflare.api.token.41e529d327189bfdaddbbb3744b16778' does
-      #    not have permission 'com.cloudflare.api.account.zone.analytics.read'
-      #    for zone theindustryguides.com"
-      # Everything on this side is done: the config names the reader and the zone,
-      # the token is passed, and the engine asks. The one thing left is a Cloudflare
-      # permission, and minting or re-scoping a token needs account access no agent
-      # has - all four Cloudflare tokens in the Boss OS vault were probed against
-      # /user/tokens on 3 Nov 2026 and every one returned 403.
-      #
-      # Until SEARCH_LOOP_CF_USAGE_TOKEN gains Zone Analytics:Read (it already has
-      # Zone:Read - it finds the zone), the week report carries that sentence in
-      # place of the two numbers every week. It fails loudly with the missing scope
-      # named; it never reports a silent zero. Nothing else needs changing when the
-      # scope is added: the next scheduled run just starts returning numbers.
-      CLOUDFLARE_API_TOKEN: ${{ secrets.SEARCH_LOOP_CF_USAGE_TOKEN }}
+      # f11: use the analytics reader, not the Workers AI usage token. Live
+      # proof on 3 Nov 2026 returned AI-bot counts and Web Analytics referrals;
+      # the usage token could find the zone but was refused Analytics:Read.
+      # The dedicated secret is populated from the existing Boss OS vault key
+      # CLOUDFLARE_ANALYTICS_READ_TOKEN. Missing/refused reads remain "not read",
+      # never a fabricated zero. The Workers AI execution credential stays below.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.SEARCH_LOOP_CF_ANALYTICS_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SEARCH_LOOP_CF_ACCOUNT_ID }}
       CLOUDFLARE_WORKERS_AI_TOKEN: ${{ secrets.SEARCH_LOOP_CF_WORKERS_AI_TOKEN }}
       GEMINI_API_KEY: ${{ secrets.SEARCH_LOOP_GEMINI_API_KEY }}

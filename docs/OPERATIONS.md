@@ -65,3 +65,19 @@ live with the code. Strategy stays in `docs/strategy/`; this page is the "why di
 - **One search, one site:** `shares_audience_with` reads `local-guides-generator`'s ledger (`data/search-loop/` on its main) and that repo reads ours, so the two never target the same search.
 - **Commit:** `scripts/search_loop/commit.sh` - fold-in, build, `validate:release`, push only if green, then request Validate Repo (deploy follows it). A failed validation is `NAMED STOP [SEARCH_LOOP_VALIDATION_FAILED]`; nothing is pushed and the next run redoes the day.
 - **Guards:** `scripts/tests/test_search_loop_fold_in.js` (merge gate, shard 1; also run by the commit helper); `zero_paid_llm` accepts only the pinned engine call.
+
+## Search Readiness repairs, 3 Nov 2026
+
+- Senior guides now use the same published one-host link cap as the other
+  content pages. The source routing records still identify the correct topic,
+  cities and intake. Publishing keeps one followed, attributed intake; repeated
+  intake CTAs jump to it, while other destination labels become text so a city
+  label never links to the intake. This replaces the old senior-only exemption
+  that left 21 of 26 outbound links pointing at the same portfolio domain.
+- Search Loop uses `SEARCH_LOOP_CF_ANALYTICS_TOKEN`, populated from the existing
+  vault analytics reader, for `CLOUDFLARE_API_TOKEN`. The prior usage credential
+  could locate the zone but could not read its analytics. The engine's live
+  reader returned 960 AI-bot reads and zero AI-referral visits for the 24-hour
+  window ending 4 Nov 2026 00:17 UTC; referrals used Cloudflare Web Analytics.
+  The model execution token remains separate. Never replace refused reads with
+  zero or add a paid analytics service.

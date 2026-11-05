@@ -37,6 +37,22 @@ const { conversionPage, selfTest: claritySelfTest } = require('../lib/clarity_pa
 const { fitTitle } = require('../lib/search_snippet');
 const floorRule = require('../lib/floor_rule');
 
+// Regression proof: the senior exemption caused 21/26 outbound links on the
+// cost guide. Exercise the same publish transform, including attribution and
+// the closing jump; a distinct city must become text, never a misleading CTA.
+{
+  const route = '/senior-living/assisted-living-cost-memphis-germantown-collierville-bartlett-southaven';
+  const host = 'memphisseniorcarehomes.com';
+  const intake = `https://${host}/request-assistance/`;
+  const fixture = `<html><head><title>Senior care costs</title></head><body><main><a href="https://${host}/memphis-tn/">Memphis</a><a href="${intake}">Find care</a><a href="${intake}">Find care again</a></main></body></html>`;
+  const result = c.applyAll(fixture, { portfolioHosts: [host], route, exemptFromCap: !c.isCappableRoute(route) });
+  const links = [...result.matchAll(/<a\b[^>]*href="(https?:[^"]+)"/g)].filter(m => new URL(m[1].replaceAll('&amp;', '&')).hostname === host);
+  const target = 'find-a-provider-memphisseniorcarehomes-com';
+  if (links.length !== 1 || !links[0][1].includes('utm_source=') || !result.includes(`id="${target}"`) || !result.includes(`href="#${target}"`) || !result.includes('<span data-link-capped="true">Memphis</span>')) {
+    throw new Error('senior link-cap regression: expected one attributed intake, a working repeated CTA and an unlinked city label');
+  }
+}
+
 // The page floor is the sitemap's own route count (public_inventory_coverage.js):
 // every listed page must be graded in dist/.
 const admission = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/content/page_admission_registry.json'), 'utf8')).pages;
@@ -193,7 +209,7 @@ for (const abs of pages) {
   //
   // Two exemptions remain, each because another HARD_FAIL contract pins the
   // exact links and each named here rather than hidden:
-  //   - the homepage and the eight senior-living guides (isCappableRoute);
+  //   - the homepage (isCappableRoute);
   //   - the two dentistry safety-net guides, which velocity-canonical-anchor-links
   //     pins to SIX DISTINCT metro anchors on one canonical host. Six different
   //     destinations is what that page is FOR, so the concentration clause cannot
@@ -295,7 +311,7 @@ const report = {
     howto_without_provable_steps_pages: howToUnprovable,
     link_cap_exempt: capExempt.length,
     link_cap_exempt_pages: capExempt.slice(0, 40),
-    link_cap_exempt_reason: 'The cap reaches every served route. Exempt: the homepage (umbrella-homepage-shape matches its six cards literally) and the eight senior-living guides (four intake links each is the owner\'s own rule). Before 2026-10-26 the cap reached only /insights/ and /medium-articles/ pages no routing contract governed, which was 206 of 1,068 graded pages, and 862 pages carried a portfolio host over a quarter of their outbound links - four copies of ONE intake URL per page, satisfying a count that asked for four links and got four of the same one. The count is replaced by a stricter served-page pin in velocity-canonical-anchor-links (exactly one followed, attributed outbound intake anchor, and every capped CTA must reach it in-page).',
+    link_cap_exempt_reason: 'The cap reaches every served route. Exempt: the homepage (umbrella-homepage-shape matches its six cards literally). Before 2026-10-26 the cap reached only /insights/ and /medium-articles/ pages no routing contract governed, which was 206 of 1,068 graded pages, and 862 pages carried a portfolio host over a quarter of their outbound links - four copies of ONE intake URL per page, satisfying a count that asked for four links and got four of the same one. The count is replaced by a stricter served-page pin in velocity-canonical-anchor-links (exactly one followed, attributed outbound intake anchor, and every capped CTA must reach it in-page).',
     concentration_exempt: concentrationExempt,
     concentration_exempt_reason: 'The two dentistry safety-net guides are pinned by velocity-canonical-anchor-links to six DISTINCT metro anchors on dentistryguides.com - a reader in Houston needs the Houston one - so a quarter-of-outbound-links rule cannot apply to a page whose purpose is that directory. The per-URL clause still applies to them and still fails if one metro is linked twice.',
   },

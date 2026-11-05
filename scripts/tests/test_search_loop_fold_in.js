@@ -171,6 +171,12 @@ pin('f8/f11: the search loop stays measure-only, capped, and measuring', () => {
   assert.match(wf, /stage:\s*\$\{\{\s*inputs\.stage\s*\|\|\s*'check'\s*\}\}/,
     'the schedule must run stage=check (measure-only) while the search rescue is on');
 
+  // The old usage token locates the zone but cannot read analytics. Keep the
+  // live-proven reader on the analytics input; model execution stays separate.
+  const analyticsSecret = /CLOUDFLARE_API_TOKEN:\s*\$\{\{\s*secrets\.SEARCH_LOOP_CF_ANALYTICS_TOKEN\s*\}\}/;
+  assert.match(wf, analyticsSecret, 'AI measurement must use the analytics reader');
+  assert.throws(() => assert.match(wf.replaceAll('secrets.SEARCH_LOOP_CF_ANALYTICS_TOKEN', 'secrets.SEARCH_LOOP_CF_USAGE_TOKEN'), analyticsSecret), /AssertionError/);
+
   // Negative proofs: each pin rejects the exact shape it exists to catch.
   assert.throws(() => {
     const broken = { ...cfg, cap: { ...cfg.cap, max_per_day: 11 } };
