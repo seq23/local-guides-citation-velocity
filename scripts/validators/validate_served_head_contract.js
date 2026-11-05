@@ -59,6 +59,14 @@ if (!fs.existsSync(DIST)) stops.push(`${path.relative(ROOT, DIST)}/ does not exi
 
 const errors = [];
 for (const broken of floorRule.selfTest()) errors.push({ page: 'fixture', issue: 'floor_rule_regression', detail: broken });
+// A migrated source survives the frozen HTML restore in href and JSON-LD,
+// without changing a different destination or reapplying itself on the next build.
+{
+  const sources = [{ url: 'https://agency.test/new.pdf', previous_urls: ['https://agency.test/old/'] }];
+  const input = '<a href="https://agency.test/old/">Official fact sheet</a><script>{"citation":"https://agency.test/old/"}</script><a href="https://agency.test/old/extra">Other</a>';
+  const output = c.repairSourceUrls(input, sources);
+  if (!output.includes('href="https://agency.test/new.pdf"') || !output.includes('"citation":"https://agency.test/new.pdf"') || !output.includes('href="https://agency.test/old/extra"') || c.repairSourceUrls(output, sources) !== output) errors.push({ page: 'fixture', issue: 'source_url_migration', detail: 'migrated source URL did not survive frozen output correctly' });
+}
 const lengthNotes = { title_over_ceiling: 0, title_near_floor: 0, description_over_ceiling: 0, description_near_floor: 0 };
 // Different subjects and vertical qualifiers must survive the brand budget.
 for (const pair of [

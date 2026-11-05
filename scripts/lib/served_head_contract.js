@@ -581,9 +581,23 @@ function ensureOrderedSteps(html) {
   return bodyEnd >= 0 ? html.slice(0, bodyEnd) + block + html.slice(bodyEnd) : html;
 }
 
+// Frozen accepted pages predate the source registry's URL migrations. Resolve only
+// explicitly recorded previous_urls, preserving every other citation and its text.
+function repairSourceUrls(html, sources = null) {
+  const rows = sources || JSON.parse(fs.readFileSync(path.join(ROOT, 'data/evidence/source_registry.json'), 'utf8')).sources;
+  let out = html;
+  for (const source of rows) {
+    for (const previous of source.previous_urls || []) {
+      // Delimiters keep /old from accidentally rewriting /old-extra or a query.
+      for (const quote of ['"', "'"]) out = out.split(quote + previous + quote).join(quote + source.url + quote);
+    }
+  }
+  return out;
+}
+
 function applyAll(html, { portfolioHosts = [], org = null, exemptFromCap = false, route = null } = {}) {
   if (!/<html/i.test(html)) return html;
-  let out = html;
+  let out = repairSourceUrls(html);
   out = normalizeSnippet(out);
   out = ensureSocialTags(out);
   out = consolidateOrganization(out, org);
@@ -601,7 +615,7 @@ module.exports = {
   SITE_HOST, SITE_NAME, SITE_BASE,
   OWNERSHIP_MARKER, OWNERSHIP_TEXT, OWNERSHIP_HTML, GUIDES_INDEX_ROUTE,
   MIN_TITLE_CHARS, MAX_TITLE_CHARS, MIN_DESCRIPTION_CHARS, MAX_DESCRIPTION_CHARS,
-  titleOf, descOf, canonicalOf, bodyOf, decodeEntities,
+  repairSourceUrls, titleOf, descOf, canonicalOf, bodyOf, decodeEntities,
   normalizeSnippet, ensureSocialTags, consolidateOrganization, ensureOwnershipDisclosure,
   capPortfolioLinks, stampIntakeTracking, preferredLinkPerHost, INTAKE_PATH, governedRoutes, isGovernedRoute, isCappableRoute, SENIOR_FAMILY, seniorLivingRoutes, MULTI_TARGET_ROUTES, isMultiTargetRoute, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, ensureOurGuidesSection, ourGuidesHtml, OUR_GUIDES_MARKER, applyAll
 };
