@@ -53,7 +53,7 @@ function main() {
   let changed = 0;
   const governed = c.governedRoutes();
   if (!governed.size) { console.error('served-head-contract: no governed route read from data/page_families/velocity_page_specs.json; the cap exemption would reach nothing'); process.exit(1); }
-  const counts = { title_trimmed: 0, description_fitted: 0, social_added: 0, ownership_added: 0, links_capped: 0, intake_tracked: 0, steps_ordered: 0, cap_exempt: 0 };
+  const counts = { title_trimmed: 0, description_fitted: 0, social_added: 0, ownership_added: 0, links_capped: 0, links_hopped: 0, intake_tracked: 0, steps_ordered: 0, cap_exempt: 0 };
   for (const p of pages) {
     const before = fs.readFileSync(p, 'utf8');
     const beforeTitle = c.titleOf(before), beforeDesc = c.descOf(before);
@@ -67,10 +67,17 @@ function main() {
     if (/og:site_name/.test(after) && !/og:site_name/.test(before)) counts.social_added += 1;
     if (after.includes(c.OWNERSHIP_MARKER) && !before.includes(c.OWNERSHIP_MARKER)) counts.ownership_added += 1;
     if (/data-link-capped/.test(after)) counts.links_capped += 1;
+    if (/data-link-hop="true"/.test(after)) counts.links_hopped += 1;
     if (/request-assistance\/\?utm_source=/.test(after) && !/request-assistance\/\?utm_source=/.test(before)) counts.intake_tracked += 1;
     if (/<ol\b/i.test(after) && !/<ol\b/i.test(before)) counts.steps_ordered += 1;
     fs.writeFileSync(p, after);
     changed += 1;
+  }
+  // The senior-living guides are capped by the hop; a run that hopped none of them
+  // left g3 failing on all eight while reporting success.
+  if (c.seniorLivingRoutes().size && !counts.links_hopped) {
+    console.error('served-head-contract: no senior-living guide had its extra portfolio links routed through /go/; the g3 cap reached none of them');
+    process.exit(1);
   }
   console.log(`served-head-contract: pages=${pages.length} rewritten=${changed} ${Object.entries(counts).map(([k, v]) => `${k}=${v}`).join(' ')}`);
   if (!changed) {
