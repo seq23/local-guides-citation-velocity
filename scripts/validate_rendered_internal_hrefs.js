@@ -13,6 +13,15 @@ for (const file of allFiles) {
   if (rel.endsWith('/index.html')) routes.add('/' + rel.slice(0, -'/index.html'.length));
   if (rel === 'index.html') routes.add('/');
 }
+// A Pages Function answers its own route (functions/go/index.js -> /go/), so a
+// link to it is not missing even though no static file sits there.
+for (const file of allFiles) {
+  const rel = path.relative(ROOT, file).replace(/\\/g,'/');
+  if (!/^functions\/.+\.js$/.test(rel) || /(^|\/)_/.test(rel.slice('functions/'.length))) continue;
+  const route = '/' + rel.slice('functions/'.length).replace(/\.js$/, '').replace(/(^|\/)index$/, '');
+  routes.add(route.replace(/\/$/, '') || '/');
+  routes.add((route.replace(/\/$/, '') || '') + '/index.html');
+}
 // An absolute link to this site is an internal link. Until 2026-09-25 every
 // http(s) href was skipped, so "Originally published at
 // https://theindustryguides.com/medium-articles/trt/dht-hair-loss-treatments-plateau/"
