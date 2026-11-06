@@ -392,6 +392,45 @@ function capPortfolioLinks(html, portfolioHosts, { exempt = false, perUrl = fals
 }
 
 /**
+ * g3 for the senior-living guides: ONE direct outbound anchor per portfolio host,
+ * every other route through the own-host hop.
+ *
+ * The owner's funnel for these eight guides (validate_velocity_canonical_anchor_links.js)
+ * wants four intake CTAs, the directory home, the topic guide, a city page and a
+ * closing CTA, each one click from the reader. capPortfolioLinks would turn all but
+ * one into in-page jumps and break that. Here the kept anchor (the attributed intake,
+ * from preferredLinkPerHost) stays a direct, followed link, and every other portfolio
+ * anchor goes to /go/?to=<url> (functions/go/index.js: a 302 to the same URL, only to
+ * canonical hosts, noindex), marked rel="nofollow". The reader's click lands on the
+ * same page as before; the page carries one outbound anchor to the host, not twenty.
+ */
+const HOP_PATH = '/go/';
+function hopHref(url) { return `${HOP_PATH}?to=${encodeURIComponent(url)}`; }
+function unhopHref(href) {
+  const raw = decodeEntities(String(href || ''));
+  if (!raw.startsWith(`${HOP_PATH}?to=`)) return null;
+  try { return new URL(raw, SITE_BASE).searchParams.get('to'); } catch { return null; }
+}
+function hopPortfolioLinks(html, portfolioHosts) {
+  const hosts = new Set(portfolioHosts || []);
+  if (!hosts.size) return html;
+  const keep = preferredLinkPerHost(html, hosts);
+  const kept = new Set();
+  return html.replace(/<a\b([^>]*)>/gi, (whole, attrs) => {
+    const m = attrs.match(/\bhref=(["'])([\s\S]*?)\1/i);
+    if (!m) return whole;
+    let u;
+    try { u = new URL(decodeEntities(m[2]), SITE_BASE); } catch { return whole; }
+    const host = u.hostname.replace(/^www\./, '');
+    if (!hosts.has(host)) return whole;
+    if (!kept.has(host) && m[2] === keep.get(host)) { kept.add(host); return whole; }
+    let next = attrs.replace(m[0], `href=${m[1]}${escAttr(hopHref(u.href))}${m[1]}`);
+    next = /\brel=/i.test(next) ? next.replace(/\brel=(["'])([\s\S]*?)\1/i, (r, q, v) => `rel=${q}${/nofollow/.test(v) ? v : `${v} nofollow`.trim()}${q}`) : `${next} rel="nofollow"`;
+    return `<a${next} data-link-hop="true">`;
+  });
+}
+
+/**
  * Where the cap applies, and why it is not everywhere.
  *
  * This repository's architecture is to route a reader to a canonical
@@ -514,10 +553,16 @@ function seniorLivingRoutes() {
   seniorRoutesCache = out;
   return out;
 }
+function isSeniorLivingRoute(route) {
+  return seniorLivingRoutes().has(String(route || '').replace(/\/+$/, '') || '/');
+}
+// The senior-living guides are capped too now (Search Readiness g3, 6 Nov 2026:
+// all eight carried memphisseniorcarehomes.com on 78-89% of their outbound links).
+// They are capped by hopPortfolioLinks, not capPortfolioLinks, so the owner's
+// funnel keeps every route as a one-click link.
 function isCappableRoute(route /* , governed */) {
   const r = String(route || '').replace(/\/+$/, '') || '/';
-  if (r === '/') return false;
-  return !seniorLivingRoutes().has(r);
+  return r !== '/';
 }
 
 /**
@@ -606,7 +651,9 @@ function applyAll(html, { portfolioHosts = [], org = null, exemptFromCap = false
   // Stamp before capping: the cap picks the surviving link by path, and a stamped
   // intake must still read as the intake when it does.
   out = stampIntakeTracking(out, portfolioHosts, route);
-  out = capPortfolioLinks(out, portfolioHosts, { exempt: exemptFromCap, perUrl: isMultiTargetRoute(route) });
+  out = isSeniorLivingRoute(route)
+    ? hopPortfolioLinks(out, portfolioHosts)
+    : capPortfolioLinks(out, portfolioHosts, { exempt: exemptFromCap, perUrl: isMultiTargetRoute(route) });
   out = ensureOrderedSteps(out);
   return out;
 }
@@ -617,5 +664,5 @@ module.exports = {
   MIN_TITLE_CHARS, MAX_TITLE_CHARS, MIN_DESCRIPTION_CHARS, MAX_DESCRIPTION_CHARS,
   repairSourceUrls, titleOf, descOf, canonicalOf, bodyOf, decodeEntities,
   normalizeSnippet, ensureSocialTags, consolidateOrganization, ensureOwnershipDisclosure,
-  capPortfolioLinks, stampIntakeTracking, preferredLinkPerHost, INTAKE_PATH, governedRoutes, isGovernedRoute, isCappableRoute, SENIOR_FAMILY, seniorLivingRoutes, MULTI_TARGET_ROUTES, isMultiTargetRoute, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, ensureOurGuidesSection, ourGuidesHtml, OUR_GUIDES_MARKER, applyAll
+  capPortfolioLinks, stampIntakeTracking, preferredLinkPerHost, INTAKE_PATH, governedRoutes, isGovernedRoute, isCappableRoute, isSeniorLivingRoute, hopPortfolioLinks, hopHref, unhopHref, HOP_PATH, SENIOR_FAMILY, seniorLivingRoutes, MULTI_TARGET_ROUTES, isMultiTargetRoute, ensureOrderedSteps, howToStepsFrom, STEPS_MARKER, organizationNode, ensureOurGuidesSection, ourGuidesHtml, OUR_GUIDES_MARKER, applyAll
 };

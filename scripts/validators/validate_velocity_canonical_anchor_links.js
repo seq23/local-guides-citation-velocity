@@ -87,6 +87,16 @@ const MIN_INTAKE_LINKS = 4;
 // so it is held to "at least one" - the floor the served page then sharpens.
 const SERVED_INTAKE_ANCHORS = 1;
 const FIRST_WORDS = 150;
+const { unhopHref } = require('../lib/served_head_contract.js');
+function unhopHtml(html) {
+  return html.replace(/<a\b([^>]*\bdata-link-hop="true"[^>]*)>/g, (whole, attrs) => {
+    const m = attrs.match(/\bhref="([^"]*)"/);
+    const target = m && unhopHref(m[1]);
+    if (!target) { errors.push(`hop_link_unresolvable:${m ? m[1] : whole}`); return whole; }
+    const next = attrs.replace(m[0], `href="${escapeAttr(target)}"`).replace(/\srel="nofollow"/, '');
+    return `<a${next}>`;
+  });
+}
 
 const errors = [];
 const read = (rel) => {
@@ -141,7 +151,7 @@ for (const page of governed) {
     const file = renderedFile(dir, page.slug);
     const rel = path.relative(ROOT, file);
     if (!fs.existsSync(file)) { errors.push(`${page.slug}:rendered_page_missing:${rel}`); continue; }
-    const html = fs.readFileSync(file, 'utf8');
+    const html = unhopHtml(fs.readFileSync(file, 'utf8'));
     const card = html.match(/<section class="card canonical-anchor-links" data-canonical-anchor-links="(\d+)">([\s\S]*?)<\/section>/);
     if (!card) { errors.push(`${page.slug}:rendered_anchor_card_missing:${rel}`); continue; }
     if (Number(card[1]) !== page.canonical_anchor_links.length) errors.push(`${page.slug}:rendered_anchor_count_mismatch:${card[1]}!=${page.canonical_anchor_links.length}:${rel}`);
@@ -191,7 +201,11 @@ for (const page of seniorPages) {
     const file = renderedFile(dir, page.slug);
     const rel = path.relative(ROOT, file);
     if (!fs.existsSync(file)) { errors.push(`${page.slug}:rendered_page_missing:${rel}`); continue; }
-    const html = fs.readFileSync(file, 'utf8');
+    // The served guide keeps ONE direct anchor to the canonical host and routes the
+    // rest through the own-host /go/ hop (served_head_contract.hopPortfolioLinks,
+    // Search Readiness g3). A hop is still a one-click route to the same URL, so the
+    // funnel below is graded on where each link lands.
+    const html = unhopHtml(fs.readFileSync(file, 'utf8'));
     const anchors = [...html.matchAll(/<a\s+([^>]*?)href="(https:\/\/memphisseniorcarehomes\.com[^"]*)"([^>]*)>/g)].map((m) => ({ attrs: `${m[1]} ${m[3]}`, href: m[2].replaceAll('&amp;', '&') }));
     for (const a of anchors) if (/rel="[^"]*(nofollow|sponsored|ugc)/.test(a.attrs)) errors.push(`${page.slug}:canonical_link_not_followed:${a.href}:${rel}`);
     const intakeLinks = anchors.filter((a) => { try { const u = new URL(a.href); return u.pathname === '/request-assistance/' && u.searchParams.get('vertical') === 'senior-living' && u.searchParams.get('src') === page.slug; } catch { return false; } });
