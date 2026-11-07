@@ -402,7 +402,9 @@ function acceptMutationScope() {
 
   const accepted = [];
   const rejected = [];
+  const retired = [];
   let examined = 0;
+  const admitted = admissionByRoute();
 
   for (const route of scope.thawed_routes || []) {
     const idx = byRoute.get(route);
@@ -410,6 +412,23 @@ function acceptMutationScope() {
     const priorHash = record && record.transaction && record.transaction.prior_html_sha256;
     const renderedRel = (record && record.rendered_file) || routeToRenderedRel(route);
     const renderedAbs = path.join(ROOT, renderedRel);
+
+    // A thawed route that is no longer admitted (search rescue retired it behind a
+    // 301) has no page to accept: freezeRoute() refuses it, and that throw ended
+    // every Velocity Content Release from 3 Nov 2026 (/uscis-medical/civil-surgeon-near-me/,
+    // thawed for an agent repair after the rescue retired it). It goes back exactly
+    // as it was frozen - accepted bytes on disk, record FROZEN - and is reported.
+    if (!admitted.has(route)) {
+      if (priorHash) {
+        const priorAbs = path.join(ROOT, cacheRelForHash(priorHash));
+        if (fs.existsSync(priorAbs)) { fs.mkdirSync(path.dirname(renderedAbs), { recursive: true }); fs.writeFileSync(renderedAbs, zlib.gunzipSync(fs.readFileSync(priorAbs))); }
+      }
+      const current = loadRegistry();
+      const at = (current.pages || []).findIndex((p) => normalizeRoute(p.route) === route);
+      if (at >= 0) { current.pages[at] = { ...current.pages[at], state: 'FROZEN', transaction: null }; saveRegistry(current); }
+      retired.push({ route, rendered_file: renderedRel, reason: 'not_admitted_retired' });
+      continue;
+    }
     const rows = markersByRoute.get(route) || [];
 
     let lost = [];
@@ -453,11 +472,14 @@ function acceptMutationScope() {
     accepted_count: accepted.length,
     accepted_routes: accepted,
     rejected_count: rejected.length,
-    rejected
+    rejected,
+    retired_count: retired.length,
+    retired
   };
   writeJsonAtomic(path.join(ROOT, ACCEPTANCE_REPORT_REL), report);
 
-  return { accepted: accepted.length, routes: accepted, rejected, examined, report_rel: ACCEPTANCE_REPORT_REL };
+  if (retired.length) console.log(`MUTATION SCOPE: ${retired.length} thawed route(s) are no longer admitted (retired); restored as frozen, not accepted: ${retired.map((r) => r.route).join(', ')}`);
+  return { accepted: accepted.length, routes: accepted, rejected, retired, examined, report_rel: ACCEPTANCE_REPORT_REL };
 }
 function rollbackMutationScope() {
   const scope = readJson(ACTIVE_SCOPE_PATH, null);
