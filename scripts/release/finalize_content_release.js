@@ -184,7 +184,12 @@ function main(){
    // would withhold every other repair in the batch to punish one that would have
    // dropped delivered content. A route that is in neither set really did vanish.
    const rejectedSet=new Set((accepted.rejected||[]).map((row)=>row.route));
-   const notAccepted=expectedExistingRepairRoutes.filter((route)=>!acceptedSet.has(route)&&!rejectedSet.has(route));
+   // A route the search rescue retired (301, no longer admitted) is the same kind
+   // of named outcome: acceptMutationScope puts it back frozen and reports it
+   // (Velocity Content Release red 3-7 Nov 2026 on six /uscis-medical/ routes).
+   const retiredSet=new Set((accepted.retired||[]).map((row)=>row.route));
+   for(const route of retiredSet)console.warn(`MUTATION RETIRED ${route}: not admitted (retired behind a 301); its repair has no page to land on, accepted bytes restored. See ${accepted.report_rel}.`);
+   const notAccepted=expectedExistingRepairRoutes.filter((route)=>!acceptedSet.has(route)&&!rejectedSet.has(route)&&!retiredSet.has(route));
    if(notAccepted.length)throw new Error(`exact_repair_routes_not_refrozen:${notAccepted.join(',')}`);
    for(const row of accepted.rejected||[]){
      console.error(`MUTATION REJECTED ${row.route}: rebuild lost ${row.lost_marker_count} ledgered marker(s) that ${row.depended_on_by_rows} landed row(s) depend on; accepted bytes restored. See ${accepted.report_rel}.`);
