@@ -230,6 +230,9 @@ else if (read(kf).trim() !== kf.replace(/\.txt$/, '')) fail('indexnow_key', `${k
     for (const w of r.warnings) console.log(`  !! SITE HYGIENE WARNING [page_quality_slots]: ${w}`);
     const proof = selfTest();
     for (const m of proof.missed) fail('page_quality_slots', `negative proof no longer caught: ${m}`);
+    // The render-layer fold that keeps the hub tables under the cap (10 Nov 2026).
+    const ft = require('child_process').spawnSync(process.execPath, ['scripts/tests/test_fold_repeated_rows.js'], { cwd: ROOT, encoding: 'utf8' });
+    if (ft.status !== 0) fail('page_quality_slots', `scripts/tests/test_fold_repeated_rows.js failed: ${(ft.stderr || ft.stdout || '').trim().split('\n').slice(0, 3).join(' ')}`);
     if (!r.failures.length && !proof.missed.length) console.log(`  page_quality_slots: ${r.stats.examined} served pages examined, ${r.stats.over_cap} still over the cap, none worse than baseline; ${proof.cases} negative proofs caught`);
   }
 }
