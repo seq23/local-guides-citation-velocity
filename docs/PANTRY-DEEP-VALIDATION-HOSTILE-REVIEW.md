@@ -23,7 +23,6 @@ Status: PASS with environment limits noted.
 - `reports/deep-validation-registry.txt`
 - `reports/deep-validation-registry.exit`
 - `reports/local-pantry-validation.json`
-- `reports/local-pantry-trace.json`
 - `reports/nap-consistency.json`
 - `reports/deep-workflow-data-trace.json`
 
