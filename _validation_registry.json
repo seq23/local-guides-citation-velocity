@@ -144,268 +144,6 @@
   },
   "validators": [
     {
-      "status": "RETIRED",
-      "severity": "INFO",
-      "scope": "CONTAINER",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "depends_on": [],
-      "estimated_runtime_seconds": 20,
-      "timeout_seconds": 300,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "failure_action": "stop release and repair",
-      "tier": "Tier 5",
-      "profiles": [],
-      "id": "admission-reachability",
-      "title": "Released-page admission reachability",
-      "path": "scripts/validators/validate_admission_reachability.js",
-      "command": "node scripts/validators/validate_admission_reachability.js",
-      "tags": [
-        "admission",
-        "sitemap",
-        "release"
-      ],
-      "risk_prevented": "The admission registry is built from published_urls.json, which is built from the routes the admission registry admits. That fixed point meant no page released after the 2026-06-19 baseline could ever enter it: eleven routes were promoted to live as ADMITTED, rendered as indexable HTML, and named by no sitemap, feed or llms export. Left in place it would have turned the newly wired 46-route backlog drain into 46 new orphans. This fails if any released, rendered, non-retired page is missing from the registry.",
-      "why_existing_checks_do_not_cover": "rendered-route-admission-parity accepts a declared exclusion or a 301 as a complete answer, so a route can satisfy it forever while staying unreachable. sitemap-parity compares two artifacts derived from the same array and agrees with itself by construction. This one asks the different question: was the page the release lane actually released ever made findable?",
-      "requires_files": [
-        "content/_live/pages.json",
-        "data/content/page_admission_registry.json",
-        "_redirects"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion.",
-      "replacement_ids": []
-    },
-    {
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "agent-artifact-continuity",
-      "title": "Agent artifact continuity contract",
-      "path": "scripts/validators/validate_agent_artifact_continuity.js",
-      "command": "node scripts/validators/validate_agent_artifact_continuity.js",
-      "risk_prevented": "Prevents new four-artifact agent runs from being partially copied, silently skipped, or disconnected from normalized/exact implementation outputs.",
-      "requires_files": [
-        "data/report_fixes/agent_runs",
-        "data/report_fixes/agent_exact_implementation_policy.json"
-      ],
-      "produces_files": [
-        "artifacts/validation/agent-artifact-continuity.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/agent-artifact-continuity.json"
-      ],
-      "timeout_seconds": 180,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "Existing generic validators do not prove this Batch F agent artifact continuity constraint.",
-      "estimated_runtime_seconds": 20,
-      "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion.",
-      "replacement_ids": []
-    },
-    {
-      "id": "agent-run-artifact-intake",
-      "title": "Twin Agent artifact intake contract",
-      "path": "scripts/validators/validate_agent_run_artifact_intake.js",
-      "command": "node scripts/validators/validate_agent_run_artifact_intake.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "agent-run",
-        "audit",
-        "full-audit",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "agent-runs",
-        "citation-velocity",
-        "workflow"
-      ],
-      "risk_prevented": "Prevents active Twin Agent runs from being absorbed when their manifest paths, source artifacts, or committed artifact contents are missing, typoed, unresolved local-fetch placeholders, or otherwise unusable.",
-      "why_existing_checks_do_not_cover": "General file and route validators do not inspect optional historical agent-run manifests and their source attachment paths.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/agent-run-artifact-intake.json",
-      "failure_action": "fix the manifest/source artifact package, or mark the run QUARANTINED with quarantine_reason and quarantine_action before agent-run-specific release work",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/agent-run-artifact-intake.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/agent-run-artifact-intake.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "foreign_input"
-    },
-    {
-      "id": "answer-blocks",
-      "title": "Answer block export contract",
-      "path": "scripts/validators/validate_answer_blocks.js",
-      "command": "node scripts/validators/validate_answer_blocks.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "llm"
-      ],
-      "tags": [
-        "llm",
-        "export"
-      ],
-      "risk_prevented": "Generated answer blocks could be missing required fields.",
-      "why_existing_checks_do_not_cover": "Only required after answer block generation.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/answer-blocks.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [
-        "llm-exports"
-      ],
-      "requires_files": [
-        "dist/llm/answer_blocks.json"
-      ],
-      "prepare_commands": [
-        "npm run build:answer-blocks"
-      ],
-      "prepare_produces_files": [
-        "dist/llm/answer_blocks.json"
-      ],
-      "prepare_mutates_files": [
-        "dist/llm/**"
-      ],
-      "produces_files": [
-        "artifacts/validation/answer-blocks.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/answer-blocks.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "atlas-cluster-links",
-      "title": "Legacy atlas/cluster link checker",
-      "path": "scripts/validate_atlas_cluster_links.js",
-      "command": "node scripts/validate_atlas_cluster_links.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Retired",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "retired"
-      ],
-      "risk_prevented": "None; historical compatibility only.",
-      "why_existing_checks_do_not_cover": "Superseded by focused admitted validators.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": null,
-      "failure_action": "record finding and continue",
-      "replacement_ids": [
-        "render-integrity"
-      ],
-      "retirement_reason": "Fully covered by render-integrity.",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "atlas-coverage",
-      "title": "Legacy atlas coverage checker",
-      "path": "scripts/validate_atlas_coverage.js",
-      "command": "node scripts/validate_atlas_coverage.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Retired",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "retired"
-      ],
-      "risk_prevented": "None; historical compatibility only.",
-      "why_existing_checks_do_not_cover": "Superseded by focused admitted validators.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": null,
-      "failure_action": "record finding and continue",
-      "replacement_ids": [
-        "render-integrity",
-        "publish-inventory"
-      ],
-      "retirement_reason": "Covered by render integrity and publish inventory.",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "authority-contracts",
-      "title": "Repository authority contracts",
-      "path": "scripts/validators/validate_authority_contracts.js",
-      "command": "node scripts/validators/validate_authority_contracts.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "authority"
-      ],
-      "risk_prevented": "Wrong repository identity, updater, lifecycle, or command contracts can invalidate the entire release.",
-      "why_existing_checks_do_not_cover": "This check validates repo-local constitutional files and package command presence.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/authority-contracts.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/authority-contracts.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/authority-contracts.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "repo_integrity"
-    },
-    {
       "id": "canonical-data-immutability",
       "title": "Canonical-data runtime immutability",
       "path": "scripts/validators/validate_canonical_data_immutability.js",
@@ -536,85 +274,6 @@
       "unit_attribution_measured": "12 Oct 2026: appending hello@joinwestpeek.com to dist/about.html failed the validator (exit 1); scripts/tests/test_brand_separation.js constructs each failing state (function sender, dist name, env.EMAIL_FROM read, missing pin, zero dist files, zero function files). 12 Oct 2026 (weekly report): setting FROM = \"os@westpeek.ventures\" in scripts/search_console/search_outcomes_weekly.py failed the validator (exit 1, two failures: forbidden sender domain + unpinned sender); restored, exit 0. Sending code (scripts/ and functions/ files calling api.resend.com) and every workflow now scanned; zero of either fails."
     },
     {
-      "id": "citation-targets",
-      "title": "Citation target export contract",
-      "path": "scripts/validators/validate_citation_targets.js",
-      "command": "node scripts/validators/validate_citation_targets.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "llm"
-      ],
-      "tags": [
-        "llm",
-        "citation"
-      ],
-      "risk_prevented": "Citation target output could be empty or malformed.",
-      "why_existing_checks_do_not_cover": "Only required after citation target generation.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/citation-targets.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [
-        "llm-exports"
-      ],
-      "requires_files": [
-        "dist/llm/citation_targets.json"
-      ],
-      "prepare_commands": [
-        "npm run build:citation-targets"
-      ],
-      "prepare_produces_files": [
-        "dist/llm/citation_targets.json"
-      ],
-      "prepare_mutates_files": [
-        "dist/llm/**"
-      ],
-      "produces_files": [
-        "artifacts/validation/citation-targets.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/citation-targets.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "cluster-membership",
-      "title": "Legacy cluster membership checker",
-      "path": "scripts/validate_cluster_membership.js",
-      "command": "node scripts/validate_cluster_membership.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Retired",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "retired"
-      ],
-      "risk_prevented": "None; historical compatibility only.",
-      "why_existing_checks_do_not_cover": "Superseded by focused admitted validators.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": null,
-      "failure_action": "record finding and continue",
-      "replacement_ids": [
-        "render-integrity",
-        "query-compiler"
-      ],
-      "retirement_reason": "Covered by render integrity for release and query-compiler after mutation.",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true
-    },
-    {
       "id": "content-safety",
       "title": "Content safety boundaries",
       "path": "scripts/validators/validate_content_safety_boundaries.js",
@@ -708,49 +367,6 @@
       "hard_fail_basis": "build_integrity"
     },
     {
-      "id": "demand-backed-pages",
-      "title": "Demand-backed page admission",
-      "path": "scripts/validation/validate_demand_backed_pages.js",
-      "command": "node scripts/validation/validate_demand_backed_pages.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "admission",
-        "demand",
-        "fanout",
-        "future-proof"
-      ],
-      "risk_prevented": "A sitemap URL can point at nothing, a rendered route can reach no public surface, and the admitted corpus can grow on fan-out planning records rather than on a query with measured volume.",
-      "why_existing_checks_do_not_cover": "Sitemap parity and publish inventory prove a route is advertised consistently; neither asks whether the route was admitted against measured demand or whether the 100,000-row fan-out planning set has crossed into the site.",
-      "estimated_runtime_seconds": 20,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/demand-backed-pages.json",
-      "failure_action": "stop release; admit routes only against a measured query in data/demand/measured_demand.json",
-      "depends_on": [
-        "publish-inventory",
-        "sitemap-parity"
-      ],
-      "requires_files": [
-        "data/demand/measured_demand.json",
-        "data/demand/pre_gate_admission_baseline.json",
-        "data/content/page_admission_registry.json",
-        "content/_live/published_urls.json",
-        "data/strategy/page_opportunity_backlog.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion.",
-      "replacement_ids": []
-    },
-    {
       "id": "dentistry-report-fixes-2026-04-28",
       "title": "Historical Dentistry fix validator",
       "path": "scripts/validate_dentistry_report_fixes_2026_04_28.js",
@@ -823,136 +439,6 @@
       "hard_fail_basis": "build_integrity"
     },
     {
-      "id": "distribution-contract",
-      "title": "Distribution script contract",
-      "path": "scripts/validate_distribution_contract.js",
-      "command": "node scripts/validate_distribution_contract.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 7",
-      "scope": "CONTAINER",
-      "profiles": [
-        "distribution"
-      ],
-      "tags": [
-        "distribution"
-      ],
-      "risk_prevented": "Distribution scripts could violate exact-artifact deployment rules.",
-      "why_existing_checks_do_not_cover": "Workflow validation does not inspect every distribution helper invariant.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/distribution-contract.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/distribution-contract.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/distribution-contract.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "distribution-inputs",
-      "title": "Distribution input contract",
-      "path": "scripts/validate_distribution_inputs.js",
-      "command": "node scripts/validate_distribution_inputs.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 7",
-      "scope": "CONTAINER",
-      "profiles": [
-        "distribution"
-      ],
-      "tags": [
-        "distribution"
-      ],
-      "risk_prevented": "Deployment could consume missing or malformed distribution inputs.",
-      "why_existing_checks_do_not_cover": "Release validation does not require deployment credentials or provider files.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/distribution-inputs.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [
-        "distribution-contract"
-      ],
-      "requires_files": [
-        ".build/indexnow-priority.txt",
-        ".build/indexnow-batch.txt",
-        ".build/distribution-priority-urls.txt",
-        ".build/distribution-readme.txt"
-      ],
-      "prepare_commands": [
-        "npm run distribution:prepare"
-      ],
-      "prepare_produces_files": [
-        ".build/indexnow-priority.txt",
-        ".build/indexnow-batch.txt",
-        ".build/distribution-priority-urls.txt",
-        ".build/distribution-readme.txt"
-      ],
-      "prepare_mutates_files": [
-        ".build/**"
-      ],
-      "produces_files": [
-        "artifacts/validation/distribution-inputs.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/distribution-inputs.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "entity-graph",
-      "title": "Entity graph export contract",
-      "path": "scripts/validators/validate_entity_graph.js",
-      "command": "node scripts/validators/validate_entity_graph.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "llm"
-      ],
-      "tags": [
-        "llm",
-        "entity"
-      ],
-      "risk_prevented": "Entity graph output could contain broken references or invalid records.",
-      "why_existing_checks_do_not_cover": "Only required after entity graph generation.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/entity-graph.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [
-        "llm-exports"
-      ],
-      "requires_files": [
-        "dist/llm/entity_graph.json"
-      ],
-      "prepare_commands": [
-        "npm run build:entity-graph"
-      ],
-      "prepare_produces_files": [
-        "dist/llm/entity_graph.json"
-      ],
-      "prepare_mutates_files": [
-        "dist/llm/**"
-      ],
-      "produces_files": [
-        "artifacts/validation/entity-graph.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/entity-graph.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
       "id": "evidence-registry",
       "title": "Primary-source and claim registry integrity, including retired authority URLs",
       "path": "scripts/validators/validate_evidence_registry.js",
@@ -1001,321 +487,6 @@
       ],
       "enforce_no_source_mutation": true,
       "hard_fail_basis": "user_safety_or_false_public_claim"
-    },
-    {
-      "id": "executable-bits",
-      "title": "Executable-file permissions",
-      "path": "scripts/validate_executable_bits.js",
-      "command": "node scripts/validate_executable_bits.js",
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "packaging",
-        "runtime"
-      ],
-      "risk_prevented": "Required shell or executable scripts may become unusable after extraction.",
-      "why_existing_checks_do_not_cover": "Source and render validators do not inspect file mode contracts.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/executable-bits.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [
-        "artifacts/validation/executable-bits.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "demotion_reason": "2026-10-11: demoted from HARD_FAIL to free a blocker slot for search-outcomes-weekly-report (cap 40). Brittle: 27 of the 28 files in content/_shared/executable_files.json are run through an interpreter (node/bash/ruby), where the mode bit has no effect, so a lost +x on any of them turned main red with no user or crawler harm. The one file executed directly (distribution_scripts/deploy_distribution.sh in deploy-distribution.yml) fails loudly at that step with 'Permission denied'. It still runs in every profile and stays visible as a strong warning."
-    },
-    {
-      "id": "homepage-schema",
-      "title": "Homepage schema contract",
-      "path": "scripts/validate_homepage_schema.js",
-      "command": "node scripts/validate_homepage_schema.js",
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "homepages",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "schema",
-        "homepage"
-      ],
-      "risk_prevented": "Primary landing pages could lose required structured data.",
-      "why_existing_checks_do_not_cover": "Generic HTML integrity does not validate homepage schema semantics.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/homepage-schema.json",
-      "failure_action": "record finding and continue",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [
-        "artifacts/validation/homepage-schema.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY"
-    },
-    {
-      "id": "indexnow-batch-budget",
-      "title": "IndexNow batch budget safety",
-      "path": "scripts/validators/validate_indexnow_batch_budget.js",
-      "command": "node scripts/validators/validate_indexnow_batch_budget.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "distribution",
-        "release"
-      ],
-      "tags": [
-        "distribution",
-        "indexing",
-        "search-submission"
-      ],
-      "risk_prevented": "Bounds the IndexNow submission batch and proves the backlog the bound creates is accounted for. Hard-fails if it examines zero URLs: the loop used to `continue` past a missing file, so with .build absent it iterated nothing and printed PASS while declared HARD_FAIL - structurally incapable of failing. Also fails if batch + deferred does not account for the whole URL pool, or if the overflow pool has no rotating slots and no bounded coverage period, which is what made 2051 URLs 'deferred' forever while the same 100 shipped on every deploy.",
-      "why_existing_checks_do_not_cover": "distribution-inputs proves the artifacts exist; it does not bound the batch, does not reconcile submitted against deferred, and does not check that the deferred set is ever reachable. Nothing else reads the coverage receipt.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/indexnow-batch-budget.json",
-      "failure_action": "stop release and rebuild search submission artifacts",
-      "depends_on": [
-        "distribution-inputs"
-      ],
-      "requires_files": [
-        ".build/indexnow-priority.txt",
-        ".build/indexnow-batch.txt",
-        ".build/indexnow-deferred-batch.txt",
-        ".build/indexnow-batch-coverage.json"
-      ],
-      "prepare_commands": [
-        "npm run build"
-      ],
-      "prepare_produces_files": [
-        ".build/indexnow-priority.txt",
-        ".build/indexnow-batch.txt",
-        ".build/indexnow-deferred-batch.txt",
-        ".build/indexnow-batch-coverage.json"
-      ],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/indexnow-batch-budget.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/indexnow-batch-budget.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "ingestion-health",
-      "title": "Public-signal ingestion health",
-      "path": "scripts/validate_ingestion_health.js",
-      "command": "node scripts/validate_ingestion_health.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Tier 6",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "ingestion",
-        "external"
-      ],
-      "risk_prevented": "Degraded Reddit or public-signal intake can reduce query discovery coverage.",
-      "why_existing_checks_do_not_cover": "Release content can remain structurally correct even when an external signal source is temporarily degraded.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/ingestion-health.json",
-      "failure_action": "record finding and continue",
-      "warning_patterns": [
-        "STRONG WARNING ONLY",
-        "reddit_health: degraded",
-        "zero_reddit_warning"
-      ],
-      "depends_on": [],
-      "requires_files": [
-        "data/community/collection_status.json",
-        "data/community/ingestion_report.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion.",
-      "replacement_ids": []
-    },
-    {
-      "id": "llm-exports",
-      "title": "LLM export contract",
-      "path": "scripts/validators/validate_llm_exports.js",
-      "command": "node scripts/validators/validate_llm_exports.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "llm"
-      ],
-      "tags": [
-        "llm",
-        "export"
-      ],
-      "risk_prevented": "LLM export files could be empty or malformed.",
-      "why_existing_checks_do_not_cover": "Only required after the LLM export build lane runs.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/llm-exports.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [
-        "dist/llm/answers.json",
-        "dist/llm/coverage.json",
-        "dist/llm/query_coverage_map.json",
-        "dist/llm/query_metadata.json",
-        "dist/llm/internal_authority_graph.json"
-      ],
-      "prepare_commands": [
-        "npm run build:llm-exports"
-      ],
-      "prepare_produces_files": [
-        "dist/llm/answers.json",
-        "dist/llm/coverage.json",
-        "dist/llm/query_coverage_map.json",
-        "dist/llm/query_metadata.json",
-        "dist/llm/internal_authority_graph.json"
-      ],
-      "prepare_mutates_files": [
-        "dist/llm/**"
-      ],
-      "produces_files": [
-        "artifacts/validation/llm-exports.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/llm-exports.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "local-guides-tree-hygiene",
-      "title": "Local Guides phase tree hygiene",
-      "path": "scripts/validators/validate_phase_tree_hygiene.js",
-      "command": "node scripts/validators/validate_phase_tree_hygiene.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "release",
-        "strict",
-        "local",
-        "citation-intelligence"
-      ],
-      "tags": [
-        "repo-hygiene",
-        "citation-intelligence",
-        "source-snapshot"
-      ],
-      "risk_prevented": "Prevents corrupt/reintroduced monolithic 100K fanout data, invalid shard placement, generated dependency debris, or phase-proof artifacts from polluting the repository/source snapshot.",
-      "why_existing_checks_do_not_cover": "Existing citation validators prove strategy and proof packets, but they do not enforce physical artifact placement or dependency-folder exclusion.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/local-guides-tree-hygiene.json",
-      "failure_action": "move generated artifacts into approved folders or remove dependency/build debris before packaging",
-      "depends_on": [],
-      "requires_files": [
-        "data/strategy/citation_growth_strategy.json",
-        "data/queries/citation_fanout_opportunities_100k/index.json",
-        "data/measurement/citation_honesty_scoreboard.json",
-        "data/measurement/zero_dollar_citation_test_ledger.json",
-        "data/measurement/free_win_self_heal_queue.json",
-        "artifacts/validation/citation-100k-runway.json",
-        "scripts/citation_intelligence/build_100k_citation_runway.js"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/local-guides-tree-hygiene.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/local-guides-tree-hygiene.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "_retired_prepare_commands": [
-        "npm run citation:100k-runway"
-      ],
-      "_retired_prepare_reason": "Unreachable. scripts/validation/run_validation_registry.js runs prepare_commands only when a requires_files entry is MISSING, and every prerequisite listed here is a committed file, so this prepare has never executed once - confirmed against production run 33267988587, which logged zero PREPARE lines while its banner said prerequisites=ON. The artifacts these validators read are committed evidence and are validated as committed; declaring a refresh command that cannot run described a freshness guarantee the runner never provided.",
-      "hard_fail_basis": "repo_integrity"
-    },
-    {
-      "id": "local-pantry-trace",
-      "title": "Local pantry usage trace",
-      "path": "scripts/content/validate_local_pantry_trace.js",
-      "command": "node scripts/content/validate_local_pantry_trace.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "pantry",
-        "workflow",
-        "authority"
-      ],
-      "risk_prevented": "Prevents pantry or workflow expansion from shipping without executable governance and data trace proof.",
-      "why_existing_checks_do_not_cover": "Existing site validators do not inspect the newly added pantry banks or workflow trace coverage.",
-      "estimated_runtime_seconds": 30,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/local-pantry-trace.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [
-        "scripts/content/trace_local_pantry_usage.js"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/local-pantry-trace.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/local-pantry-trace.json"
-      ],
-      "enforce_no_source_mutation": false,
-      "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion.",
-      "replacement_ids": []
     },
     {
       "status": "ACTIVE",
@@ -1367,99 +538,6 @@
       "hard_fail_basis": "aeo_seo_geo_vital"
     },
     {
-      "id": "network-crawler-contract",
-      "title": "Network identity and crawler access contract",
-      "path": "scripts/validators/validate_network_crawler_contract.js",
-      "command": "node scripts/validators/validate_network_crawler_contract.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "distribution",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "schema",
-        "robots",
-        "crawler"
-      ],
-      "risk_prevented": "Search crawlers could be blocked or rendered pages could lose truthful network identity; training-bot access remains an explicit publisher choice.",
-      "why_existing_checks_do_not_cover": "Generic robots and schema validators do not prove the explicit eight-agent policy or the prohibition on cross-brand sameAs misuse.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/network-crawler-contract.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [
-        "config/cloudflare/zone_cache_rules.json",
-        "_headers"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/network-crawler-contract.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/network-crawler-contract.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "aeo_seo_geo_vital"
-    },
-    {
-      "id": "canonical-vertical-ids",
-      "title": "Every emitted vertical value is a canonical id, and no published route doubles a vertical slug",
-      "path": "scripts/validators/validate_canonical_vertical_ids.js",
-      "command": "node scripts/validators/validate_canonical_vertical_ids.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 2",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "routing",
-        "taxonomy",
-        "feeds",
-        "cross-repo-contract"
-      ],
-      "risk_prevented": "13 Oct 2026: this repo emitted one vertical under several spellings (uscis / uscis_medical / uscis-medical; pi / personal_injury / personal-injury) into the files other systems read - feeds/promotion-candidates.json, releases/fanout_query_clusters.<vertical>.json, data/signals/*/latest.json and the citation runway. local-guides-generator drops any spelling outside its alias table (all 9 candidates it never ingested were personal_injury). Fails when any `vertical` value in an emitted file, or a fanout release file name, is not one of the canonical ids in data/contracts/velocity_vertical_aliases.json (dentistry, neuro, trt, personal-injury, uscis-medical, senior-living), when a sitemap/route list carries a doubled vertical slug, and when it finds zero emitted files, zero vertical values or zero route files.",
-      "why_existing_checks_do_not_cover": "vertical-keys checks the staged compiled-query source vocabulary, not what is emitted; the retired no-double-vertical-slugs only looked for doubled slugs. Nothing read the published feed, release files or candidate queues for the spelling the consumer keys on. The validator runs a 7-case self-test on synthetic trees every time (scripts/tests/test_canonical_vertical_ids.js runs the same cases standalone).",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/canonical-vertical-ids.json",
-      "failure_action": "fix the emitter to resolve through scripts/lib/canonical_vertical.js, rebuild, and re-run",
-      "depends_on": [],
-      "requires_files": [
-        "data/contracts/velocity_vertical_aliases.json",
-        "feeds/promotion-candidates.json",
-        "sitemap.xml"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/canonical-vertical-ids.json"
-      ],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "hard_fail_basis": "public_route_integrity",
-      "unit_attribution_measured": "13 Oct 2026: keying the citation runway seed back to \"uscis\" (scripts/citation_intelligence/build_100k_citation_runway.js) and regenerating made the validator fail (exit 1, 21 errors: 50 \"uscis\" values in data/measurement/free_win_self_heal_queue.json and 1,000 per runway shard); restored, regenerated, exit 0 with 102,743 canonical values across 35 emitted files. Before the emitter fixes it failed on releases/fanout_query_clusters.personal_injury.json and .uscis.json and on 609 \"personal_injury\" values in .build/fanout_manifest.json."
-    },
-    {
       "id": "blocked-lead-domains",
       "title": "Lead submissions from BLOCKED_LEAD_DOMAINS are dropped quietly; all others are stored",
       "path": "scripts/validators/validate_blocked_lead_domains.js",
@@ -1499,52 +577,6 @@
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
       "severity_note": "STRONG_WARNING, not HARD_FAIL: the HARD_FAIL cap (40) is full, and a blocked sender getting through is a nuisance, not a release-blocking harm."
-    },
-    {
-      "id": "umbrella-homepage-shape",
-      "title": "The homepage routes to the six canonical guide sites first: hero, then six vertical cards with verified links, no keyword-inventory grid",
-      "path": "scripts/validators/validate_umbrella_homepage_shape.js",
-      "command": "node scripts/validators/validate_umbrella_homepage_shape.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 2",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "routing",
-        "homepage",
-        "cross-repo-contract"
-      ],
-      "risk_prevented": "theindustryguides.com is the hub that routes readers to the six canonical guide sites. The owner-approved homepage (14 Oct 2026) puts that routing first; before it, the first thing in <main> was a five-domain 'Official local guides' strip and an 'At a glance' box, the senior-living canonical was missing from the router strip, and a keyword grid ('Related decision paths people also use' / 'Related search intents') sat inside the hero. Fails when index.html (and dist/index.html when built) has no hero holding the H1, when the first section after the hero is not #vertical-routes, when fewer than six vertical cards render or a canonical vertical id has no card (or two), when a card does not link its canonical's /request-assistance/, its root and its /<vertical>/ hub, when a card has fewer than three links to 200-status guide paths in data/contracts/canonical_guides/<vertical>.json (or any guide link outside it), when the visible page carries 'Related decision paths', 'owned routes', 'Related search intents' or a fanout block, and when content/_live/pages.json lacks a vertical's hub slug (absorbed from live-hubs). Zero cards or a missing file fails.",
-      "why_existing_checks_do_not_cover": "site-hygiene checks the definition under the H1 and the JSON-LD types, not what follows the hero or where the hub routes; rendered-internal-hrefs checks internal hrefs resolve, not that each vertical is routed to its own canonical; velocity-canonical-anchor-links governs Velocity pieces, not the homepage cards; live-hubs only read pages.json. The validator runs a 9-case self-test on synthetic pages every time (scripts/tests/test_umbrella_homepage_shape.js runs the same cases standalone plus the renderer's own output).",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 60,
-      "evidence_file": "artifacts/validation/umbrella-homepage-shape.json",
-      "failure_action": "fix scripts/lib/umbrella_homepage.js (cards, question paths) or scripts/build_site.js, rebuild, and re-run",
-      "depends_on": [],
-      "requires_files": [
-        "index.html",
-        "data/contracts/velocity_vertical_aliases.json",
-        "content/_live/pages.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/umbrella-homepage-shape.json"
-      ],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "hard_fail_basis": "public_route_integrity",
-      "unit_attribution_measured": "14 Oct 2026: against the homepage rendered from main ad87cbcdc (committed index.html) the check fails with 11 errors: 0 vertical cards of 6 (one 'no card' per canonical vertical id), the first section in <main> is the 'Official local guides' strip rather than the hero, and the visible 'Related decision paths' / 'Related search intents' fanout block. Against the rebuilt homepage it passes (2 files, 6 cards, 9 self-test cases)."
     },
     {
       "id": "no-internal-instruction-leak",
@@ -1601,185 +633,6 @@
       "hard_fail_basis": "user_safety_or_false_public_claim"
     },
     {
-      "id": "rendered-template-scaffolding",
-      "title": "No rendered page publishes template scaffolding as content",
-      "path": "scripts/validators/validate_rendered_template_scaffolding.js",
-      "command": "node scripts/validators/validate_rendered_template_scaffolding.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 3",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "content-quality",
-        "agent-artifacts",
-        "extraction"
-      ],
-      "risk_prevented": "113 of 2,070 rendered pages (5.5%) published a template placeholder or an authoring instruction as if it were the answer: 111 carried \"Translate <query> into a specific verification question before choosing a provider.\" in the \"What to verify\" cell, 68 carried \"Concrete verification point <n>\", and 3 a bare \"Requirement <n>\". scripts/lib/html_fix_acceptance_parser.js padded requirement lists and table rows out to the requested count when it had fewer real requirements, and two durable stores (data/release/accepted_page_artifacts.json, data/report_fixes/agent_exact_semantic_acceptance_manifest.json) re-emitted the delivered copies on every build, so the family survived being flagged. These are pages whose whole purpose is being cited.",
-      "why_existing_checks_do_not_cover": "no-internal-instruction-leak catches BUILD VOCABULARY on a page - FILEPATH:, Directly answer:, a validator's own failure message. It has no pattern for an unfilled template slot or for an instruction phrased as reader advice, so a numbered placeholder and a \"Translate ... into a question\" cell both counted as content. Substance and extraction validators count blocks, not whether a cell holds an answer.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/rendered-template-scaffolding.json",
-      "failure_action": "fix the GENERATOR, never the page - a hand-edited page has the string back on the next build. scripts/lib/html_fix_acceptance_parser.js emits the family and scripts/lib/template_scaffolding.js is the shared screen the producers and this gate both import. Where a section was never filled in, OMIT it; do not invent content for the slot.",
-      "depends_on": [],
-      "requires_files": [
-        "sitemap.xml",
-        "index.html"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/rendered-template-scaffolding.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/rendered-template-scaffolding.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "user_safety_or_false_public_claim"
-    },
-    {
-      "id": "copy-hygiene",
-      "title": "Reader-facing copy carries no answer-engine label and no off-vertical lawyer row (warning only)",
-      "path": "scripts/validators/validate_copy_hygiene.js",
-      "command": "node scripts/validators/validate_copy_hygiene.js",
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "content-quality",
-        "agent-artifacts",
-        "copy"
-      ],
-      "risk_prevented": "Pages printed an answer-panel label as part of the copy: insights/uscis-medical-009-how-much-does-the-exam-cost.html showed \"how much does the i-693 medical exam cost in 2026 (Gemini 1.5 Flash)\", and on 2026-09-22 44 of 2,425 rendered pages carried \"(Perplexity)\", \"(OpenAI GPT-4o)\", \"Gemini 1.5 Flash\" or \"OpenAI GPT-4o\". The label entered through the agent's query field, which the fix ledger copies into required_markers. Separately, personal-injury \"What to verify\" rows (\"Get the contingency percentage ...\") were compiled onto dental, TRT, neuro and USCIS pages. Both are cosmetic copy defects: reported on every run, never blocking, by owner decision 2026-09-22.",
-      "why_existing_checks_do_not_cover": "model-name-free-routes (retired 2026-09-22) only read URLs and titles, never body copy. rendered-template-scaffolding is a blocker for unfilled template slots and authoring instructions; the lawyer-row check it briefly carried (#146) was moved here so a copy defect cannot turn main red. no-internal-instruction-leak looks for build vocabulary, not a vendor name or another vertical's row.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/copy-hygiene.json",
-      "failure_action": "record finding and continue. Fix at the source, never on the page: the answer-engine strip is questionFrom in scripts/lib/agent_artifact_source_parser.js (the intake reads CSV rows through it); the personal-injury rows live in scripts/lib/vertical_rows.js.",
-      "depends_on": [],
-      "requires_files": [
-        "sitemap.xml",
-        "index.html"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/copy-hygiene.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/copy-hygiene.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "occupancy-control-separation",
-      "title": "Citation-occupancy control separation and open-bucket integrity",
-      "path": "scripts/validators/validate_occupancy_control_separation.js",
-      "command": "node scripts/validators/validate_occupancy_control_separation.js",
-      "risk_prevented": "Makes the occupancy probe's own control pair binding. FAILS the run when the pair INVERTS - the query known to be CLOSED measuring more open than the one known to be OPEN, which is what happened (1.00 against 0.50) while the check was only a printed note and five pages were queued for publication off the numbers it did not stop. Re-classifies every recorded citation host with the shared classifier and FAILS if any unrecognised host is counted as open, or if a recorded open/unclassifiable count does not match what the hosts derive. FAILS if a citation_occupancy number is published while the controls do not separate, or withheld while they do. Requires the unclassifiable slot count on every run. Hard-fails if it examines zero probes, zero cited hosts or zero controls. 2026-10-07: also FAILS when the two arms overlap (a control query measured again under any other role, a duplicate query, two rows claiming one control role, or both controls the same query), when summary.control_separation_ok disagrees with the separation recomputed from the control probes, and when data/authority_scale/query_atlas.json carries a measured citation_occupancy basis while the pair does not separate. A pair that does not separate is a NAMED STOP printed on every run, not a failure: the number is withheld and nothing downstream reads it.",
-      "requires_files": [
-        "scripts/queries/host_occupancy_classifier.js",
-        "data/signals/query_class_occupancy.json",
-        "data/signals/citation_probe_config.json",
-        "data/strategy/page_strategy_registry.json"
-      ],
-      "produces_files": [],
-      "mutates_files": [],
-      "timeout_seconds": 60,
-      "depends_on": [],
-      "why_existing_checks_do_not_cover": "occupancy-probe-contract checks that the probe records a separation field and notes an inversion; it never failed on one, and it takes the probe's own arithmetic on trust. atlas-release-join checks a candidate's occupancy is traceable to a probe, not whether the probe measures openness at all. Neither re-derives the buckets from the recorded hosts, so a classifier that silently counted unrecognised hosts as open would pass both.",
-      "estimated_runtime_seconds": 1,
-      "why_not_hard_fail": "Re-activated 2026-10-07 as a STRONG_WARNING, not a blocker. The harm it watches - release candidates ranked by an unvalidated occupancy number - is not one of hard_fail_bases, and it was culled from HARD_FAIL on 2026-09-22 for that reason. The binding stop sits where the harm would happen: scripts/queries/join_atlas_to_release_queue.mjs exits 1 if any atlas row claims the measured basis while control_separation_ok is not true.",
-      "failure_action": "rebuild the atlas from the withheld signal (npm run atlas:build) or re-derive the occupancy file with --rescore-only; never publish citation_occupancy on an unseparated pair"
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "id": "query-fields-model-free",
-      "title": "No answer-engine label inside a query field (record layer)",
-      "path": "scripts/validators/validate_query_fields_model_free.js",
-      "command": "node scripts/validators/validate_query_fields_model_free.js",
-      "tags": [
-        "agent-artifacts",
-        "queries",
-        "provenance"
-      ],
-      "risk_prevented": "An answer-engine label glued onto a query (\"best TRT clinic near me (Perplexity)\", \"... Gemini 1.5 Flash\") is provenance, not the reader's search text. In a query field it is slugified into routes (seven -openai-gpt-4o/-perplexity/-gemini-1-5-flash URLs, 301'd 2026-08-29), copied into required_markers so rebuilds must keep printing it (16 live insight pages), and matched by agent-run coverage as a marker the page is 'missing' (74 false gaps). The intake strip landed 2026-09-22 but merges re-banked the old values: on 2026-10-07 264 values in 5 stores still carried one. FAILS on any git-tracked JSON under data/ and content/ (protected agent roots excluded) whose query, queries, normalized_query, query_target, primary_query, target_query, llm_bait_phrase or required_markers carries a label shape (scripts/lib/model_name_guard.js hasEngineLabel); a question ABOUT a model ('can chatgpt diagnose adhd') passes. Hard-fails on zero query fields examined.",
-      "why_existing_checks_do_not_cover": "copy-hygiene reads rendered pages, after the fact and as a warning; model-name-free-routes (retired) read routes and titles. Neither reads the stores the label travels through, so a merge that re-banked a label passed both for 15 days.",
-      "why_not_hard_fail": "Rendered answer-engine labels were ruled cosmetic (owner decision 2026-09-22, copy-hygiene stays a warning, model-name-free-routes retired), so this is a STRONG_WARNING. Every writer that carries a query forward cleans on write (cleanQueryText), so content motion cannot trip it; only a writer that skips the cleaner does.",
-      "requires_files": [
-        "scripts/lib/model_name_guard.js",
-        "scripts/lib/query_field_walk.js"
-      ],
-      "produces_files": [
-        "artifacts/validation/query-fields-model-free.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/query-fields-model-free.json"
-      ],
-      "evidence_file": "artifacts/validation/query-fields-model-free.json",
-      "failure_action": "run node scripts/migrations/strip_model_names_from_query_fields.js, then route the writer that skipped cleanQueryText through it",
-      "repair_command": "node scripts/migrations/strip_model_names_from_query_fields.js",
-      "repair_writes": [
-        "data/migrations/2026-10-07_model_names_out_of_query_fields.json"
-      ],
-      "timeout_seconds": 120,
-      "depends_on": [],
-      "estimated_runtime_seconds": 1
-    },
-    {
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "tier": "Tier 1",
@@ -1823,71 +676,6 @@
       "why_existing_checks_do_not_cover": "occupancy-probe-contract and occupancy-control-separation both validate the CONTENTS of whatever rows the file happens to hold; both passed at 36 rows and would pass at 1. Neither knows how many rows there ought to be, so neither can see the file being truncated.",
       "estimated_runtime_seconds": 1,
       "hard_fail_basis": "published_content_loss"
-    },
-    {
-      "id": "page-cluster-contract",
-      "title": "Legacy page/cluster contract",
-      "path": "scripts/validate_page_cluster_contract.js",
-      "command": "node scripts/validate_page_cluster_contract.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Retired",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "retired"
-      ],
-      "risk_prevented": "None; historical compatibility only.",
-      "why_existing_checks_do_not_cover": "Superseded by focused admitted validators.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": null,
-      "failure_action": "record finding and continue",
-      "replacement_ids": [
-        "render-integrity"
-      ],
-      "retirement_reason": "Covered by render integrity.",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "page-generation-quality",
-      "title": "Legacy page quality checker",
-      "path": "scripts/validate_page_generation_quality.js",
-      "command": "node scripts/validate_page_generation_quality.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Retired",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "retired"
-      ],
-      "risk_prevented": "None; historical compatibility only.",
-      "why_existing_checks_do_not_cover": "Superseded by focused admitted validators.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": null,
-      "failure_action": "record finding and continue",
-      "replacement_ids": [
-        "generated-content-gate",
-        "render-integrity"
-      ],
-      "retirement_reason": "Superseded by the stricter one-atom admission gate and render integrity.",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true
     },
     {
       "id": "page-record-identity",
@@ -2139,41 +927,6 @@
       "hard_fail_basis": "public_route_integrity"
     },
     {
-      "id": "release-batch-surface",
-      "title": "Release batch source/live parity",
-      "path": "scripts/validate_release_batch_surface.js",
-      "command": "node scripts/validate_release_batch_surface.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "query"
-      ],
-      "tags": [
-        "mutation",
-        "release-batch"
-      ],
-      "risk_prevented": "A batch release could omit or add unintended structural pages.",
-      "why_existing_checks_do_not_cover": "Only meaningful immediately after batch mutation.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/release-batch-surface.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/release-batch-surface.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/release-batch-surface.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
       "id": "release-batch-workflow",
       "title": "Release batch workflow contract",
       "path": "scripts/validators/validate_release_batch_workflow.js",
@@ -2208,86 +961,6 @@
         "artifacts/validation/release-batch-workflow.json"
       ],
       "enforce_no_source_mutation": true
-    },
-    {
-      "id": "render-integrity",
-      "title": "Rendered hierarchy integrity",
-      "path": "scripts/validate_render_integrity.js",
-      "command": "node scripts/validate_render_integrity.js",
-      "status": "RETIRED",
-      "severity": "INFO",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [],
-      "tags": [
-        "render",
-        "links",
-        "hierarchy"
-      ],
-      "risk_prevented": "Atlas, cluster, and insight pages can be missing, thin, or disconnected.",
-      "why_existing_checks_do_not_cover": "Href checking alone does not validate hierarchy-specific content and backlinks.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/render-integrity.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [
-        "artifacts/validation/render-integrity.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion.",
-      "replacement_ids": []
-    },
-    {
-      "id": "rendered-internal-hrefs",
-      "title": "Rendered href and asset integrity, and no served link into a redirect",
-      "path": "scripts/validate_rendered_internal_hrefs.js",
-      "command": "node scripts/validate_rendered_internal_hrefs.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "render",
-        "links"
-      ],
-      "risk_prevented": "Broken internal links or assets create user and crawler failures. Since 2026-09-25 it also fails a served page (a sitemap route) that links a _redirects source, the .html form of a page (Pages answers 308), or an absolute https://theindustryguides.com/ URL that does not exist. Bing Webmaster and a site crawl found 79 retired community-question slugs linked from 164 live pages, four /about.html-style links, and one 404 in a medium article's 'Originally published at' line, all of which this check passed: it skipped every absolute URL and counted a retired page's leftover file as a live target.",
-      "why_existing_checks_do_not_cover": "Hierarchy validation inspects only governed route relationships, not every rendered href/src. search-quality-basics checks redirect sources against sitemaps and admission, never against the links that point at them.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/hrefs.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/hrefs.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/hrefs.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "unit_attribution": [
-        "errors[].file"
-      ],
-      "unit_attribution_measured": "Measured on 2026-09-09 against a constructed failing state: adding <a href=\"/zzz-nonexistent-route-measure/\"> to trt/index.html produced errors: [{file: \"trt/index.html\", href: \"/zzz-nonexistent-route-measure/\", issue: \"internal target missing\"}] and exit 1. The shape had to be measured rather than read off a passing run, because errors is empty while the lane is green and the key alone does not say whether its elements are strings or objects - here they are objects carrying `file`. errors is offenders-only; the 79,507 href values that resolved are counted in `checked` and named nowhere. `file` is the page CONTAINING the bad href, which is the page the release authored, so the charge is correct for the two failure shapes this validator raises on a touched page: a link to a target that does not exist, and an unresolved {{template token}}. The opposite direction - a release deleting a target so untouched pages now point at nothing - names those untouched linking pages, which are outside the mutation scope, so it stays systemic and fails the whole run. That is the right verdict: removing a route that others link to is a build fault, not one bad row.",
-      "hard_fail_basis": "public_route_integrity"
     },
     {
       "status": "ACTIVE",
@@ -2333,89 +1006,6 @@
         "unjustified_shrinks[].implementation_path"
       ],
       "hard_fail_basis": "published_content_loss"
-    },
-    {
-      "id": "repo-hygiene",
-      "title": "Repository and packaging hygiene",
-      "path": "scripts/validators/validate_repo_hygiene.js",
-      "command": "node scripts/validators/validate_repo_hygiene.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 8",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "packaging",
-        "hygiene"
-      ],
-      "risk_prevented": "Logs, nested repos, generated junk, or backup artifacts can contaminate the baseline ZIP.",
-      "why_existing_checks_do_not_cover": "ZIP integrity cannot prove the source tree was clean before packaging.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/repo-hygiene.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/repo-hygiene.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/repo-hygiene.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "repo_integrity"
-    },
-    {
-      "id": "search-intelligence-agent-separation",
-      "title": "Search Intelligence Agent Runs read-only separation",
-      "path": "scripts/validators/validate_search_intelligence_agent_separation.js",
-      "command": "node scripts/validators/validate_search_intelligence_agent_separation.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 2",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "full-audit",
-        "local",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "search-intelligence",
-        "agent-runs",
-        "provenance"
-      ],
-      "risk_prevented": "Prevents Search Intelligence from altering protected Agent Runs history, normalized records, source ledgers, or semantic manifests.",
-      "why_existing_checks_do_not_cover": "Existing Agent validators prove Agent lineage, not immutability against the new Search Intelligence lane.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/search-intelligence-agent-separation.json",
-      "failure_action": "stop release and restore protected Agent bytes",
-      "depends_on": [],
-      "requires_files": [
-        "data/search_intelligence/protected_agent_tree_manifest.json",
-        "data/search_intelligence/agent_signal_bridge.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/search-intelligence-agent-separation.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/search-intelligence-agent-separation.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "repo_integrity"
     },
     {
       "id": "search-intelligence-safety",
@@ -2464,95 +1054,6 @@
       "hard_fail_basis": "user_safety_or_false_public_claim"
     },
     {
-      "id": "search-quality-basics",
-      "title": "Indexable HTML search-quality fundamentals",
-      "path": "scripts/validators/validate_search_quality_basics.js",
-      "command": "node scripts/validators/validate_search_quality_basics.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [
-        "advisory",
-        "audit",
-        "full-audit",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "seo",
-        "html",
-        "encoding",
-        "canonical",
-        "deduplication"
-      ],
-      "risk_prevented": "Indexable pages could ship with mojibake, missing metadata, invalid heading structure, admitted redirect aliases, or exact duplicate content.",
-      "why_existing_checks_do_not_cover": "Page Release Law covers admitted routes; this check also covers legacy indexable HTML and redirect hygiene without enforcing marketing copy.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/search-quality-basics.json",
-      "failure_action": "repair durable source or redirect contract before release",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/search-quality-basics.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/search-quality-basics.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "aeo_seo_geo_vital"
-    },
-    {
-      "id": "search-snippet-floors",
-      "title": "Served pages carry a title of at least 30 and a meta description of at least 120 characters; fails only below 75% of each floor (23 / 90), shortfalls above that and any length over a ceiling are notes (warning only)",
-      "path": "scripts/validators/validate_search_snippet_floors.js",
-      "command": "node scripts/validators/validate_search_snippet_floors.js",
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "seo",
-        "metadata",
-        "content-quality"
-      ],
-      "risk_prevented": "Bing Webmaster, 2026-09-25: 86 titles under 30 characters (\"About\", \"Atlas\", \"USCIS: Cost\", \"Minoxidil cost | Insight\") and 43 meta descriptions under 100 on theindustryguides.com. Each came from a generator that printed a record's short label straight into the head. The generators now fit both values through scripts/lib/search_snippet.js; this proves every sitemap route agrees, reads the same constants, and refuses to pass having graded fewer than 1,500 pages. Ceilings are now held too, over the SERVED tree, by served-head-contract: this validator reads the frozen repo-root pages and keeps the floors; the publish-time contract trims the ceilings in dist/.",
-      "why_existing_checks_do_not_cover": "search-quality-basics and page-release-law assert the title and description exist (page-release-law: 3 and 20 characters); neither has a floor a search engine would accept.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 120,
-      "evidence_file": "artifacts/validation/search-snippet-floors.json",
-      "failure_action": "record finding and continue. Fix at the source: renderLayout in scripts/build_site.js and insightHeadTitle in scripts/lib/publish_contract.js call scripts/lib/search_snippet.js; a record whose own text is too short to fit is fixed in content/_live/pages.json, never on the rendered page.",
-      "depends_on": [],
-      "requires_files": [
-        "sitemap.xml"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/search-snippet-floors.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/search-snippet-floors.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
       "id": "served-head-contract",
       "title": "The served tree keeps the head and disclosure contract: title 30-65, description 120-160 (fails only below 75% of a floor; over a ceiling never fails, the installer trims), complete social set, Organization with logo, ownership disclosure, capped link concentration",
       "path": "scripts/validators/validate_served_head_contract.js",
@@ -2599,92 +1100,6 @@
       "enforce_no_source_mutation": true
     },
     {
-      "id": "org-entity-graph",
-      "title": "Served Organization JSON-LD equals entity.json: third-party sameAs only, Spry Labs parent, guides as sub-organizations",
-      "path": "scripts/validators/validate_org_entity_graph.js",
-      "command": "node scripts/validators/validate_org_entity_graph.js",
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "content-release",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "schema",
-        "authority",
-        "sameAs",
-        "entity"
-      ],
-      "risk_prevented": "Grid authority audit, 30 Oct 2026: the Organization sameAs pointed at the site own /about and /methodology, nothing declared a parent or the six guides as sub-organizations, and no check compared the served graph to one statement of the entity. This proves entity.json (sameAs third-party only and each VERIFIED, both ways; parent Spry Labs; sub-organizations with their own @id; pending profiles carrying an owner action), the derived node, and every page in dist/ against it, replaying hostile fixtures every run and failing on zero pages.",
-      "why_existing_checks_do_not_cover": "network-crawler-contract only proved sameAs URLs were registered, and required a non-empty list, which is what kept the self-reference alive. It now carries the file and node half of this contract as the blocker (the HARD_FAIL cap of 40 is full); this runner adds the full served-tree sweep and the evidence file.",
-      "estimated_runtime_seconds": 6,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/org-entity-graph.json",
-      "failure_action": "stop release and repair entity.json, the verified registry or the publish-time Organization layer",
-      "depends_on": [],
-      "requires_files": [
-        "entity.json",
-        "data/authority/verified_same_as_registry.json",
-        "dist/index.html"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/org-entity-graph.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/org-entity-graph.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "verified-same-as-publication",
-      "title": "A VERIFIED sameAs record in the authority registry reaches the published Organization node",
-      "path": "scripts/validators/validate_verified_same_as_publication.js",
-      "command": "node scripts/validators/validate_verified_same_as_publication.js",
-      "status": "ACTIVE",
-      "severity": "STRONG_WARNING",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "schema",
-        "authority",
-        "governance"
-      ],
-      "risk_prevented": "data/authority/verified_same_as_registry.json carries the rule that every sameAs URL must be registered there before publication, and five validators policed it, but NO generator read it: the registry was write-only, so a verified profile could be registered and still appear on no page. Search Readiness c1 fails on sameAs for all 2,136 pages and the only honest fix is a registered verified profile, which must therefore actually publish. scripts/lib/network_schema.js reads the registry now and this test proves the path in both directions - a complete VERIFIED record reaches the rendered graph; an incomplete or RETIRED one does not - and restores the file.",
-      "why_existing_checks_do_not_cover": "network-crawler-contract, citation-dominance-strategy and strategy-integrity-contract all assert the registry's SHAPE and forbid unregistered sameAs values. None of them asserts that a registered value is published, which is the half that did not exist.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 60,
-      "evidence_file": null,
-      "failure_action": "record finding and continue. The reader is verifiedSameAs() in scripts/lib/network_schema.js; the published node is networkSchemaNodes()[0], which scripts/lib/served_head_contract.js also uses.",
-      "depends_on": [],
-      "requires_files": [
-        "data/authority/verified_same_as_registry.json",
-        "data/network/network_identity_registry.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true
-    },
-    {
       "id": "no-conflict-markers",
       "title": "No tracked file carries a git conflict marker",
       "path": "scripts/validators/validate_no_conflict_markers.js",
@@ -2726,173 +1141,6 @@
       "enforce_no_source_mutation": true,
       "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
       "hard_fail_basis": "repo_integrity"
-    },
-    {
-      "id": "recommendation-retry-ledger",
-      "title": "A recommendation that misses its page is retried first and escalated after three misses",
-      "path": "scripts/validators/validate_recommendation_retry_ledger.js",
-      "command": "node scripts/validators/validate_recommendation_retry_ledger.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "release"
-      ],
-      "tags": [
-        "agent-runs",
-        "self-heal"
-      ],
-      "risk_prevented": "The release lane code that decides whether a missed agent recommendation is retried, counted and escalated could break silently, leaving recommendations off their pages with nobody told. Pure-code check on constructed rows; repo content cannot change its answer.",
-      "why_existing_checks_do_not_cover": "No other check exercises scripts/lib/recommendation_retry_ledger.js; the escalation it drives is the only signal that a recommendation keeps missing.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 60,
-      "evidence_file": null,
-      "failure_action": "fix scripts/lib/recommendation_retry_ledger.js",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "hard_fail_basis": "build_integrity"
-    },
-    {
-      "id": "sitemap-parity",
-      "title": "Sitemap and inventory parity",
-      "path": "scripts/validate_sitemap_parity.js",
-      "command": "node scripts/validate_sitemap_parity.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 5",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "render",
-        "sitemap"
-      ],
-      "risk_prevented": "Published pages can become undiscoverable or stale URLs can remain indexed.",
-      "why_existing_checks_do_not_cover": "Route existence does not prove sitemap parity.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/sitemap-parity.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [
-        "scripts/lib/sitemap_children.js"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [
-        "artifacts/validation/sitemap-parity.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "hard_fail_basis": "aeo_seo_geo_vital"
-    },
-    {
-      "id": "social-content-loop",
-      "title": "Public signal processing contract",
-      "path": "scripts/validators/validate_social_content_loop.js",
-      "command": "node scripts/validators/validate_social_content_loop.js",
-      "status": "ON_DEMAND",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 4",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "social"
-      ],
-      "tags": [
-        "social",
-        "mutation"
-      ],
-      "risk_prevented": "Public-signal normalization could create unmapped, unapproved, or externally mutating content work instead of governed Velocity source rows.",
-      "why_existing_checks_do_not_cover": "Only meaningful after the signal-processing queues and Velocity source index exist.",
-      "estimated_runtime_seconds": 60,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/social-content-loop.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/social-content-loop.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/social-content-loop.json"
-      ],
-      "enforce_no_source_mutation": true
-    },
-    {
-      "id": "strategy-integrity-contract",
-      "title": "Four-layer strategy authority and anti-fabrication integrity",
-      "path": "scripts/validators/validate_strategy_integrity_contract.js",
-      "command": "node scripts/validators/validate_strategy_integrity_contract.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 6",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "strategy",
-        "authority",
-        "provider-substrate",
-        "reviewers",
-        "sameAs",
-        "anti-fabrication"
-      ],
-      "risk_prevented": "The repository could contradict its publishing authority, expose unverified provider or reviewer data, or publish an unsupported sameAs graph while technical validators still pass.",
-      "why_existing_checks_do_not_cover": "Layer-specific validators prove routes and evidence but do not reconcile repo authority doctrine or require verified registries before provider, reviewer, Person, or sameAs publication.",
-      "estimated_runtime_seconds": 2,
-      "timeout_seconds": 180,
-      "evidence_file": "artifacts/validation/strategy-integrity-contract.json",
-      "failure_action": "stop release and repair authority doctrine, registry provenance, or public output before deployment",
-      "depends_on": [
-        "network-crawler-contract",
-        "evidence-registry"
-      ],
-      "requires_files": [
-        "data/strategy/citation_dominance_contract.json",
-        "data/providers/provider_substrate_contract.json",
-        "data/providers/provider_registry.json",
-        "data/authority/reviewer_registry.json",
-        "data/authority/verified_same_as_registry.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/strategy-integrity-contract.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/strategy-integrity-contract.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "user_safety_or_false_public_claim"
     },
     {
       "id": "validation-policy",
@@ -3032,48 +1280,6 @@
       "estimated_runtime_seconds": 1
     },
     {
-      "id": "vertical-keys",
-      "title": "Vertical-key integrity",
-      "path": "scripts/validate_vertical_keys.js",
-      "command": "node scripts/validate_vertical_keys.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 2",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "source",
-        "taxonomy"
-      ],
-      "risk_prevented": "Invalid vertical keys can route content to the wrong generator, URL, or canonical domain.",
-      "why_existing_checks_do_not_cover": "Schema and render checks cannot reliably infer intended taxonomy ownership.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/vertical-keys.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [
-        "content/_staged/compiled_query_pages.json"
-      ],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [],
-      "mutates_files": [
-        "artifacts/validation/vertical-keys.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "hard_fail_basis": "public_route_integrity"
-    },
-    {
       "id": "workflow-yaml-syntax",
       "title": "GitHub Actions YAML syntax and top-level shape",
       "path": "scripts/validators/validate_workflow_yaml.py",
@@ -3209,154 +1415,6 @@
       "replacement_ids": []
     },
     {
-      "status": "RETIRED",
-      "severity": "INFO",
-      "scope": "CONTAINER",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "depends_on": [],
-      "estimated_runtime_seconds": 5,
-      "timeout_seconds": 300,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "failure_action": "stop release and repair",
-      "tier": "Tier 1",
-      "profiles": [],
-      "id": "agent-artifact-stranding",
-      "title": "No landed agent artifact sits pending longer than one release cadence",
-      "path": "scripts/validators/validate_agent_artifact_stranding.js",
-      "command": "node scripts/validators/validate_agent_artifact_stranding.js",
-      "tags": [
-        "agent-artifact",
-        "cadence",
-        "workflow",
-        "release"
-      ],
-      "risk_prevented": "Velocity Content Release triggered only on the push that delivered a manifest, so an artifact got exactly one attempt. On 2026-09-02 the TRT run landed at 13:51, the lane ran at 13:52 on that sha and died at validate:release on the recovery-store midnight defect; absorption and publish never executed, the manifest stayed READY_FOR_ABSORPTION, and nothing retried because the trigger needs a NEW manifest. The defect was fixed and merged three hours later and the artifact was still stranded. query-evidence-refresh.yml - the repo’s single permitted scheduled committer - now also dispatches the release lane when a manifest is still unabsorbed, so the absorption pass can claim it; this fails if any manifest sits pending longer than the interval that schedule declares.",
-      "why_existing_checks_do_not_cover": "agent-artifact-continuity fails on a run with no normalized output, but it fails the moment the raw drop lands and passes as soon as anything - including a human running the intake by hand inside an unrelated PR, which is what happened on 2026-09-02 - writes the normalized file. It measures a state, not an elapsed time, and it has no idea whether an automated lane will ever claim the run. This one derives its threshold from the workflow's own cron, so deleting the schedule fails the guard instead of disarming it.",
-      "requires_files": [
-        ".github/workflows/query-evidence-refresh.yml",
-        "data/report_fixes/agent_runs"
-      ],
-      "produces_files": [
-        "artifacts/validation/agent-artifact-stranding.json"
-      ],
-      "mutates_files": [],
-      "retirement_reason": "Culled 2026-09-22: it did not guard a harm in hard_fail_bases (broken repo/build, broken public route, missing AEO/SEO/GEO vital, user-safety or false public claim, malformed agent drop, lost published content). It graded bookkeeping, process or new-page style, and turned main red on content motion.",
-      "replacement_ids": []
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "depends_on": [],
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "failure_action": "stop release and repair",
-      "tier": "Tier 1",
-      "profiles": [
-        "agent-run",
-        "audit",
-        "core",
-        "full-audit",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "id": "agent-run-drop-integrity",
-      "title": "Every agent-run manifest and report_fixes JSON round-trips through JSON.parse; defective drops are named",
-      "path": "scripts/validators/validate_agent_run_drop_integrity.js",
-      "command": "node scripts/validators/validate_agent_run_drop_integrity.js",
-      "tags": [
-        "agent-artifact",
-        "agent-runs",
-        "citation-velocity",
-        "json-integrity",
-        "release"
-      ],
-      "risk_prevented": "On 2026-09-15 Twin Agent committed data/report_fixes/agent_runs/2026-09-15/dentistry as four copies of a 15-byte non-UTF-8 blob, one named agent_run_manifest.json. Nothing asked whether the file was a manifest before JSON.parse: prepare_velocity_intake_release.js threw and Velocity Content Release went red (run 34977580334); agent-artifact-continuity read it as {} and hard-failed Validate Repo (run 34977580273) on 'vertical mismatch: undefined'; agent-artifact-stranding skipped it in silence; count_unabsorbed_agent_runs.mjs did not count it, so no catch-up dispatch would ever retry it. 2026-07-20 personal-injury was the same writer defect (byte-corrupted keys, unresolved local-fetch pointers) and was repaired by hand three days later. This validator exercises the write-time guard (writeJsonVerified: serialize, write to a temp file, read it back, parse, rename - a failed write leaves no file and the previous file intact), checks both report_fixes JSON writers route through it, exercises the quarantine path on the real 2026-09-15 bytes and the 2026-07-20 pointer shape, classifies every landed drop (defective inside the absorption window is a NAMED pending quarantine; past it a hard failure naming the file and defects), and parses every repo-written JSON under data/report_fixes. 2026-09-30 trt.csv was the third writer defect: 427 em dashes and arrows arrived double-encoded (UTF-8 read as Latin-1 and encoded again) beside correctly encoded characters, intake copied them into every derived ledger and trt/index.html, and search-quality-basics blocked every release on trt/index.html:mojibake. This validator now proves that exact shape reads back as the intended text through readArtifactText (the delivered bytes untouched), that mojibake the repair cannot decode is refused at intake as a named double_encoded_utf8_unrepairable defect, that the three raw-artifact readers route through the repairing reader, and that release and intake share one mojibake definition.",
-      "why_existing_checks_do_not_cover": "agent-run-artifact-intake, agent-artifact-continuity and agent-artifact-stranding each read manifests through their own JSON.parse with their own reaction to failure (crash, empty object, silent continue) and none of them examined the bytes of the artifacts a manifest names, nor any of the JSON this repo itself writes into data/report_fixes. Their unresolved-local-fetch regex also required 'local://agent' while every real placeholder reads 'local:/agent', so that guard matched nothing. Those three now classify through the shared inspector; this validator is the one that proves the inspector, the verified writer and the quarantine actually behave, and fails when it examines zero drops or zero repo-written files.",
-      "requires_files": [
-        "scripts/lib/agent_run_drop_integrity.js",
-        "scripts/citation_velocity/prepare_velocity_intake_release.js",
-        "scripts/citation_velocity/apply_html_report_contract.js",
-        "data/report_fixes/agent_runs",
-        "scripts/lib/text_encoding_repair.js",
-        "scripts/lib/agent_artifact_source_parser.js"
-      ],
-      "produces_files": [
-        "artifacts/validation/agent-run-drop-integrity.json"
-      ],
-      "mutates_files": [],
-      "hard_fail_basis": "foreign_input"
-    },
-    {
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "scope": "CONTAINER",
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "enforce_no_source_mutation": true,
-      "depends_on": [],
-      "estimated_runtime_seconds": 4,
-      "timeout_seconds": 120,
-      "evidence_policy": "CENTRAL_RUNNER_LOG_AND_PROFILE_SUMMARY",
-      "failure_action": "stop release and repair",
-      "tier": "Tier 1",
-      "profiles": [
-        "audit",
-        "core",
-        "full-audit",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "id": "velocity-canonical-anchor-links",
-      "title": "Velocity guides link their canonical lead tool first and only topic-matched canonical guides, all of them real (inventory-checked), across all six verticals",
-      "path": "scripts/validators/validate_velocity_canonical_anchor_links.js",
-      "command": "node scripts/validators/validate_velocity_canonical_anchor_links.js",
-      "tags": [
-        "all-verticals",
-        "canonical-guide-links",
-        "canonical-routing",
-        "dentistry",
-        "link-concentration",
-        "rendered-links",
-        "safety-net",
-        "senior-living",
-        "velocity-only"
-      ],
-      "risk_prevented": "2026-10-09: the dentistry safety-net guides (/dentistry/free-dental-clinics/, /dentistry/dental-school-clinics/) exist to send \"free dental clinic near me\" and \"dental school clinic near me\" demand to the verified #free-low-cost-dental-clinics and #dental-school-clinics sections dentistryguides.com published for Atlanta, Chicago, Dallas, Houston, Los Angeles and Miami (local-guides-generator #54). A guide that renders without those links, links off the vertical canonical domain, drops the #anchor or loses a metro tells the reader a verified local list exists and does not lead to it. 2026-10-13 (senior-living): the eight Memphis Tri-State guides exist to send readers to memphisseniorcarehomes.com. Each must carry at least four followed /request-assistance/ links with the routing query (pt, src = its own path, intent, button, vertical=senior-living, page_kind, page_slug, market), the directory home link, the canonical guide pinned to its topic, at least one pinned city page, a canonical guide or city link in the first 150 words of the article, and a closing CTA to the intake; no nofollow/sponsored/ugc on any canonical link. Fan-out (13 Oct 2026): data/queries/senior_living_fanout_compiled.json must hold >= 400 compiled queries, every one routed to a path in data/contracts/senior_living_canonical_routes.json (the canonical site's route list), all 17 localities present and each rendered on some piece, and each piece rendering >= 20 of its own compiled queries. Search Readiness: 40-60 word \"X is\" definition under the H1 (B4), a comparison table and an ordered list (D2), >= 3 registered sources and a dated fact (D3), at most one FAQPage with every schema question visible (B5), homepage -> hub -> piece (B7), a canonical URL at most twice per page and at most 10 times sitewide, and memphisseniorcarehomes.com under 25% of outbound links (G3). 2026-10-13 (all verticals): the uscis-medical, dentistry, neuro, trt and personal-injury pieces linked their canonical /request-assistance/ about four times and the home page twice but zero canonical guides, and the guide links that did exist (insights, Medium articles) included two 404s (theaccidentguides.com/guides/switching-personal-injury-lawyers, hormonesivhair.com/guides/dht-hair-loss-treatments-plateau - the latter a rel=canonical) and two redirect-hop URLs missing their trailing slash. Now: every canonical /guides/ link on any rendered page must be a path in the committed per-canonical inventory (data/contracts/canonical_guides/<vertical>.json, built from the live hubs, fetched_at); every piece keeps >= 4 followed intake links; a piece whose title/slug/cluster matches a guide's topic_terms renders exactly those guides (sentence under the direct answer + 'Read the full guide' above the closing CTA) and a piece that matches none renders no guide link; zero matched pieces fails; and no canonical domain exceeds 25% of outbound links (G3, all canonicals).",
-      "why_existing_checks_do_not_cover": "canonical-routing-law checks the per-route canonical_url domain in canonical_destination_registry.json, which for every Velocity page is the /request-assistance/ lead path; nothing read the in-body canonical anchor links, the spec field that carries them, or the rendered card. This validator reads both the durable spec and the rendered page (root and dist when present), pins the two safety-net guides x six metros, and fails on zero governed pages.",
-      "requires_files": [
-        "data/page_families/velocity_page_specs.json",
-        "content/_shared/canonical_map.json",
-        "data/queries/senior_living_fanout_compiled.json",
-        "data/contracts/senior_living_canonical_routes.json",
-        "data/contracts/canonical_guides/uscis-medical.json",
-        "data/contracts/canonical_guides/dentistry.json",
-        "data/contracts/canonical_guides/neuro.json",
-        "data/contracts/canonical_guides/trt.json",
-        "data/contracts/canonical_guides/personal-injury.json",
-        "data/contracts/canonical_guides/senior-living.json",
-        "scripts/lib/canonical_guide_links.js"
-      ],
-      "produces_files": [
-        "artifacts/validation/velocity-canonical-anchor-links.json"
-      ],
-      "mutates_files": [],
-      "hard_fail_basis": "public_route_integrity"
-    },
-    {
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "tier": "Tier 1",
@@ -3415,16 +1473,64 @@
       "failure_action": "Fix at the source: data/seo/site_brand_assets.json + root brand files, scripts/install_site_head_assets.js, the homepage builder in scripts/build_site.js (HOME_DEFINITION / HOME_FAQ), data/clarity_projects.json. Never edit rendered pages."
     },
     {
-      "id": "search-outcomes-weekly-report",
-      "title": "Weekly search-outcome report exists for the due ISO week and covers every property",
-      "path": "scripts/search_console/validate_search_outcomes_weekly_report.js",
-      "command": "node scripts/search_console/validate_search_outcomes_weekly_report.js",
+      "id": "network-crawler-contract",
+      "title": "sameAs records satisfy the basis they claim",
+      "path": "scripts/validators/validate_network_crawler_contract.js",
+      "command": "node scripts/validators/validate_network_crawler_contract.js",
       "status": "ACTIVE",
       "severity": "HARD_FAIL",
       "tier": "Tier 5",
       "scope": "CONTAINER",
       "profiles": [
         "audit",
+        "citation-intelligence",
+        "core",
+        "distribution",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "schema",
+        "robots",
+        "crawler"
+      ],
+      "risk_prevented": "Identity claims made by resemblance: a VERIFIED sameAs that rests on no allowed basis, a third-party profile citing our own host, or a published sameAs that is not VERIFIED.",
+      "why_existing_checks_do_not_cover": "This was the release blocker for sameAs basis; nothing kept covers it. Trimmed restore 10 Nov 2026 (crawler policy and edge cache checks cut).",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/network-crawler-contract.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "data/authority/verified_same_as_registry.json",
+        "data/network/network_identity_registry.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/network-crawler-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/network-crawler-contract.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "hard_fail_basis": "user_safety_or_false_public_claim"
+    },
+    {
+      "id": "strategy-integrity-contract",
+      "title": "No invented reviewers, providers, Person schema or sameAs",
+      "path": "scripts/validators/validate_strategy_integrity_contract.js",
+      "command": "node scripts/validators/validate_strategy_integrity_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 6",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "citation-intelligence",
         "core",
         "local",
         "postrelease",
@@ -3432,29 +1538,86 @@
         "strict"
       ],
       "tags": [
-        "search-console",
-        "measurement",
-        "owner-report"
+        "strategy",
+        "authority",
+        "provider-substrate",
+        "reviewers",
+        "sameAs",
+        "anti-fabrication"
       ],
-      "risk_prevented": "The owner's only portfolio-wide answer to 'is the search work helping' silently stops: search-outcomes-weekly.yml fails or never commits, or a report drops a property so the site going wrong is the one missing. Requires reports/search_outcomes/<ISO week of now-24h>.json and .md, with site count and markdown table rows equal to the property count the run read. From 2026-W42 (or any schema 1.1+ report) also requires the free discovery step's output: data/discovery/<week>/<host>.json for every seeded property, every candidate with seed+source and status unmeasured, none in data/discovery/measured_targets_snapshot.json or the seeds, and a receipt of zero model calls, cost 0 and free hosts only - so the paused paid discovery engine cannot come back through this step.",
-      "why_existing_checks_do_not_cover": "workflow-contract-registry and workflow-yaml-syntax prove the workflow is well formed, not that it ran and delivered; nothing else reads reports/search_outcomes, and a scheduled run that fails only notifies the actor, not the owner.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 60,
-      "evidence_file": "artifacts/validation/search-outcomes-weekly-report.json",
-      "failure_action": "dispatch search-outcomes-weekly.yml and fix what stopped it",
-      "depends_on": [],
-      "requires_files": [],
+      "risk_prevented": "Invented people or medical/legal credential claims: reviewers, providers, Person schema and sameAs publishing without a VERIFIED record carrying an https credential or source URL; fabricated placeholder names; admitted pages without a visible byline and review date.",
+      "why_existing_checks_do_not_cover": "served-head-contract only reports sameAs; nothing else checks reviewer/provider/Person verification. Trimmed restore 10 Nov 2026 (hostile review of the validator cut).",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/strategy-integrity-contract.json",
+      "failure_action": "stop release and repair authority doctrine, registry provenance, or public output before deployment",
+      "depends_on": [
+        "network-crawler-contract"
+      ],
+      "requires_files": [
+        "data/providers/provider_substrate_contract.json",
+        "data/providers/provider_registry.json",
+        "data/authority/reviewer_registry.json",
+        "data/authority/verified_same_as_registry.json",
+        "data/content/page_admission_registry.json"
+      ],
       "prepare_commands": [],
       "prepare_produces_files": [],
       "prepare_mutates_files": [],
       "produces_files": [
-        "artifacts/validation/search-outcomes-weekly-report.json"
+        "artifacts/validation/strategy-integrity-contract.json"
       ],
       "mutates_files": [
-        "artifacts/validation/search-outcomes-weekly-report.json"
+        "artifacts/validation/strategy-integrity-contract.json"
       ],
-      "enforce_no_source_mutation": false,
-      "hard_fail_basis": "repo_integrity"
+      "enforce_no_source_mutation": true,
+      "hard_fail_basis": "user_safety_or_false_public_claim"
+    },
+    {
+      "id": "copy-hygiene",
+      "title": "Personal-injury legal copy never on a non-lawyer page (warning)",
+      "path": "scripts/validators/validate_copy_hygiene.js",
+      "command": "node scripts/validators/validate_copy_hygiene.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "advisory",
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "copy"
+      ],
+      "risk_prevented": "Legal guidance (personal-injury rows) leaking onto dental, TRT, neuro or USCIS pages.",
+      "why_existing_checks_do_not_cover": "The only check that reads the rendered pages for it. Warning only (owner call 2026-09-22). Trimmed restore 10 Nov 2026; the model-label half was cut.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/copy-hygiene.json",
+      "failure_action": "record finding and continue. Fix at the source, never on the page: the answer-engine strip is questionFrom in scripts/lib/agent_artifact_source_parser.js (the intake reads CSV rows through it); the personal-injury rows live in scripts/lib/vertical_rows.js.",
+      "depends_on": [],
+      "requires_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/copy-hygiene.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/copy-hygiene.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {

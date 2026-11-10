@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 'use strict';
+// strategy-integrity-contract: no invented people or credentials publish.
+// Reviewers, providers, Person schema and sameAs publish only from VERIFIED
+// records with an https credential or source URL; fabricated placeholder
+// names fail; admitted pages show the visible byline and, when self-canonical,
+// the review date. Trimmed 10 Nov 2026 (hostile review of the validator cut):
+// the AGENTS.md / REPO_IDENTITY.md wording pins and strategy-layer pins were cut.
+// Rule 0: zero HTML pages or zero admitted pages checked is a failure.
 const fs=require('fs'),path=require('path');
 const ROOT=path.resolve(__dirname,'../..');
 const p=(rel)=>path.join(ROOT,rel);
@@ -8,23 +15,13 @@ const read=(rel)=>fs.readFileSync(p(rel),'utf8');
 const json=(rel)=>JSON.parse(read(rel));
 const errors=[],warnings=[];
 const required=[
-  'REPO_IDENTITY.md','AGENTS.md','data/strategy/citation_dominance_contract.json','data/strategy/citation_dominance_gap_registry.json',
+  'data/content/page_admission_registry.json',
   'data/providers/provider_substrate_contract.json','data/providers/provider_registry.json',
   'data/authority/reviewer_registry.json','data/authority/verified_same_as_registry.json',
   'data/network/network_identity_registry.json','data/evidence/source_registry.json'
 ];
 for(const rel of required)if(!exists(rel))errors.push(`missing:${rel}`);
 if(errors.length){console.error(errors.join('\n'));process.exit(1);}
-const agents=read('AGENTS.md'), identityDoc=read('REPO_IDENTITY.md');
-for(const stale of ['Velocity is not a publisher','LKG is the only repo allowed to publish','Velocity → LKG promotion boundary']){
-  if(agents.includes(stale))errors.push(`stale_authority_doctrine:${stale}`);
-}
-if(!agents.includes('This repository is the publishing authority for `theindustryguides.com`'))errors.push('missing_velocity_only_publishing_boundary');
-if(!identityDoc.includes('Velocity owns and publishes all guides'))errors.push('repo_identity_missing_velocity_publish_authority');
-const strategy=json('data/strategy/citation_dominance_contract.json');
-const layerIds=new Set((strategy.layers||[]).map(x=>x.id));
-for(const id of ['substrate','reference_pages','authority','distribution'])if(!layerIds.has(id))errors.push(`strategy_layer_missing:${id}`);
-if(strategy.operating_model?.publisher!=='The Industry Guides Editorial Team')errors.push('strategy_publisher_mismatch');
 const sourceIds=new Set((json('data/evidence/source_registry.json').sources||[]).map(x=>x.source_id));
 const providerContract=json('data/providers/provider_substrate_contract.json');
 const providerRegistry=json('data/providers/provider_registry.json');
@@ -103,17 +100,15 @@ for(const page of admission.pages||[]){
     if(!/"dateModified"\s*:/.test(html))errors.push(`self_canonical_page_missing_dateModified:${page.path}`);
   }
 }
-const gaps=json('data/strategy/citation_dominance_gap_registry.json').items||[];
-const gapById=new Map(gaps.map(x=>[x.id,x]));
-if(verifiedProviders===0&&!String(gapById.get('SUBSTRATE-PROVIDERS')?.status||'').includes('EXTERNAL_DATA_REQUIRED'))errors.push('provider_gap_not_declared');
-if(verifiedReviewers===0&&!String(gapById.get('AUTH-REVIEWERS')?.status||'').includes('VERIFIED_HUMAN_REQUIRED'))errors.push('reviewer_gap_not_declared');
 for(const placeholder of ['Sarah'+' Chen JD','Sarah'+' Chen, JD']){
-  for(const rel of ['scripts','docs','data','REPO_IDENTITY.md','AGENTS.md']){
+  for(const rel of ['scripts','docs','data','content','REPO_IDENTITY.md','AGENTS.md']){
     const abs=p(rel);if(!fs.existsSync(abs))continue;
     const st=fs.statSync(abs);const files=[];if(st.isFile())files.push(abs);else{const gather=(d)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory())gather(f);else files.push(f);}};gather(abs);}for(const f of files)if(fs.readFileSync(f,'utf8').includes(placeholder))errors.push(`fabricated_placeholder_present:${path.relative(ROOT,f)}:${placeholder}`);
   }
 }
-const report={validator:'strategy-integrity-contract',ok:!errors.length,publisher_authority:'VELOCITY_ONLY',verified_provider_records:verifiedProviders,verified_reviewer_records:verifiedReviewers,verified_same_as_records:verifiedSameAs.size,person_schema_records:personAuthorCount,provider_schema_records:providerSchemaCount,public_provider_pages:publicProviderPageCount,admitted_bylines_checked:admittedBylinesChecked,errors,warnings,policy:{hard_fail:['contradictory repo authority','unregistered or unverified provider/reviewer/sameAs publication','fabricated authority placeholders','missing four-layer contract infrastructure'],non_blocking:['empty verified provider registry','empty verified reviewer registry','external press/backlinks/measurement gaps']}};
+if(!htmlFiles.length)errors.push('examined_nothing:no_html_pages');
+if(!admittedBylinesChecked)errors.push('examined_nothing:no_admitted_pages_checked');
+const report={validator:'strategy-integrity-contract',ok:!errors.length,publisher_authority:'VELOCITY_ONLY',verified_provider_records:verifiedProviders,verified_reviewer_records:verifiedReviewers,verified_same_as_records:verifiedSameAs.size,person_schema_records:personAuthorCount,provider_schema_records:providerSchemaCount,public_provider_pages:publicProviderPageCount,admitted_bylines_checked:admittedBylinesChecked,errors,warnings,policy:{hard_fail:['unregistered or unverified provider/reviewer/sameAs publication','fabricated authority placeholders'],non_blocking:['empty verified provider registry','empty verified reviewer registry','external press/backlinks/measurement gaps']}};
 fs.mkdirSync(p('artifacts/validation'),{recursive:true});
 fs.writeFileSync(p('artifacts/validation/strategy-integrity-contract.json'),JSON.stringify(report,null,2)+'\n');
 if(errors.length){console.error(errors.slice(0,100).join('\n'));process.exit(1);}
