@@ -3,8 +3,10 @@
 // source-backed content. No synthetic prices, timeframes, authors or review dates.
 const { resolveLinks } = require('./search_rescue');
 const { sayOnce, dropRepeatedFurniture, trimTitleEcho, normalize } = require('./say_once');
+const { foldRepeatedRows } = require('./fold_repeated_rows');
 const openings = require('../../config/search_rescue_openings.json');
 const esc = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
+const QUESTION_START = /^(what|how|is|are|can|do|does|did|should|which|when|where|why|will|who|would|could)\b/i;
 const plain = s => String(s).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 function removeSections(html, openingPattern) {
   let match;
@@ -123,7 +125,7 @@ function withOpeningDefinition(html, route) {
 }
 
 function shape(html, { route, description, date, published, title }) {
-  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 22, opening: openings[route] })).digest('hex');
+  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 28, opening: openings[route] })).digest('hex');
   if (html.includes(`data-search-rescue-input="${inputHash}"`)) return resolveLinks(html);
   const preservedInline = (html.match(/<p class="canonical-guide-inline"[^>]*>[\s\S]*?<\/p>/i) || [''])[0];
   const preservedAnswer = html.match(/(?:data-direct-answer=["']true["'][^>]*>|class=["'][^"']*answer-box[^"']*["'][^>]*>)[\s\S]*?<p\b[^>]*>([\s\S]*?)<\/p>/i);
@@ -143,7 +145,7 @@ function shape(html, { route, description, date, published, title }) {
   // of this function: it is ranked below the slots that own a sentence, so what
   // survives is whatever the definition and the page's own sections did not
   // already say. An emptied paragraph is dropped and the section stays.
-  const summary = override ? esc(override.answer) : answer ? answer[1] : preservedAnswer ? preservedAnswer[1] : esc(description);
+  const summary = override?.answer ? esc(override.answer) : answer ? answer[1] : preservedAnswer ? preservedAnswer[1] : esc(description);
   const guideInline = preservedInline;
   let next = html;
   if (definition) next = next.replace(definition[0], '');
@@ -183,8 +185,21 @@ function shape(html, { route, description, date, published, title }) {
   next = showSchemaFaq(next);
   next = next.replace(/<h2([^>]*)>([^<]+)<\/h2>/g, (all, attrs, text) => {
     const names = { 'Primary sources': 'Which sources support this guide?', 'Related guides': 'What should I read next?', 'Decision checklist': 'What should I check before deciding?', 'Red flags': 'Which warning signs should I check?', 'Decision questions': 'What questions should I ask?', 'Verify the rule before acting': 'How can I verify the rule before acting?', 'What this page recommends': 'What does this page recommend?', 'Related decision paths people also use': 'Which related decisions should I consider?', 'Where this question fits': 'How does this question fit the wider topic?', 'Related questions in this cluster': 'What related questions should I ask?', 'Next questions people ask': 'What should I ask next?' };
-    const heading = text.trim();
+    let heading = text.trim();
+    // A heading that is already a question is the question. "What should I know
+    // about direct Answer: how long until TRT works?" wrapped a query that asked
+    // itself, and the wrapper was the most repeated 8-word window left on /trt/
+    // (Search Readiness q1, 10 Nov 2026). Unwrapped here, including on pages an
+    // earlier revision already wrapped, so the pass stays idempotent.
+    const wrapped = heading.match(/^What should I know about (.+?)\?$/);
+    const inner = (wrapped ? wrapped[1] : heading).replace(/^direct answer:\s*/i, '').trim();
+    if (QUESTION_START.test(inner)) {
+      const asked = `${inner.charAt(0).toUpperCase()}${inner.slice(1).replace(/[?.!:\s]+$/, '')}?`;
+      return asked === heading ? all : `<h2${attrs}>${asked}</h2>`;
+    }
+    if (wrapped && inner && inner !== wrapped[1]) return `<h2${attrs}>What should I know about ${inner.charAt(0).toLowerCase() + inner.slice(1)}?</h2>`;
     if (['Quick answer', 'Frequently asked questions'].includes(heading) || heading.endsWith('?')) return all;
+    heading = inner || heading;
     const question = names[heading] || (heading.includes('Evidence-to-Action') ? 'How can I apply this decision framework?' : `What should I know about ${heading.charAt(0).toLowerCase() + heading.slice(1)}?`);
     return `<h2${attrs}>${question}</h2>`;
   });
@@ -218,6 +233,6 @@ function shape(html, { route, description, date, published, title }) {
   next = next.replace(/<\/main>/i, `${stamp}</main>`);
   // Last, so it sees every slot this function and the page builder produced.
   const pageTitle = plain(title || h1);
-  return resolveLinks(sayOnce(dropRepeatedFurniture(trimTitleEcho(next, pageTitle), pageTitle)));
+  return resolveLinks(sayOnce(dropRepeatedFurniture(trimTitleEcho(foldRepeatedRows(next), pageTitle), pageTitle)));
 }
 module.exports = { shape, withOpeningDefinition, plain };
