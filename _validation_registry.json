@@ -144,46 +144,6 @@
   },
   "validators": [
     {
-      "id": "authority-contracts",
-      "title": "Repository authority contracts",
-      "path": "scripts/validators/validate_authority_contracts.js",
-      "command": "node scripts/validators/validate_authority_contracts.js",
-      "status": "ACTIVE",
-      "severity": "HARD_FAIL",
-      "tier": "Tier 1",
-      "scope": "CONTAINER",
-      "profiles": [
-        "audit",
-        "core",
-        "local",
-        "postrelease",
-        "release",
-        "strict"
-      ],
-      "tags": [
-        "authority"
-      ],
-      "risk_prevented": "Wrong repository identity, updater, lifecycle, or command contracts can invalidate the entire release.",
-      "why_existing_checks_do_not_cover": "This check validates repo-local constitutional files and package command presence.",
-      "estimated_runtime_seconds": 1,
-      "timeout_seconds": 300,
-      "evidence_file": "artifacts/validation/authority-contracts.json",
-      "failure_action": "stop release and repair",
-      "depends_on": [],
-      "requires_files": [],
-      "prepare_commands": [],
-      "prepare_produces_files": [],
-      "prepare_mutates_files": [],
-      "produces_files": [
-        "artifacts/validation/authority-contracts.json"
-      ],
-      "mutates_files": [
-        "artifacts/validation/authority-contracts.json"
-      ],
-      "enforce_no_source_mutation": true,
-      "hard_fail_basis": "repo_integrity"
-    },
-    {
       "id": "canonical-data-immutability",
       "title": "Canonical-data runtime immutability",
       "path": "scripts/validators/validate_canonical_data_immutability.js",
@@ -1511,6 +1471,153 @@
         "schema"
       ],
       "failure_action": "Fix at the source: data/seo/site_brand_assets.json + root brand files, scripts/install_site_head_assets.js, the homepage builder in scripts/build_site.js (HOME_DEFINITION / HOME_FAQ), data/clarity_projects.json. Never edit rendered pages."
+    },
+    {
+      "id": "network-crawler-contract",
+      "title": "sameAs records satisfy the basis they claim",
+      "path": "scripts/validators/validate_network_crawler_contract.js",
+      "command": "node scripts/validators/validate_network_crawler_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 5",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "citation-intelligence",
+        "core",
+        "distribution",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "schema",
+        "robots",
+        "crawler"
+      ],
+      "risk_prevented": "Identity claims made by resemblance: a VERIFIED sameAs that rests on no allowed basis, a third-party profile citing our own host, or a published sameAs that is not VERIFIED.",
+      "why_existing_checks_do_not_cover": "This was the release blocker for sameAs basis; nothing kept covers it. Trimmed restore 10 Nov 2026 (crawler policy and edge cache checks cut).",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 120,
+      "evidence_file": "artifacts/validation/network-crawler-contract.json",
+      "failure_action": "stop release and repair",
+      "depends_on": [],
+      "requires_files": [
+        "data/authority/verified_same_as_registry.json",
+        "data/network/network_identity_registry.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/network-crawler-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/network-crawler-contract.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "hard_fail_basis": "user_safety_or_false_public_claim"
+    },
+    {
+      "id": "strategy-integrity-contract",
+      "title": "No invented reviewers, providers, Person schema or sameAs",
+      "path": "scripts/validators/validate_strategy_integrity_contract.js",
+      "command": "node scripts/validators/validate_strategy_integrity_contract.js",
+      "status": "ACTIVE",
+      "severity": "HARD_FAIL",
+      "tier": "Tier 6",
+      "scope": "CONTAINER",
+      "profiles": [
+        "audit",
+        "citation-intelligence",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "strategy",
+        "authority",
+        "provider-substrate",
+        "reviewers",
+        "sameAs",
+        "anti-fabrication"
+      ],
+      "risk_prevented": "Invented people or medical/legal credential claims: reviewers, providers, Person schema and sameAs publishing without a VERIFIED record carrying an https credential or source URL; fabricated placeholder names; admitted pages without a visible byline and review date.",
+      "why_existing_checks_do_not_cover": "served-head-contract only reports sameAs; nothing else checks reviewer/provider/Person verification. Trimmed restore 10 Nov 2026 (hostile review of the validator cut).",
+      "estimated_runtime_seconds": 2,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/strategy-integrity-contract.json",
+      "failure_action": "stop release and repair authority doctrine, registry provenance, or public output before deployment",
+      "depends_on": [
+        "network-crawler-contract"
+      ],
+      "requires_files": [
+        "data/providers/provider_substrate_contract.json",
+        "data/providers/provider_registry.json",
+        "data/authority/reviewer_registry.json",
+        "data/authority/verified_same_as_registry.json",
+        "data/content/page_admission_registry.json"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/strategy-integrity-contract.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/strategy-integrity-contract.json"
+      ],
+      "enforce_no_source_mutation": true,
+      "hard_fail_basis": "user_safety_or_false_public_claim"
+    },
+    {
+      "id": "copy-hygiene",
+      "title": "Personal-injury legal copy never on a non-lawyer page (warning)",
+      "path": "scripts/validators/validate_copy_hygiene.js",
+      "command": "node scripts/validators/validate_copy_hygiene.js",
+      "status": "ACTIVE",
+      "severity": "STRONG_WARNING",
+      "tier": "Tier 4",
+      "scope": "CONTAINER",
+      "profiles": [
+        "advisory",
+        "audit",
+        "content-release",
+        "core",
+        "local",
+        "postrelease",
+        "release",
+        "strict"
+      ],
+      "tags": [
+        "content-quality",
+        "agent-artifacts",
+        "copy"
+      ],
+      "risk_prevented": "Legal guidance (personal-injury rows) leaking onto dental, TRT, neuro or USCIS pages.",
+      "why_existing_checks_do_not_cover": "The only check that reads the rendered pages for it. Warning only (owner call 2026-09-22). Trimmed restore 10 Nov 2026; the model-label half was cut.",
+      "estimated_runtime_seconds": 1,
+      "timeout_seconds": 180,
+      "evidence_file": "artifacts/validation/copy-hygiene.json",
+      "failure_action": "record finding and continue. Fix at the source, never on the page: the answer-engine strip is questionFrom in scripts/lib/agent_artifact_source_parser.js (the intake reads CSV rows through it); the personal-injury rows live in scripts/lib/vertical_rows.js.",
+      "depends_on": [],
+      "requires_files": [
+        "sitemap.xml",
+        "index.html"
+      ],
+      "prepare_commands": [],
+      "prepare_produces_files": [],
+      "prepare_mutates_files": [],
+      "produces_files": [
+        "artifacts/validation/copy-hygiene.json"
+      ],
+      "mutates_files": [
+        "artifacts/validation/copy-hygiene.json"
+      ],
+      "enforce_no_source_mutation": true
     }
   ],
   "legacy_policy": {
