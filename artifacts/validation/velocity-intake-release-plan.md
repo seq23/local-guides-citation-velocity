@@ -1,15 +1,15 @@
 # Velocity Intake Release Plan
 
 Status: **PASS**
-Release date: 2026-11-10
+Release date: 2026-11-11
 Target publish units: 171
-Selected units: 26
-Twin agent units: 26
+Selected units: 27
+Twin agent units: 27
 Social fallback units: 0
 Social fallback allowed: false
-Social fallback suppressed: 145
+Social fallback suppressed: 144
 Social fallback backlog depth (eligible, unreleased): 389
-Repair units: 11
+Repair units: 12
 New page units: 15
 
 | Source | Operation | Vertical | Target route | Query |
@@ -28,6 +28,7 @@ New page units: 15
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-much-of-a-100k-settlement-will-i-get/ | how much of a 100k settlement will i get |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/is-50k-a-good-settlement-for-a-car-accident/ | is 50k a good settlement for a car accident |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/what-is-the-hardest-case-to-win-in-court/ | what is the hardest case to win in court |
+| twin_agent_artifact | REPAIR_INTENDED_WINNER_PAGE | personal_injury | /personal-injury/index.html | how to choose a lawyer if you missed work due to an injury |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | uscis-medical | /uscis-medical/clusters/does-uscis-test-for-marijuana-or-drugs-during-the-medical/ | does uscis test for marijuana or drugs during the medical |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | uscis-medical | /uscis-medical/community-questions/does-uscis-test-for-marijuana-or-drugs-during-the-medical/ | does uscis test for marijuana or drugs during the medical |
 | twin_agent_artifact | CREATE_NEW_TARGET_PAGE | personal_injury | /personal-injury/community-questions/how-to-join-the-class-action-for-social-media-addiction/ | how to join the class action for social media addiction |
