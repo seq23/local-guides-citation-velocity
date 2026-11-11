@@ -6,10 +6,17 @@ name: Search Outcomes Weekly
 # matching Chicago's current offset run.
 # Report -> RED issues opened/updated/closed -> free query discovery (seeded only
 # from the report's measured queries; $0, no keys, no model calls) -> artifact ->
+# spry-weekly-summary.json, uploaded as the artifact `spry-weekly-summary` ->
 # validated commit of reports/search_outcomes/<ISO-week>.{md,json} and
-# data/discovery/<ISO-week>/ -> spry-weekly-summary.json, uploaded as the
-# artifact `spry-weekly-summary`. NO EMAIL FROM HERE (1 Nov 2026): Boss OS sends
+# data/discovery/<ISO-week>/. NO EMAIL FROM HERE (1 Nov 2026): Boss OS sends
 # the ONE "Spry Labs weekly" email at 08:15 Central with a short section from it.
+#
+# The summary is uploaded BEFORE the commit (11 Nov 2026). It is derived only from
+# the finished report, so a validation failure, rebase conflict or lost push race
+# in the commit step must not take the week's figures out of her email; it did on
+# every Wednesday run 4-11 Nov (canonical-domains PREPARE write, fixed in
+# scripts/validation/run_validation_registry.js). The job still goes red when the
+# commit fails.
 #
 # Catch-up: the Wednesday run is the only writer of this week's report, and the
 # release gate (validate_search_outcomes_weekly_report.js) requires it on main
@@ -113,6 +120,21 @@ jobs:
             reports/search_outcomes/${{ steps.report.outputs.week }}.*
             data/discovery/${{ steps.report.outputs.week }}/
           retention-days: 90
+      - name: Hand the week to Boss OS (the Spry Labs weekly email)
+        if: steps.guard.outputs.run == 'true'
+        env:
+          WEEK: ${{ steps.report.outputs.week }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node scripts/search_console/spry_weekly_summary.mjs --self-check
+          node scripts/search_console/spry_weekly_summary.mjs "reports/search_outcomes/$WEEK.json" "$RUNNER_TEMP/spry-weekly-summary.json"
+      - uses: actions/upload-artifact@v7
+        if: steps.guard.outputs.run == 'true'
+        with:
+          name: spry-weekly-summary
+          path: ${{ runner.temp }}/spry-weekly-summary.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Commit the report
         # reports/ is gitignored repo-wide (repo-hygiene requires it); this one
         # directory is the deliberate exception, so it is added with -f.
@@ -155,18 +177,3 @@ jobs:
             sleep $((attempt * 15))
           done
           exit 1
-      - name: Hand the week to Boss OS (the Spry Labs weekly email)
-        if: steps.guard.outputs.run == 'true'
-        env:
-          WEEK: ${{ steps.report.outputs.week }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          node scripts/search_console/spry_weekly_summary.mjs --self-check
-          node scripts/search_console/spry_weekly_summary.mjs "reports/search_outcomes/$WEEK.json" "$RUNNER_TEMP/spry-weekly-summary.json"
-      - uses: actions/upload-artifact@v7
-        if: steps.guard.outputs.run == 'true'
-        with:
-          name: spry-weekly-summary
-          path: ${{ runner.temp }}/spry-weekly-summary.json
-          if-no-files-found: error
-          retention-days: 30

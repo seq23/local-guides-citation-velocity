@@ -81,4 +81,18 @@ function runtimeDirName(now=new Date(),env=process.env){
  const id=env.GITHUB_RUN_ID?`gh${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT||'1'}`:`pid${process.pid}`;
  return `${day}-${id}`;
 }
-module.exports={ROOT,REGISTRY_PATH,runtimeDirName,readRegistry,buildMatrix,registryHash,stable,norm,exists,sourceSnapshot,mutationDiff,allowedPath,dependencyClosure,topologicalValidators};
+// MUTATION GUARD BY PHASE. A validator's PREPARE (e.g. `npm run build`) only runs when a
+// required file is missing, and may write files the validator's own command must never
+// write: the build rewrites content/_shared/content_state.json, declared on purpose in
+// `prepare_mutates_files`. Until 11 Nov 2026 the runner charged every write to the
+// command and never read that field, so any caller that had not built first (the
+// Search Outcomes Weekly lane) failed canonical-domains with a "forbidden source
+// mutation" for the build's own declared write. Writes are now attributed to the phase
+// that made them: a PREPARE may write prepare_mutates_files + mutates_files, the command
+// only mutates_files. An undeclared write in either phase is still forbidden.
+function mutationVerdict({prepareChanged=[],commandChanged=[],prepareAllowed=[],commandAllowed=[]}={}){
+ const forbiddenPrepare=prepareChanged.filter(rel=>!allowedPath(rel,[...prepareAllowed,...commandAllowed]));
+ const forbiddenCommand=commandChanged.filter(rel=>!allowedPath(rel,commandAllowed));
+ return {changed:[...new Set([...prepareChanged,...commandChanged])].sort(),forbiddenPrepare,forbiddenCommand,forbidden:[...new Set([...forbiddenPrepare,...forbiddenCommand])].sort()};
+}
+module.exports={ROOT,REGISTRY_PATH,runtimeDirName,readRegistry,buildMatrix,registryHash,stable,norm,exists,sourceSnapshot,mutationDiff,allowedPath,mutationVerdict,dependencyClosure,topologicalValidators};
