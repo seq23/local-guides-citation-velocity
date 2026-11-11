@@ -76,6 +76,9 @@ jobs:
       - name: Mutation scope puts a retired thawed route back as frozen
         if: matrix.shard == 1
         run: node scripts/tests/test_mutation_scope_retired.js
+      - name: Validation runner attributes a PREPARE's declared writes to the PREPARE
+        if: matrix.shard == 1
+        run: node scripts/tests/test_validation_mutation_guard.js
       - name: Restore the build-result cache
         # The lane's site-build stage runs `npm run build:cached`, so this is what
         # makes it a no-op. Keyed on the commit: the shard that saves it below
