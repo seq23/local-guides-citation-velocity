@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-11-11T14:24:56.432Z",
+  "generated_at": "2026-11-12T06:36:46.634Z",
   "status": "PASS",
   "workflow_count": 14,
   "errors": [],
@@ -721,6 +721,24 @@
           "transitive_npm_scripts": []
         },
         {
+          "command": "node scripts/search_console/spry_weekly_summary.mjs --self-check\nnode scripts/search_console/spry_weekly_summary.mjs \"reports/search_outcomes/$WEEK.json\" \"$RUNNER_TEMP/spry-weekly-summary.json\"",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/search_console/spry_weekly_summary.mjs",
+              "ok": true
+            },
+            {
+              "type": "file",
+              "path": "scripts/search_console/spry_weekly_summary.mjs",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
           "command": "git config user.name \"github-actions[bot]\"\ngit config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\ncp reports/search_outcomes/\"$WEEK\".* \"$RUNNER_TEMP\"/\nmkdir -p \"$RUNNER_TEMP/discovery\" && cp -r data/discovery/\"$WEEK\" data/discovery/measured_targets_snapshot.json \"$RUNNER_TEMP/discovery/\"\nnpm run validate:release\ngit add -f -- \"reports/search_outcomes/$WEEK.md\" \"reports/search_outcomes/$WEEK.json\" \"data/discovery/$WEEK\" data/discovery/measured_targets_snapshot.json\nif git diff --cached --quiet; then echo \"no changes to commit\"; exit 0; fi\ngit commit -m \"search outcomes weekly report + free discovery $WEEK\"\nfor attempt in 1 2 3; do\n# validation rewrites tracked evidence files; only the report is committed\ngit reset -q --hard HEAD\ngit fetch origin main\nif ! git rebase origin/main; then\ngit rebase --abort || true\ngit reset --hard origin/main\ncp \"$RUNNER_TEMP/$WEEK\".* reports/search_outcomes/\nmkdir -p data/discovery && cp -r \"$RUNNER_TEMP/discovery/.\" data/discovery/\nnpm run validate:release\ngit add -f -- \"reports/search_outcomes/$WEEK.md\" \"reports/search_outcomes/$WEEK.json\" \"data/discovery/$WEEK\" data/discovery/measured_targets_snapshot.json\nif git diff --cached --quiet; then\necho \"no changes after re-deriving onto origin/main\"\nexit 0\nfi\ngit commit -m \"search outcomes weekly report + free discovery $WEEK\"\nelse\nnpm run validate:release\ngit add -f -- \"reports/search_outcomes/$WEEK.md\" \"reports/search_outcomes/$WEEK.json\" \"data/discovery/$WEEK\" data/discovery/measured_targets_snapshot.json\ngit commit --amend --no-edit\nfi\nif git push origin HEAD:main; then exit 0; fi\nsleep $((attempt * 15))\ndone\nexit 1",
           "status": "PASS",
           "checks": [
@@ -741,30 +759,12 @@
           "transitive_npm_scripts": [
             "validate:release"
           ]
-        },
-        {
-          "command": "node scripts/search_console/spry_weekly_summary.mjs --self-check\nnode scripts/search_console/spry_weekly_summary.mjs \"reports/search_outcomes/$WEEK.json\" \"$RUNNER_TEMP/spry-weekly-summary.json\"",
-          "status": "PASS",
-          "checks": [
-            {
-              "type": "file",
-              "path": "scripts/search_console/spry_weekly_summary.mjs",
-              "ok": true
-            },
-            {
-              "type": "file",
-              "path": "scripts/search_console/spry_weekly_summary.mjs",
-              "ok": true
-            }
-          ],
-          "direct_npm_scripts": [],
-          "transitive_npm_scripts": []
         }
       ]
     },
     {
       "workflow": "validate-repo.yml",
-      "command_count": 10,
+      "command_count": 11,
       "status": "PASS",
       "commands": [
         {
@@ -820,6 +820,19 @@
             {
               "type": "file",
               "path": "scripts/tests/test_mutation_scope_retired.js",
+              "ok": true
+            }
+          ],
+          "direct_npm_scripts": [],
+          "transitive_npm_scripts": []
+        },
+        {
+          "command": "node scripts/tests/test_validation_mutation_guard.js",
+          "status": "PASS",
+          "checks": [
+            {
+              "type": "file",
+              "path": "scripts/tests/test_validation_mutation_guard.js",
               "ok": true
             }
           ],
