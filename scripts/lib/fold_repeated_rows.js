@@ -75,8 +75,8 @@ const rowKey = (cells) => cells.map(norm).join(' | ');
  * and the Velocity Content Release failed repair_not_proven every day from 11 Nov.
  * Five hubs lost a marker that way. Its rows still fold like any other (the
  * repeated guidance is said once, every first cell kept once); the card itself,
- * with its id, badge and heading, is never removed, and an identical heading
- * EARLIER on the page is the one dropped instead.
+ * with its id, badge and heading, is never removed. Nothing else changes: the
+ * first copy of a heading elsewhere still keeps its own.
  */
 const LEDGERED_BLOCK = /<section\b[^>]*\bid="agent-exact-[0-9a-f]+"[^>]*>[\s\S]*?<\/section>/gi;
 function ledgeredSpans(html) {
@@ -199,9 +199,6 @@ function dropRepeatedHeadings(main) {
       return `${open}${t.charAt(0).toUpperCase()}${t.slice(1)}${QUESTION_START.test(t) ? '?' : ''}</h2>`;
     });
   const ledgered = ledgeredSpans(out);
-  for (const [a, b] of ledgered) {
-    for (const h of out.slice(a, b).matchAll(/<h([23])\b[^>]*>([\s\S]*?)<\/h\1>/gi)) seen.add(headingCore(h[2]));
-  }
   out = out.replace(/<h([23])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (all, level, inner, at) => {
     if (/<(?:a|img)\b/i.test(inner)) return all;
     if (inSpans(ledgered, at)) return all;

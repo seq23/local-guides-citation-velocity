@@ -76,8 +76,8 @@ assert.strictEqual(count(later, 'Veneer lifespan'), 1, 'a late row joins the lis
 
 // A ledgered block is never folded away (13 Nov 2026, /uscis-medical/ agent-exact-8b60d8e686):
 // its rows repeat an earlier atom table and its heading repeats too, yet its id is the
-// release trace's proof of a ledgered repair, so the card and its id stay; the earlier
-// copy of the heading is the one dropped. A page with no ledgered block hard-fails here.
+// release trace's proof of a ledgered repair, so the card, its id and its heading stay.
+// A fixture with no ledgered block hard-fails here.
 const TBL = [['Adjustment of status in the United States', 'USCIS-designated civil surgeon', 'Ask the office.'], ['Immigrant-visa processing abroad', 'Department of State panel physician', 'Ask the office.']];
 const atom = `<section class="card citation-velocity-artifact comparison_table" id="ATOM-1"><div class="badge">Comparison table</div><h2 class="h2">Who Performs the Immigration Medical Exam?</h2>${table(TBL)}</section>`;
 const ledgered = `<section class="card citation-velocity-artifact comparison_table" id="agent-exact-8b60d8e686"><div class="badge">Comparison table</div><h2 class="h2">Who Performs the Immigration Medical Exam?</h2>${table(TBL)}</section>`;
@@ -86,7 +86,7 @@ const ledgeredIds = [...hub.matchAll(/id="(agent-exact-[0-9a-f]+)"/g)].map((m) =
 assert.ok(ledgeredIds.length > 0, 'the ledgered fixture must carry a marker');
 const folded = foldRepeatedRows(hub);
 for (const id of ledgeredIds) assert.ok(folded.includes(`id="${id}"`), `the fold removed ledgered block ${id}`);
-assert.strictEqual(count(folded, 'Who Performs the Immigration Medical Exam?'), 1, 'the repeated heading is said once, on the ledgered card');
+assert.ok(/id="agent-exact-8b60d8e686"[^>]*>\s*<div class="badge">[^<]*<\/div>\s*<h2\b[^>]*>Who Performs the Immigration Medical Exam\?<\/h2>/.test(folded), 'the ledgered card keeps its heading');
 assert.strictEqual(count(folded, 'USCIS-designated civil surgeon'), 1, 'the repeated row is said once');
 assert.strictEqual(foldRepeatedRows(folded), folded, 'idempotent with a ledgered block');
 
