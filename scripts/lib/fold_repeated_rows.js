@@ -66,6 +66,24 @@ function bodyRows(main) {
 const guidanceKey = (cells) => cells.slice(1).map(norm).join(' | ');
 const rowKey = (cells) => cells.map(norm).join(' | ');
 
+/**
+ * A LEDGERED BLOCK IS NEVER FOLDED AWAY (13 Nov 2026). A citation-velocity block whose
+ * id is an agent-exact marker is the rendered proof of a ledgered repair:
+ * trace_agent_exact_implementation.js looks for that id on the page. The fold took
+ * /uscis-medical/'s block (id agent-exact-8b60d8e686) apart - its rows matched an
+ * earlier atom table, its heading repeated, and the emptied card went with its id -
+ * and the Velocity Content Release failed repair_not_proven every day from 11 Nov.
+ * Five hubs lost a marker that way. Its rows still fold like any other (the
+ * repeated guidance is said once, every first cell kept once); the card itself,
+ * with its id, badge and heading, is never removed, and an identical heading
+ * EARLIER on the page is the one dropped instead.
+ */
+const LEDGERED_BLOCK = /<section\b[^>]*\bid="agent-exact-[0-9a-f]+"[^>]*>[\s\S]*?<\/section>/gi;
+function ledgeredSpans(html) {
+  return [...String(html).matchAll(LEDGERED_BLOCK)].map((m) => [m.index, m.index + m[0].length]);
+}
+const inSpans = (spans, at) => spans.some(([a, b]) => at >= a && at < b);
+
 /** Existing folded lists, keyed by guidance text, so a re-run appends rather than duplicates. */
 function foldedSections(main) {
   const out = new Map();
@@ -180,8 +198,13 @@ function dropRepeatedHeadings(main) {
       const t = title.replace(/[,.:\s]+$/, '');
       return `${open}${t.charAt(0).toUpperCase()}${t.slice(1)}${QUESTION_START.test(t) ? '?' : ''}</h2>`;
     });
-  out = out.replace(/<h([23])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (all, level, inner) => {
+  const ledgered = ledgeredSpans(out);
+  for (const [a, b] of ledgered) {
+    for (const h of out.slice(a, b).matchAll(/<h([23])\b[^>]*>([\s\S]*?)<\/h\1>/gi)) seen.add(headingCore(h[2]));
+  }
+  out = out.replace(/<h([23])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (all, level, inner, at) => {
     if (/<(?:a|img)\b/i.test(inner)) return all;
+    if (inSpans(ledgered, at)) return all;
     const core = headingCore(inner);
     if (core.split(' ').length < 4) return all;
     if (seen.has(core)) return '';
@@ -217,9 +240,11 @@ function dropRepeatedHeadings(main) {
     const rest = out.replace(m[0], ' ');
     const words = new Set(wordsOf(rest));
     const mine = wordsOf(m[1]);
+    if (/\bid="agent-exact-/.test(m[0])) continue;
     if (mine.every((w) => words.has(w))) out = rest === out ? out : out.replace(m[0], '');
   }
-  out = out.replace(/<section class="card citation-velocity-artifact[^"]*"[^>]*>\s*(?:<div class="badge">[^<]*<\/div>\s*)?(?:<(ul|ol)\b[^>]*>\s*<\/\1>\s*)*<\/section>/gi, '');
+  out = out.replace(/<section class="card citation-velocity-artifact[^"]*"[^>]*>\s*(?:<div class="badge">[^<]*<\/div>\s*)?(?:<(ul|ol)\b[^>]*>\s*<\/\1>\s*)*<\/section>/gi,
+    (all) => (/\bid="agent-exact-/.test(all) ? all : ''));
   return out;
 }
 

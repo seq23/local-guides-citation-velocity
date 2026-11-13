@@ -125,7 +125,7 @@ function withOpeningDefinition(html, route) {
 }
 
 function shape(html, { route, description, date, published, title }) {
-  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 28, opening: openings[route] })).digest('hex');
+  const inputHash = require('crypto').createHash('sha256').update(JSON.stringify({ route, description, date, published, title, revision: 29, opening: openings[route] })).digest('hex');
   if (html.includes(`data-search-rescue-input="${inputHash}"`)) return resolveLinks(html);
   const preservedInline = (html.match(/<p class="canonical-guide-inline"[^>]*>[\s\S]*?<\/p>/i) || [''])[0];
   const preservedAnswer = html.match(/(?:data-direct-answer=["']true["'][^>]*>|class=["'][^"']*answer-box[^"']*["'][^>]*>)[\s\S]*?<p\b[^>]*>([\s\S]*?)<\/p>/i);
