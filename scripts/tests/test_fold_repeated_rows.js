@@ -74,4 +74,20 @@ const later = foldRepeatedRows(out.replace('<p class="editorial-byline"', block(
 assert.strictEqual(count(later, 'data-folded-rows'), 1, 'one list per guidance');
 assert.strictEqual(count(later, 'Veneer lifespan'), 1, 'a late row joins the list');
 
+// A ledgered block is never folded away (13 Nov 2026, /uscis-medical/ agent-exact-8b60d8e686):
+// its rows repeat an earlier atom table and its heading repeats too, yet its id is the
+// release trace's proof of a ledgered repair, so the card, its id and its heading stay.
+// A fixture with no ledgered block hard-fails here.
+const TBL = [['Adjustment of status in the United States', 'USCIS-designated civil surgeon', 'Ask the office.'], ['Immigrant-visa processing abroad', 'Department of State panel physician', 'Ask the office.']];
+const atom = `<section class="card citation-velocity-artifact comparison_table" id="ATOM-1"><div class="badge">Comparison table</div><h2 class="h2">Who Performs the Immigration Medical Exam?</h2>${table(TBL)}</section>`;
+const ledgered = `<section class="card citation-velocity-artifact comparison_table" id="agent-exact-8b60d8e686"><div class="badge">Comparison table</div><h2 class="h2">Who Performs the Immigration Medical Exam?</h2>${table(TBL)}</section>`;
+const hub = `<main><h1>USCIS medical</h1>${atom}${ledgered}<p class="editorial-byline" data-editorial-byline="true">By us</p></main>`;
+const ledgeredIds = [...hub.matchAll(/id="(agent-exact-[0-9a-f]+)"/g)].map((m) => m[1]);
+assert.ok(ledgeredIds.length > 0, 'the ledgered fixture must carry a marker');
+const folded = foldRepeatedRows(hub);
+for (const id of ledgeredIds) assert.ok(folded.includes(`id="${id}"`), `the fold removed ledgered block ${id}`);
+assert.ok(/id="agent-exact-8b60d8e686"[^>]*>\s*<div class="badge">[^<]*<\/div>\s*<h2\b[^>]*>Who Performs the Immigration Medical Exam\?<\/h2>/.test(folded), 'the ledgered card keeps its heading');
+assert.strictEqual(count(folded, 'USCIS-designated civil surgeon'), 1, 'the repeated row is said once');
+assert.strictEqual(foldRepeatedRows(folded), folded, 'idempotent with a ledgered block');
+
 console.log(`fold-repeated-rows: PASS (worst window ${worst(before)}x -> ${worst(out)}x, cap ${SLOT_MAX})`);
