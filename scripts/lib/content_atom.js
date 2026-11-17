@@ -308,6 +308,12 @@ function summarizeAtomForAnswer(title, atom) {
   const topic = shortTitle(stripIngestResidue(title), 105);
   const fallback = `To decide on ${topicPhrase(topic)}, verify the key criteria, compare the tradeoffs, and pause when the answer cannot be confirmed in writing.`;
   if (!atom) return fallback;
+  if (atom.type === 'original_comparison_table' && sideBySideOptions(atom)) {
+    const [a, b] = sideBySideOptions(atom);
+    const factors = (atom.rows || []).map((row) => clean(row[0]).toLowerCase()).filter(Boolean);
+    const first = (atom.rows || [])[0] || [];
+    return `${a} and ${lowerFirst(b)} differ on ${factors.slice(0, -1).join(', ')} and ${factors[factors.length - 1]}. ${clean(first[0])}: ${a}, ${lowerFirst(first[1])}; ${lowerFirst(b)}, ${lowerFirst(first[2])}.`;
+  }
   if (atom.type === 'original_comparison_table') {
     const factors = (atom.rows || []).slice(0, 3).map((row) => clean(row[1] || row[0])).filter(Boolean);
     const warning = clean((atom.rows || [])[0]?.[2] || 'the tradeoff is not explained').replace(/[.\s]+$/, '');
@@ -401,12 +407,38 @@ function schemaHowToSteps(steps) {
     .map((step, index) => ({ '@type': 'HowToStep', position: index + 1, name: step.name, text: step.text }));
 }
 
+/**
+ * A table whose columns are the OPTIONS being compared (Decision factor | A | B), rather than the
+ * compiler's checklist shape (Decision factor | What to verify | Pause or compare when). Returns
+ * [A, B], or null for any other table.
+ */
+function sideBySideOptions(atom) {
+  const headers = (atom && atom.headers) || [];
+  if (headers.length < 3 || /^what to verify$/i.test(clean(headers[1]))) return null;
+  if (!(atom.rows || []).every((row) => Array.isArray(row) && row.length >= 3 && clean(row[1]) && clean(row[2]))) return null;
+  return [clean(headers[1]), clean(headers[2])];
+}
+// Lower-case a cell's first letter unless it opens with an acronym or a name ("FDA-approved", "U.S.").
+function lowerFirst(value) {
+  const v = clean(value).replace(/[.\s]+$/, '');
+  const first = (v.split(/\s+/)[0] || '').replace(/[^A-Za-z]/g, '');
+  if (first === 'A') return v.charAt(0).toLowerCase() + v.slice(1);
+  if (!first || first === first.toUpperCase() || /[A-Z]/.test(first.slice(1)) || /^(Department|Social|Medicaid|American)$/.test(first)) return v;
+  return v.charAt(0).toLowerCase() + v.slice(1);
+}
+
 function atomHowToSteps(atom) {
   if (!atom) return [];
   if (atom.type === 'named_framework') return atom.steps.map((step) => ({ name: step.label, text: step.action }));
   if (atom.type === 'decision_tree') return atom.branches.map((branch) => ({ name: branch.condition, text: branch.action }));
   if (atom.type === 'copy_paste_prompt') return atom.lines.slice(1).map((line, index) => ({ name: `Prompt step ${index + 1}`, text: line }));
-  if (atom.type === 'original_comparison_table') return atom.rows.map((row, index) => ({ name: clean(row[0]) || `Comparison step ${index + 1}`, text: clean(row[1]) }));
+  if (atom.type === 'original_comparison_table') {
+    const options = sideBySideOptions(atom);
+    // A side-by-side table's second column is ONE option's cell; on its own it reads as a
+    // fragment ("Testosterone given to replace low levels.") wherever a step is quoted.
+    if (options) return atom.rows.map((row, index) => ({ name: clean(row[0]) || `Comparison step ${index + 1}`, text: `On ${clean(row[0]).toLowerCase()}, ${options[0]}: ${lowerFirst(row[1])}; ${options[1]}: ${lowerFirst(row[2])}.` }));
+    return atom.rows.map((row, index) => ({ name: clean(row[0]) || `Comparison step ${index + 1}`, text: clean(row[1]) }));
+  }
   if (atom.type === 'dated_primary_stat') return [{ name: 'Review the observation', text: `${atom.stat.metric}: ${atom.stat.value}` }, { name: 'Check the evidence date', text: atom.stat.observation_date }, { name: 'Verify the source set', text: (atom.stat.source_urls || []).join(', ') }];
   if (atom.type === 'aggregated_review_synthesis') return atom.synthesis.findings.map((finding, index) => ({ name: finding.label || `Finding ${index + 1}`, text: finding.detail || finding.evidence || '' }));
   return [];
