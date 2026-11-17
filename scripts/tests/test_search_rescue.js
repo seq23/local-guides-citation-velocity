@@ -71,6 +71,22 @@ assert.ok(parsed.every(([from,, status]) => !/[*:]/.test(from) && status === '30
     const sentinel = new Response('next');
     assert.equal(await onRequest({ request: new Request('https://theindustryguides.com' + route), next: () => sentinel }), sentinel);
   }
+  // Search Readiness e2 (17 Nov 2026): sitemap_atlas.xml, emptied by the rescue, 404ed
+  // while still submitted in Search Console. A retired child 301s to the index; a
+  // child the build still writes is served untouched.
+  const retiredChildren = ['/sitemaps/sitemap_atlas.xml', '/sitemaps/sitemap_util.xml'];
+  assert.ok(retiredChildren.length > 0);
+  for (const route of retiredChildren) {
+    const response = await onRequest({ request: new Request('https://theindustryguides.com' + route), next: () => new Response('nf', { status: 404 }) });
+    assert.equal(response.status, 301, route);
+    assert.equal(new URL(response.headers.get('location')).pathname, '/sitemap.xml', route);
+  }
+  {
+    const live = new Response('<urlset/>', { status: 200 });
+    assert.equal(await onRequest({ request: new Request('https://theindustryguides.com/sitemaps/sitemap_core.xml'), next: () => live }), live);
+    const missingPage = new Response('nf', { status: 404 });
+    assert.equal(await onRequest({ request: new Request('https://theindustryguides.com/no-such-page/'), next: () => missingPage }), missingPage, 'a non-sitemap 404 stays a 404');
+  }
   console.log(`Search rescue behaviour: PASS (${kept.size} survivors, ${rescue.policy.retirements.length} permanent consolidations)`);
 })().catch(error => { console.error(error); process.exitCode = 1; });
 
