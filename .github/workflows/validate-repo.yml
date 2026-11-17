@@ -73,6 +73,9 @@ jobs:
       - name: Search rescue behaviour
         if: matrix.shard == 1
         run: node scripts/tests/test_search_rescue.js
+      - name: Comparison pages carry page-specific slot text (Search Readiness q1)
+        if: matrix.shard == 1
+        run: node scripts/tests/test_disambiguator_specifics.js
       - name: Mutation scope puts a retired thawed route back as frozen
         if: matrix.shard == 1
         run: node scripts/tests/test_mutation_scope_retired.js
