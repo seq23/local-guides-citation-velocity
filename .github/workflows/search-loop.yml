@@ -24,6 +24,13 @@ name: Search Loop
 on:
   schedule:
     - cron: "47 13 * * *"  # 13:47 UTC: its own minute (11:41 is sprylabs-hpc-site, 12:53 hicks-consulting-canonical); before local-guides-generator (15:41) reads this ledger
+  # A change to the engine's config or routing is checked on the PR (search-loop v1.12.0
+  # stage validate: config + model-routing checks only, no network, no model call; peace-be-still
+  # 18 Nov 2026 failed every scheduled run on a routing file nothing checked before merge).
+  pull_request:
+    paths:
+      - search-loop.config.json
+      - .github/workflows/search-loop.yml
   workflow_dispatch:
     inputs:
       stage:
@@ -38,7 +45,7 @@ permissions:
 
 # Shares the single main-writer group: see query-evidence-refresh.yml.
 concurrency:
-  group: local-guides-main-writer
+  group: ${{ github.event_name == 'pull_request' && format('local-guides-main-writer-pr-{0}', github.ref) || 'local-guides-main-writer' }}
   cancel-in-progress: false
 
 jobs:
@@ -62,7 +69,7 @@ jobs:
     uses: seq23/search-loop/.github/workflows/search-loop.yml@v1
     with:
       engine_ref: v1
-      stage: ${{ inputs.stage || 'check' }}
+      stage: ${{ github.event_name == 'pull_request' && 'validate' || inputs.stage || 'check' }}
       setup_command: npm ci --ignore-scripts && node scripts/search_loop/seed_topics.js
       node_options: --max-old-space-size=3072
       post_build_command: node scripts/search_loop/fold_in.js
