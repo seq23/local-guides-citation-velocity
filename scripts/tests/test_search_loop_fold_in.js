@@ -168,7 +168,8 @@ pin('f8/f11: the search loop stays measure-only, capped, and measuring', () => {
   const wf = fs.readFileSync(path.join(ROOT, '.github/workflows/search-loop.yml'), 'utf8');
   assert.ok(!/^\s*if:\s*\$\{\{\s*false\s*\}\}/m.test(wf),
     'the search-loop caller is disabled again: the week report stops and f8/f11 fail for want of a number');
-  assert.match(wf, /stage:\s*\$\{\{\s*inputs\.stage\s*\|\|\s*'check'\s*\}\}/,
+  // A pull request runs stage validate (config + routing checks only, never publishes).
+  assert.match(wf, /stage:\s*\$\{\{\s*(github\.event_name == 'pull_request' && 'validate' \|\|\s*)?inputs\.stage\s*\|\|\s*'check'\s*\}\}/,
     'the schedule must run stage=check (measure-only) while the search rescue is on');
 
   // The old usage token locates the zone but cannot read analytics. Keep the
