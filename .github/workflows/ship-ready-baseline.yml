@@ -1,0 +1,11 @@
+# The shared ship-ready baseline (seq23/seq-bin, row 18): renders what ship-ready.json lists and
+# fails on the automatic fails. `land` refuses a PR whose ship-ready-baseline check is red.
+name: ship-ready-baseline
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  ship-ready-baseline:
+    uses: seq23/seq-bin/.github/workflows/ship-ready-baseline.yml@v1
