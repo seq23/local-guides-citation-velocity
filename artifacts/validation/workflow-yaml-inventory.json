@@ -1,8 +1,8 @@
 {
   "schema_version": "1.4",
   "repo": "local-guides-citation-velocity",
-  "generated_at": "2026-11-22T14:50:39.681Z",
-  "workflow_count": 14,
+  "generated_at": "2026-11-23T18:33:33.615Z",
+  "workflow_count": 15,
   "workflows": [
     {
       "path": ".github/workflows/ci-health-recovery.yml",
@@ -366,6 +366,35 @@
         "retention-days: 90",
         "-"
       ],
+      "validation_owner": "validation registry and workflow topology validators"
+    },
+    {
+      "path": ".github/workflows/ship-ready-baseline.yml",
+      "name": "ship-ready-baseline",
+      "trigger": [
+        "workflow_dispatch",
+        "push",
+        "pull_request"
+      ],
+      "primary_command": "unknown",
+      "repo_lane": "manual-maintenance",
+      "current_status": "keep",
+      "reason": "Non-canonical workflow requires review.",
+      "allowed_runtime_mutations": [],
+      "forbidden_runtime_mutations": [
+        ".github/**",
+        "package.json",
+        "package-lock.json",
+        "scripts/**",
+        "docs/**",
+        "_repo*.json",
+        "_validation_registry.json",
+        "_repo_validation_matrix.json",
+        "_citation_intelligence_contract.json",
+        "_content_release_contract.json",
+        "data/strategy/**"
+      ],
+      "required_artifacts": [],
       "validation_owner": "validation registry and workflow topology validators"
     },
     {
