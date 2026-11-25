@@ -89,8 +89,13 @@ function directory(html, page, pages) {
     return `<li><strong>${escapeHtml(v.label)}</strong> — ${escapeHtml(v.covers)} ${site}</li>`;
   }).join('');
   const intake = VERTICALS.map(v => `<li>${escapeHtml(v.label)}: <a href="https://${v.domain}/request-assistance/">ask ${escapeHtml(v.domain)} for local help</a></li>`).join('');
+  // b4: the opening paragraph answers "what is this page" in 40-60 words. Each of
+  // the two directories says what only it holds, so they are not one stock line.
+  const opening = isInsights
+    ? 'The Industry Guides insights directory is the list of reviewed question guides we publish across six fields: senior living, dentistry, personal injury, neuropsychological evaluations, testosterone care and USCIS medical exams. Each guide answers one question in its first paragraph, names and dates the source behind every fact, and links the next step for that field.'
+    : 'The Industry Guides atlas is the full map of every reviewed page on this site: the field hubs, the head-to-head comparisons, the state rules pages and the question guides. Use it when you know the topic but not the page; each entry opens a guide that answers first and names the source behind its facts.';
   const body = `<main id="main-content" class="container"><h1>${title}</h1>`
-    + `<p>This directory lists the reviewed guides currently published by The Industry Guides. Choose a specific question or a topic hub. Each editorial guide links its evidence and the appropriate next step.</p>`
+    + `<p>${escapeHtml(opening)}</p>`
     + `<p>The Industry Guides is the umbrella publisher for six separate guide sites, one per field. A page here explains a decision in plain terms and shows the sources behind it; the canonical guide site for that field holds the full local workflow and the form you use to ask for help. If you already know which field your question sits in, skip the reading and go straight to that site below.</p>`
     + `<h2>Which guide answers my question?</h2><ul>${entries.map(p => `<li><a href="${escapeHtml(p.path.replace(/\.html$/, ''))}">${escapeHtml(p.primary_query || p.path)}</a></li>`).join('')}</ul>`
     + `<h2>What each field covers</h2><ul>${coverage}</ul>`
