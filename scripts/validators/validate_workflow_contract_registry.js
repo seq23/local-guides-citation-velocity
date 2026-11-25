@@ -95,6 +95,12 @@ const laneTests = [];
 //      BYTES of an old commit, and this repo rewrites ~2,100 HTML pages per
 //      release, so historic blobs were most of a 45-second checkout, paid twice
 //      on the critical path.
+//   3. (24 Nov 2026) No gate job `needs:` another. A dependent job has to win a
+//      hosted runner from the account's shared pool AFTER the jobs it waits on
+//      finish, so its queue time lands on the critical path: the old `validate`
+//      aggregate queued 2.5 and 4 minutes on runs 45061119735 and 45033168692 and
+//      the median PR check was 6.8 minutes. Shard 0 merges in place instead
+//      (scripts/ci/wait_for_shard_evidence.js).
 const GATE = 'validate-repo.yml';
 {
   const gateRel = `.github/workflows/${GATE}`;
@@ -109,7 +115,9 @@ const GATE = 'validate-repo.yml';
     }
     const checkouts = gate.match(/uses:\s*actions\/checkout@[^\n]*\n(?:\s{8,}[^\n]*\n)*/g) || [];
     // Rule 0: zero checkouts means the pattern stopped matching, not that the gate is clean.
-    if (checkouts.length < 2) errors.push(`${GATE} has ${checkouts.length} checkout block(s); expected one per job, so this check inspected nothing`);
+    const jobs = (gate.match(/^\s+runs-on:/gm) || []).length;
+    if (!checkouts.length || checkouts.length !== jobs) errors.push(`${GATE} has ${checkouts.length} checkout block(s) for ${jobs} job(s); expected one per job, so this check may have inspected nothing`);
+    if (/^\s{4}needs:/m.test(gate)) errors.push(`${GATE} has a job that \`needs:\` another; it queues for a runner after the jobs it waits on, on the critical path. Merge in the job that is already running (shard 0)`);
     for (const [i, co] of checkouts.entries()) {
       if (!/fetch-depth:\s*0/.test(co)) errors.push(`${GATE} checkout ${i} is not fetch-depth: 0; the attestation reads git history`);
       if (!/filter:\s*blob:none/.test(co)) errors.push(`${GATE} checkout ${i} fetches historic blobs the gate never reads; add filter: blob:none`);
