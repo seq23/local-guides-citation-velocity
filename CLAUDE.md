@@ -43,8 +43,18 @@ rule cannot pass by being absent.
 
 `.github/workflows/validate-repo.yml` is the merge gate and it stays under five
 minutes (Search Readiness h5). It runs the `release` profile as `SHARD_COUNT`
-balanced shards plus one aggregate job that proves every validator was assigned
-exactly once and passed. Shard weights come from measured durations in
+(two) balanced shards, and shard 0 then waits for every shard's evidence
+(`scripts/ci/wait_for_shard_evidence.js`, fail-closed) and merges in place,
+proving every validator was assigned exactly once and passed.
+
+**No gate job `needs:` another.** Wall clock is runner queueing, not work: every
+job must win a hosted runner from the account's shared pool, and a dependent job
+wins one only after the jobs it waits on finish, so its queue lands on the
+critical path. On 22 Nov 2026 the old four shards plus a separate aggregate did
+~4 minutes of work in 14 and 17 minutes, the aggregate queueing 2.5 and 4 of
+them; the profile's one 75-second validator sits alone on shard 0 at any count,
+so four shards were no faster than two. `workflow-contract-registry` fails a
+`needs:` in the gate. Shard weights come from measured durations in
 `_validation_registry.json` (`estimated_runtime_seconds`); refresh them with
 `npm run ci:refresh-shard-weights -- <run-id>` after a run whose timings moved,
 or the balancer packs one shard twice as heavy as the rest.
@@ -59,10 +69,10 @@ keeps the shards even underneath that.
 
 **The gate builds the site once per commit, not once per job.** The release lane's
 `site-build` stage runs `npm run build:cached`
-([`scripts/lib/build_cache.js`](scripts/lib/build_cache.js)), shard 2 saves the
-resulting `.build-cache` entry, and the aggregate job — which runs after every
-shard, on the critical path — restores it instead of regenerating all ~2,400 pages
-a second time in series. Two rules hold this up, and a test reads each:
+([`scripts/lib/build_cache.js`](scripts/lib/build_cache.js)) into a store outside
+the checkout, shard 1 saves that store for later runs, and shard 0's merge, after
+it resets to the clean checkout, reuses the entry its own build wrote instead of
+regenerating all ~2,400 pages a second time in series. Two rules hold this up, and a test reads each:
 
 - Nothing wall-clock-stamped may enter the cache's hashed input surface. The gate
   runs `release:daily-citation-intelligence:preview` in every job first, and that

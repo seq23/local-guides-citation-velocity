@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: read
+  # Shard 0 lists this run's artifacts and jobs to wait for its sibling's evidence
+  # (scripts/ci/wait_for_shard_evidence.js).
+  actions: read
 
 env:
   NODE_OPTIONS: --max-old-space-size=3072
@@ -20,13 +23,23 @@ env:
   # from a filesystem walker. Keeping the store off the tree means no validator can
   # ever see it, whatever a future walker's skip list says. Search Readiness h5.
   BUILD_CACHE_DIR: /tmp/velocity-build-cache
-  # The release profile is ~180 validators and 7-11 minutes on one runner; two of
-  # them (the clock-independence pair) are more than half of that. This is the
-  # merge gate, so it runs as SHARD_COUNT parallel slices balanced by measured
-  # duration (run_validation_registry.js --shard) and one aggregate job that proves
-  # every validator was assigned exactly once and passed
+  # This is the merge gate, so it runs the release profile as SHARD_COUNT parallel
+  # slices balanced by measured duration (run_validation_registry.js --shard), and
+  # shard 0 then proves every validator was assigned exactly once and passed
   # (merge_validation_shards.js). Change the count here AND in the matrix below.
-  SHARD_COUNT: "4"
+  #
+  # TWO shards, and no separate aggregate job (Search Readiness h5, 24 Nov 2026).
+  # The profile is 26 validators and ~105s of measured work, 75s of it ONE
+  # validator (canonical-data-immutability), so shard 0 is that validator alone at
+  # any count and four shards were no faster than two. What four shards plus a
+  # `needs: shard` aggregate DID cost was runner queueing: each of five jobs had
+  # to win a hosted runner from the account's shared pool, and the aggregate had to
+  # win one after every shard finished. Runs 45061119735 and 45033168692: shards of
+  # 70-135s, one shard queued 5.5 minutes behind its siblings, the aggregate queued
+  # 2.5 and 4 minutes, and 14 and 17 minutes of wall clock for ~4 of work. Now two
+  # jobs ask for runners, both at the start, and shard 0, which already holds one,
+  # merges in place.
+  SHARD_COUNT: "2"
 
 concurrency:
   group: validate-${{ github.ref }}
@@ -36,15 +49,15 @@ jobs:
   shard:
     name: shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    # Measured on run 40261574048: the slowest shard is 3.1 minutes (15s checkout,
-    # 50s gate+preview, 113s build + its slice). The ceiling is a fault detector,
-    # not a budget, so ~2.5x that - 15 minutes let a hung job burn five times the
-    # normal run before anyone saw it.
-    timeout-minutes: 8
+    # Measured on run 45061119735: the slowest shard is 2.3 minutes. The ceiling is
+    # a fault detector, not a budget, so ~3x that. Shard 0 also waits for shard 1
+    # (bounded at 10 minutes by SHARD_WAIT_SECONDS, which covers a sibling that
+    # queued for a runner) and then merges (~1 minute), so it gets the wait on top.
+    timeout-minutes: ${{ matrix.shard == 0 && 18 || 8 }}
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3]
+        shard: [0, 1]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -82,16 +95,18 @@ jobs:
       - name: Validation runner attributes a PREPARE's declared writes to the PREPARE
         if: matrix.shard == 1
         run: node scripts/tests/test_validation_mutation_guard.js
+      - name: Shard 0 merges only whole, passing shard evidence
+        if: matrix.shard == 1
+        run: node scripts/tests/test_wait_for_shard_evidence.js
       - name: Restore the build-result cache
         # The lane's site-build stage runs `npm run build:cached`, so this is what
-        # makes it a no-op. Keyed on the commit: the shard that saves it below
-        # finishes before the aggregate job starts (needs: shard), so the aggregate
-        # restores this run's own entry instead of rebuilding all ~2,400 pages a
-        # second time in series on the critical path. The prefix restore-key lets a
-        # rebase retry or a re-run whose hashed input surface did not move hit a
-        # previous run's entry; the wrapper verifies every entry against its own
-        # input hash and falls back to a real build on any doubt, so a stale or
-        # wrong-commit restore cannot be used. Search Readiness h5.
+        # makes it a no-op. The prefix restore-key lets a rebase retry or a re-run
+        # whose hashed input surface did not move hit a previous run's entry; the
+        # wrapper verifies every entry against its own input hash and falls back to
+        # a real build on any doubt, so a stale or wrong-commit restore cannot be
+        # used. Within this run, shard 0's merge reuses the entry its own
+        # site-build stage wrote to the same store on the same runner, instead of
+        # rebuilding all ~2,400 pages a second time in series. Search Readiness h5.
         uses: actions/cache/restore@v4
         with:
           path: /tmp/velocity-build-cache
@@ -118,12 +133,11 @@ jobs:
       - name: Save the build-result cache
         # One shard saves, not all of them: a single key written by SHARD_COUNT
         # parallel jobs is a race, and the post-step form would run it in every one.
-        # Shard 2 is chosen off the measured assignment: the balancer
-        # (run_validation_registry.js, longest-weight-first) puts the heaviest
-        # validator alone on shard 0, so shard 0 is the critical path and shard 2
-        # has room to carry the upload. Each shard job prints its own assignment
-        # ("VALIDATION SHARD i/N: ... heaviest <id> <n>s"), so a future weight
-        # change that moves the heavy work onto shard 2 is visible in the log.
+        # Shard 1, because shard 0 is the critical path (the balancer,
+        # run_validation_registry.js longest-weight-first, puts the heaviest
+        # validator alone on it, and it then waits and merges). Each shard job
+        # prints its own assignment ("VALIDATION SHARD i/N: ... heaviest <id> <n>s"),
+        # so a weight change that moves the heavy work onto shard 1 is visible.
         #
         # cache:prune-store touches only the store and does NOT build.
         # `build:cached:prune` was the obvious call and cost 80 seconds on the
@@ -132,10 +146,10 @@ jobs:
         # entry and ran a whole second build in order to prune. Keeping the newest
         # entry (~77 MB) is what stops the store growing without bound across
         # runs. Search Readiness h5.
-        if: success() && matrix.shard == 2
+        if: success() && matrix.shard == 1
         run: npm run cache:prune-store
       - name: Store the build-result cache
-        if: success() && matrix.shard == 2
+        if: success() && matrix.shard == 1
         uses: actions/cache/save@v4
         with:
           path: /tmp/velocity-build-cache
@@ -163,48 +177,29 @@ jobs:
             artifacts/validation/**
             reports/**
 
-  validate:
-    needs: shard
-    runs-on: ubuntu-latest
-    # Measured on run 40261574048: 2.2 minutes (16s checkout, 39s gate+preview,
-    # 53s merge and tail stages, 11s artifact upload). ~2.7x that.
-    timeout-minutes: 6
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          # Full history stays: the attestation reads it and
-          # validate_lane_git_history_depth requires fetch-depth: 0 on any workflow
-          # that can reach a history-reading script. Historic BLOBS are fetched on
-          # demand instead - nothing in the release or advisory profile reads the
-          # bytes of an old commit, and this repo rewrites ~2,100 HTML pages per
-          # release, so those blobs were most of the checkout. Search Readiness h5.
-          fetch-depth: 0
-          filter: blob:none
-      - name: Setup Node 24
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-          cache: npm
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts
-      - name: Restore the build-result cache
-        # The lane's site-build stage runs `npm run build:cached`, so this is what
-        # makes it a no-op. Keyed on the commit: the shard that saves it below
-        # finishes before the aggregate job starts (needs: shard), so the aggregate
-        # restores this run's own entry instead of rebuilding all ~2,400 pages a
-        # second time in series on the critical path. The prefix restore-key lets a
-        # rebase retry or a re-run whose hashed input surface did not move hit a
-        # previous run's entry; the wrapper verifies every entry against its own
-        # input hash and falls back to a real build on any doubt, so a stale or
-        # wrong-commit restore cannot be used. Search Readiness h5.
-        uses: actions/cache/restore@v4
-        with:
-          path: /tmp/velocity-build-cache
-          key: build-cache-v1-${{ github.sha }}
-          restore-keys: |
-            build-cache-v1-
+      # ---- Shard 0 only, from here: the aggregate, in place. -------------------
+      - name: Wait for every shard's evidence
+        # Fails closed: a sibling that ends in anything but success fails this
+        # step at once, and so does the 10-minute deadline.
+        if: success() && matrix.shard == 0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SHARD_WAIT_SECONDS: "600"
+        run: node scripts/ci/wait_for_shard_evidence.js
+      - name: Return to the clean checkout
+        # The merge must start where a fresh aggregate job started: the committed
+        # tree, plus every shard's evidence and nothing else. This shard's own run
+        # left its own checkpoint, logs, dist/ and rewritten artifacts behind, so
+        # reset to HEAD and drop every untracked and ignored file except the
+        # installed dependencies. Its evidence comes back with the others' below.
+        # The build-result store lives outside the checkout, so it survives.
+        if: success() && matrix.shard == 0
+        run: |
+          git reset --hard -q HEAD
+          git clean -ffdxq -e node_modules
+          git status --short
       - name: Download shard evidence
+        if: success() && matrix.shard == 0
         uses: actions/download-artifact@v7
         with:
           pattern: validation-shard-*-${{ github.run_id }}
@@ -213,6 +208,7 @@ jobs:
         # Every shard's evidence files land in artifacts/validation so the
         # evidence, manifest and attestation stages see the whole profile.
         # The per-shard summaries are what merge_validation_shards.js reads.
+        if: success() && matrix.shard == 0
         run: |
           set -euo pipefail
           n=0
@@ -225,11 +221,13 @@ jobs:
           [ "$n" = "$SHARD_COUNT" ] || { echo "::error::expected $SHARD_COUNT shard artifact(s), found $n"; exit 1; }
           ls artifacts/validation/validation-summary-shard-*.json
       - name: Build, merge the shards and validate exact artifact in bounded stages
+        id: merge
+        if: success() && matrix.shard == 0
         env:
           VALIDATION_MERGE_SHARDS: ${{ env.SHARD_COUNT }}
         run: npm run release:ci-validate
       - name: Upload exact validated artifact
-        if: success()
+        if: success() && matrix.shard == 0
         uses: actions/upload-artifact@v7
         with:
           name: velocity-validated-${{ github.sha }}
@@ -245,7 +243,7 @@ jobs:
             !logs/**
             !artifacts/diagnostics/**
       - name: Upload validation diagnostics
-        if: always()
+        if: always() && matrix.shard == 0 && steps.merge.outcome != 'skipped'
         uses: actions/upload-artifact@v7
         with:
           name: velocity-validation-diagnostics-${{ github.run_id }}
@@ -258,6 +256,7 @@ jobs:
         # Blocks publishing faster than the library can be kept inside the
         # 91-day window where pages stay citable. Warnings are reported
         # without failing the run.
+        if: success() && matrix.shard == 0
         run: |
           npm run cadence:gate
           npm run cadence:template-share
