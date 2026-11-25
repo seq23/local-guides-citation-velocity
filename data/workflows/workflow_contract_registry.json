@@ -474,10 +474,9 @@
       "name": "Search Outcomes Weekly",
       "lane": "measurement",
       "triggers": [
-        "schedule:03-12-utc-wednesday (CDT 07:03 Chicago)",
-        "schedule:03-13-utc-wednesday (CST 07:03 Chicago)",
-        "schedule:00-17,20,23-utc-wednesday (catch-up, only if this ISO week's report is missing on main)",
-        "schedule:30-12-utc-sunday,thursday-saturday (catch-up, same guard)",
+        "schedule:8 0 * * 3 (Wednesday primary report, UTC)",
+        "schedule:0 5,17,20,23 * * 3 (Wednesday report catch-up or summary backfill, UTC)",
+        "schedule:30 12 * * 0,4-6 (Thursday through Sunday missing-report catch-up, UTC)",
         "workflow_dispatch"
       ],
       "manual_ready": true,
@@ -513,11 +512,11 @@
         "artifact search-outcomes-<week>-<run_id>",
         "one GitHub issue per RED site in this repo, closed when the site is GREEN",
         "data/discovery/<ISO-week>/<host>.json per seeded property and data/discovery/measured_targets_snapshot.json (committed)",
-        "artifact spry-weekly-summary (spry-weekly-summary.json), uploaded before the commit step, read by Boss OS for the one Spry Labs weekly email (08:15 Central Wednesday); no email is sent from this workflow"
+        "artifact spry-weekly-summary (spry-weekly-summary.json), uploaded before the commit step or rebuilt from the committed report by Wednesday catch-up, read by Boss OS for the one Spry Labs weekly email (08:15 Central Wednesday); no email is sent from this workflow"
       ],
       "upstream": [],
       "downstream": [],
-      "failure_boundary": "Exits non-zero when the account reads zero properties or an issue cannot be created. Coverage files that do not exist are reported as 'no coverage file', never a failure. The spry-weekly-summary artifact is built from the finished report and uploaded before the commit step, so a commit-step failure still turns the run red but never withholds the week's figures from Boss OS; a missing summary file fails the upload (if-no-files-found: error). Commits only the report pair and data/discovery/<week>/, only after validate:release passes on the rebased tree. Discovery makes zero model calls and requests only free hosts (enforced in free_discovery.py and by the search-outcomes-weekly-report validator); a blocked source is recorded as unavailable, and zero candidates from every source is a NAMED STOP carried in the report."
+      "failure_boundary": "Exits non-zero when the account reads zero properties or an issue cannot be created. Coverage files that do not exist are reported as 'no coverage file', never a failure. The spry-weekly-summary artifact is built from the finished report and uploaded before the commit step, so a commit-step failure still turns the run red but never withholds the week's figures from Boss OS; Wednesday catch-up rebuilds the artifact from this ISO week’s report on main in a read-only job when the report exists. A missing summary file fails either upload (if-no-files-found: error). Commits only the report pair and data/discovery/<week>/, only after validate:release passes on the rebased tree. Discovery makes zero model calls and requests only free hosts (enforced in free_discovery.py); a blocked source is recorded as unavailable, and zero candidates from every source is a NAMED STOP carried in the report."
     },
     {
       "file": "entity-backlink-watch.yml",

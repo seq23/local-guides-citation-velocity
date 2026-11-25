@@ -1,9 +1,9 @@
 name: Search Outcomes Weekly
 
 # One place that answers "is the search work helping" across the portfolio.
-# Wednesdays 07:03 America/Chicago (owner's rebalanced week, 1 Nov 2026): two
-# UTC crons (12:03 in CDT, 13:03 in CST) and a guard step that lets only the one
-# matching Chicago's current offset run.
+# Start Wednesday at 00:08 UTC to give the 08:15 Central email time to receive
+# the artifact. In November 2026, GitHub delivered scheduled events up to 11h26m
+# late. Keep the start off the hour and well ahead of the email.
 # Report -> RED issues opened/updated/closed -> free query discovery (seeded only
 # from the report's measured queries; $0, no keys, no model calls) -> artifact ->
 # spry-weekly-summary.json, uploaded as the artifact `spry-weekly-summary` ->
@@ -18,19 +18,13 @@ name: Search Outcomes Weekly
 # scripts/validation/run_validation_registry.js). The job still goes red when the
 # commit fails.
 #
-# Catch-up: the Wednesday run is the only writer of this week's report, and the
-# release gate (validate_search_outcomes_weekly_report.js) requires it on main
-# from Thursday 00:00 UTC (it was Monday/Tuesday until 1 Nov 2026). On 2026-10-19 the Monday run failed on an unrelated
-# validator (fixed in #211 an hour later) and nothing re-ran it, so main went
-# red on Tuesday for a missing 2026-W43. The catch-up crons below run ONLY when
-# this ISO week's report is not on main: Wednesday afternoon retries land it
-# before the gate turns, and the Thursday-Sunday one repairs any week that still
-# slipped. Never Monday or Tuesday: that would write the new week's report early.
+# Catch-up runs build any missing report. Wednesday retries can also upload the
+# summary from the report already on main. Thursday through Sunday only repair
+# missing reports. Monday and Tuesday are excluded to keep the report on schedule.
 on:
   schedule:
-    - cron: "3 12 * * 3"
-    - cron: "3 13 * * 3"
-    - cron: "0 17,20,23 * * 3"
+    - cron: "8 0 * * 3"
+    - cron: "0 5,17,20,23 * * 3"
     - cron: "30 12 * * 0,4-6"
   workflow_dispatch:
 
@@ -50,29 +44,36 @@ jobs:
   report:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      backfill: ${{ steps.guard.outputs.backfill }}
+      week: ${{ steps.guard.outputs.week }}
     steps:
-      - name: Guard Wednesday 07:03 Chicago
+      - name: Choose full report or summary backfill
         id: guard
         env:
           SCHEDULE: ${{ github.event.schedule }}
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          offset=$(TZ=America/Chicago date +%z)
+          set -euo pipefail
+          week=$(date -u +%G-W%V)
           run=true
-          if [ "$SCHEDULE" = "3 12 * * 3" ] && [ "$offset" != "-0500" ]; then run=false; fi
-          if [ "$SCHEDULE" = "3 13 * * 3" ] && [ "$offset" != "-0600" ]; then run=false; fi
-          # Catch-up crons: run only if this ISO week's report is missing on main.
-          if [ "$SCHEDULE" = "0 17,20,23 * * 3" ] || [ "$SCHEDULE" = "30 12 * * 0,4-6" ]; then
-            week=$(date -u +%G-W%V)
+          backfill=false
+          if [ "$SCHEDULE" = "0 5,17,20,23 * * 3" ] || [ "$SCHEDULE" = "30 12 * * 0,4-6" ]; then
             if gh api "repos/$REPO/contents/reports/search_outcomes/$week.json?ref=main" --silent 2>/dev/null; then
-              run=false; echo "catch-up: $week report already on main"
+              run=false
+              if [ "$SCHEDULE" = "0 5,17,20,23 * * 3" ]; then backfill=true; fi
+              echo "catch-up: $week report already on main (backfill=$backfill)"
             else
               echo "catch-up: $week report missing on main; running"
             fi
           fi
-          echo "run=$run" >> "$GITHUB_OUTPUT"
-          echo "schedule='${SCHEDULE:-dispatch}' chicago_offset=$offset run=$run"
+          {
+            echo "run=$run"
+            echo "backfill=$backfill"
+            echo "week=$week"
+          } >> "$GITHUB_OUTPUT"
+          echo "schedule='${SCHEDULE:-dispatch}' week=$week run=$run backfill=$backfill"
       - uses: actions/checkout@v7
         if: steps.guard.outputs.run == 'true'
         with:
@@ -177,3 +178,34 @@ jobs:
             sleep $((attempt * 15))
           done
           exit 1
+
+
+  summary_backfill:
+    needs: report
+    if: needs.report.outputs.backfill == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Rebuild the Boss OS summary from main
+        env:
+          WEEK: ${{ needs.report.outputs.week }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          node scripts/search_console/spry_weekly_summary.mjs --self-check
+          node scripts/search_console/spry_weekly_summary.mjs "reports/search_outcomes/$WEEK.json" "$RUNNER_TEMP/spry-weekly-summary.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: spry-weekly-summary
+          path: ${{ runner.temp }}/spry-weekly-summary.json
+          if-no-files-found: error
+          retention-days: 30
