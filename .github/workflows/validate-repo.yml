@@ -98,6 +98,9 @@ jobs:
       - name: Shard 0 merges only whole, passing shard evidence
         if: matrix.shard == 1
         run: node scripts/tests/test_wait_for_shard_evidence.js
+      - name: Click tracking is capped and deduped; the visitor always gets 200
+        if: matrix.shard == 1
+        run: node scripts/tests/test_connection_click_guard.mjs
       - name: Restore the build-result cache
         # The lane's site-build stage runs `npm run build:cached`, so this is what
         # makes it a no-op. The prefix restore-key lets a rebase retry or a re-run

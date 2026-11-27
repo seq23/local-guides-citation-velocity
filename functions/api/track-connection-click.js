@@ -1,6 +1,13 @@
 // Cloudflare Pages Function
 // Endpoint: POST /api/track-connection-click
 // Purpose: lightweight intent telemetry (optional). Warning-only if Airtable not configured.
+// Abuse gate (security sweep, 23 Nov 2026; lib/abuse_guard.mjs guardClick): the body is read
+// up to MAX_BODY_BYTES['connection-click'] (longer -> 413), the same click from the same IP
+// inside CLICK_DEDUPE_SECONDS is written once, and every Airtable write first reserves a slot
+// under CAPS['connection-click'] (per IP and per site per day). No cap store, or a cap store
+// that fails, means the click is not written and answers state 'unknown'. Every answer is
+// ok: true, so the page never notices: a click is never allowed to break navigation.
+import { guardClick, readCapped, parseJson, MAX_BODY_BYTES } from '../../lib/abuse_guard.mjs';
 
 function json(body, init = {}) {
   return new Response(JSON.stringify(body), {
@@ -32,16 +39,23 @@ function parseUnknownFieldName(text) {
   }
 }
 
-async function writeToAirtable({ env, record }) {
+function airtableConfig(env) {
   const baseId = String(env.AIRTABLE_BASE_ID || '').trim();
   const tableName = String(env.AIRTABLE_CLICKS_TABLE_NAME || '').trim();
   const token = String(env.AIRTABLE_API_TOKEN || '').trim();
-  if (!baseId || !tableName || !token) return { ok: false };
+  return baseId && tableName && token ? { baseId, tableName, token } : null;
+}
+
+async function writeToAirtable({ env, record }) {
+  const cfg = airtableConfig(env);
+  if (!cfg) return { ok: false };
+  const { baseId, tableName, token } = cfg;
 
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
   const fields = { ...record };
 
   for (let attempt = 0; attempt < MAX_FIELD_PRUNE_ATTEMPTS; attempt += 1) {
+    // A fetch that throws (Airtable unreachable) reaches onRequestPost's catch: state 'unknown'.
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -82,7 +96,9 @@ export async function onRequestPost(context) {
       return json({ ok: true });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const read = await readCapped(req, MAX_BODY_BYTES['connection-click']);
+    if (!read.ok) return json({ ok: false, error: 'too_large' }, { status: 413 });
+    const body = parseJson(read.text);
     const provider_type = String(body.provider_type || '').trim().slice(0, 80);
     const page_slug = String(body.page_slug || '').trim().slice(0, 160);
     const source_domain = String(body.source_domain || '').trim().slice(0, 120);
@@ -93,28 +109,34 @@ export async function onRequestPost(context) {
     const vertical_key = String(body.vertical_key || '').trim().slice(0, 32);
     const sponsor_slug = String(body.sponsor_slug || '').trim().slice(0, 120);
     const sponsor_scope = String(body.sponsor_scope || '').trim().slice(0, 32);
-    const nowIso = new Date().toISOString();
+    // Every real caller names what was clicked; a post naming nothing is not a click.
+    if (!provider_type && !button_source && !sponsor_slug) return json({ ok: true, stored: false, state: 'ignored' });
+    // Nowhere to write (branch previews carry no Airtable vars): spend no cap slot.
+    if (!airtableConfig(env)) return json({ ok: true, stored: false, state: 'not_configured' });
+    const now = Date.now();
+    const record = {
+      provider_type,
+      page_slug,
+      source_domain,
+      intent_type,
+      button_source,
+      market_slug,
+      page_kind,
+      vertical_key,
+      sponsor_slug,
+      sponsor_scope,
+      created_at: new Date(now).toISOString()
+    };
 
-    const at = await writeToAirtable({
-      env,
-      record: {
-        provider_type,
-        page_slug,
-        source_domain,
-        intent_type,
-        button_source,
-        market_slug,
-        page_kind,
-        vertical_key,
-        sponsor_slug,
-        sponsor_scope,
-        created_at: nowIso
-      }
-    });
+    const gate = await guardClick({ request: req, env, click: record, now });
+    if (gate.state !== 'write') return json({ ok: true, stored: false, state: gate.state });
 
-    // Always return ok to avoid interfering with navigation.
-    return json({ ok: true, stored: !!at.ok });
+    const at = await writeToAirtable({ env, record });
+
+    // Always return ok to avoid interfering with navigation. A write that did not land is
+    // 'unknown': the click may have happened, it is just not counted.
+    return json({ ok: true, stored: !!at.ok, state: at.ok ? 'stored' : 'unknown' });
   } catch (_) {
-    return json({ ok: true });
+    return json({ ok: true, stored: false, state: 'unknown' });
   }
 }
