@@ -54,6 +54,15 @@ assert.ok(parsed.every(([from,, status]) => !/[*:]/.test(from) && status === '30
     .replace("import ledger from '../data/release/route_retirements.json';", `const ledger = ${JSON.stringify(require('../../data/release/route_retirements.json'))};`)
     .replace("import policy from '../config/search_rescue.json';", `const policy = ${JSON.stringify(rescue.policy)};`);
   const { onRequest } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+  const retiredInsight = '/insights/neuro-068-adult-specialist-anxiety-vs-adhd-eval-near-me';
+  for (const route of [retiredInsight, retiredInsight + '.html']) {
+    const response = await onRequest({
+      request: new Request(`https://theindustryguides.com${route}?from=guide`),
+      next: () => new Response(null, { status: 404 })
+    });
+    assert.equal(response.status, 301, route);
+    assert.equal(response.headers.get('location'), 'https://theindustryguides.com/neuro/?from=guide');
+  }
   for (const row of rescue.policy.retirements) {
     for (const route of new Set([row.source_path, row.source_path.replace(/\.html$/, ''), row.source_path.replace(/\/$/, '')])) {
       const response = await onRequest({ request: new Request('https://theindustryguides.com' + route + '?from=search'), next: () => { throw new Error(`Retired route reached assets: ${route}`); } });
