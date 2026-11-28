@@ -8,11 +8,19 @@ const redirects = new Map([
   ['/sitemap', '/sitemap.xml'],
   ['/sitemaps/sitemap_all.xml', '/sitemap.xml']
 ]);
-const survivors = new Set(policy.kept.flatMap(({ path }) => [path, path.replace(/\.html$/, ''), path.replace(/\/$/, '')]));
+function routeAliases(path) {
+  const bare = path.replace(/\/$/, '').replace(/\.html$/, '');
+  return bare.startsWith('/insights/') && !bare.slice('/insights/'.length).includes('/')
+    ? [path, bare, `${bare}.html`]
+    : [path, bare];
+}
+
+const survivors = new Set(policy.kept.flatMap(({ path }) => routeAliases(path)));
 for (const row of ledger.retirements) {
   if (row.status !== 'ACTIVE_301') continue;
-  const aliases = [row.source_path, row.source_path.replace(/\.html$/, ''), row.source_path.replace(/\/$/, '')];
-  for (const alias of aliases) if (!survivors.has(alias)) redirects.set(alias, row.target_path);
+  for (const alias of routeAliases(row.source_path)) {
+    if (!survivors.has(alias)) redirects.set(alias, row.target_path);
+  }
 }
 
 // A child sitemap the build stops writing (its partition emptied: sitemap_util.xml,
